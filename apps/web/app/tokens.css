@@ -1,0 +1,184 @@
+/* ============================================================
+   GENERIERT aus design/tokens.json — NICHT von Hand editieren.
+   Neu bauen:  npm run tokens  (in apps/web)
+   Design-System „Heimspiel“ · 1.0.0 · Stand 2026-07-10
+   ============================================================ */
+
+/* ---------- Light („Vormittag in der Halle“) + statische Tokens ---------- */
+:root {
+  color-scheme: light;
+  --bg-canvas: #FBF4EC;
+  --bg-surface: #FFFFFF;
+  --bg-sunken: #F4E9DD;
+  --ink: #35251C;
+  --ink-soft: #6B5648;
+  --ink-faint: #8A7365;
+  --line: #EBDCCE;
+  --line-strong: #DCC9B8;
+  --brand: #B23A5C;
+  --brand-strong: #9C2F4E;
+  --brand-soft: #F7E3E9;
+  --brand-ink: #8E2946;
+  --brand-contrast: #FFFFFF;
+  --honey: #E8A94A;
+  --honey-deep: #97570E;
+  --honey-soft: #F9EDD8;
+  --info: #2F6B72;
+  --info-soft: #E2EFEF;
+  --success: #3F7D4E;
+  --success-soft: #E4F0E3;
+  --warn: #97570E;
+  --warn-soft: #F9EDD8;
+  --danger: #BC3D30;
+  --danger-soft: #F9E4E0;
+  --av-berry: #B23A5C;
+  --av-coral: #C25B3F;
+  --av-honey: #B4741C;
+  --av-moss: #4C8555;
+  --av-plum: #8A4E9C;
+  --av-petrol: #3E7D83;
+  --on-avatar: #FFFFFF;
+  --on-avatar-dark: rgba(26,13,8,0.92);
+  --wave-off: #E9D6C2;
+  --focus: #B23A5C;
+  --shadow-card: 0 1px 2px rgba(84,49,29,.05), 0 10px 30px rgba(84,49,29,.07);
+  --shadow-pop: 0 18px 50px rgba(60,32,16,.16);
+
+  --font-display: var(--font-bricolage, "Bricolage Grotesque"), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  --font-body: var(--font-jakarta, "Plus Jakarta Sans"), -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-display: 27px;
+  --lh-display: 32px;
+  --fw-display: 800;
+  --ls-display: -0.02em;
+  --fs-h2: 20px;
+  --lh-h2: 26px;
+  --fw-h2: 800;
+  --fs-h3: 17px;
+  --lh-h3: 23px;
+  --fw-h3: 800;
+  --fs-body-strong: 14.5px;
+  --lh-body-strong: 21px;
+  --fw-body-strong: 700;
+  --fs-body: 14.5px;
+  --lh-body: 22px;
+  --fw-body: 400;
+  --fs-caption: 12.5px;
+  --lh-caption: 17px;
+  --fw-caption: 400;
+  --fs-eyebrow: 11px;
+  --lh-eyebrow: 14px;
+  --fw-eyebrow: 800;
+  --ls-eyebrow: 0.09em;
+  --fs-mono-table: 13px;
+  --lh-mono-table: 18px;
+  --fw-mono-table: 600;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-card-gap: 22px;
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+  --radius-xl: 20px;
+  --radius-full: 999px;
+  --radius-org: 9px;
+  --size-touch-target: 44px;
+  --size-list-row: 56px;
+  --size-play-button: 68px;
+  --motion-fast: 150ms ease-out;
+  --motion-standard: 250ms cubic-bezier(0.2, 0.8, 0.3, 1);
+  --ease-rsm: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ---------- Dark („Vereinsheim am Abend“) — explizit gewählt ---------- */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-canvas: #241A14;
+  --bg-surface: #2C211A;
+  --bg-sunken: #1C130E;
+  --ink: #F5EAE0;
+  --ink-soft: #C9B3A4;
+  --ink-faint: #A18C7D;
+  --line: #3E3129;
+  --line-strong: #4E3E33;
+  --brand: #E0698A;
+  --brand-strong: #EB7F9D;
+  --brand-soft: #46232E;
+  --brand-ink: #F2A9BD;
+  --brand-contrast: #2B0E17;
+  --honey: #E8A94A;
+  --honey-deep: #EFB55E;
+  --honey-soft: #3D2C15;
+  --info: #7FBFC6;
+  --info-soft: #1E3538;
+  --success: #85C492;
+  --success-soft: #24382A;
+  --warn: #EFB55E;
+  --warn-soft: #3D2C15;
+  --danger: #E88374;
+  --danger-soft: #43211B;
+  --av-berry: #C1516F;
+  --av-coral: #C96A4E;
+  --av-honey: #BB8028;
+  --av-moss: #5C9465;
+  --av-plum: #9A61AC;
+  --av-petrol: #4E8D93;
+  --on-avatar: rgba(26,13,8,0.92);
+  --on-avatar-dark: rgba(26,13,8,0.92);
+  --wave-off: #4A382C;
+  --focus: #E0698A;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.28);
+  --shadow-pop: 0 18px 50px rgba(0,0,0,.5);
+}
+
+/* ---------- Dark via System, wenn Theme „Auto“ (oder ungesetzt) ---------- */
+@media (prefers-color-scheme: dark) {
+  html[data-theme="auto"],
+  html:not([data-theme]) {
+    color-scheme: dark;
+    --bg-canvas: #241A14;
+    --bg-surface: #2C211A;
+    --bg-sunken: #1C130E;
+    --ink: #F5EAE0;
+    --ink-soft: #C9B3A4;
+    --ink-faint: #A18C7D;
+    --line: #3E3129;
+    --line-strong: #4E3E33;
+    --brand: #E0698A;
+    --brand-strong: #EB7F9D;
+    --brand-soft: #46232E;
+    --brand-ink: #F2A9BD;
+    --brand-contrast: #2B0E17;
+    --honey: #E8A94A;
+    --honey-deep: #EFB55E;
+    --honey-soft: #3D2C15;
+    --info: #7FBFC6;
+    --info-soft: #1E3538;
+    --success: #85C492;
+    --success-soft: #24382A;
+    --warn: #EFB55E;
+    --warn-soft: #3D2C15;
+    --danger: #E88374;
+    --danger-soft: #43211B;
+    --av-berry: #C1516F;
+    --av-coral: #C96A4E;
+    --av-honey: #BB8028;
+    --av-moss: #5C9465;
+    --av-plum: #9A61AC;
+    --av-petrol: #4E8D93;
+    --on-avatar: rgba(26,13,8,0.92);
+    --on-avatar-dark: rgba(26,13,8,0.92);
+    --wave-off: #4A382C;
+    --focus: #E0698A;
+    --shadow-card: 0 1px 2px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.28);
+    --shadow-pop: 0 18px 50px rgba(0,0,0,.5);
+  }
+}
