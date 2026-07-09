@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RollsportManager v2 — Konzept A: Klar &amp; Professionell</title>
+<style>
+/* ============================================================
+   KONZEPT A — „Klar & Professionell"
+   Ledger-Prinzip · Vereinsblau · Hanken Grotesk + IBM Plex Mono
+   ============================================================ */
+
+:root {
+  --font-ui: "Hanken Grotesk", -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  /* Light */
+  --deck-bg: #ECEEF2;
+  --bg: #F6F7F9;
+  --surface: #FFFFFF;
+  --surface-2: #F1F3F6;
+  --surface-3: #E9ECF1;
+  --border: #E4E7ED;
+  --border-strong: #D2D8E0;
+  --text: #161A22;
+  --text-2: #4C5566;
+  --text-3: #8891A2;
+  --accent: #2D5BE3;
+  --accent-strong: #2149C4;
+  --accent-soft: #E9EEFC;
+  --accent-line: #B9C8F5;
+  --on-accent: #FFFFFF;
+  --pos: #1B7A4B;
+  --pos-soft: #E3F3EA;
+  --warn: #96610D;
+  --warn-soft: #FAF0DC;
+  --neg: #C13A3A;
+  --neg-soft: #FBEAEA;
+  --wave-idle: #CDD4DE;
+  --shadow-win: 0 1px 2px rgba(22,26,34,.05), 0 16px 48px rgba(22,26,34,.09);
+  --shadow-pop: 0 8px 24px rgba(22,26,34,.10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --deck-bg: #0A0C10;
+    --bg: #0F1218;
+    --surface: #161A22;
+    --surface-2: #1C212C;
+    --surface-3: #232936;
+    --border: #262D3A;
+    --border-strong: #364052;
+    --text: #EAEDF3;
+    --text-2: #A9B1C2;
+    --text-3: #707A8E;
+    --accent: #6787FA;
+    --accent-strong: #8FA8FF;
+    --accent-soft: #1D2740;
+    --accent-line: #3A4B7E;
+    --on-accent: #FFFFFF;
+    --pos: #53C08A;
+    --pos-soft: #152B20;
+    --warn: #DCA349;
+    --warn-soft: #2B2113;
+    --neg: #E56A61;
+    --neg-soft: #301716;
+    --wave-idle: #333B4A;
+    --shadow-win: 0 1px 2px rgba(0,0,0,.4), 0 20px 56px rgba(0,0,0,.45);
+    --shadow-pop: 0 12px 32px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"] {
+  --deck-bg: #0A0C10;
+  --bg: #0F1218;
+  --surface: #161A22;
+  --surface-2: #1C212C;
+  --surface-3: #232936;
+  --border: #262D3A;
+  --border-strong: #364052;
+  --text: #EAEDF3;
+  --text-2: #A9B1C2;
+  --text-3: #707A8E;
+  --accent: #6787FA;
+  --accent-strong: #8FA8FF;
+  --accent-soft: #1D2740;
+  --accent-line: #3A4B7E;
+  --on-accent: #FFFFFF;
+  --pos: #53C08A;
+  --pos-soft: #152B20;
+  --warn: #DCA349;
+  --warn-soft: #2B2113;
+  --neg: #E56A61;
+  --neg-soft: #301716;
+  --wave-idle: #333B4A;
+  --shadow-win: 0 1px 2px rgba(0,0,0,.4), 0 20px 56px rgba(0,0,0,.45);
+  --shadow-pop: 0 12px 32px rgba(0,0,0,.4);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--deck-bg);
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s ease, color .2s ease;
+}
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+svg.ic { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+svg.ic.sm { width: 14px; height: 14px; }
+
+/* ---------- Präsentations-Rahmen (Deck) ---------- */
+
+.deck {
+  max-width: 1420px;
+  margin: 0 auto;
+  padding: 56px 32px 96px;
+}
+.deck-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 20px;
+}
+.deck-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.deck-header h1 {
+  font-size: 42px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  margin-bottom: 14px;
+}
+.deck-lede {
+  max-width: 720px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.theme-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: border-color .15s ease, color .15s ease;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+.deck-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin: 26px 0 64px;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.swatches { display: flex; gap: 6px; }
+.swatch {
+  width: 22px; height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+}
+
+.exhibit { margin-bottom: 88px; }
+.exhibit-cap {
+  display: flex;
+  gap: 18px;
+  align-items: baseline;
+  max-width: 860px;
+  margin-bottom: 22px;
+}
+.cap-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  padding: 3px 8px;
+  flex: none;
+}
+.exhibit-cap h2 { font-size: 21px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 4px; }
+.exhibit-cap p { color: var(--text-2); font-size: 14px; }
+
+.exhibit-scroll { overflow-x: auto; padding-bottom: 8px; }
+
+/* ---------- App-Fenster ---------- */
+
+.window {
+  min-width: 1300px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow: var(--shadow-win);
+}
+.window-chrome {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.traffic { display: flex; gap: 7px; }
+.traffic span { width: 11px; height: 11px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--border-strong); }
+.url-pill {
+  flex: 1;
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 5px 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chrome-spacer { width: 47px; }
+
+.app { display: grid; grid-template-columns: 236px 1fr; min-height: 760px; }
+
+/* ---------- Sidebar ---------- */
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 14px;
+}
+.club {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 16px;
+}
+.club-mark {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  flex: none;
+}
+.club-name { font-size: 13px; font-weight: 700; line-height: 1.25; }
+.club-sub { font-size: 11px; color: var(--text-3); }
+
+.cmdk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-3);
+  font-size: 12.5px;
+  transition: border-color .15s ease;
+}
+.cmdk:hover { border-color: var(--border-strong); }
+.cmdk kbd {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.nav-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 0 10px;
+  margin-bottom: 8px;
+}
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background .12s ease, color .12s ease;
+}
+.nav a:hover { background: var(--surface-2); color: var(--text); }
+.nav a.on { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+.nav a .count {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+.sidebar-foot { margin-top: auto; border-top: 1px solid var(--border); padding-top: 12px; }
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.user:hover { background: var(--surface-2); }
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex: none;
+}
+.avatar.acc { background: var(--accent-soft); color: var(--accent); }
+.user-name { font-size: 13px; font-weight: 600; line-height: 1.2; }
+.user-role { font-size: 11px; color: var(--text-3); }
+
+/* ---------- Main / Topbar / Content ---------- */
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 58px;
+  padding: 0 28px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.crumbs { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--text-3); min-width: 0; }
+.crumbs a { color: var(--text-3); text-decoration: none; }
+.crumbs a:hover { color: var(--accent); }
+.crumbs .here { color: var(--text); font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crumbs .sep { color: var(--border-strong); }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.date-chip {
+  font-size: 12.5px;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 650;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  transition: background .12s ease, border-color .12s ease, color .12s ease;
+}
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-strong); }
+.btn.ghost { border-color: var(--border-strong); color: var(--text-2); background: var(--surface); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn.sm { padding: 5px 11px; font-size: 12.5px; }
+.icon-btn {
+  width: 34px; height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--text-3);
+  border: 1px solid transparent;
+  transition: background .12s ease, color .12s ease;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); }
+.icon-btn.sm { width: 28px; height: 28px; }
+
+.content { padding: 28px 28px 40px; display: flex; flex-direction: column; gap: 24px; }
+
+.hero h2 { font-size: 26px; font-weight: 750; letter-spacing: -.02em; }
+.hero p { color: var(--text-3); font-size: 13.5px; margin-top: 4px; }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ---------- Karten ---------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.card-head h3 { font-size: 14px; font-weight: 700; letter-spacing: -.005em; }
+.card-head .hint { font-size: 12px; color: var(--text-3); }
+.card-head .right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.card-body { padding: 16px 18px; }
+.link {
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 650;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.link:hover { color: var(--accent-strong); text-decoration: underline; }
+
+/* ---------- Chips & Badges ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 999px; background: var(--text-3); flex: none; }
+.chip.pos { background: var(--pos-soft); color: var(--pos); } .chip.pos::before { background: var(--pos); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); } .chip.warn::before { background: var(--warn); }
+.chip.neg { background: var(--neg-soft); color: var(--neg); } .chip.neg::before { background: var(--neg); }
+.chip.acc { background: var(--accent-soft); color: var(--accent); } .chip.acc::before { background: var(--accent); }
+.chip.plain::before { display: none; }
+
+/* ---------- Termin-Liste ---------- */
+
+.termin-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s ease;
+}
+.termin-row:last-child { border-bottom: none; }
+.termin-row:hover { background: var(--surface-2); }
+.t-time { width: 92px; flex: none; }
+.t-time .start { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+.t-time .end { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-3); display: block; }
+.t-rail { width: 3px; align-self: stretch; border-radius: 3px; background: var(--accent); flex: none; }
+.t-rail.muted { background: var(--border-strong); }
+.t-body { min-width: 0; flex: 1; }
+.t-title { font-size: 14px; font-weight: 650; }
+.t-meta { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-3); margin: 2px 0 8px; }
+.t-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.t-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+
+/* ---------- Anwesenheit ---------- */
+
+.att-grid { display: flex; align-items: flex-end; gap: 24px; }
+.att-kpi .num { font-family: var(--font-mono); font-size: 30px; font-weight: 600; letter-spacing: -.02em; }
+.att-kpi .lbl { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.att-bars { display: flex; align-items: flex-end; gap: 8px; height: 64px; flex: 1; }
+.att-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.att-bar i {
+  display: block;
+  width: 100%;
+  max-width: 30px;
+  border-radius: 4px 4px 2px 2px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-bottom: none;
+}
+.att-bar.hi i { background: var(--accent); border-color: var(--accent); }
+.att-bar b { font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--text-3); }
+.att-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12.5px;
+  font-weight: 550;
+}
+.att-note a { color: inherit; font-weight: 700; }
+
+/* ---------- Küren-Schnellzugriff ---------- */
+
+.kuer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s ease;
+}
+.kuer-row:last-child { border-bottom: none; }
+.kuer-row:hover { background: var(--surface-2); }
+.playbtn {
+  width: 34px; height: 34px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex: none;
+  transition: background .12s ease, color .12s ease;
+}
+.playbtn:hover { background: var(--accent); color: var(--on-accent); }
+.k-body { min-width: 0; flex: 1; }
+.k-title { font-size: 13px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.k-meta { font-size: 11.5px; color: var(--text-3); }
+.k-meta .mono { font-size: 11px; }
+
+/* ---------- Aufgaben ---------- */
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.task:last-child { border-bottom: none; }
+.task:hover { background: var(--surface-2); }
+.task input { position: absolute; opacity: 0; width: 0; height: 0; }
+.task .box {
+  width: 17px; height: 17px;
+  margin-top: 2px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: background .12s ease, border-color .12s ease;
+}
+.task input:checked + .box { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.task input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+.task-body { min-width: 0; }
+.task-title { display: block; font-size: 13px; font-weight: 550; line-height: 1.35; }
+.task input:checked ~ .task-body .task-title { text-decoration: line-through; color: var(--text-3); }
+.task-meta { display: inline-flex; gap: 6px; margin-top: 5px; }
+
+/* ---------- Wettkampf-Karte ---------- */
+
+.comp-when { display: flex; align-items: baseline; gap: 10px; }
+.comp-count { font-family: var(--font-mono); font-size: 26px; font-weight: 600; letter-spacing: -.02em; }
+.comp-date { font-size: 12.5px; color: var(--text-3); }
+.progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+  margin-top: 12px;
+}
+.progress i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.progress.pos i { background: var(--pos); }
+.prog-lbl { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-3); margin-top: 6px; }
+.prog-lbl .mono { font-size: 11px; }
+
+/* ---------- Waveform ---------- */
+
+.wave { display: flex; align-items: center; gap: 2px; height: 88px; position: relative; }
+.wave.mini { height: 30px; width: 120px; flex: none; gap: 1.5px; }
+.wave .bar { flex: 1; min-width: 2px; border-radius: 2px; background: var(--wave-idle); }
+.wave .bar.played { background: var(--accent); }
+.wave .bar.inloop { background: var(--accent-strong); }
+.wave.mini .bar { border-radius: 1px; }
+
+.loop-region {
+  position: absolute;
+  top: -8px; bottom: -8px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  border-left: 1.5px solid var(--accent);
+  border-right: 1.5px solid var(--accent);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.loop-region .tag {
+  position: absolute;
+  top: -18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+.loop-region .tag.a { left: -1.5px; transform: translateX(-50%); }
+.loop-region .tag.b { right: -1.5px; transform: translateX(50%); }
+
+.playhead {
+  position: absolute;
+  top: -12px; bottom: -12px;
+  width: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.playhead::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translate(-50%, -40%);
+  width: 9px; height: 9px;
+  border-radius: 999px;
+  background: var(--text);
+}
+
+/* ---------- Player ---------- */
+
+.player .card-body { padding: 26px 26px 20px; }
+.wave-wrap { padding: 14px 6px 4px; cursor: pointer; }
+.time-rail {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+  padding: 10px 6px 0;
+}
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.t-group { display: flex; align-items: center; gap: 10px; }
+.playbtn.big { width: 46px; height: 46px; background: var(--accent); color: var(--on-accent); }
+.playbtn.big:hover { background: var(--accent-strong); }
+.playbtn.big svg { width: 19px; height: 19px; }
+.skip {
+  width: 36px; height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  color: var(--text-2);
+  background: var(--surface);
+  transition: border-color .12s ease, color .12s ease;
+}
+.skip:hover { border-color: var(--accent); color: var(--accent); }
+.timecode { font-family: var(--font-mono); font-size: 15px; font-weight: 600; }
+.timecode small { font-size: 12px; color: var(--text-3); font-weight: 500; }
+
+.ctl { display: flex; flex-direction: column; gap: 6px; }
+.ctl-lbl {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.seg {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 2px;
+  gap: 2px;
+}
+.seg button {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-2);
+  padding: 5px 11px;
+  border-radius: 5px;
+  transition: background .12s ease, color .12s ease;
+}
+.seg button:hover { color: var(--text); }
+.seg button.on { background: var(--surface); color: var(--accent); font-weight: 700; box-shadow: 0 1px 2px rgba(22,26,34,.08); }
+
+.loop-pills { display: flex; align-items: center; gap: 6px; }
+.loop-pill {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: var(--text-2);
+  background: var(--surface);
+}
+.loop-pill b { color: var(--accent); font-weight: 700; margin-right: 5px; }
+.loop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-2);
+  background: var(--surface);
+  transition: all .12s ease;
+}
+.loop-toggle.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+
+/* ---------- Marker-Tabelle & Kür-Seiten ---------- */
+
+.kuer-head { display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap; }
+.kuer-head .titles { min-width: 0; flex: 1; }
+.kuer-head h2 { font-size: 25px; font-weight: 750; letter-spacing: -.02em; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kuer-sub { display: flex; align-items: center; gap: 8px; color: var(--text-3); font-size: 13.5px; margin-top: 6px; flex-wrap: wrap; }
+.kuer-sub .dot { color: var(--border-strong); }
+
+.marker-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s ease;
+}
+.marker-row:last-child { border-bottom: none; }
+.marker-row:hover { background: var(--surface-2); }
+.m-time {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 3px 8px;
+  flex: none;
+}
+.m-body { flex: 1; min-width: 0; }
+.m-title { font-size: 13.5px; font-weight: 650; }
+.m-note { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.m-play { opacity: 0; transition: opacity .12s ease; }
+.marker-row:hover .m-play { opacity: 1; }
+
+.fact-list { display: flex; flex-direction: column; }
+.fact {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.fact:last-child { border-bottom: none; }
+.fact .k { color: var(--text-3); flex: none; }
+.fact .v { font-weight: 600; text-align: right; }
+.fact .v.mono { font-size: 12.5px; }
+
+.score-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; }
+.score-row .k { width: 110px; flex: none; font-size: 13px; color: var(--text-2); }
+.score-row .bar { flex: 1; height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.score-row .bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.score-row .v { width: 34px; flex: none; text-align: right; font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+
+.note-item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.note-item:last-child { border-bottom: none; padding-bottom: 2px; }
+.note-item p { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+.note-meta { font-size: 11.5px; color: var(--text-3); margin-top: 5px; }
+
+/* ---------- KPI / Finanzen ---------- */
+
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.kpi { padding: 18px 20px 16px; }
+.kpi .lbl { font-size: 12px; font-weight: 650; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+.kpi .num { font-family: var(--font-mono); font-size: 25px; font-weight: 600; letter-spacing: -.02em; margin-top: 8px; }
+.kpi .sub { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+.kpi .sub .pos-t { color: var(--pos); font-weight: 650; }
+.kpi .sub .neg-t { color: var(--neg); font-weight: 650; }
+.kpi.alert .num { color: var(--neg); }
+
+.pipe { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; }
+.pipe i { display: block; height: 100%; }
+.pipe .p1 { background: var(--pos); }
+.pipe .p2 { background: var(--accent-line); }
+.pipe .p3 { background: var(--warn); }
+.pipe .p4 { background: var(--neg); }
+.pipe-legend { display: flex; flex-direction: column; gap: 0; margin-top: 14px; }
+.pl-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.pl-row:last-child { border-bottom: none; }
+.pl-dot { width: 8px; height: 8px; border-radius: 999px; flex: none; }
+.pl-row .n { color: var(--text-2); }
+.pl-row .c { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+.pl-row .s { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; width: 92px; text-align: right; }
+
+/* ---------- Tabellen ---------- */
+
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table th:first-child, .table td:first-child { padding-left: 18px; }
+.table th:last-child, .table td:last-child { padding-right: 18px; }
+.table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-2);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr { transition: background .12s ease; }
+.table tbody tr:hover { background: var(--surface-2); }
+.table .num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.table .trunc { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }
+.table .strong { color: var(--text); font-weight: 650; }
+.table .pos-t { color: var(--pos); font-weight: 600; }
+.table .neg-t { color: var(--neg); font-weight: 600; }
+.table .row-action { opacity: 0; transition: opacity .12s ease; text-align: right; }
+.table tbody tr:hover .row-action { opacity: 1; }
+.member-cell { display: flex; align-items: center; gap: 10px; }
+.member-cell .avatar { width: 26px; height: 26px; font-size: 10px; }
+
+.filters { display: flex; gap: 6px; }
+.f-chip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: var(--surface);
+  transition: all .12s ease;
+}
+.f-chip:hover { border-color: var(--border-strong); color: var(--text); }
+.f-chip.on { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.card-foot .sum { font-family: var(--font-mono); font-weight: 600; color: var(--text); }
+.card-foot .right { margin-left: auto; display: flex; gap: 8px; }
+
+.auto-rule { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+.auto-rule:last-child { border-bottom: none; }
+.auto-rule .step {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  height: fit-content;
+  flex: none;
+  white-space: nowrap;
+}
+.auto-rule .d { color: var(--text-2); line-height: 1.45; }
+.auto-rule .d b { color: var(--text); font-weight: 650; }
+
+.switch {
+  width: 34px; height: 20px;
+  border-radius: 999px;
+  background: var(--pos);
+  position: relative;
+  flex: none;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2.5px; right: 2.5px;
+  width: 15px; height: 15px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.deck-footer {
+  border-top: 1px solid var(--border-strong);
+  padding-top: 24px;
+  font-size: 12.5px;
+  color: var(--text-3);
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .deck { padding: 32px 16px 64px; }
+  .deck-header { flex-direction: column; }
+  .deck-header h1 { font-size: 32px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Icon-Sprite (inline, keine externen Ressourcen) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-today" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/><circle cx="12" cy="15.5" r="2" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/><path d="M16 5.2a3.5 3.5 0 010 5.9M18.5 15.5c1.6.8 2.7 2.3 3 4.5"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 4h8v6a4 4 0 01-8 0V4z"/><path d="M8 5H4.5v1.5A3.5 3.5 0 008 10M16 5h3.5v1.5A3.5 3.5 0 0116 10M12 14v4M8.5 21h7M12 18c-1.2 0-2.2.9-2.5 3h5c-.3-2.1-1.3-3-2.5-3z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 01-8 8H4l2.3-2.8A8 8 0 1121 12z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.34 1.87l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.7 1.7 0 00-1.87-.34 1.7 1.7 0 00-1 1.55V21a2 2 0 11-4 0v-.09a1.7 1.7 0 00-1-1.55 1.7 1.7 0 00-1.87.34l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.7 1.7 0 00.34-1.87 1.7 1.7 0 00-1.55-1H3a2 2 0 110-4h.09a1.7 1.7 0 001.55-1 1.7 1.7 0 00-.34-1.87l-.06-.06a2 2 0 112.83-2.83l.06.06a1.7 1.7 0 001.87.34h0a1.7 1.7 0 001-1.55V3a2 2 0 114 0v.09a1.7 1.7 0 001 1.55h0a1.7 1.7 0 001.87-.34l.06-.06a2 2 0 112.83 2.83l-.06.06a1.7 1.7 0 00-.34 1.87v0a1.7 1.7 0 001.55 1H21a2 2 0 110 4h-.09a1.7 1.7 0 00-1.55 1z"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 9a6 6 0 10-12 0c0 6-2.5 7-2.5 7h17S18 15 18 9zM10 20a2.2 2.2 0 004 0"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10.5c0 5.5-8 11-8 11s-8-5.5-8-11a8 8 0 1116 0z"/><circle cx="12" cy="10.5" r="2.8"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4L19.5 12 7 4.8z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-back5" viewBox="0 0 24 24"><path d="M4 9V4.5M4 9h4.5M4 9a9 9 0 102.5-4.7"/><text x="12.2" y="15.6" font-size="8" font-weight="700" fill="currentColor" stroke="none" text-anchor="middle" font-family="inherit">5</text></symbol>
+    <symbol id="i-fwd5" viewBox="0 0 24 24"><path d="M20 9V4.5M20 9h-4.5M20 9a9 9 0 11-2.5-4.7"/><text x="11.8" y="15.6" font-size="8" font-weight="700" fill="currentColor" stroke="none" text-anchor="middle" font-family="inherit">5</text></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18.5 6.5A7.5 7.5 0 0011 4.5c-4 0-6.7 3.3-6.7 7.5S7 19.5 11 19.5a7.5 7.5 0 007.5-2M3 10h9M3 14h8"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v12m0 0l-5-5m5 5l5-5M4.5 20h15"/></symbol>
+    <symbol id="i-warnt" viewBox="0 0 24 24"><path d="M12 3.5L22 20H2L12 3.5z"/><path d="M12 10v4.5M12 17.5v.3"/></symbol>
+    <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h13M7 21l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H4"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 2.5h8L20 8.5V21a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 21V4A1.5 1.5 0 015.5 2.5z"/><path d="M14 2.5V9h6M8.5 13h7M8.5 17h7"/></symbol>
+    <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3L19 19M19 5l-1.7 1.7M6.7 17.3L5 19"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 019.5 3.5a8.5 8.5 0 1011 11z"/></symbol>
+    <symbol id="i-guest" viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20c.8-3.2 3.4-5 6.5-5 1.2 0 2.3.3 3.3.8"/><circle cx="17.5" cy="17.5" r="4"/><path d="M17.5 15.8v1.9l1.3 1"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3L10.5 13.5M21 3l-7 18-3.5-7.5L3 10l18-7z"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M16.5 4.5l3 3L8 19l-4.2 1.2L5 16 16.5 4.5z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.7 5.4 6 .9-4.3 4.2 1 6-5.4-2.8L6.6 20l1-6-4.3-4.2 6-.9L12 3.5z"/></symbol>
+  </defs>
+</svg>
+
+<div class="deck">
+
+  <!-- ================= DECK-KOPF ================= -->
+  <header class="deck-header">
+    <div>
+      <div class="deck-eyebrow">RollsportManager v2 · Designkonzept A von 3</div>
+      <h1>Klar &amp; Professionell.</h1>
+      <p class="deck-lede">Das Ledger-Prinzip: die Ruhe eines perfekt geführten Kassenbuchs, übertragen auf ein modernes
+      SaaS-Produkt. Hierarchie durch Typografie, Hairlines statt Schatten, Zahlen als Bürger erster Klasse —
+      für das Gefühl <em>„endlich Ordnung im Verein"</em>.</p>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="Zwischen hellem und dunklem Modus wechseln">
+      <svg class="ic"><use href="#i-moon"/></svg><span id="themeLabel">Dark Mode</span>
+    </button>
+  </header>
+
+  <div class="deck-meta">
+    <div class="swatches" aria-hidden="true">
+      <span class="swatch" style="background:#2D5BE3" title="Vereinsblau #2D5BE3"></span>
+      <span class="swatch" style="background:#161A22" title="Tinte #161A22"></span>
+      <span class="swatch" style="background:#F6F7F9" title="Papier #F6F7F9"></span>
+      <span class="swatch" style="background:#1B7A4B" title="Positiv #1B7A4B"></span>
+      <span class="swatch" style="background:#96610D" title="Warnung #96610D"></span>
+      <span class="swatch" style="background:#C13A3A" title="Negativ #C13A3A"></span>
+    </div>
+    <span>Vereinsblau <span class="mono">#2D5BE3</span></span>
+    <span>Hanken Grotesk (UI) · IBM Plex Mono (Werte) — hier: System-Fallback</span>
+    <span>Interaktiv: Theme-Umschalter, Waveform, Tempo/Countdown, Filter, Aufgaben</span>
+  </div>
+
+  <!-- ================= SCREEN 1: TRAINER-DASHBOARD ================= -->
+  <section class="exhibit" id="screen-1">
+    <div class="exhibit-cap">
+      <span class="cap-num">01</span>
+      <div>
+        <h2>Trainer-Dashboard — „Heute"</h2>
+        <p>Der Arbeitsbeginn der Trainerin: heutige Termine mit Rückmeldungen, Anwesenheits-Trend,
+        Küren-Schnellzugriff und offene Aufgaben — eine Ansicht statt sechs Menüpunkte.</p>
+      </div>
+    </div>
+    <div class="exhibit-scroll">
+    <div class="window">
+      <div class="window-chrome">
+        <div class="traffic"><span></span><span></span><span></span></div>
+        <div class="url-pill">portal.rollsportmanager.de/training/heute</div>
+        <div class="chrome-spacer"></div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          <div class="club">
+            <div class="club-mark">BW</div>
+            <div>
+              <div class="club-name">RSV Blau-Weiß Neckarsulm</div>
+              <div class="club-sub">Workspace Training</div>
+            </div>
+          </div>
+          <button class="cmdk"><svg class="ic sm"><use href="#i-search"/></svg>Suchen &amp; Befehle<kbd>⌘K</kbd></button>
+          <nav class="nav" aria-label="Hauptnavigation">
+            <a href="#screen-1" class="on"><svg class="ic"><use href="#i-today"/></svg>Heute</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-cal"/></svg>Kalender</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-users"/></svg>Teams</a>
+            <a href="#screen-2"><svg class="ic"><use href="#i-music"/></svg>Küren</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-trophy"/></svg>Wettkampf</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-chat"/></svg>Nachrichten<span class="count">3</span></a>
+          </nav>
+          <div class="sidebar-foot">
+            <nav class="nav">
+              <a href="#screen-1"><svg class="ic"><use href="#i-guest"/></svg>Gast-Zugänge</a>
+              <a href="#screen-1"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a>
+            </nav>
+            <div class="user">
+              <div class="avatar acc">KM</div>
+              <div>
+                <div class="user-name">Katrin Möller</div>
+                <div class="user-role">Trainerin · Nachwuchs A</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <h1>Heute</h1>
+            <span class="date-chip">Donnerstag, 9. Juli 2026</span>
+            <div class="topbar-right">
+              <button class="icon-btn" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg></button>
+              <button class="btn primary"><svg class="ic sm"><use href="#i-plus"/></svg>Termin anlegen</button>
+            </div>
+          </div>
+          <div class="content">
+            <div class="hero">
+              <h2>Guten Morgen, Katrin</h2>
+              <p>3 Termine heute · 2 Aufgaben fällig diese Woche · 5 unbeantwortete Rückmeldungen</p>
+            </div>
+            <div class="cols">
+              <div class="stack">
+                <!-- Heutige Termine -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Heutige Termine</h3>
+                    <span class="hint">Rollsporthalle Ballei</span>
+                    <div class="right"><a class="link" href="#screen-1">Woche öffnen<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="termin-row">
+                    <div class="t-time"><span class="start">16:00</span><span class="end">bis 17:30</span></div>
+                    <div class="t-rail"></div>
+                    <div class="t-body">
+                      <div class="t-title">Training · Nachwuchs A</div>
+                      <div class="t-meta"><svg class="ic sm"><use href="#i-pin"/></svg>Rollsporthalle Ballei · Feld 1</div>
+                      <div class="t-chips">
+                        <span class="chip pos">14 Zusagen</span>
+                        <span class="chip neg">2 Absagen</span>
+                        <span class="chip warn">3 offen</span>
+                      </div>
+                    </div>
+                    <div class="t-actions">
+                      <button class="btn ghost sm">Anwesenheit starten</button>
+                      <svg class="ic" style="color:var(--text-3)"><use href="#i-chev"/></svg>
+                    </div>
+                  </div>
+                  <div class="termin-row">
+                    <div class="t-time"><span class="start">17:45</span><span class="end">bis 19:15</span></div>
+                    <div class="t-rail"></div>
+                    <div class="t-body">
+                      <div class="t-title">Kür-Training · Meisterklasse</div>
+                      <div class="t-meta"><svg class="ic sm"><use href="#i-pin"/></svg>Rollsporthalle Ballei · Feld 1</div>
+                      <div class="t-chips">
+                        <span class="chip pos">8 Zusagen</span>
+                        <span class="chip neg">1 Absage</span>
+                        <span class="chip warn">2 offen</span>
+                        <span class="chip acc">3 Küren geplant</span>
+                      </div>
+                    </div>
+                    <div class="t-actions">
+                      <button class="btn ghost sm">Kür-Player</button>
+                      <svg class="ic" style="color:var(--text-3)"><use href="#i-chev"/></svg>
+                    </div>
+                  </div>
+                  <div class="termin-row">
+                    <div class="t-time"><span class="start">19:30</span><span class="end">bis 21:00</span></div>
+                    <div class="t-rail muted"></div>
+                    <div class="t-body">
+                      <div class="t-title">Lauftreff · Erwachsene</div>
+                      <div class="t-meta"><svg class="ic sm"><use href="#i-pin"/></svg>Freigelände Sulmpark · bei Regen: Halle</div>
+                      <div class="t-chips">
+                        <span class="chip pos">11 Zusagen</span>
+                        <span class="chip plain">Vertretung: J. Brändle</span>
+                      </div>
+                    </div>
+                    <div class="t-actions">
+                      <svg class="ic" style="color:var(--text-3)"><use href="#i-chev"/></svg>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Anwesenheit -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Anwesenheit · Nachwuchs A</h3>
+                    <span class="hint">letzte 8 Einheiten</span>
+                    <div class="right"><a class="link" href="#screen-1">Auswertung<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="card-body">
+                    <div class="att-grid">
+                      <div class="att-kpi">
+                        <div class="num">91&thinsp;%</div>
+                        <div class="lbl">Ø Anwesenheit im Juli</div>
+                      </div>
+                      <div class="att-bars" role="img" aria-label="Anwesenheit der letzten acht Einheiten zwischen 86 und 95 Prozent">
+                        <div class="att-bar"><i style="height:88%"></i><b>88</b></div>
+                        <div class="att-bar"><i style="height:94%"></i><b>94</b></div>
+                        <div class="att-bar"><i style="height:90%"></i><b>90</b></div>
+                        <div class="att-bar"><i style="height:93%"></i><b>93</b></div>
+                        <div class="att-bar"><i style="height:86%"></i><b>86</b></div>
+                        <div class="att-bar hi"><i style="height:95%"></i><b>95</b></div>
+                        <div class="att-bar"><i style="height:92%"></i><b>92</b></div>
+                        <div class="att-bar"><i style="height:89%"></i><b>89</b></div>
+                      </div>
+                    </div>
+                    <div class="att-note">
+                      <svg class="ic sm"><use href="#i-warnt"/></svg>
+                      3 Mitglieder haben für heute noch nicht geantwortet — <a href="#screen-1">Erinnerung senden</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stack">
+                <!-- Küren-Schnellzugriff -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Küren</h3>
+                    <span class="hint">zuletzt geöffnet</span>
+                    <div class="right"><a class="link" href="#screen-2">Alle<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="kuer-row">
+                    <button class="playbtn" aria-label="Carmen — Kurzkür abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                    <div class="k-body">
+                      <div class="k-title">Carmen — Kurzkür</div>
+                      <div class="k-meta">Lena Baumgärtner · <span class="mono">2:31</span></div>
+                    </div>
+                    <div class="wave mini" data-bars="40" data-progress="0" data-seed="3"></div>
+                  </div>
+                  <div class="kuer-row">
+                    <button class="playbtn" aria-label="Moonlight Tango — Langkür abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                    <div class="k-body">
+                      <div class="k-title">Moonlight Tango — Langkür</div>
+                      <div class="k-meta">Mia Schröder · <span class="mono">3:42</span></div>
+                    </div>
+                    <div class="wave mini" data-bars="40" data-progress="0" data-seed="7"></div>
+                  </div>
+                  <div class="kuer-row">
+                    <button class="playbtn" aria-label="Vivaldi — Frühling abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                    <div class="k-body">
+                      <div class="k-title">Vivaldi — Frühling</div>
+                      <div class="k-meta">Emilia Yüksel · <span class="mono">2:12</span></div>
+                    </div>
+                    <div class="wave mini" data-bars="40" data-progress="0" data-seed="12"></div>
+                  </div>
+                </div>
+
+                <!-- Offene Aufgaben -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Offene Aufgaben</h3>
+                    <div class="right"><span class="chip plain">4</span></div>
+                  </div>
+                  <label class="task">
+                    <input type="checkbox">
+                    <span class="box"><svg class="ic sm"><use href="#i-check"/></svg></span>
+                    <span class="task-body">
+                      <span class="task-title">Meldeliste Bezirksmeisterschaft abschicken</span>
+                      <span class="task-meta"><span class="chip warn">Fällig 15. Juli</span></span>
+                    </span>
+                  </label>
+                  <label class="task">
+                    <input type="checkbox">
+                    <span class="box"><svg class="ic sm"><use href="#i-check"/></svg></span>
+                    <span class="task-body">
+                      <span class="task-title">Anwesenheit vom 07.07. bestätigen</span>
+                      <span class="task-meta"><span class="chip plain">Nachwuchs A</span></span>
+                    </span>
+                  </label>
+                  <label class="task">
+                    <input type="checkbox">
+                    <span class="box"><svg class="ic sm"><use href="#i-check"/></svg></span>
+                    <span class="task-body">
+                      <span class="task-title">Kürmusik für Emilia hochladen</span>
+                      <span class="task-meta"><span class="chip acc">Küren</span></span>
+                    </span>
+                  </label>
+                  <label class="task">
+                    <input type="checkbox">
+                    <span class="box"><svg class="ic sm"><use href="#i-check"/></svg></span>
+                    <span class="task-body">
+                      <span class="task-title">Gast-Zugang für Physio-Workshop verlängern</span>
+                      <span class="task-meta"><span class="chip neg">Läuft in 3 Tagen ab</span></span>
+                    </span>
+                  </label>
+                </div>
+
+                <!-- Nächster Wettkampf -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Nächster Wettkampf</h3>
+                    <div class="right"><a class="link" href="#screen-1">Öffnen<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="card-body">
+                    <div class="comp-when">
+                      <span class="comp-count">17 Tage</span>
+                      <span class="comp-date">So., 26. Juli · Ludwigsburg</span>
+                    </div>
+                    <p style="font-size:13px; color:var(--text-2); margin-top:6px;">Bezirksmeisterschaft Baden-Württemberg · 9 Meldungen</p>
+                    <div class="progress"><i style="width:67%"></i></div>
+                    <div class="prog-lbl"><span>Checkliste</span><span class="mono">6 / 9 erledigt</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ================= SCREEN 2: KÜR-DETAIL ================= -->
+  <section class="exhibit" id="screen-2">
+    <div class="exhibit-cap">
+      <span class="cap-num">02</span>
+      <div>
+        <h2>Kür-Detail mit Trainings-Player</h2>
+        <p>Das Signature-Element des Produkts: Waveform mit A-B-Loop und Markern, Tempo-Steuerung,
+        Countdown — dazu Längen-Check gegen das Kategorie-Limit, Bewertungen und Notizen.
+        Die Waveform ist klickbar.</p>
+      </div>
+    </div>
+    <div class="exhibit-scroll">
+    <div class="window">
+      <div class="window-chrome">
+        <div class="traffic"><span></span><span></span><span></span></div>
+        <div class="url-pill">portal.rollsportmanager.de/kueren/carmen-kurzkuer-2026</div>
+        <div class="chrome-spacer"></div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          <div class="club">
+            <div class="club-mark">BW</div>
+            <div>
+              <div class="club-name">RSV Blau-Weiß Neckarsulm</div>
+              <div class="club-sub">Workspace Training</div>
+            </div>
+          </div>
+          <button class="cmdk"><svg class="ic sm"><use href="#i-search"/></svg>Suchen &amp; Befehle<kbd>⌘K</kbd></button>
+          <nav class="nav" aria-label="Hauptnavigation">
+            <a href="#screen-1"><svg class="ic"><use href="#i-today"/></svg>Heute</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-cal"/></svg>Kalender</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-users"/></svg>Teams</a>
+            <a href="#screen-2" class="on"><svg class="ic"><use href="#i-music"/></svg>Küren</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-trophy"/></svg>Wettkampf</a>
+            <a href="#screen-1"><svg class="ic"><use href="#i-chat"/></svg>Nachrichten<span class="count">3</span></a>
+          </nav>
+          <div class="sidebar-foot">
+            <nav class="nav">
+              <a href="#screen-1"><svg class="ic"><use href="#i-guest"/></svg>Gast-Zugänge</a>
+              <a href="#screen-1"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a>
+            </nav>
+            <div class="user">
+              <div class="avatar acc">KM</div>
+              <div>
+                <div class="user-name">Katrin Möller</div>
+                <div class="user-role">Trainerin · Nachwuchs A</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <div class="crumbs">
+              <a href="#screen-2">Küren</a><span class="sep">/</span>
+              <a href="#screen-2">Lena Baumgärtner</a><span class="sep">/</span>
+              <span class="here">Carmen — Kurzkür 2026</span>
+            </div>
+            <div class="topbar-right">
+              <button class="btn ghost"><svg class="ic sm"><use href="#i-star"/></svg>Bewertung</button>
+              <button class="btn ghost"><svg class="ic sm"><use href="#i-edit"/></svg>Bearbeiten</button>
+              <button class="icon-btn" aria-label="Weitere Aktionen"><svg class="ic"><use href="#i-dots"/></svg></button>
+            </div>
+          </div>
+          <div class="content">
+            <div class="kuer-head">
+              <div class="titles">
+                <h2>Carmen — Kurzkür 2026 <span class="chip warn">In Arbeit</span></h2>
+                <div class="kuer-sub">
+                  <span>Lena Baumgärtner</span><span class="dot">·</span>
+                  <span>Jugendklasse A · Kurzkür</span><span class="dot">·</span>
+                  <span>Musik: G. Bizet, Arr. R. Petit</span><span class="dot">·</span>
+                  <span class="mono" style="font-size:12.5px">2:31,0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Player -->
+            <div class="card player">
+              <div class="card-body">
+                <div class="wave-wrap" id="mainWaveWrap" title="Zum Springen klicken">
+                  <div class="wave" id="mainWave" data-bars="132" data-progress="0.311" data-seed="5"
+                       data-loop-a="0.252" data-loop-b="0.424" data-duration="151"
+                       role="img" aria-label="Waveform der Kürmusik, Position 47 Sekunden von 151, Loop von 0:38 bis 1:04"></div>
+                  <div class="time-rail" aria-hidden="true">
+                    <span>0:00</span><span>0:30</span><span>1:00</span><span>1:30</span><span>2:00</span><span>2:31</span>
+                  </div>
+                </div>
+                <div class="transport">
+                  <div class="t-group">
+                    <button class="skip" aria-label="5 Sekunden zurück"><svg class="ic"><use href="#i-back5"/></svg></button>
+                    <button class="playbtn big" id="playToggle" aria-label="Abspielen"><svg class="ic"><use href="#i-play"/></svg></button>
+                    <button class="skip" aria-label="5 Sekunden vor"><svg class="ic"><use href="#i-fwd5"/></svg></button>
+                    <span class="timecode"><span id="curTime">0:47,3</span> <small>/ 2:31,0</small></span>
+                  </div>
+                  <div class="ctl">
+                    <span class="ctl-lbl">Tempo</span>
+                    <div class="seg" role="group" aria-label="Wiedergabe-Tempo">
+                      <button>0,70×</button>
+                      <button class="on">0,85×</button>
+                      <button>1,00×</button>
+                      <button>1,15×</button>
+                    </div>
+                  </div>
+                  <div class="ctl">
+                    <span class="ctl-lbl">A–B-Loop</span>
+                    <div class="loop-pills">
+                      <span class="loop-pill"><b>A</b>0:38,0</span>
+                      <span class="loop-pill"><b>B</b>1:04,0</span>
+                      <button class="loop-toggle on" id="loopToggle" aria-pressed="true">
+                        <svg class="ic sm"><use href="#i-loop"/></svg>Loop aktiv
+                      </button>
+                    </div>
+                  </div>
+                  <div class="ctl">
+                    <span class="ctl-lbl">Countdown</span>
+                    <div class="seg" role="group" aria-label="Countdown vor Wiedergabe">
+                      <button>0&thinsp;s</button>
+                      <button>3&thinsp;s</button>
+                      <button class="on">5&thinsp;s</button>
+                      <button>8&thinsp;s</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="cols">
+              <div class="stack">
+                <!-- Marker -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Elemente &amp; Marker</h3>
+                    <span class="hint">6 Marker</span>
+                    <div class="right"><button class="btn ghost sm"><svg class="ic sm"><use href="#i-plus"/></svg>Marker</button></div>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">0:12</span>
+                    <div class="m-body">
+                      <div class="m-title">Eröffnung</div>
+                      <div class="m-note">Blickkontakt zu den Preisrichtern, Haltung bis Einsatz</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 0:12 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">0:38</span>
+                    <div class="m-body">
+                      <div class="m-title">Doppel-Rittberger <span class="chip acc" style="margin-left:6px">im Loop</span></div>
+                      <div class="m-note">Anlauf über Rückwärtsbogen — Absprung aktuell zu früh</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 0:38 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">0:52</span>
+                    <div class="m-body">
+                      <div class="m-title">Kombination Flip + Toeloop</div>
+                      <div class="m-note">Landung stabilisieren, Arme ruhiger führen</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 0:52 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">1:18</span>
+                    <div class="m-body">
+                      <div class="m-title">Sitzpirouette</div>
+                      <div class="m-note">Mindestens 6 Umdrehungen, Abschluss auf Akzent</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 1:18 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">1:47</span>
+                    <div class="m-body">
+                      <div class="m-title">Schrittfolge diagonal</div>
+                      <div class="m-note">Tempo halten — Ausdruck! Einsatz künftig bei 1:44 üben</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 1:47 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                  <div class="marker-row">
+                    <span class="m-time">2:05</span>
+                    <div class="m-body">
+                      <div class="m-title">Abschlusspirouette &amp; Endpose</div>
+                      <div class="m-note">Endpose exakt auf Schlussakkord</div>
+                    </div>
+                    <button class="playbtn m-play" style="width:28px;height:28px" aria-label="Ab 2:05 abspielen"><svg class="ic sm"><use href="#i-play"/></svg></button>
+                  </div>
+                </div>
+
+                <!-- Notizen -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Notizen</h3>
+                    <div class="right"><button class="btn ghost sm"><svg class="ic sm"><use href="#i-plus"/></svg>Notiz</button></div>
+                  </div>
+                  <div class="card-body" style="padding-top:6px">
+                    <div class="note-item">
+                      <p>Übergang in die Schrittfolge kommt zu spät — Einsatz bei 1:44 statt 1:47 üben.
+                      Loop dafür auf 1:38–1:52 setzen.</p>
+                      <div class="note-meta">Katrin Möller · 05.07.2026</div>
+                    </div>
+                    <div class="note-item">
+                      <p>Neue Version der Kürmusik (v3) mit gekürztem Intro hochgeladen — alte Marker geprüft und übernommen.</p>
+                      <div class="note-meta">System · 01.07.2026</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stack">
+                <!-- Musik & Limit -->
+                <div class="card">
+                  <div class="card-head"><h3>Musik &amp; Limit</h3><div class="right"><span class="chip plain">v3</span></div></div>
+                  <div class="card-body" style="padding-top:8px">
+                    <div class="fact-list">
+                      <div class="fact"><span class="k">Titel</span><span class="v">Carmen-Suite</span></div>
+                      <div class="fact"><span class="k">Datei</span><span class="v mono">carmen_kurz_v3.mp3</span></div>
+                      <div class="fact"><span class="k">Länge</span><span class="v mono">2:31,0</span></div>
+                      <div class="fact"><span class="k">Limit Jugendklasse A</span><span class="v mono">max. 2:40</span></div>
+                    </div>
+                    <div class="progress pos" style="margin-top:14px"><i style="width:94%"></i></div>
+                    <div class="prog-lbl">
+                      <span style="color:var(--pos); font-weight:650; display:inline-flex; align-items:center; gap:5px">
+                        <svg class="ic sm"><use href="#i-check"/></svg>Innerhalb des Limits
+                      </span>
+                      <span class="mono">9,0&thinsp;s Reserve</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bewertungen -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Bewertung</h3>
+                    <span class="hint">Skala 1–5</span>
+                    <div class="right"><a class="link" href="#screen-2">Verlauf<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="card-body" style="padding-top:10px">
+                    <div class="score-row"><span class="k">Technik</span><div class="bar"><i style="width:84%"></i></div><span class="v">4,2</span></div>
+                    <div class="score-row"><span class="k">Ausdruck</span><div class="bar"><i style="width:76%"></i></div><span class="v">3,8</span></div>
+                    <div class="score-row"><span class="k">Schwierigkeit</span><div class="bar"><i style="width:80%"></i></div><span class="v">4,0</span></div>
+                    <p style="font-size:12px; color:var(--text-3); margin-top:10px">Zuletzt bewertet am 02.07.2026 von Katrin Möller</p>
+                  </div>
+                </div>
+
+                <!-- Status -->
+                <div class="card">
+                  <div class="card-head"><h3>Wettkampf-Zuordnung</h3></div>
+                  <div class="card-body" style="padding-top:8px">
+                    <div class="fact-list">
+                      <div class="fact"><span class="k">Wettkampf</span><span class="v">Bezirksmeisterschaft BW</span></div>
+                      <div class="fact"><span class="k">Datum</span><span class="v mono">26.07.2026</span></div>
+                      <div class="fact"><span class="k">Startgruppe</span><span class="v">Jugendklasse A · 2. Gruppe</span></div>
+                      <div class="fact"><span class="k">Meldung</span><span class="v" style="color:var(--pos)">Bestätigt</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ================= SCREEN 3: ADMIN-FINANZEN ================= -->
+  <section class="exhibit" id="screen-3">
+    <div class="exhibit-cap">
+      <span class="cap-num">03</span>
+      <div>
+        <h2>Verwaltung — Beiträge &amp; Finanzen</h2>
+        <p>Der Kassenwart-Arbeitsplatz: KPI-Zeile, Beitrags-Pipeline, offene Posten mit Mahnstufen-Badges
+        und filterbarer Tabelle, Kassenbuch mit fortlaufendem Saldo, Mahn-Automatik. Ein Workflow statt elf Seiten.</p>
+      </div>
+    </div>
+    <div class="exhibit-scroll">
+    <div class="window">
+      <div class="window-chrome">
+        <div class="traffic"><span></span><span></span><span></span></div>
+        <div class="url-pill">portal.rollsportmanager.de/verwaltung/finanzen</div>
+        <div class="chrome-spacer"></div>
+      </div>
+      <div class="app">
+        <aside class="sidebar">
+          <div class="club">
+            <div class="club-mark">BW</div>
+            <div>
+              <div class="club-name">RSV Blau-Weiß Neckarsulm</div>
+              <div class="club-sub">Workspace Verwaltung</div>
+            </div>
+          </div>
+          <button class="cmdk"><svg class="ic sm"><use href="#i-search"/></svg>Suchen &amp; Befehle<kbd>⌘K</kbd></button>
+          <nav class="nav" aria-label="Hauptnavigation">
+            <a href="#screen-3"><svg class="ic"><use href="#i-today"/></svg>Übersicht</a>
+            <a href="#screen-3"><svg class="ic"><use href="#i-users"/></svg>Mitglieder</a>
+            <a href="#screen-3" class="on"><svg class="ic"><use href="#i-euro"/></svg>Beiträge &amp; Finanzen</a>
+            <a href="#screen-3"><svg class="ic"><use href="#i-doc"/></svg>Berichte</a>
+            <a href="#screen-3"><svg class="ic"><use href="#i-chat"/></svg>Kommunikation</a>
+          </nav>
+          <div class="sidebar-foot">
+            <nav class="nav">
+              <a href="#screen-3"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a>
+            </nav>
+            <div class="user">
+              <div class="avatar">JS</div>
+              <div>
+                <div class="user-name">Jürgen Sailer</div>
+                <div class="user-role">Kassenwart</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <div class="main">
+          <div class="topbar">
+            <h1>Beiträge &amp; Finanzen</h1>
+            <button class="btn ghost sm">Juli 2026<svg class="ic sm"><use href="#i-chev"/></svg></button>
+            <div class="topbar-right">
+              <button class="btn ghost"><svg class="ic sm"><use href="#i-down"/></svg>Export</button>
+              <button class="btn primary">SEPA-Lauf vorbereiten</button>
+            </div>
+          </div>
+          <div class="content">
+            <!-- KPI -->
+            <div class="kpis">
+              <div class="card kpi">
+                <div class="lbl">Offene Beiträge</div>
+                <div class="num">2.840,00&thinsp;€</div>
+                <div class="sub">23 offene Rechnungen</div>
+              </div>
+              <div class="card kpi alert">
+                <div class="lbl">Überfällig</div>
+                <div class="num">675,00&thinsp;€</div>
+                <div class="sub">7 Rechnungen · <span class="neg-t">3 gemahnt</span></div>
+              </div>
+              <div class="card kpi">
+                <div class="lbl">Eingegangen im Juli</div>
+                <div class="num">4.310,00&thinsp;€</div>
+                <div class="sub"><span class="pos-t">+12&thinsp;%</span> gegenüber Juni</div>
+              </div>
+              <div class="card kpi">
+                <div class="lbl">Nächster SEPA-Einzug</div>
+                <div class="num">01.08.2026</div>
+                <div class="sub">148 aktive Mandate · Pre-Notification am 25.07.</div>
+              </div>
+            </div>
+
+            <div class="cols">
+              <div class="stack">
+                <!-- Offene Posten -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Offene Posten</h3>
+                    <div class="right">
+                      <div class="filters" id="opFilters" role="group" aria-label="Nach Mahnstufe filtern">
+                        <button class="f-chip on" data-filter="alle">Alle</button>
+                        <button class="f-chip" data-filter="offen">Offen</button>
+                        <button class="f-chip" data-filter="erinnert">Erinnert</button>
+                        <button class="f-chip" data-filter="gemahnt">Gemahnt</button>
+                      </div>
+                    </div>
+                  </div>
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Mitglied</th>
+                        <th>Rechnung</th>
+                        <th class="num">Betrag</th>
+                        <th>Fällig</th>
+                        <th>Mahnstufe</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="opBody">
+                      <tr data-status="erinnert">
+                        <td><div class="member-cell"><span class="avatar">FB</span><span class="strong">Familie Baumgärtner</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0341</td>
+                        <td class="num strong">45,00&thinsp;€</td>
+                        <td>seit 12 Tagen</td>
+                        <td><span class="chip warn">Erinnerung</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen für Familie Baumgärtner"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                      <tr data-status="gemahnt">
+                        <td><div class="member-cell"><span class="avatar">PG</span><span class="strong">Größle, Paul</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0322</td>
+                        <td class="num strong">90,00&thinsp;€</td>
+                        <td>seit 21 Tagen</td>
+                        <td><span class="chip neg">1. Mahnung</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                      <tr data-status="gemahnt">
+                        <td><div class="member-cell"><span class="avatar">DÖ</span><span class="strong">Öztürk, Deniz</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0334</td>
+                        <td class="num strong">75,00&thinsp;€</td>
+                        <td>seit 28 Tagen</td>
+                        <td><span class="chip neg">1. Mahnung</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                      <tr data-status="gemahnt">
+                        <td><div class="member-cell"><span class="avatar">EY</span><span class="strong">Yüksel, Emine</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0298</td>
+                        <td class="num strong">120,00&thinsp;€</td>
+                        <td>seit 34 Tagen</td>
+                        <td><span class="chip neg">2. Mahnung</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                      <tr data-status="offen">
+                        <td><div class="member-cell"><span class="avatar">MS</span><span class="strong">Schröder, Mia</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0350</td>
+                        <td class="num strong">45,00&thinsp;€</td>
+                        <td>seit 4 Tagen</td>
+                        <td><span class="chip">Offen</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                      <tr data-status="offen">
+                        <td><div class="member-cell"><span class="avatar">KN</span><span class="strong">Nowak, Katarzyna</span></div></td>
+                        <td class="mono" style="font-size:12px">RE-2026-0347</td>
+                        <td class="num strong">65,00&thinsp;€</td>
+                        <td>seit 6 Tagen</td>
+                        <td><span class="chip">Offen</span></td>
+                        <td class="row-action"><button class="icon-btn sm" aria-label="Aktionen"><svg class="ic sm"><use href="#i-dots"/></svg></button></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="card-foot">
+                    <span>23 offene Posten · Summe <span class="sum">2.840,00&thinsp;€</span></span>
+                    <div class="right">
+                      <button class="btn ghost sm"><svg class="ic sm"><use href="#i-send"/></svg>Sammel-Erinnerung senden</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kassenbuch -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Kassenbuch</h3>
+                    <span class="hint">letzte Buchungen</span>
+                    <div class="right"><a class="link" href="#screen-3">Vollständig öffnen<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>Datum</th>
+                        <th>Beleg</th>
+                        <th>Buchungstext</th>
+                        <th>Kategorie</th>
+                        <th class="num">Betrag</th>
+                        <th class="num">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="mono" style="font-size:12px">08.07.</td>
+                        <td class="mono" style="font-size:12px">KB-0512</td>
+                        <td class="strong trunc">Beitragseinzug Juli · SEPA</td>
+                        <td>Beiträge</td>
+                        <td class="num pos-t">+1.980,00&thinsp;€</td>
+                        <td class="num">12.445,80&thinsp;€</td>
+                      </tr>
+                      <tr>
+                        <td class="mono" style="font-size:12px">07.07.</td>
+                        <td class="mono" style="font-size:12px">KB-0511</td>
+                        <td class="strong trunc">Hallenmiete Ballei · Juli</td>
+                        <td>Miete</td>
+                        <td class="num neg-t">−680,00&thinsp;€</td>
+                        <td class="num">10.465,80&thinsp;€</td>
+                      </tr>
+                      <tr>
+                        <td class="mono" style="font-size:12px">05.07.</td>
+                        <td class="mono" style="font-size:12px">KB-0510</td>
+                        <td class="strong trunc">Startgelder Bezirksmeisterschaft</td>
+                        <td>Wettkampf</td>
+                        <td class="num neg-t">−135,00&thinsp;€</td>
+                        <td class="num">11.145,80&thinsp;€</td>
+                      </tr>
+                      <tr>
+                        <td class="mono" style="font-size:12px">03.07.</td>
+                        <td class="mono" style="font-size:12px">KB-0509</td>
+                        <td class="strong trunc">Zuschuss Jugendförderung · Stadt</td>
+                        <td>Zuschüsse</td>
+                        <td class="num pos-t">+500,00&thinsp;€</td>
+                        <td class="num">11.280,80&thinsp;€</td>
+                      </tr>
+                      <tr>
+                        <td class="mono" style="font-size:12px">01.07.</td>
+                        <td class="mono" style="font-size:12px">KB-0508</td>
+                        <td class="strong trunc">GEMA · Lizenzen Kürmusik</td>
+                        <td>Lizenzen</td>
+                        <td class="num neg-t">−86,40&thinsp;€</td>
+                        <td class="num">10.780,80&thinsp;€</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="stack">
+                <!-- Pipeline -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Beitrags-Pipeline · Juli</h3>
+                  </div>
+                  <div class="card-body">
+                    <div class="pipe" role="img" aria-label="171 Rechnungen: 148 bezahlt, 16 offen, 4 erinnert, 3 gemahnt">
+                      <i class="p1" style="width:86.5%"></i>
+                      <i class="p2" style="width:9.4%"></i>
+                      <i class="p3" style="width:2.3%; min-width:8px"></i>
+                      <i class="p4" style="width:1.8%; min-width:8px"></i>
+                    </div>
+                    <div class="pipe-legend">
+                      <div class="pl-row"><span class="pl-dot" style="background:var(--pos)"></span><span class="n">Bezahlt</span><span class="c">148</span><span class="s">6.660,00&thinsp;€</span></div>
+                      <div class="pl-row"><span class="pl-dot" style="background:var(--accent-line)"></span><span class="n">Offen</span><span class="c">16</span><span class="s">2.165,00&thinsp;€</span></div>
+                      <div class="pl-row"><span class="pl-dot" style="background:var(--warn)"></span><span class="n">Erinnert</span><span class="c">4</span><span class="s">390,00&thinsp;€</span></div>
+                      <div class="pl-row"><span class="pl-dot" style="background:var(--neg)"></span><span class="n">Gemahnt</span><span class="c">3</span><span class="s">285,00&thinsp;€</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mahn-Automatik -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Mahn-Automatik</h3>
+                    <div class="right"><span class="chip pos">Aktiv</span><span class="switch" role="switch" aria-checked="true" aria-label="Mahn-Automatik aktiv"></span></div>
+                  </div>
+                  <div class="card-body" style="padding-top:8px">
+                    <div class="auto-rule">
+                      <span class="step">+7 Tage</span>
+                      <span class="d"><b>Zahlungserinnerung</b> per E-Mail und Push, gebührenfrei</span>
+                    </div>
+                    <div class="auto-rule">
+                      <span class="step">+21 Tage</span>
+                      <span class="d"><b>1. Mahnung</b> mit Gebühr <span class="mono" style="font-size:12px">5,00&thinsp;€</span>, PDF im Anhang</span>
+                    </div>
+                    <div class="auto-rule">
+                      <span class="step">+35 Tage</span>
+                      <span class="d"><b>2. Mahnung</b> mit Gebühr <span class="mono" style="font-size:12px">10,00&thinsp;€</span>, Vorstand in Kopie</span>
+                    </div>
+                    <div class="auto-rule">
+                      <span class="step">+49 Tage</span>
+                      <span class="d"><b>Übergabe-Vorschlag</b> — nur mit manueller Freigabe</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Bankabgleich -->
+                <div class="card">
+                  <div class="card-head">
+                    <h3>Bankabgleich</h3>
+                    <div class="right"><a class="link" href="#screen-3">Öffnen<svg class="ic sm"><use href="#i-chev"/></svg></a></div>
+                  </div>
+                  <div class="card-body" style="padding-top:8px">
+                    <div class="fact-list">
+                      <div class="fact"><span class="k">Letzter Import</span><span class="v mono">08.07., 06:00</span></div>
+                      <div class="fact"><span class="k">Automatisch zugeordnet</span><span class="v" style="color:var(--pos)">31 von 34</span></div>
+                      <div class="fact"><span class="k">Zu prüfen</span><span class="v" style="color:var(--warn)">3 Vorschläge</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <footer class="deck-footer">
+    <span>Konzept A · „Klar &amp; Professionell" · Tokens: Vereinsblau #2D5BE3 · Radius 6/10/14 · 4-px-Raster · Hairlines statt Schatten</span>
+    <span>Selbstenthaltendes Mockup ohne externe Ressourcen · Stand 09.07.2026</span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Theme ---------- */
+  var root = document.documentElement;
+  var toggle = document.getElementById("themeToggle");
+  var label = document.getElementById("themeLabel");
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+
+  function effectiveTheme() {
+    var forced = root.getAttribute("data-theme");
+    if (forced) return forced;
+    return mq.matches ? "dark" : "light";
+  }
+  function renderToggle() {
+    var dark = effectiveTheme() === "dark";
+    label.textContent = dark ? "Light Mode" : "Dark Mode";
+    toggle.querySelector("use").setAttribute("href", dark ? "#i-sun" : "#i-moon");
+  }
+  toggle.addEventListener("click", function () {
+    root.setAttribute("data-theme", effectiveTheme() === "dark" ? "light" : "dark");
+    renderToggle();
+  });
+  mq.addEventListener("change", renderToggle);
+  renderToggle();
+
+  /* ---------- Waveform-Renderer ---------- */
+  function barHeight(i, n, seed) {
+    var t = i / n;
+    var env = Math.min(1, t * 10) * (t > 0.93 ? (1 - t) * 12 : 1);
+    env = Math.max(0.14, Math.min(1, env));
+    var v = Math.abs(
+      Math.sin(i * 0.83 + seed) * 0.55 +
+      Math.sin(i * 0.31 + seed * 1.7) * 0.45 +
+      Math.sin(i * 0.11 + seed * 0.6) * 0.35
+    ) / 1.35;
+    return Math.max(0.07, Math.min(1, (0.28 + 0.72 * v) * env));
+  }
+
+  function paintWave(el) {
+    var n = parseInt(el.dataset.bars, 10) || 60;
+    var seed = parseFloat(el.dataset.seed) || 1;
+    var progress = parseFloat(el.dataset.progress) || 0;
+    var la = el.dataset.loopA ? parseFloat(el.dataset.loopA) : null;
+    var lb = el.dataset.loopB ? parseFloat(el.dataset.loopB) : null;
+
+    el.innerHTML = "";
+    for (var i = 0; i < n; i++) {
+      var bar = document.createElement("i");
+      bar.className = "bar";
+      var t = (i + 0.5) / n;
+      if (t <= progress) bar.classList.add("played");
+      if (la !== null && t >= la && t <= lb) bar.classList.add(t <= progress ? "inloop" : "x");
+      bar.style.height = (barHeight(i, n, seed) * 100).toFixed(1) + "%";
+      el.appendChild(bar);
+    }
+    if (la !== null) {
+      var region = document.createElement("div");
+      region.className = "loop-region";
+      region.style.left = (la * 100) + "%";
+      region.style.width = ((lb - la) * 100) + "%";
+      region.innerHTML = '<span class="tag a">A</span><span class="tag b">B</span>';
+      el.appendChild(region);
+    }
+    if (el.dataset.duration) {
+      var ph = document.createElement("div");
+      ph.className = "playhead";
+      ph.style.left = (progress * 100) + "%";
+      el.appendChild(ph);
+    }
+  }
+
+  var waves = document.querySelectorAll(".wave");
+  waves.forEach(paintWave);
+
+  /* ---------- Klickbare Haupt-Waveform ---------- */
+  var mainWave = document.getElementById("mainWave");
+  var curTime = document.getElementById("curTime");
+  if (mainWave && curTime) {
+    mainWave.parentElement.addEventListener("click", function (e) {
+      var rect = mainWave.getBoundingClientRect();
+      var ratio = (e.clientX - rect.left) / rect.width;
+      ratio = Math.max(0, Math.min(1, ratio));
+      var dur = parseFloat(mainWave.dataset.duration);
+      var s = ratio * dur;
+      var m = Math.floor(s / 60);
+      var sec = s - m * 60;
+      var secStr = (sec < 10 ? "0" : "") + sec.toFixed(1).replace(".", ",");
+      curTime.textContent = m + ":" + secStr;
+      mainWave.dataset.progress = ratio;
+      paintWave(mainWave);
+    });
+  }
+
+  /* ---------- Segmente (Tempo / Countdown) ---------- */
+  document.querySelectorAll(".seg").forEach(function (seg) {
+    seg.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        seg.querySelectorAll("button").forEach(function (b) { b.classList.remove("on"); });
+        btn.classList.add("on");
+      });
+    });
+  });
+
+  /* ---------- Loop-Toggle ---------- */
+  var loopToggle = document.getElementById("loopToggle");
+  if (loopToggle) {
+    loopToggle.addEventListener("click", function () {
+      var on = loopToggle.classList.toggle("on");
+      loopToggle.setAttribute("aria-pressed", on ? "true" : "false");
+      loopToggle.lastChild.textContent = on ? "Loop aktiv" : "Loop aus";
+      var region = mainWave.querySelector(".loop-region");
+      if (region) region.style.opacity = on ? "1" : "0.25";
+    });
+  }
+
+  /* ---------- Play/Pause (visuell) ---------- */
+  var playToggle = document.getElementById("playToggle");
+  if (playToggle) {
+    var playing = false;
+    playToggle.addEventListener("click", function () {
+      playing = !playing;
+      playToggle.setAttribute("aria-label", playing ? "Pausieren" : "Abspielen");
+      playToggle.innerHTML = playing
+        ? '<svg class="ic" viewBox="0 0 24 24" style="width:19px;height:19px"><path d="M8 5h3v14H8zM13.5 5h3v14h-3z" fill="currentColor" stroke="none"/></svg>'
+        : '<svg class="ic" style="width:19px;height:19px"><use href="#i-play"/></svg>';
+    });
+  }
+
+  /* ---------- Tabellen-Filter ---------- */
+  var filters = document.getElementById("opFilters");
+  var body = document.getElementById("opBody");
+  if (filters && body) {
+    filters.querySelectorAll(".f-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        filters.querySelectorAll(".f-chip").forEach(function (c) { c.classList.remove("on"); });
+        chip.classList.add("on");
+        var f = chip.dataset.filter;
+        body.querySelectorAll("tr").forEach(function (tr) {
+          tr.style.display = (f === "alle" || tr.dataset.status === f) ? "" : "none";
+        });
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>

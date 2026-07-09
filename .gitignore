@@ -1,0 +1,45 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Env & Secrets (nie im Repo — Konfiguration über Admin-UI)
+.env
+.env.*
+!.env.example
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode
+apps/ios/**/xcuserdata/
+apps/ios/**/*.xcodeproj
+apps/ios/**/DerivedData/
+apps/ios/**/build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Android
+apps/android/**/build/
+apps/android/.gradle/
+apps/android/local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Logs & Temp
+*.log
+.cache/
+coverage/

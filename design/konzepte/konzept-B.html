@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konzept B — Momentum · RollsportManager v2</title>
+<style>
+/* ============================================================
+   KONZEPT B — „MOMENTUM" · Sportlich & Dynamisch
+   RollsportManager v2 · Design-Wettbewerb
+   Produktions-Fonts: Barlow Condensed / Inter / IBM Plex Mono
+   (hier per System-Stack angenähert — keine externen Ressourcen)
+   ============================================================ */
+
+:root, :root[data-theme="light"]{
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Avenir Next Condensed", "Futura", "Arial Narrow", "Roboto Condensed", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --bg-page:#EEF0F4; --bg-card:#FFFFFF; --bg-raised:#F7F8FA; --bg-inset:#E9EBF0;
+  --line:#E2E5EB; --line-strong:#C9CFDA;
+  --text:#161A24; --text-2:#4A5264; --text-3:#79819A;
+
+  --flame:#F04E23; --flame-strong:#C93A10; --flame-soft:#FDEBE4;
+  --flame-grad:linear-gradient(135deg,#FF7A45,#E63317);
+  --violet:#6C4CF1; --violet-soft:#EFEBFE;
+  --ice:#0E8F84; --ice-soft:#E0F4F1;
+  --green:#178A50; --green-soft:#E2F4EA;
+  --amber:#9A6200; --amber-soft:#FBF0DA;
+  --red:#C81E3C; --red-soft:#FAE5EA;
+
+  --wave-rest:#C9CFDA;
+  --elev1:0 1px 2px rgb(16 20 33 / .06), 0 4px 12px rgb(16 20 33 / .06);
+  --elev2:0 2px 4px rgb(16 20 33 / .08), 0 12px 28px rgb(16 20 33 / .12);
+  --glow:0 6px 20px rgb(240 78 35 / .35);
+  --side-bg:linear-gradient(180deg,#12141D,#0C0E13);
+  color-scheme: light;
+}
+:root[data-theme="dark"]{
+  --bg-page:#0B0D12; --bg-card:#151823; --bg-raised:#1C202E; --bg-inset:#10131B;
+  --line:#252A39; --line-strong:#343B4F;
+  --text:#F2F4F8; --text-2:#AAB2C4; --text-3:#788098;
+
+  --flame:#FF6A3D; --flame-strong:#FF8A64; --flame-soft:#3A1D12;
+  --flame-grad:linear-gradient(135deg,#FF8A5C,#F2461F);
+  --violet:#9B8AFF; --violet-soft:#272045;
+  --ice:#2BD4C4; --ice-soft:#0F332E;
+  --green:#42D882; --green-soft:#0E2C1C;
+  --amber:#FFC24B; --amber-soft:#332405;
+  --red:#FF5C7A; --red-soft:#38121D;
+
+  --wave-rest:#343B4F;
+  --elev1:0 1px 2px rgb(0 0 0 / .3), 0 4px 14px rgb(0 0 0 / .3);
+  --elev2:0 2px 6px rgb(0 0 0 / .4), 0 14px 32px rgb(0 0 0 / .45);
+  --glow:0 6px 22px rgb(255 106 61 / .3);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg-page:#0B0D12; --bg-card:#151823; --bg-raised:#1C202E; --bg-inset:#10131B;
+    --line:#252A39; --line-strong:#343B4F;
+    --text:#F2F4F8; --text-2:#AAB2C4; --text-3:#788098;
+    --flame:#FF6A3D; --flame-strong:#FF8A64; --flame-soft:#3A1D12;
+    --flame-grad:linear-gradient(135deg,#FF8A5C,#F2461F);
+    --violet:#9B8AFF; --violet-soft:#272045;
+    --ice:#2BD4C4; --ice-soft:#0F332E;
+    --green:#42D882; --green-soft:#0E2C1C;
+    --amber:#FFC24B; --amber-soft:#332405;
+    --red:#FF5C7A; --red-soft:#38121D;
+    --wave-rest:#343B4F;
+    --elev1:0 1px 2px rgb(0 0 0 / .3), 0 4px 14px rgb(0 0 0 / .3);
+    --elev2:0 2px 6px rgb(0 0 0 / .4), 0 14px 32px rgb(0 0 0 / .45);
+    --glow:0 6px 22px rgb(255 106 61 / .3);
+    color-scheme: dark;
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-ui); font-size:15px; line-height:1.5;
+  background:var(--bg-page); color:var(--text);
+  -webkit-font-smoothing:antialiased; padding:32px 24px 60px;
+  transition:background .25s ease, color .25s ease;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- Intro & Bühne ---------- */
+.wrap{max-width:1360px;margin:0 auto}
+.intro{max-width:1360px;margin:0 auto 40px;padding:8px 4px}
+.intro-tag{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--flame-strong);background:var(--flame-soft);padding:5px 12px;border-radius:999px;margin-bottom:14px}
+.intro h1{font-family:var(--font-display);font-size:52px;line-height:1.05;font-weight:700;letter-spacing:-.01em}
+.intro h1 span{color:var(--text-3);font-weight:600}
+.intro p{max-width:760px;color:var(--text-2);margin-top:12px}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.sw{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text-2);background:var(--bg-card);border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 6px;box-shadow:var(--elev1)}
+.sw i{width:20px;height:20px;border-radius:50%;display:block}
+
+.stage{max-width:1360px;margin:0 auto 56px}
+.stage-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 4px 14px}
+.stage-num{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--flame-strong);background:var(--flame-soft);padding:4px 10px;border-radius:999px}
+.stage-head h2{font-family:var(--font-display);font-size:26px;font-weight:700}
+.stage-head p{color:var(--text-3);font-size:13.5px;flex-basis:100%;margin:2px 0 0}
+.frame{overflow-x:auto;border-radius:22px;box-shadow:var(--elev2)}
+
+/* ---------- App-Rahmen ---------- */
+.app{display:flex;min-width:1180px;background:var(--bg-page);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.side{width:238px;flex:none;background:var(--side-bg);color:#9AA2B8;display:flex;flex-direction:column;padding:20px 14px 16px;min-height:860px}
+.brand{display:flex;align-items:center;gap:11px;padding:2px 8px 20px}
+.brand-txt strong{display:block;color:#F2F4F8;font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.brand-txt span{font-size:11.5px;color:#788098}
+.side-label{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5A6278;padding:10px 12px 6px}
+.snav{display:flex;flex-direction:column;gap:2px}
+.snav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:11px;font-size:13.5px;font-weight:500;transition:background .15s ease,color .15s ease}
+.snav a:hover{background:rgb(255 255 255 / .05);color:#D8DCE8}
+.snav a.active{background:var(--flame-grad);color:#fff;font-weight:600;box-shadow:0 4px 14px rgb(240 78 35 / .35)}
+.snav .nbadge{margin-left:auto;background:rgb(255 255 255 / .14);color:#E8EBF3;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px}
+.snav a.active .nbadge{background:rgb(255 255 255 / .25);color:#fff}
+.side-bottom{margin-top:auto;display:flex;flex-direction:column;gap:2px;border-top:1px solid rgb(255 255 255 / .07);padding-top:10px}
+.suser{display:flex;align-items:center;gap:10px;padding:10px 12px 4px}
+.suser b{display:block;color:#E8EBF3;font-size:13px;font-weight:600}
+.suser span{font-size:11.5px;color:#788098}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--bg-page)}
+.topbar{display:flex;align-items:center;gap:18px;padding:13px 28px;background:var(--bg-card);border-bottom:1px solid var(--line)}
+.tb-title{font-size:16px;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+.tb-title .crumb{color:var(--text-3);font-weight:500}
+.tb-title .crumb:after{content:"›";margin:0 8px;color:var(--line-strong)}
+.search{flex:1;max-width:340px;margin-left:auto;display:flex;align-items:center;gap:9px;background:var(--bg-inset);border:1px solid transparent;border-radius:999px;padding:7px 14px;color:var(--text-3);font-size:13px;transition:border-color .15s ease}
+.search:hover{border-color:var(--line-strong)}
+.search kbd{margin-left:auto;font-family:var(--font-ui);font-size:11px;font-weight:600;background:var(--bg-card);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--text-3)}
+.iconbtn{position:relative;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--bg-card);color:var(--text-2);transition:all .15s ease}
+.iconbtn:hover{border-color:var(--line-strong);color:var(--text);transform:translateY(-1px)}
+.iconbtn .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--flame);border:2px solid var(--bg-card)}
+.content{padding:26px 28px 34px;display:flex;flex-direction:column;gap:20px}
+
+/* ---------- Avatare ---------- */
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:none;letter-spacing:.02em}
+.av-s{width:28px;height:28px;font-size:10.5px}
+.av-1{background:linear-gradient(135deg,#FF7A45,#E63317)}
+.av-2{background:linear-gradient(135deg,#8B7BFF,#5B3DE0)}
+.av-3{background:linear-gradient(135deg,#2BC5B4,#0E8F84)}
+.av-4{background:linear-gradient(135deg,#4E9BFF,#2456D8)}
+.av-5{background:linear-gradient(135deg,#F0B429,#DE7B12)}
+.av-6{background:linear-gradient(135deg,#E05299,#B02576)}
+
+/* ---------- Karten ---------- */
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--elev1);transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s cubic-bezier(.2,.8,.3,1)}
+.card.lift:hover{transform:translateY(-2px);box-shadow:var(--elev2)}
+.card-h{display:flex;align-items:center;gap:12px;padding:18px 20px 0}
+.card-h h3{font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+.card-h .sub{font-size:12.5px;color:var(--text-3)}
+.card-h .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.card-b{padding:16px 20px 20px}
+.linkmore{font-size:13px;font-weight:600;color:var(--flame-strong);display:inline-flex;align-items:center;gap:4px}
+.linkmore:hover{text-decoration:underline}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(120deg,#181B27,#101219 55%,#161925);border:1px solid #272C3C;color:#fff;padding:26px 30px;display:flex;align-items:center;gap:32px;box-shadow:var(--elev1)}
+.hero::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,rgb(255 255 255 / .035) 0 2px,transparent 2px 30px)}
+.hero::after{content:"";position:absolute;right:-70px;top:-140px;width:460px;height:460px;background:radial-gradient(closest-side,rgb(240 78 35 / .38),transparent 72%)}
+.hero > *{position:relative;z-index:1}
+.hero-date{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#FFB49A;margin-bottom:10px}
+.hero h2{font-family:var(--font-display);font-size:38px;font-weight:700;letter-spacing:-.01em;line-height:1.05}
+.hero .hero-sub{color:#B9C0D4;font-size:14px;margin-top:8px}
+.hero .hero-sub b{color:#fff;font-weight:600}
+.countdown{margin-left:auto;text-align:right;display:flex;align-items:center;gap:20px}
+.cd-num{font-family:var(--font-display);font-size:64px;font-weight:700;line-height:1;background:linear-gradient(135deg,#FF9A6E,#FF5A2A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cd-meta{text-align:left}
+.cd-meta b{display:block;font-size:14px;font-weight:700}
+.cd-meta span{font-size:12.5px;color:#B9C0D4}
+.cd-meta .btn{margin-top:10px}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.kpi{padding:18px 20px;cursor:pointer}
+.kpi .klabel{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);display:flex;align-items:center;gap:7px}
+.kpi .knum{font-family:var(--font-display);font-size:42px;font-weight:700;line-height:1.1;margin-top:6px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.kpi .knum small{font-size:20px;font-weight:600;color:var(--text-3);margin-left:2px}
+.kpi .kdelta{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;margin-top:4px;color:var(--text-3)}
+.kdelta .up{color:var(--green)} .kdelta .down{color:var(--red)} .kdelta .warn{color:var(--amber)}
+.spark{width:64px;height:22px;margin-left:auto;color:var(--flame)}
+.spark polyline{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Badges & Chips ---------- */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:999px;white-space:nowrap}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.b-green{background:var(--green-soft);color:var(--green)}
+.b-amber{background:var(--amber-soft);color:var(--amber)}
+.b-red{background:var(--red-soft);color:var(--red)}
+.b-violet{background:var(--violet-soft);color:var(--violet)}
+.b-ice{background:var(--ice-soft);color:var(--ice)}
+.b-flame{background:var(--flame-soft);color:var(--flame-strong)}
+.b-neutral{background:var(--bg-inset);color:var(--text-2)}
+.badge.nodot::before{display:none}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--bg-inset);color:var(--text-2);border:1px solid transparent}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;font-size:13.5px;font-weight:600;border:1px solid transparent;transition:all .15s ease;color:var(--text)}
+.btn:hover{transform:translateY(-1px)}
+.btn:focus-visible,.iconbtn:focus-visible,.seg button:focus-visible{outline:2px solid var(--flame);outline-offset:2px}
+.btn-pri{background:var(--flame-grad);color:#fff;box-shadow:var(--glow)}
+.btn-ghost{border-color:var(--line-strong);background:transparent}
+.btn-soft{background:var(--bg-inset)}
+.btn-white{background:rgb(255 255 255 / .12);color:#fff;border-color:rgb(255 255 255 / .25)}
+.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:10px}
+
+/* ---------- Termine ---------- */
+.termin{display:flex;gap:18px;padding:16px 20px;border-top:1px solid var(--line);align-items:flex-start}
+.termin:first-of-type{border-top:none}
+.t-time{flex:none;text-align:center;background:var(--bg-inset);border-radius:12px;padding:10px 14px;min-width:86px}
+.t-time b{display:block;font-family:var(--font-display);font-size:24px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.t-time span{font-size:11.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.t-body{flex:1;min-width:0}
+.t-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.t-head h4{font-size:15px;font-weight:700}
+.t-meta{font-size:12.5px;color:var(--text-3);margin-top:2px;display:flex;align-items:center;gap:6px}
+.rbar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--bg-inset);margin-top:12px}
+.rbar i{display:block;height:100%}
+.r-yes{background:var(--green)} .r-no{background:var(--red)} .r-open{background:var(--line-strong)}
+.rlegend{display:flex;gap:16px;font-size:12px;color:var(--text-3);margin-top:7px;font-weight:500}
+.rlegend b{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums}
+.rlegend .dotc{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.t-actions{flex:none;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--flame);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgb(240 78 35 / .45)}50%{box-shadow:0 0 0 6px rgb(240 78 35 / 0)}}
+
+/* ---------- Küren-Karten ---------- */
+.kgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kcard{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg-card);cursor:pointer;transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s cubic-bezier(.2,.8,.3,1)}
+.kcard:hover{transform:translateY(-2px);box-shadow:var(--elev2)}
+.kcover{position:relative;height:72px;display:flex;align-items:flex-start;justify-content:flex-end;padding:10px}
+.kc-1{background:linear-gradient(120deg,#5B3DE0,#8B5CF6 60%,#B07CF7)}
+.kc-2{background:linear-gradient(120deg,#0E8F84,#22B8A8 60%,#57D9C8)}
+.kc-3{background:linear-gradient(120deg,#DE7B12,#F0A429 60%,#F6C35C)}
+.kcover .knote{position:absolute;left:12px;bottom:8px;color:rgb(255 255 255 / .85)}
+.kbody{padding:12px 14px 14px}
+.kbody h4{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.kbody .krunner{font-size:12.5px;color:var(--text-3);margin-top:1px}
+.kprog{display:flex;align-items:center;gap:10px;margin-top:10px}
+.kbarwrap{flex:1;height:6px;border-radius:999px;background:var(--bg-inset);overflow:hidden}
+.kbar{height:100%;border-radius:999px;background:var(--flame-grad);position:relative;overflow:hidden}
+.kbar::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgb(255 255 255 / .35) 50%,transparent 70%);animation:shine 2.6s ease-in-out infinite}
+@keyframes shine{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+.kprog b{font-size:12px;font-variant-numeric:tabular-nums;color:var(--text-2)}
+.kwarn{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--amber);background:var(--amber-soft);border-radius:9px;padding:6px 10px;margin-top:10px}
+
+/* ---------- Aufgaben & Chat ---------- */
+.task{display:flex;gap:12px;padding:13px 0;border-top:1px solid var(--line);align-items:flex-start}
+.task:first-child{border-top:none}
+.cb{width:20px;height:20px;border-radius:7px;border:2px solid var(--line-strong);flex:none;margin-top:1px;transition:border-color .15s ease}
+.task:hover .cb{border-color:var(--flame)}
+.task .tk-t{font-size:13.5px;font-weight:600;line-height:1.35}
+.task .tk-m{font-size:12px;color:var(--text-3);margin-top:2px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.msg{display:flex;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+.msg:first-child{border-top:none}
+.msg .m-b b{font-size:12.5px;font-weight:700}
+.msg .m-b span{font-size:11.5px;color:var(--text-3);margin-left:7px}
+.msg .m-b p{font-size:13px;color:var(--text-2);margin-top:1px}
+
+/* ---------- Kür-Detail / Player ---------- */
+.kd-head{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.kd-head .kd-t h2{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.kd-meta{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;font-size:13px;color:var(--text-2)}
+.kd-actions{margin-left:auto;display:flex;gap:10px;align-items:center}
+.kd-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start}
+
+.player{background:var(--bg-inset);border-radius:20px;padding:18px 20px 20px;margin-top:4px}
+.p-toprow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.lencheck{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--green);background:var(--green-soft);padding:5px 11px;border-radius:999px}
+.waveouter{position:relative;padding:14px 0 6px}
+.wave{position:relative;height:92px;display:flex;align-items:center;gap:2px}
+.wave i{flex:1;min-width:2px;border-radius:2px;background:var(--wave-rest);transition:background .2s ease}
+.wave i.on{background:var(--flame)}
+.loopzone{position:absolute;top:-8px;bottom:-2px;left:28%;width:24%;border-radius:10px;background:color-mix(in srgb,var(--violet) 13%,transparent);border:1.5px solid color-mix(in srgb,var(--violet) 55%,transparent);pointer-events:none}
+.lz-tag{position:absolute;top:-24px;font-family:var(--font-mono);font-size:10.5px;font-weight:700;color:var(--violet);background:var(--violet-soft);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.lz-a{left:-4px} .lz-b{right:-4px}
+.playhead{position:absolute;top:-6px;bottom:0;left:38%;width:2px;background:var(--text);border-radius:2px}
+.playhead::before{content:"";position:absolute;top:-5px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--text)}
+.p-times{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:12.5px;color:var(--text-3);margin-top:8px;font-variant-numeric:tabular-nums}
+.p-times b{color:var(--text);font-weight:700}
+.transport{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;margin-top:14px}
+.tr-left{display:flex;align-items:center;gap:10px}
+.tr-mid{display:flex;align-items:center;gap:14px;justify-content:center}
+.tr-right{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.playbtn{width:54px;height:54px;border-radius:50%;border:none;background:var(--flame-grad);color:#fff;display:grid;place-items:center;box-shadow:var(--glow);transition:transform .15s ease}
+.playbtn:hover{transform:scale(1.05)}
+.playbtn svg{width:22px;height:22px}
+.skipbtn{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg-card);color:var(--text-2);display:grid;place-items:center;transition:all .15s ease}
+.skipbtn:hover{color:var(--text);transform:translateY(-1px)}
+.loopchip{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;border:1.5px solid transparent;background:var(--bg-card);color:var(--text-2);transition:all .15s ease}
+.loopchip.on{border-color:var(--violet);color:var(--violet);background:var(--violet-soft)}
+.seg{display:inline-flex;gap:2px;background:var(--bg-card);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:none;background:transparent;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:600;color:var(--text-3);transition:all .15s ease}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--flame-grad);color:#fff}
+.seg.seg-ice button.on{background:var(--ice);color:#fff}
+.p-bottomrow{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.p-bottomrow label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3)}
+.tempo-val{font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--flame-strong);min-width:52px;text-align:center}
+input[type="range"]{accent-color:var(--flame);width:150px}
+
+.elrow{display:flex;align-items:center;gap:13px;padding:11px 0;border-top:1px solid var(--line);cursor:pointer;transition:background .15s ease}
+.elrow:first-child{border-top:none}
+.elrow:hover{background:var(--bg-raised);margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:9px}
+.el-t{font-family:var(--font-mono);font-size:12.5px;font-weight:700;background:var(--bg-inset);color:var(--text-2);border-radius:7px;padding:3px 8px;min-width:48px;text-align:center}
+.elrow.inloop .el-t{background:var(--violet-soft);color:var(--violet)}
+.el-n{font-size:13.5px;font-weight:600;flex:1}
+.el-n small{display:block;font-size:11.5px;color:var(--text-3);font-weight:500}
+.elrow .chev{color:var(--text-3)}
+
+.dl{display:grid;grid-template-columns:auto 1fr;gap:9px 16px;font-size:13px}
+.dl dt{color:var(--text-3);font-weight:500;white-space:nowrap}
+.dl dd{font-weight:600;text-align:right}
+.ratingrow{display:flex;align-items:center;gap:12px;padding:8px 0}
+.ratingrow span{font-size:13px;font-weight:600;width:96px;flex:none}
+.ratebar{flex:1;height:7px;border-radius:999px;background:var(--bg-inset);overflow:hidden}
+.ratebar i{display:block;height:100%;border-radius:999px;background:var(--violet)}
+.ratingrow b{font-size:13px;font-variant-numeric:tabular-nums;width:30px;text-align:right}
+.scorebars{display:flex;align-items:flex-end;gap:14px;height:110px;padding-top:8px}
+.scb{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.scb i{width:100%;border-radius:8px 8px 3px 3px;background:linear-gradient(180deg,var(--violet),color-mix(in srgb,var(--violet) 55%,transparent))}
+.scb.hot i{background:var(--flame-grad)}
+.scb b{font-family:var(--font-display);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums}
+.scb span{font-size:10.5px;color:var(--text-3)}
+.note-q{font-size:13px;color:var(--text-2);border-left:3px solid var(--violet);padding:2px 0 2px 12px;line-height:1.55}
+.note-m{font-size:11.5px;color:var(--text-3);margin-top:8px}
+
+/* ---------- Finanzen ---------- */
+.pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.pstage{position:relative;background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+.pstage:not(:last-child)::after{content:"›";position:absolute;right:-11px;top:50%;transform:translateY(-58%);color:var(--line-strong);font-size:17px;font-weight:700;z-index:1}
+.pstage .pl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.pstage .pn{font-family:var(--font-display);font-size:30px;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.pstage .pa{font-size:12.5px;color:var(--text-2);font-weight:600;font-variant-numeric:tabular-nums}
+.pstage{border-top:3px solid var(--line-strong)}
+.pstage.s0{border-top-color:var(--text-3)}
+.pstage.s1{border-top-color:var(--amber)}
+.pstage.s2{border-top-color:#D98324}
+.pstage.s3{border-top-color:var(--flame)}
+.pstage.s4{border-top-color:var(--red)}
+.autonote{display:flex;align-items:center;gap:10px;margin-top:14px;font-size:12.5px;color:var(--text-2);background:var(--ice-soft);border-radius:11px;padding:10px 14px}
+.autonote b{color:var(--ice);font-weight:700}
+.fin-grid{display:grid;grid-template-columns:7fr 5fr;gap:20px;align-items:start}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:8px 12px;white-space:nowrap}
+.tbl td{padding:11px 12px;border-top:1px solid var(--line);vertical-align:middle}
+.tbl tbody tr{transition:background .12s ease}
+.tbl tbody tr:hover{background:var(--bg-raised)}
+.tbl .num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl .pos{color:var(--green)} .tbl .neg{color:var(--red)}
+.tcell{display:flex;align-items:center;gap:10px}
+.tcell b{display:block;font-size:13.5px;font-weight:600;line-height:1.25}
+.tcell span{font-size:11.5px;color:var(--text-3)}
+.saldo{display:flex;align-items:baseline;gap:10px;justify-content:flex-end;padding:14px 12px 2px;border-top:2px solid var(--line-strong)}
+.saldo span{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3)}
+.saldo b{font-family:var(--font-display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- Theme-Toggle & Footer ---------- */
+.theme-toggle{position:fixed;top:18px;right:18px;z-index:50;display:inline-flex;align-items:center;gap:9px;padding:9px 16px;border-radius:999px;border:1px solid var(--line-strong);background:var(--bg-card);color:var(--text);font-size:13px;font-weight:600;box-shadow:var(--elev2)}
+.theme-toggle:hover{transform:translateY(-1px)}
+.foot{max-width:1360px;margin:10px auto 0;text-align:center;color:var(--text-3);font-size:12.5px}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<!-- Icon-Bibliothek (inline, keine externen Ressourcen) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8"/><path d="M5 10v11h14V10"/><path d="M10 21v-6h4v6"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16.5 6.7a3 3 0 0 1 0 5.4M18.4 14.6c1.9.9 2.6 2.4 2.6 4.4"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a4 4 0 0 1-4 3M7 5H4v2a4 4 0 0 0 4 3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.5 0-3-.4-4.2-1.1L3 20l1.1-5.3A8.5 8.5 0 1 1 21 11.5z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v2.8M12 18.7v2.8M2.5 12h2.8M18.7 12h2.8M5.3 5.3l2 2M16.7 16.7l2 2M18.7 5.3l-2 2M7.3 16.7l-2 2"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24"><path d="M17.5 5.8A7 7 0 1 0 17.5 18.2"/><path d="M4 10.4h9M4 13.6h8"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 20h18"/><path d="M6 20v-7M11 20V5M16 20v-10M21 20v-4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9.5a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10.4 19.5a1.9 1.9 0 0 0 3.2 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.4v13.2L19 12z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 5.5v13M15.5 5.5v13" stroke-width="3"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 20 9 12l10-8z" fill="currentColor" stroke="none"/><path d="M5 5v14" stroke-width="2.4"/></symbol>
+    <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M5 4l10 8-10 8z" fill="currentColor" stroke="none"/><path d="M19 5v14" stroke-width="2.4"/></symbol>
+    <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 2.5 21 6.5l-4 4"/><path d="M21 6.5H8a5 5 0 0 0-5 5"/><path d="M7 21.5l-4-4 4-4"/><path d="M3 17.5h13a5 5 0 0 0 5-5"/></symbol>
+    <symbol id="i-timer" viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2h5M12 2v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5.5 5.5L20 7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.4 2"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 2.5 20h19z"/><path d="M12 9.5v5M12 17.6v.1"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2.5H6v19h12v-13z"/><path d="M14 2.5v6h6M9 13h6M9 17h6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M17 7 7 17M15 17H7V9"/></symbol>
+    <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4 20.5h16"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7.5 12 13.5l8.5-6"/></symbol>
+    <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2.5 4 14h6.5L11 21.5 20 10h-6.5z"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21.5V4"/><path d="M5 4.5h13l-2.5 4 2.5 4H5"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.3M12 19.2v2.3M2.5 12h2.3M19.2 12h2.3M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11z"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="M15.5 10.5 21.5 7v10l-6-3.5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
+  </defs>
+</svg>
+
+<!-- Logo-Marke -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-flame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF8A5C"/><stop offset="1" stop-color="#E63317"/>
+    </linearGradient>
+    <symbol id="i-logo" viewBox="0 0 36 36">
+      <path d="M4 27 C10 9 24 7 32 12" fill="none" stroke="url(#g-flame)" stroke-width="4" stroke-linecap="round"/>
+      <path d="M9 31 C14 19 24 16 31 19" fill="none" stroke="url(#g-flame)" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
+      <circle cx="32" cy="12" r="3.4" fill="url(#g-flame)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<button class="theme-toggle" id="themeToggle" type="button" aria-label="Farbschema umschalten">
+  <svg class="ic" aria-hidden="true"><use href="#i-moon" id="themeIcon"/></svg><span id="themeLabel">Dark Mode</span>
+</button>
+
+<!-- ============ INTRO ============ -->
+<header class="intro">
+  <span class="intro-tag"><svg class="ic" style="width:14px;height:14px"><use href="#i-zap"/></svg> Design-Wettbewerb · Konzept B</span>
+  <h1>Momentum <span>— Sportlich &amp; Dynamisch</span></h1>
+  <p>Die Energie des Rollkunstlaufs als Interface: große Display-Zahlen wie auf der Anzeigetafel, Karten mit Tiefe, eine führende Akzentfarbe („Flame") und Bewegung als Andeutung. Drei Desktop-Portal-Screens — Trainer-Dashboard, Kür-Detail mit Trainings-Player und Admin-Finanzübersicht — zeigen, dass dasselbe System Sportgefühl <em>und</em> Kassenbuch trägt. Light &amp; Dark Mode über den Schalter rechts oben.</p>
+  <div class="swatches">
+    <span class="sw"><i style="background:linear-gradient(135deg,#FF7A45,#E63317)"></i>Flame — Aktion &amp; Live</span>
+    <span class="sw"><i style="background:#6C4CF1"></i>Violett — Küren</span>
+    <span class="sw"><i style="background:#0E8F84"></i>Ice — Training</span>
+    <span class="sw"><i style="background:#178A50"></i>Grün — bezahlt/Zusage</span>
+    <span class="sw"><i style="background:#9A6200"></i>Amber — offen/Erinnerung</span>
+    <span class="sw"><i style="background:#C81E3C"></i>Rot — überfällig/Mahnung</span>
+  </div>
+</header>
+
+<!-- ============ SCREEN 1 · TRAINER-DASHBOARD ============ -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="stage-num">Screen 1 / 3</span>
+    <h2>Trainer-Dashboard — Workspace „Training"</h2>
+    <p>Heutige Termine mit Zusagen-Balken, vier Hero-KPIs, Küren-Schnellzugriff mit Musiklängen-Warnung, offene Aufgaben. Rollenbasierte Navigation: max. sechs Ziele.</p>
+  </div>
+  <div class="frame"><div class="app">
+
+    <aside class="side">
+      <div class="brand">
+        <svg width="34" height="34" aria-hidden="true"><use href="#i-logo"/></svg>
+        <div class="brand-txt"><strong>RollsportManager</strong><span>REV Neckarsulm e. V.</span></div>
+      </div>
+      <div class="side-label">Training</div>
+      <nav class="snav" aria-label="Hauptnavigation Trainer">
+        <a href="#" class="active" aria-current="page"><svg class="ic"><use href="#i-home"/></svg>Heute</a>
+        <a href="#"><svg class="ic"><use href="#i-cal"/></svg>Kalender</a>
+        <a href="#"><svg class="ic"><use href="#i-users"/></svg>Teams &amp; Läufer</a>
+        <a href="#"><svg class="ic"><use href="#i-music"/></svg>Küren</a>
+        <a href="#"><svg class="ic"><use href="#i-trophy"/></svg>Wettkampf</a>
+        <a href="#"><svg class="ic"><use href="#i-chat"/></svg>Chat<span class="nbadge">3</span></a>
+      </nav>
+      <div class="side-bottom">
+        <nav class="snav"><a href="#"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a></nav>
+        <div class="suser">
+          <span class="av av-1">KV</span>
+          <div><b>Katrin Vogel</b><span>Trainerin</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <span class="tb-title">Heute</span>
+        <div class="search" role="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg>Suchen — Läufer, Küren, Termine …<kbd>⌘K</kbd></div>
+        <button class="iconbtn" aria-label="Benachrichtigungen, 2 neue"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+        <span class="av av-1" role="img" aria-label="Katrin Vogel">KV</span>
+      </header>
+
+      <div class="content">
+
+        <div class="hero">
+          <div>
+            <span class="hero-date"><svg class="ic" style="width:14px;height:14px"><use href="#i-cal"/></svg>Mittwoch · 9. Juli 2026</span>
+            <h2>Hallo Katrin!</h2>
+            <p class="hero-sub"><b>2 Trainings</b> heute in der Rollsporthalle Süd · <b>5 offene Zusagen</b> · Belegungsplan geprüft ✓</p>
+          </div>
+          <div class="countdown">
+            <span class="cd-num">11</span>
+            <div class="cd-meta">
+              <b>Tage bis zur Bezirksmeisterschaft</b>
+              <span>Ludwigsburg · Sonntag, 20. Juli 2026</span><br>
+              <button class="btn btn-white btn-sm" type="button"><svg class="ic" style="width:15px;height:15px"><use href="#i-flag"/></svg>Meldeliste prüfen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="card kpi lift">
+            <span class="klabel">Anwesenheitsquote <svg class="spark" viewBox="0 0 64 22" aria-hidden="true"><polyline points="2,15 12,13 22,16 32,10 42,11 52,7 62,8"/></svg></span>
+            <div class="knum">87<small>%</small></div>
+            <div class="kdelta"><span class="up">▲ +3 Pp</span> ggü. Vorwoche</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Aktive Läuferinnen &amp; Läufer</span>
+            <div class="knum">24</div>
+            <div class="kdelta"><span class="up">▲ +2</span> seit Juni · 3 Gruppen</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Küren in Arbeit</span>
+            <div class="knum">6</div>
+            <div class="kdelta"><span class="up">2 wettkampffertig</span> · 1 neu</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Offene Zusagen heute</span>
+            <div class="knum">5</div>
+            <div class="kdelta"><span class="warn">● Erinnerung geplant 12:00</span></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:7fr 5fr;gap:20px;align-items:start">
+
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+            <div class="card">
+              <div class="card-h">
+                <h3>Heutige Termine</h3>
+                <span class="badge b-flame nodot"><span class="live-dot" style="margin-right:2px"></span>Trainingstag</span>
+                <div class="right"><a class="linkmore" href="#">Kalender öffnen <svg class="ic" style="width:14px;height:14px"><use href="#i-chev"/></svg></a></div>
+              </div>
+              <div class="card-b" style="padding-top:10px">
+                <div class="termin">
+                  <div class="t-time"><b>16:30</b><span>– 18:00</span></div>
+                  <div class="t-body">
+                    <div class="t-head"><h4>Nachwuchsgruppe — Grundlagen &amp; Sprünge</h4><span class="badge b-ice">Training</span></div>
+                    <p class="t-meta"><svg class="ic" style="width:14px;height:14px"><use href="#i-home"/></svg>Rollsporthalle Süd · Feld 1 &nbsp;·&nbsp; Trainingsplan „Sprungschule B"</p>
+                    <div class="rbar" role="img" aria-label="14 Zusagen, 2 Absagen, 3 offen"><i class="r-yes" style="width:74%"></i><i class="r-no" style="width:10%"></i><i class="r-open" style="width:16%"></i></div>
+                    <div class="rlegend">
+                      <span><i class="dotc" style="background:var(--green)"></i><b>14</b> Zusagen</span>
+                      <span><i class="dotc" style="background:var(--red)"></i><b>2</b> Absagen</span>
+                      <span><i class="dotc" style="background:var(--line-strong)"></i><b>3</b> offen</span>
+                    </div>
+                  </div>
+                  <div class="t-actions">
+                    <button class="btn btn-pri btn-sm" type="button"><svg class="ic" style="width:15px;height:15px"><use href="#i-check"/></svg>Anwesenheit starten</button>
+                    <button class="btn btn-ghost btn-sm" type="button">Details</button>
+                  </div>
+                </div>
+                <div class="termin">
+                  <div class="t-time"><b>18:15</b><span>– 20:00</span></div>
+                  <div class="t-body">
+                    <div class="t-head"><h4>Meisterklasse — Kürtraining</h4><span class="badge b-violet">Kür</span></div>
+                    <p class="t-meta"><svg class="ic" style="width:14px;height:14px"><use href="#i-home"/></svg>Rollsporthalle Süd · Feld 2 &nbsp;·&nbsp; Fokus: Wettkampfküren Bezirksmeisterschaft</p>
+                    <div class="rbar" role="img" aria-label="9 Zusagen, 1 Absage, 2 offen"><i class="r-yes" style="width:75%"></i><i class="r-no" style="width:8%"></i><i class="r-open" style="width:17%"></i></div>
+                    <div class="rlegend">
+                      <span><i class="dotc" style="background:var(--green)"></i><b>9</b> Zusagen</span>
+                      <span><i class="dotc" style="background:var(--red)"></i><b>1</b> Absage <em style="font-style:normal;color:var(--text-3)">(Mia B. — „Bahn verspätet")</em></span>
+                      <span><i class="dotc" style="background:var(--line-strong)"></i><b>2</b> offen</span>
+                    </div>
+                  </div>
+                  <div class="t-actions">
+                    <button class="btn btn-soft btn-sm" type="button"><svg class="ic" style="width:15px;height:15px"><use href="#i-music"/></svg>Kür-Playlist</button>
+                    <button class="btn btn-ghost btn-sm" type="button">Details</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <h3>Küren-Schnellzugriff</h3>
+                <div class="right"><a class="linkmore" href="#">Alle 6 Küren <svg class="ic" style="width:14px;height:14px"><use href="#i-chev"/></svg></a></div>
+              </div>
+              <div class="card-b">
+                <div class="kgrid">
+                  <article class="kcard">
+                    <div class="kcover kc-1"><span class="badge b-green" style="background:rgb(255 255 255 / .92)">Wettkampffertig</span><span class="knote"><svg class="ic"><use href="#i-music"/></svg></span></div>
+                    <div class="kbody">
+                      <h4>Carmen — Wettkampfkür 2026</h4>
+                      <p class="krunner">Lena Hofmann · Jugend A</p>
+                      <div class="kprog"><div class="kbarwrap"><div class="kbar" style="width:95%"></div></div><b>95 %</b></div>
+                    </div>
+                  </article>
+                  <article class="kcard">
+                    <div class="kcover kc-2"><span class="badge b-amber" style="background:rgb(255 255 255 / .92)">In Arbeit</span><span class="knote"><svg class="ic"><use href="#i-music"/></svg></span></div>
+                    <div class="kbody">
+                      <h4>Schwanensee</h4>
+                      <p class="krunner">Mia Brändle · Schüler B</p>
+                      <div class="kprog"><div class="kbarwrap"><div class="kbar" style="width:60%"></div></div><b>60 %</b></div>
+                      <div class="kwarn"><svg class="ic" style="width:14px;height:14px"><use href="#i-alert"/></svg>Musik 2:47 — auf 2:30 kürzen</div>
+                    </div>
+                  </article>
+                  <article class="kcard">
+                    <div class="kcover kc-3"><span class="badge b-neutral" style="background:rgb(255 255 255 / .92)">Neu</span><span class="knote"><svg class="ic"><use href="#i-music"/></svg></span></div>
+                    <div class="kbody">
+                      <h4>Boléro — Showgruppe</h4>
+                      <p class="krunner">Formation · 8 Läuferinnen</p>
+                      <div class="kprog"><div class="kbarwrap"><div class="kbar" style="width:20%"></div></div><b>20 %</b></div>
+                    </div>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+            <div class="card">
+              <div class="card-h">
+                <h3>Offene Aufgaben</h3><span class="badge b-neutral nodot">4</span>
+                <div class="right"><button class="btn btn-soft btn-sm" type="button">+ Neu</button></div>
+              </div>
+              <div class="card-b" style="padding-top:8px">
+                <div class="task">
+                  <span class="cb" role="checkbox" aria-checked="false" tabindex="0" aria-label="DRIV-Meldung abschicken"></span>
+                  <div><p class="tk-t">DRIV-Meldung Bezirksmeisterschaft absenden</p>
+                  <p class="tk-m"><span class="badge b-red nodot">Frist 15.07.</span> 6 Läuferinnen gemeldet</p></div>
+                </div>
+                <div class="task">
+                  <span class="cb" role="checkbox" aria-checked="false" tabindex="0" aria-label="Kürmusik kürzen"></span>
+                  <div><p class="tk-t">Kürmusik „Schwanensee" auf 2:30 kürzen</p>
+                  <p class="tk-m"><span class="badge b-violet nodot">Küren</span> Mia Brändle · Limit Schüler B</p></div>
+                </div>
+                <div class="task">
+                  <span class="cb" role="checkbox" aria-checked="false" tabindex="0" aria-label="Offene Zusagen nachfassen"></span>
+                  <div><p class="tk-t">3 offene Zusagen Nachwuchsgruppe nachfassen</p>
+                  <p class="tk-m"><span class="badge b-ice nodot">Heute</span> Auto-Erinnerung 12:00 geplant</p></div>
+                </div>
+                <div class="task">
+                  <span class="cb" role="checkbox" aria-checked="false" tabindex="0" aria-label="Laufplan prüfen"></span>
+                  <div><p class="tk-t">Laufplan-Entwurf Vereinswettbewerb prüfen</p>
+                  <p class="tk-m"><span class="badge b-neutral nodot">bis 18.07.</span> Aufwärmgruppen 3 × 6</p></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <h3>Team-Chat</h3><span class="sub">Meisterklasse</span>
+                <div class="right"><span class="badge b-flame nodot">3 neu</span></div>
+              </div>
+              <div class="card-b" style="padding-top:8px">
+                <div class="msg">
+                  <span class="av av-s av-6">MB</span>
+                  <div class="m-b"><b>Mia Brändle</b><span>16:02</span><p>Kann heute erst 18:30 — Bahn hat Verspätung 🙈</p></div>
+                </div>
+                <div class="msg">
+                  <span class="av av-s av-4">JK</span>
+                  <div class="m-b"><b>Jonas Kraushaar</b><span>15:47</span><p>Bringe die Ersatzrollen für Emma mit!</p></div>
+                </div>
+                <div class="msg">
+                  <span class="av av-s av-2">LH</span>
+                  <div class="m-b"><b>Lena Hofmann</b><span>14:31</span><p>Carmen-Musik v3 klingt super, danke! 🎵</p></div>
+                </div>
+                <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%;justify-content:center" type="button">Zum Chat</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ SCREEN 2 · KÜR-DETAIL MIT AUDIO-PLAYER ============ -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="stage-num">Screen 2 / 3</span>
+    <h2>Kür-Detail — Trainings-Player mit Waveform, Tempo &amp; A-B-Loop</h2>
+    <p>Das Alleinstellungsmerkmal als Bühne: A-B-Loop als violette Zone, Tempo-Pillen mit Feinregler, Countdown, klickbare Element-Timestamps und RollArt-Score-Historie.</p>
+  </div>
+  <div class="frame"><div class="app">
+
+    <aside class="side">
+      <div class="brand">
+        <svg width="34" height="34" aria-hidden="true"><use href="#i-logo"/></svg>
+        <div class="brand-txt"><strong>RollsportManager</strong><span>REV Neckarsulm e. V.</span></div>
+      </div>
+      <div class="side-label">Training</div>
+      <nav class="snav" aria-label="Hauptnavigation Trainer">
+        <a href="#"><svg class="ic"><use href="#i-home"/></svg>Heute</a>
+        <a href="#"><svg class="ic"><use href="#i-cal"/></svg>Kalender</a>
+        <a href="#"><svg class="ic"><use href="#i-users"/></svg>Teams &amp; Läufer</a>
+        <a href="#" class="active" aria-current="page"><svg class="ic"><use href="#i-music"/></svg>Küren</a>
+        <a href="#"><svg class="ic"><use href="#i-trophy"/></svg>Wettkampf</a>
+        <a href="#"><svg class="ic"><use href="#i-chat"/></svg>Chat<span class="nbadge">3</span></a>
+      </nav>
+      <div class="side-bottom">
+        <nav class="snav"><a href="#"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a></nav>
+        <div class="suser">
+          <span class="av av-1">KV</span>
+          <div><b>Katrin Vogel</b><span>Trainerin</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <span class="tb-title"><span class="crumb">Küren</span>Carmen — Wettkampfkür 2026</span>
+        <div class="search" role="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg>Suchen …<kbd>⌘K</kbd></div>
+        <button class="iconbtn" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+        <span class="av av-1" role="img" aria-label="Katrin Vogel">KV</span>
+      </header>
+
+      <div class="content">
+
+        <div class="kd-head">
+          <div class="kd-t">
+            <h2>Carmen — Wettkampfkür 2026</h2>
+            <div class="kd-meta">
+              <span class="badge b-green">Wettkampffertig</span>
+              <span style="display:inline-flex;align-items:center;gap:8px"><span class="av av-s av-2">LH</span><b>Lena Hofmann</b></span>
+              <span class="chip nodot">Jugend A</span>
+              <span class="chip mono">Kürzeit 2:30 ± 10 s</span>
+              <span class="chip"><svg class="ic" style="width:14px;height:14px"><use href="#i-trophy"/></svg>Bezirksmeisterschaft · 20.07.</span>
+            </div>
+          </div>
+          <div class="kd-actions">
+            <button class="btn btn-ghost" type="button"><svg class="ic"><use href="#i-video"/></svg>Video-Analyse</button>
+            <button class="btn btn-pri" type="button"><svg class="ic"><use href="#i-star"/></svg>Bewertung starten</button>
+          </div>
+        </div>
+
+        <div class="kd-grid">
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+
+            <div class="card">
+              <div class="card-h">
+                <h3>Trainings-Player</h3>
+                <span class="chip mono nodot">Kürmusik v3</span>
+                <div class="right"><span class="lencheck"><svg class="ic" style="width:14px;height:14px"><use href="#i-check"/></svg>Musik 2:31 — im Limit (2:30 ± 10 s)</span></div>
+              </div>
+              <div class="card-b">
+                <div class="player" id="player">
+                  <div class="p-toprow">
+                    <span style="font-size:13px;font-weight:700">Habanera — aus „Carmen"</span>
+                    <span style="font-size:12px;color:var(--text-3)">G. Bizet · Schnitt: v3 vom 04.07.2026</span>
+                    <div style="margin-left:auto;display:flex;gap:8px">
+                      <button class="btn btn-soft btn-sm" type="button"><svg class="ic" style="width:14px;height:14px"><use href="#i-dl"/></svg>Export</button>
+                    </div>
+                  </div>
+
+                  <div class="waveouter">
+                    <div class="wave" id="wave" data-bars="150" data-played="0.38" role="img" aria-label="Waveform der Kürmusik, Wiedergabeposition 0:57 von 2:31, A-B-Loop von 0:42 bis 1:18 aktiv">
+                      <div class="loopzone">
+                        <span class="lz-tag lz-a">A 0:42</span>
+                        <span class="lz-tag lz-b">B 1:18</span>
+                      </div>
+                      <div class="playhead"></div>
+                    </div>
+                    <div class="p-times"><b>0:57</b><span>−1:34 &nbsp;·&nbsp; 2:31</span></div>
+                  </div>
+
+                  <div class="transport">
+                    <div class="tr-left">
+                      <button class="loopchip on" id="loopChip" type="button" aria-pressed="true">
+                        <svg class="ic" style="width:15px;height:15px"><use href="#i-loop"/></svg>A-B-Loop <span class="mono">0:42 – 1:18</span>
+                      </button>
+                    </div>
+                    <div class="tr-mid">
+                      <button class="skipbtn" type="button" aria-label="5 Sekunden zurück"><svg class="ic" style="width:17px;height:17px"><use href="#i-back"/></svg></button>
+                      <button class="playbtn" id="playBtn" type="button" aria-label="Wiedergabe starten"><svg class="ic"><use href="#i-play" id="playIcon"/></svg></button>
+                      <button class="skipbtn" type="button" aria-label="5 Sekunden vor"><svg class="ic" style="width:17px;height:17px"><use href="#i-fwd"/></svg></button>
+                    </div>
+                    <div class="tr-right">
+                      <label id="cdLabel" style="font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-3)">Countdown</label>
+                      <div class="seg seg-ice" role="group" aria-labelledby="cdLabel">
+                        <button type="button">0 s</button>
+                        <button type="button" class="on" aria-pressed="true">3 s</button>
+                        <button type="button">5 s</button>
+                        <button type="button">8 s</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="p-bottomrow">
+                    <label id="tempoLabel">Tempo</label>
+                    <div class="seg" id="tempoSeg" role="group" aria-labelledby="tempoLabel">
+                      <button type="button" data-v="0,50×">0,5×</button>
+                      <button type="button" data-v="0,75×">0,75×</button>
+                      <button type="button" class="on" data-v="0,85×" aria-pressed="true">0,85×</button>
+                      <button type="button" data-v="1,00×">1,0×</button>
+                      <button type="button" data-v="1,25×">1,25×</button>
+                    </div>
+                    <input type="range" min="50" max="200" value="85" id="tempoRange" aria-label="Tempo fein einstellen">
+                    <span class="tempo-val" id="tempoVal">0,85×</span>
+                    <span style="font-size:12px;color:var(--text-3)">Tonhöhe bleibt erhalten</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <h3>Elemente &amp; Timestamps</h3><span class="sub">8 Elemente · Klick springt zur Position</span>
+                <div class="right"><button class="btn btn-soft btn-sm" type="button">+ Element</button></div>
+              </div>
+              <div class="card-b" style="padding-top:10px">
+                <div class="elrow"><span class="el-t">0:12</span><span class="el-n">Axel<small>Sprung · Einzelsprung</small></span><span class="badge b-neutral nodot">Sprung</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow"><span class="el-t">0:29</span><span class="el-n">Doppelsalchow<small>Sprung · Landung prüfen</small></span><span class="badge b-neutral nodot">Sprung</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow inloop"><span class="el-t">0:42</span><span class="el-n">Sitzpirouette<small>Pirouette · im A-B-Loop</small></span><span class="badge b-violet nodot">Loop</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow inloop"><span class="el-t">1:05</span><span class="el-n">Schrittfolge diagonal<small>Schritte · Übergang noch unsauber</small></span><span class="badge b-violet nodot">Loop</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow"><span class="el-t">1:18</span><span class="el-n">Waage vorwärts<small>Feldelement</small></span><span class="badge b-neutral nodot">Feld</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow"><span class="el-t">1:47</span><span class="el-n">Doppelter Rittberger<small>Sprung</small></span><span class="badge b-neutral nodot">Sprung</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow"><span class="el-t">2:03</span><span class="el-n">Kombinationspirouette<small>Pirouette · Abschluss</small></span><span class="badge b-neutral nodot">Pirouette</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+                <div class="elrow"><span class="el-t">2:20</span><span class="el-n">Endpose<small>Choreografie</small></span><span class="badge b-neutral nodot">Choreo</span><svg class="ic chev" style="width:15px;height:15px"><use href="#i-chev"/></svg></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+            <div class="card">
+              <div class="card-h"><h3>Kür-Infos</h3></div>
+              <div class="card-b">
+                <dl class="dl">
+                  <dt>Läuferin</dt><dd>Lena Hofmann</dd>
+                  <dt>Kategorie</dt><dd>Jugend A · Einzel</dd>
+                  <dt>Musik</dt><dd>Habanera („Carmen")</dd>
+                  <dt>Länge</dt><dd class="mono">2:31 / max 2:40</dd>
+                  <dt>Musik-Version</dt><dd>v3 · 04.07.2026</dd>
+                  <dt>Medien</dt><dd>3 Videos · 1 Audio · 2 Bilder</dd>
+                  <dt>Nächster Einsatz</dt><dd>Bezirksmeisterschaft<br>Ludwigsburg · 20.07.2026</dd>
+                </dl>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><h3>Bewertung</h3><div class="right"><span class="sub">02.07.2026 · Katrin V.</span></div></div>
+              <div class="card-b" style="padding-top:6px">
+                <div class="ratingrow"><span>Technik</span><div class="ratebar"><i style="width:84%"></i></div><b>4,2</b></div>
+                <div class="ratingrow"><span>Ausdruck</span><div class="ratebar"><i style="width:92%"></i></div><b>4,6</b></div>
+                <div class="ratingrow"><span>Choreografie</span><div class="ratebar"><i style="width:80%"></i></div><b>4,0</b></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><h3>RollArt-Score-Historie</h3><div class="right"><span class="badge b-green nodot">▲ +2,67</span></div></div>
+              <div class="card-b">
+                <div class="scorebars" role="img" aria-label="Scores: 42,18 im April, 44,05 im Mai, 46,72 im Juni">
+                  <div class="scb"><i style="height:62%"></i><b>42,18</b><span>Pokal Stuttgart<br>12.04.</span></div>
+                  <div class="scb"><i style="height:74%"></i><b>44,05</b><span>Kreiscup<br>17.05.</span></div>
+                  <div class="scb hot"><i style="height:90%"></i><b>46,72</b><span>Testlauf<br>28.06.</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h"><h3>Trainings-Notiz</h3></div>
+              <div class="card-b">
+                <p class="note-q">Übergang nach der Schrittfolge noch unsauber — A-B-Loop für Tempo-Training bei 0,85× gesetzt. Landung Doppelsalchow diese Woche stabil. Vor dem Wettkampf: kompletten Durchlauf mit 3-s-Countdown üben.</p>
+                <p class="note-m">Katrin Vogel · gestern, 19:42 Uhr</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ============ SCREEN 3 · ADMIN-FINANZÜBERSICHT ============ -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="stage-num">Screen 3 / 3</span>
+    <h2>Admin-Finanzübersicht — Workspace „Verwaltung"</h2>
+    <p>Mahnstufen als Pipeline mit sichtbaren Automatik-Regeln, offene Posten, Kassenbuch-Auszug und SEPA-Lastschriftlauf. Dieselben Tokens — kein Stilbruch zur Sport-Seite.</p>
+  </div>
+  <div class="frame"><div class="app">
+
+    <aside class="side">
+      <div class="brand">
+        <svg width="34" height="34" aria-hidden="true"><use href="#i-logo"/></svg>
+        <div class="brand-txt"><strong>RollsportManager</strong><span>REV Neckarsulm e. V.</span></div>
+      </div>
+      <div class="side-label">Verwaltung</div>
+      <nav class="snav" aria-label="Hauptnavigation Verwaltung">
+        <a href="#"><svg class="ic"><use href="#i-home"/></svg>Übersicht</a>
+        <a href="#"><svg class="ic"><use href="#i-users"/></svg>Mitglieder</a>
+        <a href="#" class="active" aria-current="page"><svg class="ic"><use href="#i-euro"/></svg>Beiträge &amp; Finanzen</a>
+        <a href="#"><svg class="ic"><use href="#i-chart"/></svg>Berichte</a>
+        <a href="#"><svg class="ic"><use href="#i-chat"/></svg>Kommunikation</a>
+      </nav>
+      <div class="side-bottom">
+        <nav class="snav"><a href="#"><svg class="ic"><use href="#i-gear"/></svg>Einstellungen</a></nav>
+        <div class="suser">
+          <span class="av av-4">BA</span>
+          <div><b>Bernd Aicher</b><span>Kassenwart</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <span class="tb-title">Beiträge &amp; Finanzen</span>
+        <div class="search" role="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg>Suchen — Mitglieder, Rechnungen …<kbd>⌘K</kbd></div>
+        <button class="iconbtn" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg></button>
+        <span class="av av-4" role="img" aria-label="Bernd Aicher">BA</span>
+      </header>
+
+      <div class="content">
+
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span class="chip"><svg class="ic" style="width:14px;height:14px"><use href="#i-cal"/></svg>Juli 2026</span>
+          <span class="chip nodot">Alle Abteilungen</span>
+          <div style="margin-left:auto;display:flex;gap:10px">
+            <button class="btn btn-ghost" type="button"><svg class="ic"><use href="#i-doc"/></svg>DATEV-Export</button>
+            <button class="btn btn-pri" type="button"><svg class="ic"><use href="#i-mail"/></svg>Sammel-Mahnlauf starten</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="card kpi lift">
+            <span class="klabel">Offene Beiträge</span>
+            <div class="knum">2.340<small>,00 €</small></div>
+            <div class="kdelta">23 Rechnungen · 18 Mitglieder</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Davon überfällig</span>
+            <div class="knum" style="color:var(--red)">890<small style="color:var(--red)">,00 €</small></div>
+            <div class="kdelta"><span class="down">12 Rechnungen</span> · älteste 48 Tage</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Eingegangen im Juli <svg class="spark" viewBox="0 0 64 22" style="color:var(--green)" aria-hidden="true"><polyline points="2,17 12,15 22,15 32,11 42,12 52,6 62,4"/></svg></span>
+            <div class="knum">4.125<small>,50 €</small></div>
+            <div class="kdelta"><span class="up">▲ +12 %</span> ggü. Juni</div>
+          </div>
+          <div class="card kpi lift">
+            <span class="klabel">Nächster SEPA-Lauf</span>
+            <div class="knum">15.<small>Juli</small></div>
+            <div class="kdelta"><span class="up">142 Mandate aktiv</span> · 3 neu</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h">
+            <h3>Mahnstufen-Pipeline</h3><span class="sub">offene Posten nach Eskalationsstufe</span>
+            <div class="right"><a class="linkmore" href="#">Mahnregeln bearbeiten <svg class="ic" style="width:14px;height:14px"><use href="#i-chev"/></svg></a></div>
+          </div>
+          <div class="card-b">
+            <div class="pipe">
+              <div class="pstage s0"><span class="pl">Offen</span><div class="pn">23</div><span class="pa">2.340,00 €</span></div>
+              <div class="pstage s1"><span class="pl">Erinnerung</span><div class="pn">8</div><span class="pa">610,00 €</span></div>
+              <div class="pstage s2"><span class="pl">1. Mahnung</span><div class="pn">6</div><span class="pa">480,00 €</span></div>
+              <div class="pstage s3"><span class="pl">2. Mahnung</span><div class="pn">3</div><span class="pa">250,50 €</span></div>
+              <div class="pstage s4"><span class="pl">3. Mahnung</span><div class="pn">1</div><span class="pa">89,50 €</span></div>
+            </div>
+            <div class="autonote">
+              <svg class="ic" style="color:var(--ice)"><use href="#i-zap"/></svg>
+              <span><b>Automatik aktiv:</b> Zahlungserinnerung nach <b>14 Tagen</b>, Mahnstufe erhöht sich nach je <b>28 Tagen</b> · Versand mit Vorschau, Gebühren laut Beitragsordnung</span>
+              <button class="btn btn-ghost btn-sm" style="margin-left:auto" type="button">Regeln</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="fin-grid">
+          <div class="card">
+            <div class="card-h">
+              <h3>Offene Posten</h3><span class="badge b-red nodot">12 überfällig</span>
+              <div class="right"><a class="linkmore" href="#">Alle 23 anzeigen <svg class="ic" style="width:14px;height:14px"><use href="#i-chev"/></svg></a></div>
+            </div>
+            <div class="card-b" style="padding-top:6px">
+              <table class="tbl">
+                <thead><tr><th>Mitglied</th><th>Rechnung</th><th class="num">Betrag</th><th>Überfällig</th><th>Stufe</th><th></th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><span class="tcell"><span class="av av-s av-3">SM</span><span><b>Sofie Müller</b><span>Schüler B · Monatsbeitrag</span></span></span></td>
+                    <td class="mono" style="font-size:12.5px;color:var(--text-2)">RE-2026-0142</td>
+                    <td class="num">45,00 €</td>
+                    <td style="font-size:12.5px;color:var(--text-2)">12 Tage</td>
+                    <td><span class="badge b-amber">Erinnerung</span></td>
+                    <td><button class="iconbtn" style="width:32px;height:32px" aria-label="Erinnerung an Sofie Müller senden"><svg class="ic" style="width:15px;height:15px"><use href="#i-mail"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tcell"><span class="av av-s av-5">FÖ</span><span><b>Familie Öztürk</b><span>Familienbeitrag · 3 Kinder</span></span></span></td>
+                    <td class="mono" style="font-size:12.5px;color:var(--text-2)">RE-2026-0138</td>
+                    <td class="num">120,00 €</td>
+                    <td style="font-size:12.5px;color:var(--text-2)">21 Tage</td>
+                    <td><span class="badge b-amber">1. Mahnung</span></td>
+                    <td><button class="iconbtn" style="width:32px;height:32px" aria-label="Mahnung an Familie Öztürk senden"><svg class="ic" style="width:15px;height:15px"><use href="#i-mail"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tcell"><span class="av av-s av-4">BS</span><span><b>Björn Schäfer</b><span>Aktive · Quartalsbeitrag</span></span></span></td>
+                    <td class="mono" style="font-size:12.5px;color:var(--text-2)">RE-2026-0129</td>
+                    <td class="num">65,00 €</td>
+                    <td style="font-size:12.5px;color:var(--text-2)">35 Tage</td>
+                    <td><span class="badge b-red">2. Mahnung</span></td>
+                    <td><button class="iconbtn" style="width:32px;height:32px" aria-label="Mahnung an Björn Schäfer senden"><svg class="ic" style="width:15px;height:15px"><use href="#i-mail"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tcell"><span class="av av-s av-6">GH</span><span><b>Grit Häusler</b><span>Aktive · Quartalsbeitrag</span></span></span></td>
+                    <td class="mono" style="font-size:12.5px;color:var(--text-2)">RE-2026-0131</td>
+                    <td class="num">90,00 €</td>
+                    <td style="font-size:12.5px;color:var(--text-2)">29 Tage</td>
+                    <td><span class="badge b-red">2. Mahnung</span></td>
+                    <td><button class="iconbtn" style="width:32px;height:32px" aria-label="Mahnung an Grit Häusler senden"><svg class="ic" style="width:15px;height:15px"><use href="#i-mail"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td><span class="tcell"><span class="av av-s av-2">JK</span><span><b>Jürgen Käßmann</b><span>Passive · Jahresbeitrag</span></span></span></td>
+                    <td class="mono" style="font-size:12.5px;color:var(--text-2)">RE-2026-0117</td>
+                    <td class="num">89,50 €</td>
+                    <td style="font-size:12.5px;color:var(--red);font-weight:700">48 Tage</td>
+                    <td><span class="badge b-red">3. Mahnung</span></td>
+                    <td><button class="iconbtn" style="width:32px;height:32px" aria-label="Letzte Mahnung an Jürgen Käßmann senden"><svg class="ic" style="width:15px;height:15px"><use href="#i-mail"/></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <h3>Kassenbuch</h3><span class="sub">letzte Buchungen</span>
+              <div class="right"><button class="btn btn-soft btn-sm" type="button"><svg class="ic" style="width:14px;height:14px"><use href="#i-dl"/></svg>CSV</button></div>
+            </div>
+            <div class="card-b" style="padding-top:6px">
+              <table class="tbl">
+                <thead><tr><th>Datum</th><th>Buchung</th><th class="num">Betrag</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td style="white-space:nowrap;font-size:12.5px;color:var(--text-2)">08.07.</td>
+                    <td><span class="tcell"><span><b>Beitragseingang Juli — S. Müller</b><span class="mono" style="font-size:11px">BEL-0290 · Mitgliedsbeiträge</span></span></span></td>
+                    <td class="num pos">+45,00 €</td>
+                  </tr>
+                  <tr>
+                    <td style="white-space:nowrap;font-size:12.5px;color:var(--text-2)">07.07.</td>
+                    <td><span class="tcell"><span><b>Hallenmiete Juli — Rollsporthalle Süd</b><span class="mono" style="font-size:11px">BEL-0289 · Miete &amp; Nebenkosten</span></span></span></td>
+                    <td class="num neg">−680,00 €</td>
+                  </tr>
+                  <tr>
+                    <td style="white-space:nowrap;font-size:12.5px;color:var(--text-2)">05.07.</td>
+                    <td><span class="tcell"><span><b>Startgelder Bezirksmeisterschaft (6 Läuferinnen)</b><span class="mono" style="font-size:11px">BEL-0288 · Wettkampf</span></span></span></td>
+                    <td class="num neg">−180,00 €</td>
+                  </tr>
+                  <tr>
+                    <td style="white-space:nowrap;font-size:12.5px;color:var(--text-2)">04.07.</td>
+                    <td><span class="tcell"><span><b>Zuschuss Stadt Neckarsulm — Jugendförderung</b><span class="mono" style="font-size:11px">BEL-0287 · Zuschüsse</span></span></span></td>
+                    <td class="num pos">+1.250,00 €</td>
+                  </tr>
+                  <tr>
+                    <td style="white-space:nowrap;font-size:12.5px;color:var(--text-2)">03.07.</td>
+                    <td><span class="tcell"><span><b>Neue Rollen für Leihschuhe (3 Paar)</b><span class="mono" style="font-size:11px">BEL-0286 · Ausrüstung</span></span></span></td>
+                    <td class="num neg">−267,90 €</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="saldo"><span>Saldo Vereinskonto</span><b>12.480,25 €</b></div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:14px;width:100%;justify-content:center" type="button">Kassenbuch öffnen</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<p class="foot">Konzept B „Momentum" · RollsportManager v2 · Selbstenthaltenes Mockup ohne externe Ressourcen · Light/Dark via <span class="mono">prefers-color-scheme</span> + Toggle</p>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Theme-Toggle (prefers-color-scheme + manueller Override) ---------- */
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  var icon = document.getElementById('themeIcon');
+  var label = document.getElementById('themeLabel');
+  var media = window.matchMedia('(prefers-color-scheme: dark)');
+
+  function effective(){
+    var attr = root.getAttribute('data-theme');
+    if (attr) return attr;
+    return media.matches ? 'dark' : 'light';
+  }
+  function paint(){
+    var dark = effective() === 'dark';
+    icon.setAttribute('href', dark ? '#i-sun' : '#i-moon');
+    label.textContent = dark ? 'Light Mode' : 'Dark Mode';
+  }
+  try {
+    var stored = localStorage.getItem('momentum-theme');
+    if (stored === 'dark' || stored === 'light') root.setAttribute('data-theme', stored);
+  } catch(e){}
+  btn.addEventListener('click', function(){
+    var next = effective() === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('momentum-theme', next); } catch(e){}
+    paint();
+  });
+  media.addEventListener && media.addEventListener('change', paint);
+  paint();
+
+  /* ---------- Waveform generieren ---------- */
+  var wave = document.getElementById('wave');
+  if (wave){
+    var n = parseInt(wave.dataset.bars, 10) || 150;
+    var played = parseFloat(wave.dataset.played) || 0;
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < n; i++){
+      var t = i / n;
+      var e = 0.32 * Math.abs(Math.sin(i * 0.55))
+            + 0.40 * Math.abs(Math.sin(i * 0.19 + 1.7))
+            + 0.28 * (((i * 7919) % 97) / 97);
+      var env = 0.42 + 0.58 * Math.sin(Math.PI * Math.min(1, Math.max(0.02, t)));
+      var h = Math.max(0.08, Math.min(1, e * env));
+      var bar = document.createElement('i');
+      bar.style.height = (h * 100).toFixed(1) + '%';
+      if (t <= played) bar.className = 'on';
+      frag.appendChild(bar);
+    }
+    wave.insertBefore(frag, wave.firstChild);
+  }
+
+  /* ---------- Play/Pause (visuell) ---------- */
+  var playBtn = document.getElementById('playBtn');
+  var playIcon = document.getElementById('playIcon');
+  if (playBtn){
+    playBtn.addEventListener('click', function(){
+      var playing = playIcon.getAttribute('href') === '#i-pause';
+      playIcon.setAttribute('href', playing ? '#i-play' : '#i-pause');
+      playBtn.setAttribute('aria-label', playing ? 'Wiedergabe starten' : 'Wiedergabe pausieren');
+    });
+  }
+
+  /* ---------- A-B-Loop-Chip ---------- */
+  var loopChip = document.getElementById('loopChip');
+  if (loopChip){
+    loopChip.addEventListener('click', function(){
+      var on = loopChip.classList.toggle('on');
+      loopChip.setAttribute('aria-pressed', String(on));
+      var zone = document.querySelector('.loopzone');
+      if (zone) zone.style.opacity = on ? '1' : '0.25';
+    });
+  }
+
+  /* ---------- Segment-Gruppen (Tempo, Countdown) ---------- */
+  document.querySelectorAll('.seg').forEach(function(seg){
+    seg.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){
+        seg.querySelectorAll('button').forEach(function(x){ x.classList.remove('on'); x.removeAttribute('aria-pressed'); });
+        b.classList.add('on');
+        b.setAttribute('aria-pressed', 'true');
+        if (seg.id === 'tempoSeg'){
+          var val = document.getElementById('tempoVal');
+          var range = document.getElementById('tempoRange');
+          if (val && b.dataset.v) val.textContent = b.dataset.v;
+          if (range && b.dataset.v) range.value = Math.round(parseFloat(b.dataset.v.replace(',', '.')) * 100);
+        }
+      });
+    });
+  });
+  var range = document.getElementById('tempoRange');
+  if (range){
+    range.addEventListener('input', function(){
+      var v = (range.value / 100).toFixed(2).replace('.', ',') + '×';
+      var val = document.getElementById('tempoVal');
+      if (val) val.textContent = v;
+      var seg = document.getElementById('tempoSeg');
+      if (seg) seg.querySelectorAll('button').forEach(function(x){
+        var match = x.dataset.v === v;
+        x.classList.toggle('on', match);
+        if (match) x.setAttribute('aria-pressed','true'); else x.removeAttribute('aria-pressed');
+      });
+    });
+  }
+
+  /* ---------- Aufgaben-Checkboxen (visuell) ---------- */
+  document.querySelectorAll('.cb').forEach(function(cb){
+    function toggle(){
+      var checked = cb.getAttribute('aria-checked') === 'true';
+      cb.setAttribute('aria-checked', String(!checked));
+      cb.style.background = !checked ? 'var(--flame-grad)' : '';
+      cb.style.borderColor = !checked ? 'transparent' : '';
+    }
+    cb.addEventListener('click', toggle);
+    cb.addEventListener('keydown', function(ev){ if (ev.key === ' ' || ev.key === 'Enter'){ ev.preventDefault(); toggle(); } });
+  });
+})();
+</script>
+</body>
+</html>

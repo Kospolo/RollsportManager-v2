@@ -1,0 +1,1946 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RollsportManager v2 — Finales Design „Heimspiel"</title>
+<style>
+/* ============================================================
+   ROLLSPORTMANAGER V2 — FINALES DESIGN „HEIMSPIEL"
+   Sieger Konzept C + Jury-Übernahmen aus A (Klar & Professionell)
+   und B (Momentum) · 3 Screens · Light + Dark · selbstenthaltend
+   ============================================================ */
+
+/* ---------- Design-Tokens: Light („Vormittag in der Halle") ---------- */
+:root{
+  color-scheme: light;
+
+  /* Flächen */
+  --bg-canvas:   #FBF4EC;
+  --bg-surface:  #FFFFFF;
+  --bg-sunken:   #F4E9DD;
+  --bg-page:     #F3E8DC;
+  --bar-bg:      rgba(251,244,236,.88);
+
+  /* Tinte (Espresso statt Grau) */
+  --ink:         #35251C;
+  --ink-soft:    #6B5648;
+  --ink-faint:   #8A7365;
+  --line:        #EBDCCE;
+  --line-strong: #DCC9B8;
+
+  /* Marke: Beere */
+  --brand:          #B23A5C;
+  --brand-strong:   #9C2F4E;
+  --brand-soft:     #F7E3E9;
+  --brand-ink:      #8E2946;
+  --brand-contrast: #FFFFFF;
+
+  /* Honig — EXKLUSIV Musik/Küren (Waveform, Loop, Zeitmarken) */
+  --honey:      #E8A94A;
+  --honey-deep: #97570E;
+  --honey-soft: #F9EDD8;
+
+  /* Info (Petrol) — Mahnstufe „Erinnerung", neutrale Hinweise (Jury-Fix) */
+  --info:      #2F6B72;
+  --info-soft: #E2EFEF;
+
+  /* Semantik */
+  --success:      #3F7D4E;
+  --success-soft: #E4F0E3;
+  --warn:         #97570E;
+  --warn-soft:    #F9EDD8;
+  --danger:       #BC3D30;
+  --danger-soft:  #F9E4E0;
+
+  /* Avatar-Farbwelt (deterministisch pro Person) */
+  --av-berry:  #B23A5C;
+  --av-coral:  #C25B3F;
+  --av-honey:  #B4741C;
+  --av-moss:   #4C8555;
+  --av-plum:   #8A4E9C;
+  --av-petrol: #3E7D83;
+
+  /* Audio */
+  --wave-off: #E9D6C2;
+
+  --on-avatar: #FFFFFF;
+  --on-avatar-dark: rgba(26,13,8,.92);
+  --focus: #B23A5C;
+  --shadow-card: 0 1px 2px rgba(84,49,29,.05), 0 10px 30px rgba(84,49,29,.07);
+  --shadow-pop:  0 18px 50px rgba(60,32,16,.16);
+
+  --font-display: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Segoe UI", system-ui, sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ---------- Design-Tokens: Dark („Vereinsheim am Abend") ---------- */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg-canvas:   #241A14;
+  --bg-surface:  #2C211A;
+  --bg-sunken:   #1C130E;
+  --bg-page:     #191009;
+  --bar-bg:      rgba(25,16,9,.86);
+
+  --ink:         #F5EAE0;
+  --ink-soft:    #C9B3A4;
+  --ink-faint:   #A18C7D;
+  --line:        #3E3129;
+  --line-strong: #4E3E33;
+
+  --brand:          #E0698A;
+  --brand-strong:   #EB7F9D;
+  --brand-soft:     #46232E;
+  --brand-ink:      #F2A9BD;
+  --brand-contrast: #2B0E17;
+
+  --honey:      #E8A94A;
+  --honey-deep: #EFB55E;
+  --honey-soft: #3D2C15;
+
+  --info:      #7FBFC6;
+  --info-soft: #1E3538;
+
+  --success:      #85C492;
+  --success-soft: #24382A;
+  --warn:         #EFB55E;
+  --warn-soft:    #3D2C15;
+  --danger:       #E88374;
+  --danger-soft:  #43211B;
+
+  --av-berry:  #C1516F;
+  --av-coral:  #C96A4E;
+  --av-honey:  #BB8028;
+  --av-moss:   #5C9465;
+  --av-plum:   #9A61AC;
+  --av-petrol: #4E8D93;
+
+  --wave-off: #4A382C;
+
+  --on-avatar: rgba(26,13,8,.92);
+  --on-avatar-dark: rgba(26,13,8,.92);
+  --focus: #E0698A;
+  --shadow-card: 0 1px 2px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.28);
+  --shadow-pop:  0 18px 50px rgba(0,0,0,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]):not([data-theme="dark"]){
+    color-scheme: dark;
+    --bg-canvas:   #241A14;
+    --bg-surface:  #2C211A;
+    --bg-sunken:   #1C130E;
+    --bg-page:     #191009;
+    --bar-bg:      rgba(25,16,9,.86);
+
+    --ink:         #F5EAE0;
+    --ink-soft:    #C9B3A4;
+    --ink-faint:   #A18C7D;
+    --line:        #3E3129;
+    --line-strong: #4E3E33;
+
+    --brand:          #E0698A;
+    --brand-strong:   #EB7F9D;
+    --brand-soft:     #46232E;
+    --brand-ink:      #F2A9BD;
+    --brand-contrast: #2B0E17;
+
+    --honey:      #E8A94A;
+    --honey-deep: #EFB55E;
+    --honey-soft: #3D2C15;
+
+    --info:      #7FBFC6;
+    --info-soft: #1E3538;
+
+    --success:      #85C492;
+    --success-soft: #24382A;
+    --warn:         #EFB55E;
+    --warn-soft:    #3D2C15;
+    --danger:       #E88374;
+    --danger-soft:  #43211B;
+
+    --av-berry:  #C1516F;
+    --av-coral:  #C96A4E;
+    --av-honey:  #BB8028;
+    --av-moss:   #5C9465;
+    --av-plum:   #9A61AC;
+    --av-petrol: #4E8D93;
+
+    --wave-off: #4A382C;
+
+    --on-avatar: rgba(26,13,8,.92);
+    --on-avatar-dark: rgba(26,13,8,.92);
+    --focus: #E0698A;
+    --shadow-card: 0 1px 2px rgba(0,0,0,.25), 0 10px 30px rgba(0,0,0,.28);
+    --shadow-pop:  0 18px 50px rgba(0,0,0,.5);
+  }
+}
+
+/* ---------- Basis ---------- */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  font-family:var(--font-body);
+  font-size:14.5px; line-height:1.5;
+  color:var(--ink);
+  background:var(--bg-page);
+  -webkit-font-smoothing:antialiased;
+}
+button{ font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+input{ font:inherit; color:inherit; }
+a{ color:var(--brand-ink); text-decoration:none; font-weight:600; }
+:focus-visible{ outline:3px solid var(--focus); outline-offset:2px; border-radius:6px; }
+svg.ic{ width:20px; height:20px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+svg.ic.fill{ fill:currentColor; stroke:none; }
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ transition:none !important; animation:none !important; }
+}
+
+/* ---------- Kopfleiste ---------- */
+.concept-bar{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding:12px 28px;
+  background:var(--bar-bg);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.concept-bar .mark{
+  width:34px; height:34px; border-radius:11px; flex:none;
+  background:linear-gradient(140deg, var(--brand), var(--brand-strong));
+  color:var(--brand-contrast); display:grid; place-items:center;
+  font-family:var(--font-display); font-weight:800; font-size:15px;
+}
+.concept-bar h1{ font-family:var(--font-display); font-size:16px; font-weight:800; letter-spacing:-.01em; }
+.concept-bar .sub{ color:var(--ink-faint); font-size:12.5px; }
+.theme-switch{
+  margin-left:auto; display:inline-flex; gap:2px; padding:4px;
+  background:var(--bg-sunken); border:1px solid var(--line); border-radius:999px;
+}
+.theme-btn{
+  min-height:32px; padding:0 14px; border-radius:999px;
+  font-size:12.5px; font-weight:700; color:var(--ink-soft);
+  transition:background .15s ease, color .15s ease;
+}
+.theme-btn.active{ background:var(--bg-surface); color:var(--ink); box-shadow:0 1px 3px rgba(60,32,16,.14); }
+
+/* ---------- Seitengerüst ---------- */
+.wrap{ max-width:1400px; margin:0 auto; padding:44px 28px 90px; display:grid; gap:76px; }
+.screen-intro{ max-width:820px; display:grid; gap:6px; }
+.screen-intro .eyebrow{ color:var(--brand-ink); }
+.screen-intro h2{ font-family:var(--font-display); font-size:24px; font-weight:800; letter-spacing:-.015em; }
+.screen-intro p{ color:var(--ink-soft); }
+
+.eyebrow{
+  font-size:11px; font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-faint);
+}
+
+/* Browser-Frame */
+.frame{
+  margin-top:18px;
+  border:1px solid var(--line); border-radius:18px;
+  background:var(--bg-surface); box-shadow:var(--shadow-pop);
+  overflow:hidden;
+}
+.frame-bar{
+  display:flex; align-items:center; gap:14px;
+  padding:10px 16px; background:var(--bg-sunken); border-bottom:1px solid var(--line);
+}
+.dots{ display:flex; gap:7px; }
+.dots span{ width:11px; height:11px; border-radius:50%; opacity:.85; }
+.dots span:nth-child(1){ background:#E0685B; }
+.dots span:nth-child(2){ background:#EDB54F; }
+.dots span:nth-child(3){ background:#6FBB7B; }
+.urlbar{
+  flex:1; max-width:560px; margin:0 auto;
+  display:flex; align-items:center; gap:8px; justify-content:center;
+  padding:6px 14px; border-radius:999px;
+  background:var(--bg-surface); border:1px solid var(--line);
+  color:var(--ink-faint); font-size:12.5px;
+}
+.urlbar b{ color:var(--ink-soft); font-weight:600; }
+.frame-scroll{ overflow-x:auto; }
+
+/* App-Layout */
+.app{ display:grid; grid-template-columns:250px minmax(0,1fr); min-width:1120px; background:var(--bg-canvas); }
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  display:flex; flex-direction:column; gap:2px;
+  padding:20px 14px 16px;
+  background:var(--bg-surface); border-right:1px solid var(--line);
+  min-height:780px;
+}
+.club{ display:flex; align-items:center; gap:11px; padding:4px 8px 18px; }
+.club-mark{
+  width:42px; height:42px; border-radius:13px; flex:none;
+  background:linear-gradient(140deg, var(--brand), var(--brand-strong));
+  color:var(--brand-contrast); display:grid; place-items:center;
+  font-family:var(--font-display); font-weight:800; font-size:16px; letter-spacing:.01em;
+}
+.club b{ display:block; font-family:var(--font-display); font-size:14.5px; font-weight:800; letter-spacing:-.01em; line-height:1.25; }
+.club span{ display:block; font-size:11.5px; color:var(--ink-faint); }
+.nav-label{ padding:14px 12px 6px; }
+.nav-item{
+  display:flex; align-items:center; gap:12px;
+  min-height:44px; padding:10px 12px; border-radius:12px;
+  color:var(--ink-soft); font-weight:600; font-size:14.5px;
+  transition:background .13s ease, color .13s ease;
+  text-align:left; width:100%;
+}
+.nav-item:hover{ background:var(--bg-sunken); color:var(--ink); }
+.nav-item.active{ background:var(--brand-soft); color:var(--brand-ink); font-weight:700; }
+.nav-item .count{
+  margin-left:auto; min-width:22px; height:22px; padding:0 7px;
+  display:grid; place-items:center; border-radius:999px;
+  background:var(--brand); color:var(--brand-contrast);
+  font-size:11.5px; font-weight:800;
+}
+.sidebar .spacer{ flex:1; }
+.user-card{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border:1px solid var(--line); border-radius:14px;
+  background:var(--bg-canvas);
+}
+.user-card b{ display:block; font-size:13.5px; font-weight:700; line-height:1.3; }
+.user-card span{ display:block; font-size:11.5px; color:var(--ink-faint); }
+
+/* ---------- Topbar ---------- */
+.main{ display:flex; flex-direction:column; min-width:0; }
+.topbar{
+  display:flex; align-items:center; gap:14px;
+  padding:14px 30px; background:var(--bg-surface);
+  border-bottom:1px solid var(--line);
+}
+.search{
+  display:flex; align-items:center; gap:9px;
+  width:340px; min-height:42px; padding:0 16px; border-radius:999px;
+  background:var(--bg-sunken); color:var(--ink-faint); font-size:13.5px;
+  border:1px solid transparent; white-space:nowrap; overflow:hidden;
+}
+.search kbd{ margin-left:auto; }
+kbd{
+  font-family:var(--font-mono); font-size:11px; color:var(--ink-faint);
+  background:var(--bg-surface); border:1px solid var(--line); border-bottom-width:2px;
+  border-radius:6px; padding:1px 6px;
+}
+.top-actions{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+.lang-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  min-height:36px; padding:0 13px; border-radius:999px;
+  border:1px solid var(--line); font-weight:700; font-size:13px; color:var(--ink-soft);
+  background:var(--bg-surface);
+}
+.lang-chip small{ color:var(--ink-faint); font-weight:600; font-size:12px; }
+.icon-btn{
+  position:relative; width:42px; height:42px; border-radius:50%;
+  display:grid; place-items:center; color:var(--ink-soft);
+  border:1px solid var(--line); background:var(--bg-surface);
+  transition:background .13s ease;
+}
+.icon-btn:hover{ background:var(--bg-sunken); }
+.icon-btn .dot{
+  position:absolute; top:9px; right:10px; width:9px; height:9px; border-radius:50%;
+  background:var(--brand); border:2px solid var(--bg-surface);
+}
+
+/* ---------- Inhalt ---------- */
+.content{ padding:28px 30px 40px; display:grid; gap:22px; align-content:start; }
+.crumbs{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-faint); font-weight:600; }
+.crumbs svg.ic{ width:14px; height:14px; }
+.crumbs .here{ color:var(--ink); font-weight:700; }
+
+.page-head{ display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+.page-head .titles{ display:grid; gap:4px; }
+.h-display{ font-family:var(--font-display); font-size:27px; font-weight:800; letter-spacing:-.02em; line-height:1.15; }
+.h-sub{ color:var(--ink-soft); font-size:14px; }
+.page-head .actions{ margin-left:auto; display:flex; gap:10px; }
+
+.grid-main{ display:grid; grid-template-columns:minmax(0,1.85fr) minmax(0,1fr); gap:22px; align-items:start; }
+.grid-fin{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:22px; align-items:start; }
+.col{ display:grid; gap:22px; min-width:0; }
+.tbl-wrap{ overflow-x:auto; }
+
+/* ---------- Karten ---------- */
+.card{
+  background:var(--bg-surface); border:1px solid var(--line); border-radius:20px;
+  padding:22px; box-shadow:var(--shadow-card);
+}
+.card-h{ display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+.card-h .titles{ display:grid; gap:2px; }
+.card-h h3{ font-family:var(--font-display); font-size:17px; font-weight:800; letter-spacing:-.01em; }
+.card-h .right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:44px; padding:0 20px; border-radius:999px;
+  font-weight:700; font-size:14px; border:1px solid transparent; white-space:nowrap;
+  transition:background .13s ease, border-color .13s ease, transform .1s ease;
+}
+.btn:active{ transform:scale(.98); }
+.btn-primary{ background:var(--brand); color:var(--brand-contrast); }
+.btn-primary:hover{ background:var(--brand-strong); }
+.btn-secondary{ background:var(--brand-soft); color:var(--brand-ink); }
+.btn-ghost{ border-color:var(--line-strong); background:var(--bg-surface); color:var(--ink); }
+.btn-ghost:hover{ background:var(--bg-sunken); }
+.btn-sm{ min-height:36px; padding:0 14px; font-size:13px; }
+.btn .ic{ width:17px; height:17px; }
+
+/* ---------- Chips & Badges ---------- */
+.chip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:3px 10px; border-radius:999px;
+  font-size:12px; font-weight:700; white-space:nowrap;
+}
+.chip .ic{ width:13px; height:13px; }
+.chip-neutral{ background:var(--bg-sunken); color:var(--ink-soft); }
+.chip-brand{ background:var(--brand-soft); color:var(--brand-ink); }
+.chip-success{ background:var(--success-soft); color:var(--success); }
+.chip-warn{ background:var(--warn-soft); color:var(--warn); }
+.chip-danger{ background:var(--danger-soft); color:var(--danger); }
+.chip-info{ background:var(--info-soft); color:var(--info); }
+.chip-honey{ background:var(--honey-soft); color:var(--honey-deep); }
+
+/* ---------- Avatare (Signatur) + Organisations-Kacheln ---------- */
+.avatar{
+  display:grid; place-items:center; border-radius:50%; flex:none;
+  color:var(--on-avatar); font-family:var(--font-display); font-weight:800;
+  width:36px; height:36px; font-size:12.5px; letter-spacing:.02em;
+}
+/* Jury-Fix: dunkle Initialen auf den helleren Tönen honey & moss (AA) */
+.avatar.av-honey, .avatar.av-moss{ color:var(--on-avatar-dark); }
+.avatar.s{ width:28px; height:28px; font-size:10.5px; }
+.avatar.l{ width:48px; height:48px; font-size:16px; }
+.avatar.xl{ width:64px; height:64px; font-size:21px; }
+.av-berry{ background:linear-gradient(140deg,var(--av-berry),color-mix(in srgb,var(--av-berry) 78%, #000 22%)); }
+.av-coral{ background:linear-gradient(140deg,var(--av-coral),color-mix(in srgb,var(--av-coral) 78%, #000 22%)); }
+.av-honey{ background:linear-gradient(140deg,var(--av-honey),color-mix(in srgb,var(--av-honey) 78%, #000 22%)); }
+.av-moss{ background:linear-gradient(140deg,var(--av-moss),color-mix(in srgb,var(--av-moss) 78%, #000 22%)); }
+.av-plum{ background:linear-gradient(140deg,var(--av-plum),color-mix(in srgb,var(--av-plum) 78%, #000 22%)); }
+.av-petrol{ background:linear-gradient(140deg,var(--av-petrol),color-mix(in srgb,var(--av-petrol) 78%, #000 22%)); }
+.avatar-stack{ display:flex; align-items:center; }
+.avatar-stack .avatar{ margin-left:-9px; border:2.5px solid var(--bg-surface); }
+.avatar-stack .avatar:first-child{ margin-left:0; }
+.avatar-stack .more{
+  margin-left:-9px; width:28px; height:28px; border-radius:50%;
+  display:grid; place-items:center; font-size:10.5px; font-weight:800;
+  background:var(--bg-sunken); color:var(--ink-soft); border:2.5px solid var(--bg-surface);
+}
+/* Jury-Fix: Organisationen/Sammelbuchungen = Icon-Kachel statt Pseudo-Monogramm */
+.org-ic{
+  width:28px; height:28px; border-radius:9px; flex:none;
+  display:grid; place-items:center;
+  background:var(--bg-sunken); color:var(--ink-soft);
+}
+.org-ic .ic{ width:15px; height:15px; }
+
+/* ---------- Screen 1: Trainer-Dashboard ---------- */
+.session{ display:grid; grid-template-columns:96px minmax(0,1fr) auto; gap:20px; padding:18px 4px; align-items:start; }
+.session + .session{ border-top:1px solid var(--line); }
+.session-time b{ display:block; font-family:var(--font-display); font-size:19px; font-weight:800; font-variant-numeric:tabular-nums; }
+.session-time span{ display:block; font-size:12px; color:var(--ink-faint); margin-top:1px; }
+.session-time .chip{ margin-top:8px; }
+.session-body{ display:grid; gap:9px; min-width:0; }
+.session-body h4{ font-size:15.5px; font-weight:700; }
+.session-meta{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; color:var(--ink-soft); font-size:13px; }
+.session-meta .m{ display:inline-flex; align-items:center; gap:6px; }
+.session-meta .ic{ width:15px; height:15px; color:var(--ink-faint); }
+.attendance{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.attendance .nums{ font-size:13px; color:var(--ink-soft); font-weight:600; }
+.attendance .nums b{ color:var(--success); }
+.attendance .nums .no{ color:var(--danger); font-weight:700; }
+.attendance .nums .open{ color:var(--ink-faint); font-weight:700; }
+/* Jury-Übernahme aus B: gestapelter Response-Balken */
+.resp-bar{
+  display:flex; height:6px; border-radius:999px; overflow:hidden;
+  background:var(--bg-sunken); max-width:360px; width:100%;
+}
+.resp-bar i{ display:block; height:100%; }
+.resp-bar .r-yes{ background:var(--success); }
+.resp-bar .r-no{ background:var(--danger); }
+.resp-bar .r-open{ background:var(--line-strong); }
+.absage{
+  display:flex; align-items:flex-start; gap:9px;
+  padding:9px 12px; border-radius:12px; background:var(--bg-sunken);
+  font-size:13px; color:var(--ink-soft);
+}
+.absage b{ color:var(--ink); font-weight:700; }
+.session-cta{ display:grid; gap:8px; justify-items:stretch; }
+
+.tile-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.kuer-tile{
+  border:1px solid var(--line); border-radius:16px; padding:16px;
+  display:grid; gap:12px; background:var(--bg-canvas);
+  transition:border-color .13s ease, box-shadow .13s ease;
+}
+.kuer-tile:hover{ border-color:var(--line-strong); box-shadow:var(--shadow-card); }
+.kuer-tile .who{ display:flex; align-items:center; gap:9px; }
+.kuer-tile .who b{ font-size:13px; font-weight:700; display:block; line-height:1.3; }
+.kuer-tile .who .chip{ margin-left:auto; }
+.kuer-tile h4{ font-family:var(--font-display); font-size:16px; font-weight:800; letter-spacing:-.01em; }
+.kuer-tile .foot{ display:flex; align-items:center; gap:10px; }
+.play-mini{
+  width:40px; height:40px; border-radius:50%; flex:none;
+  display:grid; place-items:center;
+  background:var(--brand-soft); color:var(--brand-ink);
+  transition:background .13s ease, color .13s ease;
+}
+.play-mini:hover{ background:var(--brand); color:var(--brand-contrast); }
+.play-mini .ic{ width:16px; height:16px; margin-left:2px; }
+.kuer-tile .foot small{ color:var(--ink-faint); font-size:12.5px; line-height:1.4; }
+
+/* Jury-Übernahme aus B: Countdown-Hero, dosiert in Heimspiel-Tonalität */
+.hero-count{
+  background:var(--brand-soft); border-color:transparent;
+}
+.hero-count .eyebrow{ color:var(--brand-ink); }
+.hero-count .big{
+  font-family:var(--font-display); font-size:38px; font-weight:800;
+  letter-spacing:-.02em; line-height:1.05; color:var(--brand-ink);
+  font-variant-numeric:tabular-nums;
+}
+.hero-count .big small{ font-size:19px; letter-spacing:0; }
+.hero-count .meta{ display:grid; gap:5px; margin:12px 0 16px; font-size:13.5px; color:var(--ink); }
+.hero-count .meta .m{ display:inline-flex; align-items:center; gap:8px; }
+.hero-count .meta .ic{ width:15px; height:15px; color:var(--brand-ink); }
+
+.task{ display:flex; align-items:flex-start; gap:12px; padding:13px 2px; }
+.task + .task{ border-top:1px dashed var(--line); }
+.cb{
+  width:23px; height:23px; border-radius:8px; flex:none; margin-top:1px;
+  border:2px solid var(--line-strong); display:grid; place-items:center; color:transparent;
+  transition:background .13s ease, border-color .13s ease;
+}
+.cb .ic{ width:14px; height:14px; stroke-width:3; }
+.task.done .cb{ background:var(--success); border-color:var(--success); color:#fff; }
+.task .t{ min-width:0; display:grid; gap:1px; }
+.task .t b{ font-size:14px; font-weight:600; }
+.task.done .t b{ text-decoration:line-through; color:var(--ink-faint); font-weight:600; }
+.task .t small{ color:var(--ink-faint); font-size:12.5px; }
+.task .chip{ margin-left:auto; flex:none; }
+.task.done .chip{ display:none; }
+
+/* ---------- Screen 2: Kür & Audio-Player ---------- */
+.kuer-head{ display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+.kuer-head .titles{ display:grid; gap:7px; min-width:0; }
+.kuer-head .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+.kuer-meta{ display:flex; gap:16px; flex-wrap:wrap; color:var(--ink-soft); font-size:13.5px; }
+.kuer-meta .m{ display:inline-flex; align-items:center; gap:7px; }
+.kuer-meta .ic{ width:15px; height:15px; color:var(--ink-faint); }
+
+.player{ padding:26px 26px 22px; }
+.player-top{ display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+.player-top .version{ display:inline-flex; align-items:center; gap:7px; color:var(--ink-faint); font-size:12.5px; font-weight:600; }
+.wave-wrap{ position:relative; height:132px; margin:6px 2px 4px; cursor:pointer; }
+.wave-wrap svg{ position:absolute; inset:0; width:100%; height:100%; display:block; pointer-events:none; }
+.loop-region{
+  position:absolute; top:-8px; bottom:-8px;
+  border-radius:10px; pointer-events:none;
+  background:color-mix(in srgb, var(--honey) 16%, transparent);
+  border-left:2.5px solid var(--honey-deep); border-right:2.5px solid var(--honey-deep);
+  transition:opacity .15s ease;
+}
+.loop-region.off{ opacity:.3; }
+.loop-handle{
+  position:absolute; top:-13px; transform:translateX(-50%);
+  background:var(--honey-deep); color:var(--bg-surface);
+  font-family:var(--font-mono); font-size:10.5px; font-weight:800;
+  padding:2px 8px; border-radius:7px; letter-spacing:.03em;
+}
+.playhead{ position:absolute; top:-8px; bottom:-8px; width:2.5px; background:var(--ink); border-radius:2px; pointer-events:none; }
+.playhead::before{
+  content:""; position:absolute; top:-5px; left:50%; transform:translateX(-50%);
+  width:11px; height:11px; border-radius:50%; background:var(--ink);
+  border:2.5px solid var(--bg-surface);
+}
+.wave-times{
+  display:flex; justify-content:space-between; align-items:baseline;
+  font-family:var(--font-mono); font-size:12px; color:var(--ink-faint); margin-top:12px;
+}
+.wave-times .now{ font-size:17px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+.wave-times .now small{ font-size:12px; color:var(--ink-faint); font-weight:400; }
+
+.transport{
+  display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px;
+  margin-top:14px;
+}
+.seg-group{ display:grid; gap:6px; justify-items:start; }
+.seg{
+  display:inline-flex; gap:2px; padding:4px;
+  background:var(--bg-sunken); border-radius:999px; border:1px solid var(--line);
+}
+.seg button{
+  min-width:46px; min-height:36px; padding:0 10px; border-radius:999px;
+  font-size:13px; font-weight:700; color:var(--ink-soft);
+  transition:background .13s ease, color .13s ease;
+}
+.seg button:hover{ color:var(--ink); }
+.seg button.on{ background:var(--bg-surface); color:var(--ink); box-shadow:0 1px 3px rgba(60,32,16,.16); }
+.transport-mid{ display:flex; align-items:center; gap:16px; }
+.skip{
+  width:48px; height:48px; border-radius:50%;
+  display:grid; place-items:center; color:var(--ink-soft);
+  border:1px solid var(--line-strong); background:var(--bg-surface);
+  font-size:0;
+}
+.skip:hover{ background:var(--bg-sunken); }
+.play-big{
+  width:68px; height:68px; border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--brand); color:var(--brand-contrast);
+  box-shadow:0 10px 26px color-mix(in srgb, var(--brand) 42%, transparent);
+  transition:background .13s ease, transform .1s ease;
+}
+.play-big:hover{ background:var(--brand-strong); }
+.play-big:active{ transform:scale(.96); }
+.play-big .ic{ width:26px; height:26px; }
+.play-big .ic.i-play-shift{ margin-left:3px; }
+.loop-group{ display:grid; gap:6px; justify-items:end; }
+.loop-chips{ display:flex; gap:8px; align-items:center; }
+.loop-toggle{
+  display:inline-flex; align-items:center; gap:7px;
+  min-height:36px; padding:0 14px; border-radius:999px;
+  background:var(--honey-soft); color:var(--honey-deep);
+  font-weight:800; font-size:13px; border:1px solid color-mix(in srgb, var(--honey-deep) 30%, transparent);
+  transition:background .13s ease, color .13s ease;
+}
+.loop-toggle[aria-pressed="false"]{ background:var(--bg-sunken); color:var(--ink-faint); border-color:var(--line-strong); }
+.loop-mark{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:700;
+  padding:7px 11px; border-radius:10px;
+  background:var(--bg-sunken); color:var(--ink-soft); border:1px solid var(--line);
+}
+.tempo-row{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  border-top:1px solid var(--line); margin-top:20px; padding-top:18px;
+}
+.tempo-row .eyebrow{ flex:none; }
+.tempo-pills{ display:inline-flex; gap:6px; }
+.tempo-pill{
+  min-height:38px; padding:0 15px; border-radius:999px;
+  border:1px solid var(--line-strong); font-weight:700; font-size:13.5px; color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+  transition:background .13s ease, color .13s ease, border-color .13s ease;
+}
+.tempo-pill:hover{ background:var(--bg-sunken); }
+.tempo-pill.on{ background:var(--brand); border-color:var(--brand); color:var(--brand-contrast); }
+.tempo-row input[type="range"]{ flex:1; min-width:160px; accent-color:var(--brand); height:28px; }
+.tempo-note{ font-size:12.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+.player-hint{
+  margin-top:16px; text-align:center; font-size:12.5px; color:var(--ink-faint);
+}
+
+.mark-row{ display:flex; align-items:center; gap:13px; padding:11px 8px; border-radius:12px; }
+.mark-row:hover{ background:var(--bg-sunken); }
+.mark-row + .mark-row{ margin-top:2px; }
+.mark-time{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:700;
+  color:var(--honey-deep); background:var(--honey-soft);
+  padding:4px 9px; border-radius:8px; flex:none;
+}
+.mark-row .t{ min-width:0; flex:1; display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.mark-row .t b{ font-size:14px; font-weight:600; }
+.mark-play{
+  width:34px; height:34px; border-radius:50%; flex:none;
+  display:grid; place-items:center; color:var(--ink-faint);
+  border:1px solid var(--line);
+}
+.mark-play:hover{ color:var(--brand-ink); background:var(--brand-soft); border-color:transparent; }
+.mark-play .ic{ width:13px; height:13px; margin-left:1.5px; }
+
+.note-bubble{
+  padding:14px 16px; border-radius:14px; background:var(--bg-sunken);
+  font-size:14px; color:var(--ink); line-height:1.55;
+}
+.note-meta{ margin-top:8px; display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-faint); }
+
+/* Jury-Übernahme aus B: RollArt-Score-Verlauf */
+.trend{ display:flex; gap:14px; align-items:flex-end; margin-top:16px; padding:4px 2px 0; }
+.trend .tcol{ flex:1; display:grid; gap:7px; justify-items:center; min-width:0; }
+.trend .tval{
+  font-family:var(--font-mono); font-size:13.5px; font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+.trend .tbar{
+  width:100%; max-width:68px; border-radius:9px 9px 5px 5px;
+  background:var(--brand-soft);
+}
+.trend .tbar.best{ background:var(--brand); }
+.trend .tlabel{ font-size:11.5px; color:var(--ink-faint); text-align:center; line-height:1.35; }
+.trend-foot{ margin-top:12px; font-size:12.5px; color:var(--ink-faint); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+/* ---------- Screen 3: Finanzen (Seriositätszone) ---------- */
+.kpi-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+.kpi{ background:var(--bg-surface); border:1px solid var(--line); border-radius:18px; padding:18px 20px; box-shadow:var(--shadow-card); }
+.kpi .label{ display:flex; align-items:center; gap:8px; }
+.kpi .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+.kpi .val{
+  font-family:var(--font-display); font-size:24px; font-weight:800;
+  letter-spacing:-.015em; font-variant-numeric:tabular-nums; margin-top:8px;
+}
+.kpi .sub{ font-size:12.5px; color:var(--ink-faint); margin-top:3px; }
+
+.pipeline{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.stage{
+  border-radius:14px; padding:14px 16px;
+  background:var(--bg-canvas); border:1px solid var(--line);
+  display:grid; gap:2px; position:relative; overflow:hidden;
+}
+.stage::before{ content:""; position:absolute; inset:0 auto 0 0; width:4px; background:var(--line-strong); }
+.stage.s2::before{ background:var(--info); }
+.stage.s3::before{ background:var(--warn); }
+.stage.s4::before{ background:var(--danger); }
+.stage .label{ font-size:12px; font-weight:700; color:var(--ink-soft); }
+.stage .count{ font-family:var(--font-display); font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+.stage .count small{ font-size:12px; color:var(--ink-faint); font-weight:600; }
+.stage .amt{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+.pipeline-note{ margin-top:12px; font-size:12.5px; color:var(--ink-faint); display:flex; align-items:center; gap:7px; }
+
+/* Jury-Übernahme aus A: Mahn-Automatik mit Regel-Zeitleiste */
+.rule-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.rule{
+  border:1px solid var(--line); border-radius:14px; padding:14px 16px;
+  background:var(--bg-canvas); display:grid; gap:7px; align-content:start;
+}
+.rule .day{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:700;
+  color:var(--ink-soft); background:var(--bg-sunken);
+  padding:3px 9px; border-radius:8px; justify-self:start;
+  font-variant-numeric:tabular-nums;
+}
+.rule b{ font-size:13.5px; font-weight:700; line-height:1.35; }
+.rule .chip{ justify-self:start; }
+.switch{
+  width:46px; height:27px; border-radius:999px; position:relative; flex:none;
+  background:var(--success); transition:background .15s ease;
+}
+.switch::after{
+  content:""; position:absolute; top:3px; right:3px;
+  width:21px; height:21px; border-radius:50%; background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.25);
+}
+.switch-label{ font-size:12.5px; font-weight:800; color:var(--success); }
+
+/* Jury-Übernahme aus A: Bankabgleich */
+.recon-top{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+.recon-top .val{
+  font-family:var(--font-display); font-size:24px; font-weight:800;
+  font-variant-numeric:tabular-nums; letter-spacing:-.015em;
+}
+.recon-top .of{ font-size:13px; color:var(--ink-faint); }
+.recon-bar{ height:8px; border-radius:999px; background:var(--bg-sunken); overflow:hidden; margin:12px 0 6px; }
+.recon-bar i{ display:block; height:100%; background:var(--success); border-radius:999px; }
+.recon-sub{ font-size:12.5px; color:var(--ink-faint); }
+.verein-item{ display:flex; align-items:center; gap:12px; padding:12px 2px; }
+.verein-item + .verein-item{ border-top:1px dashed var(--line); }
+.verein-ic{
+  width:38px; height:38px; border-radius:12px; flex:none;
+  display:grid; place-items:center; background:var(--bg-sunken); color:var(--ink-soft);
+}
+.verein-item .t{ min-width:0; }
+.verein-item .t b{ display:block; font-size:13.5px; font-weight:700; line-height:1.35; }
+.verein-item .t small{ color:var(--ink-faint); font-size:12.5px; }
+.verein-item .btn{ margin-left:auto; flex:none; }
+
+/* Jury-Übernahme aus A: Filter-Chips über der Tabelle */
+.fchips{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+.fchip{
+  min-height:36px; padding:0 15px; border-radius:999px;
+  border:1px solid var(--line-strong); font-weight:700; font-size:13px; color:var(--ink-soft);
+  transition:background .13s ease, color .13s ease;
+}
+.fchip:hover{ background:var(--bg-sunken); }
+.fchip.on{ background:var(--brand-soft); border-color:transparent; color:var(--brand-ink); }
+
+table.tbl{ width:100%; border-collapse:separate; border-spacing:0; }
+.tbl th{
+  text-align:left; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--ink-faint); padding:8px 12px; border-bottom:1px solid var(--line);
+}
+.tbl td{ padding:12px; border-bottom:1px solid var(--line); vertical-align:middle; font-size:14px; }
+.tbl tr:last-child td{ border-bottom:none; }
+.tbl .amount, .tbl th.num{ text-align:right; }
+/* Jury-Übernahme aus A: Mono-Disziplin für Geldwerte */
+.amount{
+  font-family:var(--font-mono); font-size:13px; font-weight:600;
+  font-variant-numeric:tabular-nums; white-space:nowrap;
+}
+.amount.pos{ color:var(--success); }
+.saldo{
+  font-family:var(--font-mono); font-size:12.5px; font-weight:500;
+  font-variant-numeric:tabular-nums; color:var(--ink-faint); white-space:nowrap;
+}
+.r-cell{ display:grid; gap:2px; }
+.r-cell b{ font-weight:600; font-size:14px; }
+.inv{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-faint); }
+.member-cell{ display:flex; align-items:center; gap:11px; min-width:0; }
+.member-cell b{ display:block; font-weight:700; font-size:14px; line-height:1.3; }
+.member-cell small{ display:block; color:var(--ink-faint); font-size:12px; }
+.row-actions{ display:flex; gap:6px; justify-content:flex-end; }
+.tbl-foot{
+  padding:12px 4px 0; display:flex; align-items:center; justify-content:space-between; gap:12px;
+  font-size:13px; color:var(--ink-faint); flex-wrap:wrap;
+}
+.tbl-foot .sum{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink-soft); }
+.due-cell{ white-space:nowrap; color:var(--ink-soft); }
+.due-cell b{ color:var(--ink); font-weight:700; }
+
+.page-foot{ text-align:center; color:var(--ink-faint); font-size:12.5px; }
+
+@media (max-width:900px){
+  .wrap{ padding:32px 14px 70px; gap:56px; }
+  .concept-bar{ padding:10px 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- SVG-Sprite -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="3"/><path d="M3.5 10h17M8 2.8V6M16 2.8V6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20c.6-3.4 3.1-5.2 6.2-5.2s5.6 1.8 6.2 5.2"/><circle cx="17.2" cy="9.4" r="2.6"/><path d="M16.4 14.9c2.7.1 4.4 1.7 4.9 4.4"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18.5V5.5l12-2.3v13"/><circle cx="6" cy="18.5" r="3"/><circle cx="18" cy="16.2" r="3"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7.5 4h9v5.2a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 5.5H4.2a2.6 2.6 0 0 0 2.9 4M16.5 5.5h3.3a2.6 2.6 0 0 1-2.9 4M12 13.7v3.6M8.5 20.8h7M12 17.3l-2 3.5M12 17.3l2 3.5"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13.5" rx="3"/><path d="M3 10.2h18M15.5 14.8h2.4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20.5h16.5"/><path d="M7 20V12.5M12 20V5.5M17 20V9.5"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 8h9M17.5 8H20M4 16h4M12.5 16H20"/><circle cx="15.2" cy="8" r="2.2"/><circle cx="10.2" cy="16" r="2.2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 10.2a6 6 0 1 0-12 0c0 5.3-2.2 6.3-2.2 6.3h16.4S18 15.5 18 10.2"/><path d="M10.3 20.3a2 2 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5 16 16"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5.5v13M5.5 12h13"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.3v13.4c0 .8.9 1.3 1.6.9l10.4-6.7c.6-.4.6-1.4 0-1.8L9.6 4.4C8.9 4 8 4.5 8 5.3z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4.2" height="15" rx="1.4"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.4"/></symbol>
+  <symbol id="i-rew" viewBox="0 0 24 24"><path d="M4.5 8.7A8.2 8.2 0 1 1 3.8 15"/><path d="M4.5 3.8v4.9h4.9"/><text x="12" y="15.6" font-size="7.5" font-family="inherit" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">5</text></symbol>
+  <symbol id="i-fwd" viewBox="0 0 24 24"><path d="M19.5 8.7A8.2 8.2 0 1 0 20.2 15"/><path d="M19.5 3.8v4.9h-4.9"/><text x="12" y="15.6" font-size="7.5" font-family="inherit" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none">5</text></symbol>
+  <symbol id="i-loop" viewBox="0 0 24 24"><path d="M17 2.5l3.5 3.5L17 9.5"/><path d="M3.5 11V9.7A3.7 3.7 0 0 1 7.2 6h13.3"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20.5 13v1.3a3.7 3.7 0 0 1-3.7 3.7H3.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.8l4.6 4.6L19.5 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.2V12l3.4 2.2"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z"/><circle cx="12" cy="9.8" r="2.4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 5.5 16 12l-6.5 6.5"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 4v10.5M7.5 10.5 12 15l4.5-4.5M4.5 19.5h15"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-cake" viewBox="0 0 24 24"><path d="M4.5 20.5h15v-6.2a2.3 2.3 0 0 0-2.3-2.3H6.8a2.3 2.3 0 0 0-2.3 2.3z"/><path d="M4.5 16.5c1.5 1.3 3 1.3 4.5 0s3-1.3 4.5 0 3 1.3 4.5 0M8 12V9.5M12 12V8.5M16 12V9.5M12 5.8v.1"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2.5 4.5 14H11l-1 7.5L18.5 10H13z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5"/><path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M16.8 3.7l3.5 3.5L8.5 19 3.8 20.2 5 15.5z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 4v16.5M6.5 20.5h11M12 4c-2.5 1.6-5 1.6-7.5 1M12 4c2.5 1.6 5 1.6 7.5 1M4.5 5l-2.3 6.5a3.3 3.3 0 0 0 4.6 0zM19.5 5l-2.3 6.5a3.3 3.3 0 0 0 4.6 0z"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24"><path d="M3.5 9.3 12 4l8.5 5.3"/><path d="M5.2 9.5v9M9.7 9.5v9M14.3 9.5v9M18.8 9.5v9M3.5 20.5h17"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4"/><path d="M5.5 4.8c4.6-2.4 8.4 2.3 13-.1v9.1c-4.6 2.4-8.4-2.3-13 .1"/></symbol>
+</svg>
+
+<header class="concept-bar">
+  <div class="mark">R</div>
+  <div>
+    <h1>RollsportManager v2 · Finales Design „Heimspiel"</h1>
+    <div class="sub">Sieger-Konzept C + Jury-Übernahmen aus A &amp; B · Desktop-Web-Portal · 3 Screens</div>
+  </div>
+  <div class="theme-switch" role="group" aria-label="Farbschema wählen">
+    <button class="theme-btn" data-theme="light" type="button">Hell</button>
+    <button class="theme-btn active" data-theme="auto" type="button">Auto</button>
+    <button class="theme-btn" data-theme="dark" type="button">Dunkel</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ============================================================
+     SCREEN 1 — TRAINER-DASHBOARD
+     ============================================================ -->
+<section>
+  <div class="screen-intro">
+    <div class="eyebrow">Screen 01 · Persona Trainerin</div>
+    <h2>Dashboard „Heute" — der Trainingstag auf einen Blick</h2>
+    <p>Menschen zuerst: Jede Zahl hat ein Gesicht. Neu nach Jury: gestapelter Antwort-Balken unter jedem Termin (aus B), Wettkampf-Countdown in warmer Tonalität (aus B). Die Vereinsleben-Karte lebt jetzt im Mitglieder-Workspace — am Hallenrand zählt nur das Training.</p>
+  </div>
+
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="urlbar"><svg class="ic" style="width:13px;height:13px"><use href="#i-lock"/></svg> app.rollsportmanager.de<b>/heute</b></div>
+      <div style="width:56px"></div>
+    </div>
+    <div class="frame-scroll">
+    <div class="app">
+
+      <aside class="sidebar">
+        <div class="club">
+          <div class="club-mark">RN</div>
+          <div><b>RSC Neckarblick</b><span>e.&thinsp;V. · Rollkunstlauf</span></div>
+        </div>
+        <div class="nav-label eyebrow">Training</div>
+        <button class="nav-item active" type="button"><svg class="ic"><use href="#i-sun"/></svg> Heute</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-cal"/></svg> Kalender</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-users"/></svg> Meine Gruppen</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-music"/></svg> Küren <span class="count">3</span></button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-trophy"/></svg> Wettkampf</button>
+        <div class="spacer"></div>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-sliders"/></svg> Einstellungen</button>
+        <div class="user-card">
+          <div class="avatar av-petrol">KV</div>
+          <div><b>Katrin Vogel</b><span>Trainerin · Leistungsgruppe</span></div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg> Suchen — Mitglieder, Küren, Termine … <kbd>&#8984;K</kbd></div>
+          <div class="top-actions">
+            <button class="lang-chip" type="button" aria-label="Sprache wechseln, aktuell Deutsch">DE <small>/ EN</small></button>
+            <button class="icon-btn" type="button" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+            <div class="avatar av-petrol" aria-hidden="true">KV</div>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="page-head">
+            <div class="titles">
+              <div class="h-display">Guten Morgen, Katrin!</div>
+              <div class="h-sub">Donnerstag, 9. Juli 2026 · 2 Einheiten heute · Rundsporthalle West</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-ghost" type="button"><svg class="ic"><use href="#i-cal"/></svg> Woche ansehen</button>
+              <button class="btn btn-primary" type="button"><svg class="ic"><use href="#i-plus"/></svg> Termin anlegen</button>
+            </div>
+          </div>
+
+          <div class="grid-main">
+            <div class="col">
+
+              <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Heute in der Halle</div>
+                    <h3>Deine Einheiten</h3>
+                  </div>
+                  <div class="right"><span class="chip chip-success"><svg class="ic"><use href="#i-check"/></svg> Halle bestätigt</span></div>
+                </div>
+
+                <div class="session">
+                  <div class="session-time">
+                    <b>16:00</b><span>bis 17:30 Uhr</span>
+                    <span class="chip chip-neutral">Training</span>
+                  </div>
+                  <div class="session-body">
+                    <h4>Anfängergruppe — Grundlagen &amp; Gleichgewicht</h4>
+                    <div class="session-meta">
+                      <span class="m"><svg class="ic"><use href="#i-pin"/></svg> Rundsporthalle West · Feld 2</span>
+                      <span class="m"><svg class="ic"><use href="#i-users"/></svg> 14 eingeladen</span>
+                    </div>
+                    <div class="attendance">
+                      <div class="avatar-stack">
+                        <div class="avatar s av-coral">MB</div>
+                        <div class="avatar s av-moss">TK</div>
+                        <div class="avatar s av-plum">SÖ</div>
+                        <div class="avatar s av-honey">LF</div>
+                        <div class="avatar s av-petrol">NH</div>
+                        <div class="more">+4</div>
+                      </div>
+                      <span class="nums"><b>9 Zusagen</b> · <span class="no">1 Absage</span> · <span class="open">4 offen</span></span>
+                    </div>
+                    <div class="resp-bar" aria-hidden="true"><i class="r-yes" style="width:64.3%"></i><i class="r-no" style="width:7.1%"></i><i class="r-open" style="width:28.6%"></i></div>
+                    <div class="absage">
+                      <div class="avatar s av-berry">ES</div>
+                      <div><b>Emma Schröder</b> hat abgesagt: „Erkältung, morgen wieder dabei." <a href="#">Antworten</a></div>
+                    </div>
+                  </div>
+                  <div class="session-cta">
+                    <button class="btn btn-primary" type="button"><svg class="ic"><use href="#i-check"/></svg> Anwesenheit starten</button>
+                    <button class="btn btn-ghost btn-sm" type="button">Details</button>
+                  </div>
+                </div>
+
+                <div class="session">
+                  <div class="session-time">
+                    <b>17:30</b><span>bis 19:00 Uhr</span>
+                    <span class="chip chip-honey">Kür-Training</span>
+                  </div>
+                  <div class="session-body">
+                    <h4>Leistungsgruppe — Kür-Schwerpunkt: Doppelsalchow</h4>
+                    <div class="session-meta">
+                      <span class="m"><svg class="ic"><use href="#i-pin"/></svg> Rundsporthalle West · Feld 1</span>
+                      <span class="m"><svg class="ic"><use href="#i-users"/></svg> 15 eingeladen</span>
+                      <span class="m"><svg class="ic"><use href="#i-music"/></svg> 3 Küren im Programm</span>
+                    </div>
+                    <div class="attendance">
+                      <div class="avatar-stack">
+                        <div class="avatar s av-plum">LB</div>
+                        <div class="avatar s av-honey">ZÖ</div>
+                        <div class="avatar s av-moss">JW</div>
+                        <div class="avatar s av-berry">AB</div>
+                        <div class="avatar s av-coral">SR</div>
+                        <div class="more">+7</div>
+                      </div>
+                      <span class="nums"><b>12 Zusagen</b> · <span class="no">2 Absagen</span> · <span class="open">1 offen</span></span>
+                    </div>
+                    <div class="resp-bar" aria-hidden="true"><i class="r-yes" style="width:80%"></i><i class="r-no" style="width:13.3%"></i><i class="r-open" style="width:6.7%"></i></div>
+                  </div>
+                  <div class="session-cta">
+                    <button class="btn btn-secondary" type="button"><svg class="ic"><use href="#i-music"/></svg> Küren öffnen</button>
+                    <button class="btn btn-ghost btn-sm" type="button">Details</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Küren griffbereit</div>
+                    <h3>Zuletzt geübt</h3>
+                  </div>
+                  <div class="right"><a href="#">Alle Küren <svg class="ic" style="width:13px;height:13px;vertical-align:-2px"><use href="#i-chev"/></svg></a></div>
+                </div>
+                <div class="tile-grid">
+                  <div class="kuer-tile">
+                    <div class="who">
+                      <div class="avatar s av-plum">LB</div>
+                      <b>Lina Baumgärtner</b>
+                      <span class="chip chip-brand">Kür B</span>
+                    </div>
+                    <h4>Sommernachtstraum</h4>
+                    <div class="foot">
+                      <button class="play-mini" type="button" aria-label="Sommernachtstraum abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                      <small>2:30 · zuletzt gestern<br>Tempo zuletzt: 85&thinsp;%</small>
+                    </div>
+                  </div>
+                  <div class="kuer-tile">
+                    <div class="who">
+                      <div class="avatar s av-honey">ZÖ</div>
+                      <b>Zeynep Özdemir</b>
+                      <span class="chip chip-brand">Kür A</span>
+                    </div>
+                    <h4>Feuervogel</h4>
+                    <div class="foot">
+                      <button class="play-mini" type="button" aria-label="Feuervogel abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                      <small>3:00 · zuletzt Montag<br>A–B-Loop: Schrittfolge</small>
+                    </div>
+                  </div>
+                  <div class="kuer-tile">
+                    <div class="who">
+                      <div class="avatar s av-moss">JW</div>
+                      <b>Jonas Weiß</b>
+                      <span class="chip chip-neutral">Pflicht</span>
+                    </div>
+                    <h4>Über den Wolken</h4>
+                    <div class="foot">
+                      <button class="play-mini" type="button" aria-label="Über den Wolken abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                      <small>2:15 · neu geschnitten<br>Version 2 vom 05.07.</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="col">
+
+              <div class="card hero-count">
+                <div class="eyebrow">Nächster Wettkampf</div>
+                <div class="big" style="margin-top:8px">9 <small>Tage</small></div>
+                <div class="meta">
+                  <span class="m"><svg class="ic"><use href="#i-flag"/></svg> <b>Bezirksmeisterschaft Rollkunstlauf</b></span>
+                  <span class="m"><svg class="ic"><use href="#i-cal"/></svg> Samstag, 18. Juli 2026 · Sporthalle Böckingen</span>
+                  <span class="m"><svg class="ic"><use href="#i-users"/></svg> 4 Läuferinnen gemeldet · Meldeschluss 15. Juli</span>
+                </div>
+                <button class="btn btn-ghost" type="button" style="width:100%"><svg class="ic"><use href="#i-trophy"/></svg> Wettkampf-Plan öffnen</button>
+              </div>
+
+              <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Offene Aufgaben</div>
+                    <h3>Das steht an</h3>
+                  </div>
+                  <div class="right"><span class="chip chip-neutral" id="taskCount">3 offen</span></div>
+                </div>
+                <div class="task">
+                  <button class="cb" type="button" aria-pressed="false" aria-label="Wettkampfmeldung Bezirksmeisterschaft als erledigt markieren"><svg class="ic"><use href="#i-check"/></svg></button>
+                  <div class="t"><b>Wettkampfmeldung Bezirksmeisterschaft</b><small>4 Läuferinnen · Meldeschluss 15. Juli</small></div>
+                  <span class="chip chip-warn">in 6 Tagen</span>
+                </div>
+                <div class="task">
+                  <button class="cb" type="button" aria-pressed="false" aria-label="Kür-Musik für Lina hochladen als erledigt markieren"><svg class="ic"><use href="#i-check"/></svg></button>
+                  <div class="t"><b>Kür-Musik für Lina hochladen</b><small>Neuer Schnitt aus dem Musik-Studio</small></div>
+                  <span class="chip chip-brand">heute</span>
+                </div>
+                <div class="task">
+                  <button class="cb" type="button" aria-pressed="false" aria-label="Anwesenheit vom 07.07. nachtragen als erledigt markieren"><svg class="ic"><use href="#i-check"/></svg></button>
+                  <div class="t"><b>Anwesenheit vom 07.07. nachtragen</b><small>Leistungsgruppe · 15 Teilnehmende</small></div>
+                  <span class="chip chip-danger">überfällig</span>
+                </div>
+                <div class="task done">
+                  <button class="cb" type="button" aria-pressed="true" aria-label="Trainingsplan Juli veröffentlicht — erledigt"><svg class="ic"><use href="#i-check"/></svg></button>
+                  <div class="t"><b>Trainingsplan Juli veröffentlicht</b><small>gestern, 21:14 Uhr</small></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCREEN 2 — KÜREN-DETAIL MIT AUDIO-PLAYER
+     ============================================================ -->
+<section>
+  <div class="screen-intro">
+    <div class="eyebrow">Screen 02 · Alleinstellungsmerkmal</div>
+    <h2>Kür-Detail — Trainings-Audio-Player mit Tempo &amp; A–B-Loop</h2>
+    <p>Honig = Musik, jetzt ohne Ausnahme: Die gespielte Waveform leuchtet honigwarm. Neu nach Jury: klickbare Waveform und „im Loop"-Marker (aus A), Tempo-Feinregler 0,5–2,0× bidirektional synchron (aus B), RollArt-Verlauf über mehrere Wettkämpfe (aus B). Alles hier ist bedienbar — Play, Tempo, Loop, Countdown, Tastatur.</p>
+  </div>
+
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="urlbar"><svg class="ic" style="width:13px;height:13px"><use href="#i-lock"/></svg> app.rollsportmanager.de<b>/kueren/sommernachtstraum</b></div>
+      <div style="width:56px"></div>
+    </div>
+    <div class="frame-scroll">
+    <div class="app">
+
+      <aside class="sidebar">
+        <div class="club">
+          <div class="club-mark">RN</div>
+          <div><b>RSC Neckarblick</b><span>e.&thinsp;V. · Rollkunstlauf</span></div>
+        </div>
+        <div class="nav-label eyebrow">Training</div>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-sun"/></svg> Heute</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-cal"/></svg> Kalender</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-users"/></svg> Meine Gruppen</button>
+        <button class="nav-item active" type="button"><svg class="ic"><use href="#i-music"/></svg> Küren <span class="count">3</span></button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-trophy"/></svg> Wettkampf</button>
+        <div class="spacer"></div>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-sliders"/></svg> Einstellungen</button>
+        <div class="user-card">
+          <div class="avatar av-petrol">KV</div>
+          <div><b>Katrin Vogel</b><span>Trainerin · Leistungsgruppe</span></div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg> Suchen — Mitglieder, Küren, Termine … <kbd>&#8984;K</kbd></div>
+          <div class="top-actions">
+            <button class="lang-chip" type="button" aria-label="Sprache wechseln, aktuell Deutsch">DE <small>/ EN</small></button>
+            <button class="icon-btn" type="button" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+            <div class="avatar av-petrol" aria-hidden="true">KV</div>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="crumbs">
+            <a href="#">Küren</a> <svg class="ic"><use href="#i-chev"/></svg>
+            <a href="#">Lina Baumgärtner</a> <svg class="ic"><use href="#i-chev"/></svg>
+            <span class="here">Sommernachtstraum</span>
+          </div>
+
+          <div class="page-head">
+            <div class="kuer-head">
+              <div class="avatar xl av-plum">LB</div>
+              <div class="titles">
+                <div class="h-display">Sommernachtstraum</div>
+                <div class="chips">
+                  <span class="chip chip-brand">Kür B · Jugend</span>
+                  <span class="chip chip-neutral">Saison 2025/26</span>
+                  <span class="chip chip-success"><svg class="ic"><use href="#i-check"/></svg> Wettkampfbereit</span>
+                </div>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-ghost" type="button"><svg class="ic"><use href="#i-edit"/></svg> Bearbeiten</button>
+              <button class="btn btn-secondary" type="button"><svg class="ic"><use href="#i-dl"/></svg> Für Wettkampf exportieren</button>
+            </div>
+          </div>
+
+          <div class="kuer-meta">
+            <span class="m"><svg class="ic"><use href="#i-music"/></svg> F. Mendelssohn — Ein Sommernachtstraum (Bearb. T. Krüger)</span>
+            <span class="m"><svg class="ic"><use href="#i-clock"/></svg> Länge 2:30 · Limit Kür B: 2:30 ± 10 s</span>
+            <span class="m"><span class="chip chip-success">im Limit</span></span>
+          </div>
+
+          <div class="card player">
+            <div class="player-top">
+              <div class="eyebrow" style="color:var(--honey-deep)">Trainings-Player</div>
+              <span class="chip chip-honey"><svg class="ic"><use href="#i-loop"/></svg> Loop: Schrittfolge</span>
+              <div class="right" style="margin-left:auto">
+                <span class="version">Musik-Version 3 · geschnitten am 12.06.2026 · <a href="#">Versionen</a></span>
+              </div>
+            </div>
+
+            <div class="wave-wrap" id="waveWrap" tabindex="0" role="slider"
+                 aria-label="Wellenform der Kürmusik — klicken oder Pfeiltasten zum Springen"
+                 aria-valuemin="0" aria-valuemax="150" aria-valuenow="64"
+                 aria-valuetext="1:04 von 2:30">
+              <svg id="waveform" viewBox="0 0 1000 132" preserveAspectRatio="none" aria-hidden="true"></svg>
+              <div class="loop-region" id="loopRegion" style="left:25.47%; width:22.93%;">
+                <span class="loop-handle" style="left:0">A</span>
+                <span class="loop-handle" style="left:100%">B</span>
+              </div>
+              <div class="playhead" id="playhead" style="left:42.67%"></div>
+            </div>
+            <div class="wave-times">
+              <span>0:00</span>
+              <span class="now" id="nowTime">1:04 <small>/ 2:30</small></span>
+              <span>2:30</span>
+            </div>
+
+            <div class="transport">
+              <div class="seg-group">
+                <span class="eyebrow">Countdown</span>
+                <div class="seg" role="group" aria-label="Countdown vor dem Start">
+                  <button type="button" data-cd="0">Aus</button>
+                  <button type="button" data-cd="3">3&thinsp;s</button>
+                  <button type="button" data-cd="5" class="on">5&thinsp;s</button>
+                  <button type="button" data-cd="8">8&thinsp;s</button>
+                </div>
+              </div>
+              <div class="transport-mid">
+                <button class="skip" id="skipBack" type="button" aria-label="5 Sekunden zurück"><svg class="ic"><use href="#i-rew"/></svg></button>
+                <button class="play-big" id="playBtn" type="button" aria-label="Abspielen"><svg class="ic fill i-play-shift" id="playIcon"><use href="#i-play"/></svg></button>
+                <button class="skip" id="skipFwd" type="button" aria-label="5 Sekunden vor"><svg class="ic"><use href="#i-fwd"/></svg></button>
+              </div>
+              <div class="loop-group">
+                <span class="eyebrow">A–B-Loop</span>
+                <div class="loop-chips">
+                  <span class="loop-mark">A 0:38,2</span>
+                  <span class="loop-mark">B 1:12,6</span>
+                  <button class="loop-toggle" id="loopToggle" type="button" aria-pressed="true"><svg class="ic" style="width:15px;height:15px"><use href="#i-loop"/></svg> <span id="loopLabel">aktiv</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tempo-row">
+              <span class="eyebrow">Tempo</span>
+              <div class="tempo-pills" role="group" aria-label="Tempo wählen">
+                <button class="tempo-pill" type="button" data-t="50">50&thinsp;%</button>
+                <button class="tempo-pill" type="button" data-t="75">75&thinsp;%</button>
+                <button class="tempo-pill on" type="button" data-t="85">85&thinsp;%</button>
+                <button class="tempo-pill" type="button" data-t="100">100&thinsp;%</button>
+              </div>
+              <input type="range" id="tempoSlider" min="50" max="200" step="5" value="85" aria-label="Tempo-Feinregler, 50 bis 200 Prozent, aktuell 85 Prozent">
+              <span class="tempo-note" id="tempoNote">bei 85&thinsp;% läuft die Kür 2:56 statt 2:30 · Tonhöhe bleibt erhalten</span>
+            </div>
+
+            <div class="player-hint"><kbd>Leertaste</kbd> Start/Stopp &nbsp;·&nbsp; <kbd>L</kbd> Loop an/aus &nbsp;·&nbsp; <kbd>&#8592;</kbd><kbd>&#8594;</kbd> 5 s springen</div>
+          </div>
+
+          <div class="grid-main">
+            <div class="col">
+              <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Markierungen</div>
+                    <h3>Elemente in der Kür</h3>
+                  </div>
+                  <div class="right"><button class="btn btn-ghost btn-sm" type="button"><svg class="ic"><use href="#i-plus"/></svg> Markierung</button></div>
+                </div>
+                <div class="mark-row">
+                  <span class="mark-time">0:12</span>
+                  <div class="t"><b>Anfangspose &amp; Auftakt</b></div>
+                  <button class="mark-play" type="button" data-t="12" aria-label="Ab 0:12 abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                </div>
+                <div class="mark-row">
+                  <span class="mark-time">0:45</span>
+                  <div class="t"><b>Doppelsalchow</b> <span class="chip chip-neutral">2S</span> <span class="chip chip-honey inloop"><svg class="ic"><use href="#i-loop"/></svg> im Loop</span></div>
+                  <button class="mark-play" type="button" data-t="45" aria-label="Ab 0:45 abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                </div>
+                <div class="mark-row">
+                  <span class="mark-time">1:10</span>
+                  <div class="t"><b>Sitzpirouette</b> <span class="chip chip-neutral">SSp</span> <span class="chip chip-honey inloop"><svg class="ic"><use href="#i-loop"/></svg> im Loop</span></div>
+                  <button class="mark-play" type="button" data-t="70" aria-label="Ab 1:10 abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                </div>
+                <div class="mark-row">
+                  <span class="mark-time">1:48</span>
+                  <div class="t"><b>Schrittfolge diagonal</b> <span class="chip chip-neutral">StSq</span></div>
+                  <button class="mark-play" type="button" data-t="108" aria-label="Ab 1:48 abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                </div>
+                <div class="mark-row">
+                  <span class="mark-time">2:21</span>
+                  <div class="t"><b>Endpose</b></div>
+                  <button class="mark-play" type="button" data-t="141" aria-label="Ab 2:21 abspielen"><svg class="ic fill"><use href="#i-play"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="col">
+              <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Notizen &amp; Wertung</div>
+                    <h3>Stand der Kür</h3>
+                  </div>
+                </div>
+                <div class="note-bubble">
+                  Landung Doppelsalchow deutlich stabiler. In der Schrittfolge die Arme weicher führen — wir loopen ab 0:38 mit 85&thinsp;%.
+                </div>
+                <div class="note-meta">
+                  <div class="avatar s av-petrol">KV</div>
+                  Katrin Vogel · 7. Juli 2026
+                </div>
+
+                <div class="card-h" style="margin:20px 0 0">
+                  <div class="titles">
+                    <div class="eyebrow">RollArt-Verlauf</div>
+                    <h3>Wertung über die Saison</h3>
+                  </div>
+                </div>
+                <div class="trend" role="img" aria-label="RollArt-Wertungsverlauf: Herbstpokal 40,55 Punkte, Vereinspokal 42,80 Punkte, Bezirkscup 44,10 Punkte — stetige Verbesserung">
+                  <div class="tcol">
+                    <span class="tval">40,55</span>
+                    <div class="tbar" style="height:46px"></div>
+                    <span class="tlabel">Herbstpokal<br>Okt. 2025</span>
+                  </div>
+                  <div class="tcol">
+                    <span class="tval">42,80</span>
+                    <div class="tbar" style="height:70px"></div>
+                    <span class="tlabel">Vereinspokal<br>Mai 2026</span>
+                  </div>
+                  <div class="tcol">
+                    <span class="tval">44,10</span>
+                    <div class="tbar best" style="height:92px"></div>
+                    <span class="tlabel">Bezirkscup<br>Juni 2026</span>
+                  </div>
+                </div>
+                <div class="trend-foot">
+                  <span class="chip chip-success">+3,55 seit Saisonstart</span>
+                  Bestwert 44,10 Punkte · Bezirkscup, 21. Juni 2026
+                </div>
+
+                <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap">
+                  <button class="btn btn-secondary btn-sm" type="button"><svg class="ic"><use href="#i-trophy"/></svg> RollArt-Bogen öffnen</button>
+                  <button class="btn btn-ghost btn-sm" type="button"><svg class="ic"><use href="#i-plus"/></svg> Notiz</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCREEN 3 — ADMIN-FINANZÜBERSICHT
+     ============================================================ -->
+<section>
+  <div class="screen-intro">
+    <div class="eyebrow">Screen 03 · Persona Kassenwartin</div>
+    <h2>Beiträge &amp; Finanzen — warm im Ton, präzise in der Sache</h2>
+    <p>Die verschärfte Seriositätszone: Mono-Beträge und Rechnungsnummern (aus A), Filter-Chips mit Summenzeile (aus A), Mahn-Automatik mit expliziter Regel-Zeitleiste (aus A), Bankabgleich-Karte (aus A). Die Stufe „Erinnerung" trägt jetzt Petrol statt Honig — Honig gehört der Musik. Organisationen bekommen Icon-Kacheln statt Pseudo-Monogrammen.</p>
+  </div>
+
+  <div class="frame">
+    <div class="frame-bar">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <div class="urlbar"><svg class="ic" style="width:13px;height:13px"><use href="#i-lock"/></svg> app.rollsportmanager.de<b>/verwaltung/finanzen</b></div>
+      <div style="width:56px"></div>
+    </div>
+    <div class="frame-scroll">
+    <div class="app">
+
+      <aside class="sidebar">
+        <div class="club">
+          <div class="club-mark">RN</div>
+          <div><b>RSC Neckarblick</b><span>e.&thinsp;V. · Rollkunstlauf</span></div>
+        </div>
+        <div class="nav-label eyebrow">Verwaltung</div>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-sun"/></svg> Übersicht</button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-users"/></svg> Mitglieder</button>
+        <button class="nav-item active" type="button"><svg class="ic"><use href="#i-wallet"/></svg> Beiträge &amp; Finanzen <span class="count">6</span></button>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-chart"/></svg> Berichte</button>
+        <div class="spacer"></div>
+        <button class="nav-item" type="button"><svg class="ic"><use href="#i-sliders"/></svg> Einstellungen</button>
+        <div class="user-card">
+          <div class="avatar av-moss">RS</div>
+          <div><b>Renate Schäfer</b><span>Kassenwartin</span></div>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <div class="search"><svg class="ic" style="width:16px;height:16px"><use href="#i-search"/></svg> Suchen — Mitglieder, Rechnungen, Buchungen … <kbd>&#8984;K</kbd></div>
+          <div class="top-actions">
+            <button class="lang-chip" type="button" aria-label="Sprache wechseln, aktuell Deutsch">DE <small>/ EN</small></button>
+            <button class="icon-btn" type="button" aria-label="Benachrichtigungen"><svg class="ic"><use href="#i-bell"/></svg><span class="dot"></span></button>
+            <div class="avatar av-moss" aria-hidden="true">RS</div>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="page-head">
+            <div class="titles">
+              <div class="h-display">Beiträge &amp; Finanzen</div>
+              <div class="h-sub">Stand: heute, 09:20 Uhr · Vereinskonto Volksbank Neckarsulm</div>
+            </div>
+            <div class="actions">
+              <button class="btn btn-ghost" type="button"><svg class="ic"><use href="#i-dl"/></svg> DATEV-Export</button>
+              <button class="btn btn-primary" type="button"><svg class="ic"><use href="#i-plus"/></svg> Rechnungslauf starten</button>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi">
+              <div class="label eyebrow"><span class="dot" style="background:var(--ink-faint)"></span> Offen gesamt</div>
+              <div class="val">2.340,00&thinsp;€</div>
+              <div class="sub">14 Rechnungen</div>
+            </div>
+            <div class="kpi">
+              <div class="label eyebrow"><span class="dot" style="background:var(--danger)"></span> Davon überfällig</div>
+              <div class="val">780,00&thinsp;€</div>
+              <div class="sub">6 Mitglieder · älteste 61 Tage</div>
+            </div>
+            <div class="kpi">
+              <div class="label eyebrow"><span class="dot" style="background:var(--success)"></span> Eingegangen im Juli</div>
+              <div class="val">2.317,50&thinsp;€</div>
+              <div class="sub">inkl. SEPA-Sammellauf</div>
+            </div>
+            <div class="kpi">
+              <div class="label eyebrow"><span class="dot" style="background:var(--info)"></span> Nächster SEPA-Lauf</div>
+              <div class="val">01.08.2026</div>
+              <div class="sub">32 aktive Mandate</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <div class="titles">
+                <div class="eyebrow">Mahn-Automatik</div>
+                <h3>Was von allein passiert — und was nie</h3>
+              </div>
+              <div class="right">
+                <a href="#">Regeln bearbeiten</a>
+                <span class="switch-label">Aktiv</span>
+                <button class="switch" type="button" role="switch" aria-checked="true" aria-label="Automatische Zahlungserinnerungen"></button>
+              </div>
+            </div>
+            <div class="rule-grid">
+              <div class="rule">
+                <span class="day">+7 Tage</span>
+                <b>Freundliche Erinnerung</b>
+                <span class="chip chip-success"><svg class="ic"><use href="#i-zap"/></svg> automatisch</span>
+              </div>
+              <div class="rule">
+                <span class="day">+21 Tage</span>
+                <b>1. Mahnung</b>
+                <span class="chip chip-success"><svg class="ic"><use href="#i-zap"/></svg> automatisch, mit Vorschau</span>
+              </div>
+              <div class="rule">
+                <span class="day">+35 Tage</span>
+                <b>2. Mahnung</b>
+                <span class="chip chip-warn"><svg class="ic"><use href="#i-lock"/></svg> nur mit manueller Freigabe</span>
+              </div>
+              <div class="rule">
+                <span class="day">+49 Tage</span>
+                <b>Übergabe-Vorschlag an den Vorstand</b>
+                <span class="chip chip-warn"><svg class="ic"><use href="#i-lock"/></svg> nur mit manueller Freigabe</span>
+              </div>
+            </div>
+            <div class="pipeline-note">
+              <svg class="ic" style="width:15px;height:15px"><use href="#i-scale"/></svg>
+              Stufe 2+ wird nie automatisch versendet — Freigabe durch den Vorstand. Vor jedem Versand siehst du die E-Mail pro Empfänger.
+            </div>
+          </div>
+
+          <div class="grid-fin">
+            <div class="card">
+              <div class="card-h">
+                <div class="titles">
+                  <div class="eyebrow">Mahnwesen</div>
+                  <h3>Eskalationsstufen</h3>
+                </div>
+              </div>
+              <div class="pipeline">
+                <div class="stage">
+                  <span class="label">Offen</span>
+                  <span class="count">8 <small>Rechnungen</small></span>
+                  <span class="amt">1.560,00&thinsp;€</span>
+                </div>
+                <div class="stage s2">
+                  <span class="label">Erinnerung</span>
+                  <span class="count">3 <small>Rechnungen</small></span>
+                  <span class="amt">420,00&thinsp;€</span>
+                </div>
+                <div class="stage s3">
+                  <span class="label">1. Mahnung</span>
+                  <span class="count">2 <small>Rechnungen</small></span>
+                  <span class="amt">240,00&thinsp;€</span>
+                </div>
+                <div class="stage s4">
+                  <span class="label">2. Mahnung</span>
+                  <span class="count">1 <small>Rechnung</small></span>
+                  <span class="amt">120,00&thinsp;€</span>
+                </div>
+              </div>
+              <div class="pipeline-note">
+                <svg class="ic" style="width:15px;height:15px"><use href="#i-check"/></svg>
+                Summe der Stufen: 2.340,00&thinsp;€ über 14 Rechnungen — deckungsgleich mit „Offen gesamt".
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-h">
+                <div class="titles">
+                  <div class="eyebrow">Bankabgleich</div>
+                  <h3>Kontoumsätze zuordnen</h3>
+                </div>
+              </div>
+              <div class="recon-top">
+                <span class="val">31 von 34</span>
+                <span class="of">Umsätzen automatisch zugeordnet</span>
+              </div>
+              <div class="recon-bar" role="img" aria-label="31 von 34 Umsätzen automatisch zugeordnet, 91 Prozent"><i style="width:91.2%"></i></div>
+              <div class="recon-sub">Import Volksbank vom 08.07.2026 · CAMT.053</div>
+              <div style="margin-top:14px">
+                <button class="btn btn-secondary" type="button" style="width:100%"><svg class="ic"><use href="#i-check"/></svg> 3 Vorschläge prüfen</button>
+              </div>
+              <div class="verein-item" style="margin-top:8px">
+                <div class="verein-ic"><svg class="ic"><use href="#i-mail"/></svg></div>
+                <div class="t"><b>2 neue SEPA-Mandate erteilt</b><small>Familie Yilmaz, Nora Steinbrück</small></div>
+                <button class="btn btn-ghost btn-sm" type="button">Ansehen</button>
+              </div>
+              <div class="verein-item">
+                <div class="verein-ic" style="background:var(--warn-soft);color:var(--warn)"><svg class="ic"><use href="#i-clock"/></svg></div>
+                <div class="t"><b>Jahresabschluss 2025 wartet</b><small>Kassenprüfung am 20. Juli</small></div>
+                <button class="btn btn-ghost btn-sm" type="button">Vorbereiten</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-h">
+              <div class="titles">
+                <div class="eyebrow">Offene Posten</div>
+                <h3>Wer noch offen ist</h3>
+              </div>
+              <div class="right">
+                <button class="btn btn-ghost btn-sm" type="button"><svg class="ic"><use href="#i-mail"/></svg> Sammel-Erinnerung</button>
+              </div>
+            </div>
+            <div class="fchips" role="group" aria-label="Offene Posten filtern">
+              <button class="fchip on" type="button" data-f="alle">Alle</button>
+              <button class="fchip" type="button" data-f="offen">Offen</button>
+              <button class="fchip" type="button" data-f="erinnert">Erinnert</button>
+              <button class="fchip" type="button" data-f="gemahnt">Gemahnt</button>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl" id="opTable">
+                  <thead>
+                    <tr>
+                      <th>Mitglied</th>
+                      <th>Rechnung</th>
+                      <th>Fällig</th>
+                      <th>Stufe</th>
+                      <th class="num">Betrag</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr data-stufe="gemahnt" data-amount="12000">
+                      <td><div class="member-cell"><div class="avatar av-coral">MH</div><div><b>Markus Häberle</b><small>Aktive · seit 2019</small></div></div></td>
+                      <td><div class="r-cell"><b>Jahresbeitrag Aktive 2026</b><small class="inv">R-2026-0087</small></div></td>
+                      <td class="due-cell">seit <b>61 Tagen</b></td>
+                      <td><span class="chip chip-danger">2. Mahnung</span></td>
+                      <td class="amount">120,00&thinsp;€</td>
+                      <td><div class="row-actions"><button class="btn btn-ghost btn-sm" type="button">Mahnung ansehen</button><button class="icon-btn" style="width:36px;height:36px" type="button" aria-label="Weitere Aktionen"><svg class="ic" style="width:17px;height:17px"><use href="#i-dots"/></svg></button></div></td>
+                    </tr>
+                    <tr data-stufe="gemahnt" data-amount="12000">
+                      <td><div class="member-cell"><div class="avatar av-plum">FG</div><div><b>Familie Grünewald</b><small>Familienbeitrag · 2 Kinder</small></div></div></td>
+                      <td><div class="r-cell"><b>Familienbeitrag 2026</b><small class="inv">R-2026-0102</small></div></td>
+                      <td class="due-cell">seit <b>42 Tagen</b></td>
+                      <td><span class="chip chip-warn">1. Mahnung</span></td>
+                      <td class="amount">120,00&thinsp;€</td>
+                      <td><div class="row-actions"><button class="btn btn-ghost btn-sm" type="button">Mahnung ansehen</button><button class="icon-btn" style="width:36px;height:36px" type="button" aria-label="Weitere Aktionen"><svg class="ic" style="width:17px;height:17px"><use href="#i-dots"/></svg></button></div></td>
+                    </tr>
+                    <tr data-stufe="erinnert" data-amount="21500">
+                      <td><div class="member-cell"><div class="avatar av-petrol">PV</div><div><b>Peter Vöhringer</b><small>Aktive · Vorstand a.&thinsp;D.</small></div></div></td>
+                      <td><div class="r-cell"><b>Jahresbeitrag + Hallenumlage</b><small class="inv">R-2026-0110</small></div></td>
+                      <td class="due-cell">seit <b>35 Tagen</b></td>
+                      <td><span class="chip chip-info">Erinnerung</span></td>
+                      <td class="amount">215,00&thinsp;€</td>
+                      <td><div class="row-actions"><button class="btn btn-ghost btn-sm" type="button">Als bezahlt markieren</button><button class="icon-btn" style="width:36px;height:36px" type="button" aria-label="Weitere Aktionen"><svg class="ic" style="width:17px;height:17px"><use href="#i-dots"/></svg></button></div></td>
+                    </tr>
+                    <tr data-stufe="erinnert" data-amount="8500">
+                      <td><div class="member-cell"><div class="avatar av-honey">ZÖ</div><div><b>Zeynep Özdemir</b><small>Familie Özdemir</small></div></div></td>
+                      <td><div class="r-cell"><b>Kursgebühr Anfängerkurs</b><small class="inv">R-2026-0121</small></div></td>
+                      <td class="due-cell">seit <b>18 Tagen</b></td>
+                      <td><span class="chip chip-info">Erinnerung</span></td>
+                      <td class="amount">85,00&thinsp;€</td>
+                      <td><div class="row-actions"><button class="btn btn-ghost btn-sm" type="button">Als bezahlt markieren</button><button class="icon-btn" style="width:36px;height:36px" type="button" aria-label="Weitere Aktionen"><svg class="ic" style="width:17px;height:17px"><use href="#i-dots"/></svg></button></div></td>
+                    </tr>
+                    <tr data-stufe="offen" data-amount="9500">
+                      <td><div class="member-cell"><div class="avatar av-moss">SR</div><div><b>Sabine Rüdiger</b><small>Passive</small></div></div></td>
+                      <td><div class="r-cell"><b>Jahresbeitrag Passive 2026</b><small class="inv">R-2026-0134</small></div></td>
+                      <td class="due-cell">seit <b>9 Tagen</b></td>
+                      <td><span class="chip chip-neutral">Offen</span></td>
+                      <td class="amount">95,00&thinsp;€</td>
+                      <td><div class="row-actions"><button class="btn btn-secondary btn-sm" type="button">Jetzt erinnern</button><button class="icon-btn" style="width:36px;height:36px" type="button" aria-label="Weitere Aktionen"><svg class="ic" style="width:17px;height:17px"><use href="#i-dots"/></svg></button></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="tbl-foot">
+                <a href="#">9 weitere anzeigen</a>
+                <span class="sum" id="opSum">Angezeigt: 5 Posten · 635,00&thinsp;€ — Gesamt offen: 2.340,00&thinsp;€</span>
+                <span>Vor jedem Versand siehst du die E-Mail pro Empfänger.</span>
+              </div>
+          </div>
+
+          <div class="card">
+                <div class="card-h">
+                  <div class="titles">
+                    <div class="eyebrow">Kassenbuch</div>
+                    <h3>Letzte Buchungen</h3>
+                  </div>
+                  <div class="right">
+                    <span class="chip chip-neutral">Kontostand: <span class="amount" style="font-weight:700">&nbsp;10.160,32&thinsp;€</span></span>
+                    <button class="btn btn-ghost btn-sm" type="button"><svg class="ic"><use href="#i-dl"/></svg> Exportieren</button>
+                  </div>
+                </div>
+                <div class="tbl-wrap">
+                <table class="tbl">
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Buchung</th>
+                      <th>Kategorie</th>
+                      <th class="num">Betrag</th>
+                      <th class="num">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="saldo">08.07.</td>
+                      <td><div class="member-cell"><div class="avatar s av-berry">FB</div><div><b>Beitrag Juli — Familie Brändle</b><small>Überweisung · automatisch zugeordnet</small></div></div></td>
+                      <td><span class="chip chip-neutral">Beiträge</span></td>
+                      <td class="amount pos">+45,00&thinsp;€</td>
+                      <td class="saldo">10.160,32&thinsp;€</td>
+                    </tr>
+                    <tr>
+                      <td class="saldo">07.07.</td>
+                      <td><div class="member-cell"><div class="org-ic" aria-hidden="true"><svg class="ic"><use href="#i-bank"/></svg></div><div><b>Hallenmiete Juli — Stadt Neckarsulm</b><small>Dauerauftrag</small></div></div></td>
+                      <td><span class="chip chip-neutral">Miete</span></td>
+                      <td class="amount">−680,00&thinsp;€</td>
+                      <td class="saldo">10.115,32&thinsp;€</td>
+                    </tr>
+                    <tr>
+                      <td class="saldo">05.07.</td>
+                      <td><div class="member-cell"><div class="org-ic" aria-hidden="true"><svg class="ic"><use href="#i-trophy"/></svg></div><div><b>Startgelder Bezirksmeisterschaft</b><small>4 Läuferinnen · Sammelmeldung</small></div></div></td>
+                      <td><span class="chip chip-neutral">Wettkampf</span></td>
+                      <td class="amount">−140,00&thinsp;€</td>
+                      <td class="saldo">10.795,32&thinsp;€</td>
+                    </tr>
+                    <tr>
+                      <td class="saldo">04.07.</td>
+                      <td><div class="member-cell"><div class="org-ic" aria-hidden="true"><svg class="ic"><use href="#i-cake"/></svg></div><div><b>Vereinsfest: Kuchenverkauf</b><small>Barkasse · gezählt von R. Schäfer</small></div></div></td>
+                      <td><span class="chip chip-neutral">Veranstaltungen</span></td>
+                      <td class="amount pos">+312,50&thinsp;€</td>
+                      <td class="saldo">10.935,32&thinsp;€</td>
+                    </tr>
+                    <tr>
+                      <td class="saldo">02.07.</td>
+                      <td><div class="member-cell"><div class="org-ic" aria-hidden="true"><svg class="ic"><use href="#i-zap"/></svg></div><div><b>SEPA-Sammellauf Juli</b><small>28 Mandate · 0 Rücklastschriften</small></div></div></td>
+                      <td><span class="chip chip-neutral">Beiträge</span></td>
+                      <td class="amount pos">+1.960,00&thinsp;€</td>
+                      <td class="saldo">10.622,82&thinsp;€</td>
+                    </tr>
+                  </tbody>
+                </table>
+                </div>
+                <div class="tbl-foot">
+                  <a href="#">Kassenbuch öffnen</a>
+                  <span>Belege hängen an jeder Buchung · GoBD-konformer Export</span>
+                </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    </div>
+  </div>
+</section>
+
+<p class="page-foot">Finales Design „Heimspiel" · RollsportManager v2 · Mockup mit Beispieldaten — alle Personen frei erfunden. UI zweisprachig DE/EN, Anrede (Du/Sie) pro Verein konfigurierbar.</p>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- Theme-Schalter (Hell / Auto / Dunkel, persistent) ---------- */
+  var root = document.documentElement;
+  var themeBtns = document.querySelectorAll(".theme-btn");
+  function applyTheme(mode){
+    if(mode === "auto"){ root.removeAttribute("data-theme"); }
+    else{ root.setAttribute("data-theme", mode); }
+    themeBtns.forEach(function(b){ b.classList.toggle("active", b.dataset.theme === mode); });
+    try{ localStorage.setItem("rsm-final-theme", mode); }catch(e){}
+  }
+  themeBtns.forEach(function(b){
+    b.addEventListener("click", function(){ applyTheme(b.dataset.theme); });
+  });
+  var savedTheme = null;
+  try{ savedTheme = localStorage.getItem("rsm-final-theme"); }catch(e){}
+  applyTheme(savedTheme === "light" || savedTheme === "dark" ? savedTheme : "auto");
+
+  /* ---------- Aufgaben abhakbar ---------- */
+  var openChip = document.getElementById("taskCount");
+  document.querySelectorAll(".task .cb").forEach(function(cb){
+    cb.addEventListener("click", function(){
+      var task = cb.closest(".task");
+      var done = task.classList.toggle("done");
+      cb.setAttribute("aria-pressed", done ? "true" : "false");
+      if(openChip){
+        var open = document.querySelectorAll(".task:not(.done)").length;
+        openChip.textContent = open + " offen";
+      }
+    });
+  });
+
+  /* ============================================================
+     KÜR-PLAYER (Signature-Komponente, voll verdrahtet)
+     ============================================================ */
+  var DUR = 150;              /* 2:30 in Sekunden */
+  var LOOP_A = 38.2, LOOP_B = 72.6;
+  var state = {
+    pos: 64,                  /* Startposition 1:04 */
+    tempo: 85,                /* Prozent */
+    playing: false,
+    loop: true,
+    countdown: 5
+  };
+
+  var wrap      = document.getElementById("waveWrap");
+  var svg       = document.getElementById("waveform");
+  var playhead  = document.getElementById("playhead");
+  var nowTime   = document.getElementById("nowTime");
+  var playBtn   = document.getElementById("playBtn");
+  var playIcon  = document.getElementById("playIcon");
+  var loopBtn   = document.getElementById("loopToggle");
+  var loopLabel = document.getElementById("loopLabel");
+  var loopRegion= document.getElementById("loopRegion");
+  var slider    = document.getElementById("tempoSlider");
+  var tempoNote = document.getElementById("tempoNote");
+  var pills     = document.querySelectorAll(".tempo-pill");
+  var bars = [];
+
+  function fmt(s){
+    s = Math.max(0, Math.min(DUR, s));
+    var m = Math.floor(s / 60), sec = Math.floor(s % 60);
+    return m + ":" + (sec < 10 ? "0" : "") + sec;
+  }
+
+  /* Waveform deterministisch generieren */
+  if(svg){
+    var NS = "http://www.w3.org/2000/svg";
+    var n = 124, W = 1000, H = 132;
+    var gap = W / n, barW = gap * 0.62;
+    for(var i = 0; i < n; i++){
+      var t = i / n;
+      var env = 0.38
+        + 0.34 * Math.sin(t * Math.PI)
+        + 0.18 * Math.sin(t * 21 + 1.3) * Math.sin(t * 5.2)
+        + 0.12 * Math.sin(i * 1.7);
+      var h = Math.max(0.09, Math.min(1, env)) * (H - 18);
+      var r = document.createElementNS(NS, "rect");
+      r.setAttribute("x", (i * gap + (gap - barW) / 2).toFixed(2));
+      r.setAttribute("y", ((H - h) / 2).toFixed(2));
+      r.setAttribute("width", barW.toFixed(2));
+      r.setAttribute("height", h.toFixed(2));
+      r.setAttribute("rx", (barW / 2).toFixed(2));
+      svg.appendChild(r);
+      bars.push(r);
+    }
+  }
+
+  function render(){
+    var frac = state.pos / DUR;
+    var playedUntil = Math.floor(bars.length * frac);
+    /* Honig = Musik: gespielter Teil leuchtet honigwarm (Jury-Fix) */
+    bars.forEach(function(b, i){
+      b.setAttribute("fill", i <= playedUntil ? "var(--honey)" : "var(--wave-off)");
+    });
+    playhead.style.left = (frac * 100).toFixed(2) + "%";
+    nowTime.innerHTML = fmt(state.pos) + " <small>/ " + fmt(DUR) + "</small>";
+    wrap.setAttribute("aria-valuenow", String(Math.round(state.pos)));
+    wrap.setAttribute("aria-valuetext", fmt(state.pos) + " von " + fmt(DUR));
+  }
+
+  /* Wiedergabe (Simulation, rAF) */
+  var rafId = null, lastTs = null, cdTimer = null;
+  function setPlayingUI(playing){
+    playIcon.innerHTML = '<use href="#i-' + (playing ? "pause" : "play") + '"/>';
+    playIcon.classList.toggle("i-play-shift", !playing);
+    playBtn.setAttribute("aria-label", playing ? "Pause" : "Abspielen");
+  }
+  function tick(ts){
+    if(lastTs !== null){
+      var dt = (ts - lastTs) / 1000;
+      state.pos += dt * (state.tempo / 100);
+      if(state.loop && state.pos >= LOOP_B){ state.pos = LOOP_A; }
+      if(state.pos >= DUR){ state.pos = DUR; render(); stop(); return; }
+      render();
+    }
+    lastTs = ts;
+    rafId = requestAnimationFrame(tick);
+  }
+  function start(){
+    if(state.playing) return;
+    state.playing = true; lastTs = null;
+    setPlayingUI(true);
+    rafId = requestAnimationFrame(tick);
+  }
+  function stop(){
+    state.playing = false;
+    if(rafId){ cancelAnimationFrame(rafId); rafId = null; }
+    if(cdTimer){ clearInterval(cdTimer); cdTimer = null; }
+    setPlayingUI(false);
+    render();
+  }
+  function togglePlay(){
+    if(state.playing || cdTimer){ stop(); return; }
+    if(state.countdown > 0){
+      var left = state.countdown;
+      nowTime.innerHTML = "Start in " + left + "&thinsp;s";
+      cdTimer = setInterval(function(){
+        left -= 1;
+        if(left <= 0){ clearInterval(cdTimer); cdTimer = null; start(); }
+        else{ nowTime.innerHTML = "Start in " + left + "&thinsp;s"; }
+      }, 1000);
+      setPlayingUI(true);
+    } else {
+      start();
+    }
+  }
+  playBtn.addEventListener("click", togglePlay);
+
+  /* Klickbare Waveform zum Springen (Jury-Übernahme aus A) */
+  wrap.addEventListener("click", function(e){
+    var rect = wrap.getBoundingClientRect();
+    state.pos = Math.max(0, Math.min(DUR, (e.clientX - rect.left) / rect.width * DUR));
+    render();
+  });
+
+  /* ±5-s-Sprünge */
+  document.getElementById("skipBack").addEventListener("click", function(){
+    state.pos = Math.max(0, state.pos - 5); render();
+  });
+  document.getElementById("skipFwd").addEventListener("click", function(){
+    state.pos = Math.min(DUR, state.pos + 5); render();
+  });
+
+  /* Marker: „ab hier abspielen" */
+  document.querySelectorAll(".mark-play").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.pos = parseFloat(btn.dataset.t);
+      render();
+      if(!state.playing && !cdTimer){ start(); }
+    });
+  });
+
+  /* A–B-Loop an/aus + „im Loop"-Kennzeichnung an Markern */
+  function renderLoop(){
+    loopBtn.setAttribute("aria-pressed", state.loop ? "true" : "false");
+    loopLabel.textContent = state.loop ? "aktiv" : "aus";
+    loopRegion.classList.toggle("off", !state.loop);
+    document.querySelectorAll(".inloop").forEach(function(c){
+      c.style.display = state.loop ? "" : "none";
+    });
+  }
+  loopBtn.addEventListener("click", function(){ state.loop = !state.loop; renderLoop(); });
+
+  /* Countdown-Segment */
+  var segBtns = document.querySelectorAll(".seg [data-cd]");
+  segBtns.forEach(function(b){
+    b.addEventListener("click", function(){
+      segBtns.forEach(function(x){ x.classList.toggle("on", x === b); });
+      state.countdown = parseInt(b.dataset.cd, 10);
+    });
+  });
+
+  /* Tempo: Pills 50–100 % + Feinregler 0,5–2,0×, bidirektional synchron
+     (Jury-Übernahme aus B) */
+  function renderTempo(){
+    slider.value = state.tempo;
+    slider.setAttribute("aria-label", "Tempo-Feinregler, 50 bis 200 Prozent, aktuell " + state.tempo + " Prozent");
+    pills.forEach(function(p){
+      p.classList.toggle("on", parseInt(p.dataset.t, 10) === state.tempo);
+    });
+    if(state.tempo === 100){
+      tempoNote.innerHTML = "Originaltempo — die Kür läuft 2:30 · Tonhöhe bleibt erhalten";
+    } else {
+      var newDur = Math.round(DUR * 100 / state.tempo);
+      tempoNote.innerHTML = "bei " + state.tempo + "&thinsp;% läuft die Kür " + fmt(newDur) + " statt 2:30 · Tonhöhe bleibt erhalten";
+    }
+  }
+  pills.forEach(function(p){
+    p.addEventListener("click", function(){
+      state.tempo = parseInt(p.dataset.t, 10);
+      renderTempo();
+    });
+  });
+  slider.addEventListener("input", function(){
+    state.tempo = parseInt(slider.value, 10);
+    renderTempo();
+  });
+
+  /* Tastatur: Leertaste Start/Stopp · L Loop · Pfeile ±5 s */
+  document.addEventListener("keydown", function(e){
+    var tag = e.target.tagName;
+    if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if(e.key === " " && tag !== "BUTTON"){
+      e.preventDefault(); togglePlay();
+    } else if(e.key === "ArrowLeft"){
+      state.pos = Math.max(0, state.pos - 5); render();
+    } else if(e.key === "ArrowRight"){
+      state.pos = Math.min(DUR, state.pos + 5); render();
+    } else if(e.key === "l" || e.key === "L"){
+      state.loop = !state.loop; renderLoop();
+    }
+  });
+
+  render();
+  renderLoop();
+  renderTempo();
+
+  /* ============================================================
+     FINANZEN: Filter-Chips + Summenzeile (Jury-Übernahme aus A)
+     ============================================================ */
+  var fchips = document.querySelectorAll(".fchip");
+  var rows = document.querySelectorAll("#opTable tbody tr");
+  var opSum = document.getElementById("opSum");
+  function fmtEUR(cents){
+    var euros = Math.floor(cents / 100), rest = cents % 100;
+    var s = String(euros).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return s + "," + (rest < 10 ? "0" : "") + rest + " €";
+  }
+  fchips.forEach(function(chip){
+    chip.addEventListener("click", function(){
+      fchips.forEach(function(c){ c.classList.toggle("on", c === chip); });
+      var f = chip.dataset.f;
+      var count = 0, sum = 0;
+      rows.forEach(function(row){
+        var show = (f === "alle") || (row.dataset.stufe === f);
+        row.style.display = show ? "" : "none";
+        if(show){ count += 1; sum += parseInt(row.dataset.amount, 10); }
+      });
+      opSum.innerHTML = "Angezeigt: " + count + " " + (count === 1 ? "Posten" : "Posten") +
+        " · " + fmtEUR(sum) + " — Gesamt offen: 2.340,00 €";
+    });
+  });
+})();
+</script>
+</body>
+</html>
