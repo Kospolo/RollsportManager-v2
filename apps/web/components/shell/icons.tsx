@@ -19,7 +19,21 @@ export type IconName =
   | "settings"
   | "signout"
   | "sparkle"
-  | "chevronDown";
+  | "chevronDown"
+  | "chevronRight"
+  | "close"
+  | "check"
+  | "plus"
+  | "play"
+  | "clock"
+  | "zap"
+  | "lock"
+  | "bank"
+  | "mail"
+  | "download"
+  | "edit"
+  | "pin"
+  | "dots";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   dashboard: (
@@ -115,6 +129,53 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   chevronDown: <path d="m6.5 9.5 5.5 5.5 5.5-5.5" />,
+  chevronRight: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
+  close: <path d="M6 6l12 12M18 6 6 18" />,
+  check: <path d="M4.5 12.8l4.6 4.6L19.5 7" />,
+  plus: <path d="M12 5.5v13M5.5 12h13" />,
+  play: (
+    <path d="M8 5.3v13.4c0 .8.9 1.3 1.6.9l10.4-6.7c.6-.4.6-1.4 0-1.8L9.6 4.4C8.9 4 8 4.5 8 5.3z" />
+  ),
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.2V12l3.4 2.2" />
+    </>
+  ),
+  zap: <path d="M13 2.5 4.5 14H11l-1 7.5L18.5 10H13z" />,
+  lock: (
+    <>
+      <rect x="5.5" y="10.5" width="13" height="9.5" rx="2.5" />
+      <path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7" />
+    </>
+  ),
+  bank: (
+    <>
+      <path d="M3.5 9.3 12 4l8.5 5.3" />
+      <path d="M5.2 9.5v9M9.7 9.5v9M14.3 9.5v9M18.8 9.5v9M3.5 20.5h17" />
+    </>
+  ),
+  mail: (
+    <>
+      <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
+      <path d="m3.5 7.5 8.5 6 8.5-6" />
+    </>
+  ),
+  download: <path d="M12 4v10.5M7.5 10.5 12 15l4.5-4.5M4.5 19.5h15" />,
+  edit: <path d="M16.8 3.7l3.5 3.5L8.5 19 3.8 20.2 5 15.5z" />,
+  pin: (
+    <>
+      <path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" />
+      <circle cx="12" cy="9.8" r="2.4" />
+    </>
+  ),
+  dots: (
+    <>
+      <circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none" />
+    </>
+  ),
 };
 
 export function Icon({ name, className = "ic" }: { name: IconName; className?: string }) {
