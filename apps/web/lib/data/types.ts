@@ -11,6 +11,10 @@ import type {
   LedgerEntry,
   Member,
   MemberRole,
+  MemberStatus,
+  PlatformClubSummary,
+  PlatformStats,
+  PlatformUserSummary,
   Routine,
   RoutineMarker,
   RsvpStatus,
@@ -85,6 +89,53 @@ export interface AddMarkerInput {
   elementCode?: string;
 }
 
+/**
+ * Stammdaten-Patch eines Mitglieds (can_manage_members) — OHNE Rolle.
+ * Die Rolle läuft ausschließlich über changeMemberRole. null leert das Feld.
+ */
+export interface UpdateMemberInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string | null;
+  /** ISO-Datum (YYYY-MM-DD) */
+  birthDate?: string | null;
+  status?: MemberStatus;
+  /** Nur guest_coach: befristeter Zugang bis (ISO-Datum) */
+  validUntil?: string | null;
+}
+
+/** Eingabe zum Anlegen eines Teams (is_club_admin). */
+export interface CreateTeamInput {
+  name: string;
+  ageGroup?: string;
+}
+
+/** Team umbenennen / Altersklasse ändern (is_club_admin). null leert die Altersklasse. */
+export interface UpdateTeamInput {
+  name?: string;
+  ageGroup?: string | null;
+}
+
+/**
+ * VOLL-Replace des Team-Rosters (is_club_admin). Fehlende Mitglieder werden
+ * serverseitig soft-detached; bei Überschneidung gewinnt coach. Die member_ids
+ * müssen zum Verein gehören (sonst 400). Weggelassene Liste = leerer Satz.
+ */
+export interface SetTeamMembersInput {
+  coachIds?: Id[];
+  skaterIds?: Id[];
+}
+
+/** Vereins-Einstellungen ändern (owner/admin). */
+export interface UpdateClubSettingsInput {
+  name?: string;
+  shortName?: string | null;
+  city?: string | null;
+  discipline?: string | null;
+  /** Freies Settings-Objekt (Modulschalter etc.) — im View-Modell nicht gespiegelt. */
+  settings?: Record<string, unknown>;
+}
+
 export interface DataRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
@@ -129,4 +180,30 @@ export interface DataRepository {
   inviteMember(input: InviteMemberInput): Promise<{ email: string }>;
   /** Kür-Marker hinzufügen — liefert den erzeugten Marker zurück. */
   addRoutineMarker(routineId: Id, input: AddMarkerInput): Promise<RoutineMarker>;
+
+  /* ---------- Verwaltung: Mitglieder-Stammdaten ---------- */
+  /** Stammdaten eines Mitglieds ändern (OHNE Rolle; can_manage_members). */
+  updateMember(memberId: Id, patch: UpdateMemberInput): Promise<Member>;
+
+  /* ---------- Verwaltung: Teams ---------- */
+  /** Team anlegen (is_club_admin) — liefert das erzeugte Team zurück. */
+  createTeam(input: CreateTeamInput): Promise<Team>;
+  /** Team umbenennen / Altersklasse ändern (is_club_admin). */
+  updateTeam(teamId: Id, patch: UpdateTeamInput): Promise<Team>;
+  /** Team soft-löschen (is_club_admin) — liefert die gelöschte ID zurück. */
+  deleteTeam(teamId: Id): Promise<{ id: Id }>;
+  /** Team-Roster (Läufer:innen + Trainerstab) als VOLL-Replace setzen (is_club_admin). */
+  setTeamMembers(teamId: Id, input: SetTeamMembersInput): Promise<Team>;
+
+  /* ---------- Verwaltung: Vereins-Einstellungen ---------- */
+  /** Vereins-Stammdaten/-Einstellungen ändern (owner/admin). */
+  updateClubSettings(patch: UpdateClubSettingsInput): Promise<Club>;
+
+  /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
+  /** Alle Vereine inkl. Mitgliederzahl. */
+  platformListClubs(): Promise<PlatformClubSummary[]>;
+  /** Alle Nutzerprofile inkl. Vereinszahl. */
+  platformListUsers(): Promise<PlatformUserSummary[]>;
+  /** Plattform-Kennzahlen. */
+  platformStats(): Promise<PlatformStats>;
 }

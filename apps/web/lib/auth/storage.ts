@@ -10,18 +10,42 @@
 export const AUTH_STORAGE_KEY = "rsm.dev.auth";
 
 /** Persona-Schlüssel wie in services/api/src/routes/dev-login.ts (DEV_PERSONAS). */
-export type DevPersonaKey = "coach" | "owner" | "treasurer" | "admin" | "member" | "guest";
+export type DevPersonaKey =
+  | "coach"
+  | "owner"
+  | "treasurer"
+  | "admin"
+  | "moderator"
+  | "member"
+  | "guest"
+  | "platform";
 
-export type DevClubRole = "owner" | "admin" | "treasurer" | "coach" | "member" | "guest_coach";
+export type DevClubRole =
+  | "owner"
+  | "admin"
+  | "moderator"
+  | "treasurer"
+  | "coach"
+  | "member"
+  | "guest_coach";
 
 /** Profil aus der /dev/login-Antwort (Wire-Format, snake_case). */
 export interface AuthProfile {
   sub: string;
-  member_id: string;
+  /** null für die Plattform-Persona (keine club_members-Zeile). */
+  member_id: string | null;
   display_name: string;
   email: string;
-  club_id: string;
-  club_role: DevClubRole;
+  /** null für die Plattform-Persona (keine Vereinszugehörigkeit). */
+  club_id: string | null;
+  /** null für die Plattform-Persona (reiner Plattform-Admin ohne Club-Rolle). */
+  club_role: DevClubRole | null;
+  /**
+   * Spiegelung des Token-Claims app_metadata.is_platform_admin. Nur die
+   * Plattform-Persona setzt das; steuert allein die Sichtbarkeit des
+   * Plattform-Menüs (die Durchsetzung ist serverseitig, requirePlatformAdmin).
+   */
+  is_platform_admin?: boolean;
 }
 
 export interface AuthSession {

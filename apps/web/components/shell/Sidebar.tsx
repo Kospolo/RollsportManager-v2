@@ -7,7 +7,8 @@ import { shellDict } from "@/lib/i18n/shell";
 import { club, currentUser, upcomingEvents } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "./icons";
-import { NAV_ITEMS, isActive } from "./nav";
+import { isActive } from "./nav";
+import { useVisibleNavItems } from "./useNav";
 
 /**
  * Desktop-Sidebar: Wortmarke, Vereins-Badge, Navigation mit aktivem
@@ -18,6 +19,7 @@ export function Sidebar() {
   const t = useT(shellDict);
   const pathname = usePathname();
   const eventBadge = upcomingEvents(7).length;
+  const navItems = useVisibleNavItems();
 
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col gap-0.5 overflow-y-auto border-r border-line bg-surface px-3.5 pb-4 pt-5 lg:flex">
@@ -52,7 +54,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav aria-label={t("navLabel")} className="grid gap-0.5">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = isActive(pathname, item.href);
           return (
             <Link

@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Token-Pipeline „Heimspiel“ — design/tokens.json → CSS (Web) und Theme.swift (iOS)",
+  "description": "Token-Pipeline „Heimspiel“ — design/tokens.json → CSS (Web), Theme.swift (iOS) und Theme.kt (Android)",
   "scripts": {
     "build": "node build.mjs",
-    "gen:swift": "node gen-swift.mjs"
+    "gen:swift": "node gen-swift.mjs",
+    "gen:kotlin-theme": "node gen-kotlin-theme.mjs"
   }
 }

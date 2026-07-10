@@ -1,0 +1,21 @@
+"use client";
+
+import { permissions } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
+import { MANAGE_NAV_ITEM, NAV_ITEMS, type NavItem } from "./nav";
+
+/**
+ * Sichtbare Top-Nav-Ziele für Sidebar + Bottom-Nav: die sechs Kern-Einträge,
+ * plus „Verwaltung" NUR für Vereins-Admins (owner/admin/moderator).
+ *
+ * Die Rolle kommt aus der Facade (data.getCurrentUser()); permissions() bildet
+ * daraus die reine Anzeige-Sichtbarkeit ab (Referenz 1.3). Während des Ladens
+ * ist die Rolle noch unbekannt → nur die Kern-Einträge (kein Flackern, kein
+ * Hydration-Mismatch, da Server und erster Client-Render identisch sind).
+ * Der echte Schutz bleibt serverseitig (RLS + API-DB-Check).
+ */
+export function useVisibleNavItems(): NavItem[] {
+  const me = useData((repo) => repo.getCurrentUser());
+  const isClubAdmin = permissions(me.data ?? null).isClubAdmin;
+  return isClubAdmin ? [...NAV_ITEMS, MANAGE_NAV_ITEM] : NAV_ITEMS;
+}

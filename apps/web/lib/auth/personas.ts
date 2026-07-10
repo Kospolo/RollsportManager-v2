@@ -8,10 +8,14 @@ import type { DevClubRole, DevPersonaKey } from "./storage";
 
 export interface DevPersonaCard {
   key: DevPersonaKey;
-  /** app.club_members.id aus dem Seed — für den Avatar-Farbton. */
+  /**
+   * app.club_members.id aus dem Seed — für den Avatar-Farbton. Für die
+   * Plattform-Persona (keine Mitgliedszeile) der profil-sub als Tönungs-Seed.
+   */
   memberId: string;
   displayName: string;
-  clubRole: DevClubRole;
+  /** null für die Plattform-Persona (reiner Plattform-Admin ohne Club-Rolle). */
+  clubRole: DevClubRole | null;
   role: { de: string; en: string };
   description: { de: string; en: string };
 }
@@ -51,6 +55,17 @@ export const DEV_PERSONA_CARDS: DevPersonaCard[] = [
     },
   },
   {
+    key: "moderator",
+    memberId: "a0000000-0000-4000-8000-000000000014",
+    displayName: "Petra Köhler",
+    clubRole: "moderator",
+    role: { de: "Moderatorin", en: "Moderator" },
+    description: {
+      de: "Verwaltet Verein und Teams — stuft aber nicht zu Owner/Admin hoch.",
+      en: "Manages the club and teams — but cannot promote to owner/admin.",
+    },
+  },
+  {
     key: "member",
     memberId: "a0000000-0000-4000-8000-000000000009",
     displayName: "Katrin Grünewald",
@@ -72,6 +87,18 @@ export const DEV_PERSONA_CARDS: DevPersonaCard[] = [
       en: "Time-boxed access (30 days) for routines and attendance.",
     },
   },
+  {
+    key: "platform",
+    // Keine club_members-Zeile — profil-sub als Avatar-Tönungs-Seed.
+    memberId: "90000000-0000-4000-8000-000000000090",
+    displayName: "RSM Plattform-Admin",
+    clubRole: null,
+    role: { de: "Plattform-Admin", en: "Platform admin" },
+    description: {
+      de: "Betreiber-Konsole über alle Vereine — keine Vereinsrolle.",
+      en: "Operator console across all clubs — no club role.",
+    },
+  },
 ];
 
 export function personaByKey(key: DevPersonaKey): DevPersonaCard | undefined {
@@ -82,6 +109,7 @@ export function personaByKey(key: DevPersonaKey): DevPersonaCard | undefined {
 export const ROLE_LABELS: Record<DevClubRole, { de: string; en: string }> = {
   owner: { de: "Vorstand", en: "Owner" },
   admin: { de: "Verwaltung", en: "Admin" },
+  moderator: { de: "Moderator:in", en: "Moderator" },
   treasurer: { de: "Kassenwart:in", en: "Treasurer" },
   coach: { de: "Trainer:in", en: "Coach" },
   member: { de: "Mitglied", en: "Member" },

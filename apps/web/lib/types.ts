@@ -19,7 +19,14 @@ export interface Club {
   foundedYear: number;
 }
 
-export type MemberRole = "owner" | "admin" | "treasurer" | "coach" | "member" | "guest_coach";
+export type MemberRole =
+  | "owner"
+  | "admin"
+  | "moderator"
+  | "treasurer"
+  | "coach"
+  | "member"
+  | "guest_coach";
 
 export type MemberStatus = "active" | "inactive" | "pending";
 
@@ -54,6 +61,8 @@ export interface Team {
   name: string;
   ageGroup: string;
   coachIds: Id[];
+  /** Läufer:innen des Teams (Roster ohne Trainerstab). */
+  skaterIds: Id[];
 }
 
 /* ---------- Termine, RSVP & Anwesenheit ---------- */
@@ -212,4 +221,37 @@ export interface Task {
   dueAt?: string;
   assigneeId?: Id;
   competitionId?: Id;
+}
+
+/* ---------- Plattform-Ebene (Super-Admin-Konsole, reine Lesesicht) ---------- */
+
+/** Vereins-Übersichtszeile der Plattform-Konsole (GET /platform/clubs). */
+export interface PlatformClubSummary {
+  id: Id;
+  name: string;
+  shortName: string;
+  city: string;
+  discipline: string;
+  memberCount: number;
+  createdAt: string;
+}
+
+/** Nutzerprofil-Zeile der Plattform-Konsole (GET /platform/users). */
+export interface PlatformUserSummary {
+  id: Id;
+  displayName: string;
+  locale: string;
+  clubCount: number;
+  createdAt: string;
+}
+
+/** Plattform-Kennzahlen (GET /platform/stats). */
+export interface PlatformStats {
+  clubs: number;
+  users: number;
+  members: number;
+  activeMembers: number;
+  teams: number;
+  events: number;
+  openInvoices: number;
 }

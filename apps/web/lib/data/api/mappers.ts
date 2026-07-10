@@ -11,6 +11,9 @@ import type {
   LedgerEntry,
   Member,
   MemberStatus,
+  PlatformClubSummary,
+  PlatformStats,
+  PlatformUserSummary,
   Routine,
   RoutineMarker,
   RollArtScore,
@@ -96,6 +99,41 @@ export function mapTeam(w: M.Team): Team {
     name: w.name,
     ageGroup: w.age_group ?? "",
     coachIds: w.coach_member_ids,
+    skaterIds: w.skater_member_ids,
+  };
+}
+
+export function mapPlatformClub(w: M.PlatformClub): PlatformClubSummary {
+  return {
+    id: w.id,
+    name: w.name,
+    shortName: w.short_name ?? w.name,
+    city: w.city ?? "",
+    discipline: w.discipline ?? "",
+    memberCount: w.member_count ?? 0,
+    createdAt: w.created_at,
+  };
+}
+
+export function mapPlatformUser(w: M.PlatformUser): PlatformUserSummary {
+  return {
+    id: w.id,
+    displayName: w.display_name ?? "",
+    locale: w.locale,
+    clubCount: w.club_count ?? 0,
+    createdAt: w.created_at,
+  };
+}
+
+export function mapPlatformStats(w: M.PlatformStats): PlatformStats {
+  return {
+    clubs: w.clubs ?? 0,
+    users: w.users ?? 0,
+    members: w.members ?? 0,
+    activeMembers: w.active_members ?? 0,
+    teams: w.teams ?? 0,
+    events: w.events ?? 0,
+    openInvoices: w.open_invoices ?? 0,
   };
 }
 

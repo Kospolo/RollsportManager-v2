@@ -19,9 +19,9 @@ export const club: Club = {
 const c = club.id;
 
 export const teams: Team[] = [
-  { id: "t-01", clubId: c, name: "Minis & Anfänger", ageGroup: "U8–U10", coachIds: ["m-05"] },
-  { id: "t-02", clubId: c, name: "Nachwuchs Pflicht", ageGroup: "U12–U15", coachIds: ["m-01", "m-05"] },
-  { id: "t-03", clubId: c, name: "Kürgruppe Leistung", ageGroup: "U15+", coachIds: ["m-01", "m-06"] },
+  { id: "t-01", clubId: c, name: "Minis & Anfänger", ageGroup: "U8–U10", coachIds: ["m-05"], skaterIds: [] },
+  { id: "t-02", clubId: c, name: "Nachwuchs Pflicht", ageGroup: "U12–U15", coachIds: ["m-01", "m-05"], skaterIds: [] },
+  { id: "t-03", clubId: c, name: "Kürgruppe Leistung", ageGroup: "U15+", coachIds: ["m-01", "m-06"], skaterIds: [] },
 ];
 
 export const members: Member[] = [
@@ -59,6 +59,14 @@ export const members: Member[] = [
   { id: "m-23", clubId: c, firstName: "Hanna", lastName: "Förster", role: "member", status: "active", birthDate: "2008-09-13", teamIds: ["t-03"], joinedAt: "2015-09-01" },
   { id: "m-24", clubId: c, firstName: "Greta", lastName: "Lindner", role: "member", status: "pending", birthDate: "2015-06-21", teamIds: ["t-01"], joinedAt: dateFromNow(-5) },
 ];
+
+// Läufer-Roster je Team aus den Mitglieder-Teamzuordnungen ableiten
+// (Trainer:innen zählen als Coaches, nicht als Läufer:innen).
+for (const team of teams) {
+  team.skaterIds = members
+    .filter((m) => m.teamIds.includes(team.id) && !team.coachIds.includes(m.id))
+    .map((m) => m.id);
+}
 
 export const guardianships: Guardianship[] = [
   { id: "g-01", guardianId: "m-09", childId: "m-07", relation: "parent" },

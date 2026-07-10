@@ -28,9 +28,15 @@ export function UserMenu() {
   const persona = apiSession ? personaByKey(apiSession.persona) : undefined;
   const displayName = apiSession ? apiSession.profile.display_name : t("userName");
   const roleLabel = apiSession
-    ? (persona?.role[locale] ?? ROLE_LABELS[apiSession.profile.club_role][locale])
+    ? (persona?.role[locale] ??
+      (apiSession.profile.club_role
+        ? ROLE_LABELS[apiSession.profile.club_role][locale]
+        : t("userRole")))
     : t("userRole");
-  const avatarId = apiSession ? apiSession.profile.member_id : currentUser.id;
+  // Plattform-Persona hat keine Mitgliedszeile → profil-sub als Avatar-Seed.
+  const avatarId = apiSession
+    ? (apiSession.profile.member_id ?? apiSession.profile.sub)
+    : currentUser.id;
   const nameParts = displayName.trim().split(/\s+/);
   const firstName = apiSession ? nameParts.slice(0, -1).join(" ") || displayName : currentUser.firstName;
   const lastName = apiSession ? (nameParts.length > 1 ? nameParts[nameParts.length - 1] : "") : currentUser.lastName;

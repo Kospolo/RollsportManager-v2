@@ -56,6 +56,7 @@ export function matchesRoleFilter(member: Member, filter: RoleFilter): boolean {
 export const ROLE_TONE: Record<MemberRole, BadgeTone> = {
   owner: "brand",
   admin: "info",
+  moderator: "info",
   treasurer: "info",
   coach: "success",
   guest_coach: "neutral",

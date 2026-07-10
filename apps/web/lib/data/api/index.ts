@@ -13,6 +13,9 @@ import {
   mapLedgerEntry,
   mapMarker,
   mapMember,
+  mapPlatformClub,
+  mapPlatformStats,
+  mapPlatformUser,
   mapRoutine,
   mapTask,
   mapTeam,
@@ -43,6 +46,8 @@ function memberFromProfile(): Member | null {
   const session = readSession();
   if (!session) return null;
   const { profile } = session;
+  // Plattform-Persona: keine club_members-Zeile, keine Club-Rolle → kein Member.
+  if (!profile.member_id || !profile.club_id || !profile.club_role) return null;
   const parts = profile.display_name.trim().split(/\s+/);
   const lastName = parts.length > 1 ? (parts.pop() as string) : "";
   return {
@@ -224,5 +229,78 @@ export const apiRepository: DataRepository = {
       element_code: input.elementCode,
     });
     return mapMarker(created);
+  },
+
+  /* ---------- Verwaltung: Mitglieder-Stammdaten ---------- */
+  async updateMember(memberId, patch) {
+    const updated = await apiClient.patchClubsByClubIdMembersByMemberId(
+      activeClubId(),
+      memberId,
+      {
+        first_name: patch.firstName,
+        last_name: patch.lastName,
+        email: patch.email,
+        birth_date: patch.birthDate,
+        status: patch.status,
+        valid_until: patch.validUntil,
+      },
+    );
+    return mapMember(updated);
+  },
+
+  /* ---------- Verwaltung: Teams ---------- */
+  async createTeam(input) {
+    const created = await apiClient.postClubsByClubIdTeams(activeClubId(), {
+      name: input.name,
+      age_group: input.ageGroup,
+    });
+    return mapTeam(created);
+  },
+  async updateTeam(teamId, patch) {
+    const updated = await apiClient.patchClubsByClubIdTeamsByTeamId(activeClubId(), teamId, {
+      name: patch.name,
+      age_group: patch.ageGroup,
+    });
+    return mapTeam(updated);
+  },
+  async deleteTeam(teamId) {
+    const deleted = await apiClient.deleteClubsByClubIdTeamsByTeamId(activeClubId(), teamId);
+    return { id: deleted.id };
+  },
+  async setTeamMembers(teamId, input) {
+    const updated = await apiClient.putClubsByClubIdTeamsByTeamIdMembers(
+      activeClubId(),
+      teamId,
+      {
+        coach_member_ids: input.coachIds,
+        skater_member_ids: input.skaterIds,
+      },
+    );
+    return mapTeam(updated);
+  },
+
+  /* ---------- Verwaltung: Vereins-Einstellungen ---------- */
+  async updateClubSettings(patch) {
+    const updated = await apiClient.patchClubsByClubId(activeClubId(), {
+      name: patch.name,
+      short_name: patch.shortName,
+      city: patch.city,
+      discipline: patch.discipline,
+      settings: patch.settings,
+    });
+    return mapClub(updated);
+  },
+
+  /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
+  async platformListClubs() {
+    const rows = await apiClient.getPlatformClubs();
+    return rows.map(mapPlatformClub);
+  },
+  async platformListUsers() {
+    const rows = await apiClient.getPlatformUsers();
+    return rows.map(mapPlatformUser);
+  },
+  async platformStats() {
+    return mapPlatformStats(await apiClient.getPlatformStats());
   },
 };

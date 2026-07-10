@@ -19,13 +19,22 @@ export const dataSource = DATA_SOURCE;
 export const data: DataRepository = DATA_SOURCE === "api" ? apiRepository : mockRepository;
 
 export type {
+  AddMarkerInput,
   AssignableRole,
+  CreateEventInput,
+  CreateTeamInput,
   DataRepository,
   DunningRunOutcome,
+  InviteMemberInput,
   SetAttendanceInput,
   SetRsvpInput,
+  SetTeamMembersInput,
+  UpdateClubSettingsInput,
+  UpdateMemberInput,
+  UpdateTeamInput,
 } from "./types";
 export type { DataSourceName } from "./config";
+export { permissions, type Permissions } from "./permissions";
 export {
   ApiError,
   NotImplementedError,

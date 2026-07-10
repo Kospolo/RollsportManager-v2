@@ -33,7 +33,10 @@ export type IconName =
   | "download"
   | "edit"
   | "pin"
-  | "dots";
+  | "dots"
+  | "shield"
+  | "teams"
+  | "globe";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   dashboard: (
@@ -174,6 +177,28 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none" />
       <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
       <circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 3.4 5.5 6v5.6c0 4.2 2.8 6.8 6.5 8.4 3.7-1.6 6.5-4.2 6.5-8.4V6L12 3.4Z" />
+      <path d="M9.2 12.1l2 2 3.6-3.9" />
+    </>
+  ),
+  teams: (
+    <>
+      <circle cx="12" cy="6.8" r="2.4" />
+      <circle cx="6.4" cy="10.4" r="2.1" />
+      <circle cx="17.6" cy="10.4" r="2.1" />
+      <path d="M12 11.6c2.7 0 4.3 1.6 4.7 4.1H7.3c.4-2.5 2-4.1 4.7-4.1Z" />
+      <path d="M6.4 14.2c-1.6.1-2.6 1-2.9 2.7M17.6 14.2c1.6.1 2.6 1 2.9 2.7" />
+    </>
+  ),
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="8.3" />
+      <path d="M3.7 12h16.6" />
+      <path d="M12 3.7c2.4 2.3 3.7 5.2 3.7 8.3S14.4 18 12 20.3C9.6 18 8.3 15.1 8.3 12S9.6 6 12 3.7Z" />
     </>
   ),
 };
