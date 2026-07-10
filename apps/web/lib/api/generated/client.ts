@@ -1,0 +1,326 @@
+// GENERIERT — NICHT VON HAND AENDERN
+//
+// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.1.0).
+// Regenerate with: npm run generate   (in packages/contracts)
+// Source of truth is the API layer; the spec itself is produced by
+// "npm run openapi" in services/api - never edit either by hand.
+
+/* eslint-disable */
+
+import type * as M from "./types";
+
+export interface RequestOptions {
+  signal?: AbortSignal;
+  /** Extra headers for this single request (e.g. x-request-id). */
+  headers?: Record<string, string>;
+}
+
+export interface ApiClientOptions {
+  /** Base URL of the API, e.g. "http://localhost:3022" - no trailing slash needed. */
+  baseUrl: string;
+  /** Returns the current GoTrue access token (or null for anonymous calls). */
+  getAccessToken?: () => string | null | Promise<string | null>;
+  /** Custom fetch implementation (tests, Node polyfills). Defaults to globalThis.fetch. */
+  fetch?: typeof fetch;
+  /** Headers applied to every request. */
+  defaultHeaders?: Record<string, string>;
+}
+
+/** RFC 7807 error thrown for every non-2xx response. */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly problem: M.Problem | null;
+
+  constructor(status: number, problem: M.Problem | null, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.problem = problem;
+  }
+}
+
+type Query = Record<string, string | number | boolean | null | undefined>;
+
+export class ApiClient {
+  private readonly opts: ApiClientOptions;
+
+  constructor(opts: ApiClientOptions) {
+    this.opts = opts;
+  }
+
+  private async request<T>(
+    method: string,
+    path: string,
+    init: { query?: Query; body?: unknown; auth: boolean; options?: RequestOptions }
+  ): Promise<T> {
+    const base = this.opts.baseUrl.replace(/\/+$/, "");
+    const url = new URL(base + path);
+    for (const [key, value] of Object.entries(init.query ?? {})) {
+      if (value === undefined || value === null) continue;
+      url.searchParams.set(key, String(value));
+    }
+
+    const headers: Record<string, string> = {
+      accept: "application/json",
+      ...this.opts.defaultHeaders,
+      ...init.options?.headers,
+    };
+    if (init.body !== undefined) headers["content-type"] = "application/json";
+    if (init.auth && this.opts.getAccessToken) {
+      const token = await this.opts.getAccessToken();
+      if (token) headers["authorization"] = `Bearer ${token}`;
+    }
+
+    const doFetch = this.opts.fetch ?? globalThis.fetch;
+    const res = await doFetch(url.toString(), {
+      method: method.toUpperCase(),
+      headers,
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      signal: init.options?.signal,
+    });
+
+    if (!res.ok) {
+      let problem: M.Problem | null = null;
+      try {
+        problem = (await res.json()) as M.Problem;
+      } catch {
+        // non-JSON error body - keep problem null
+      }
+      const detail = problem?.detail ?? problem?.title ?? res.statusText;
+      throw new ApiError(res.status, problem, `${method.toUpperCase()} ${path} -> ${res.status}: ${detail}`);
+    }
+
+    if (res.status === 204) return undefined as T;
+    return (await res.json()) as T;
+  }
+  /**
+   * Liveness probe (no auth, no DB)
+   * 
+   * `GET /health`
+   */
+  async getHealth(options?: RequestOptions): Promise<M.Health> {
+    return this.request<M.Health>("GET", "/health", { auth: false, options });
+  }
+
+  /**
+   * List clubs of the current user (RLS-scoped)
+   * 
+   * `GET /clubs`
+   */
+  async getClubs(options?: RequestOptions): Promise<M.Club[]> {
+    return this.request<M.Club[]>("GET", "/clubs", { auth: true, options });
+  }
+
+  /**
+   * Get a single club
+   * 
+   * `GET /clubs/{clubId}`
+   */
+  async getClubsByClubId(clubId: string, options?: RequestOptions): Promise<M.Club> {
+    return this.request<M.Club>("GET", `/clubs/${encodeURIComponent(clubId)}`, { auth: true, options });
+  }
+
+  /**
+   * Update own club (owner/admin)
+   * 
+   * `PATCH /clubs/{clubId}`
+   */
+  async patchClubsByClubId(clubId: string, body: M.ClubUpdate, options?: RequestOptions): Promise<M.Club> {
+    return this.request<M.Club>("PATCH", `/clubs/${encodeURIComponent(clubId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * List the club roster
+   * 
+   * `GET /clubs/{clubId}/members`
+   */
+  async getClubsByClubIdMembers(clubId: string, options?: RequestOptions): Promise<M.ClubMember[]> {
+    return this.request<M.ClubMember[]>("GET", `/clubs/${encodeURIComponent(clubId)}/members`, { auth: true, options });
+  }
+
+  /**
+   * Create a membership row (owner/admin)
+   * Creates a person in the roster (e.g. a child without an account). The owner role is never assignable here.
+   * 
+   * `POST /clubs/{clubId}/members`
+   */
+  async postClubsByClubIdMembers(clubId: string, body: M.ClubMemberCreate, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("POST", `/clubs/${encodeURIComponent(clubId)}/members`, { body, auth: true, options });
+  }
+
+  /**
+   * Invite a person by e-mail (stub, owner/admin)
+   * Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.
+   * 
+   * `POST /clubs/{clubId}/members/invite`
+   */
+  async postClubsByClubIdMembersInvite(clubId: string, body: M.ClubMemberInvite, options?: RequestOptions): Promise<M.InviteQueued> {
+    return this.request<M.InviteQueued>("POST", `/clubs/${encodeURIComponent(clubId)}/members/invite`, { body, auth: true, options });
+  }
+
+  /**
+   * Change a member role (owner/admin; never self; last owner protected)
+   * 
+   * `PATCH /clubs/{clubId}/members/{memberId}/role`
+   */
+  async patchClubsByClubIdMembersByMemberIdRole(clubId: string, memberId: string, body: M.ClubMemberRoleChange, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/role`, { body, auth: true, options });
+  }
+
+  /**
+   * List events of a club (optionally time-windowed)
+   * 
+   * `GET /events`
+   */
+  async getEvents(query: { "club_id": string; "from"?: string; "to"?: string }, options?: RequestOptions): Promise<M.Event[]> {
+    return this.request<M.Event[]>("GET", "/events", { query, auth: true, options });
+  }
+
+  /**
+   * Create an event (owner/admin/coach) with optional team links
+   * 
+   * `POST /events`
+   */
+  async postEvents(body: M.EventCreate, options?: RequestOptions): Promise<M.Event> {
+    return this.request<M.Event>("POST", "/events", { body, auth: true, options });
+  }
+
+  /**
+   * Set an RSVP for the own membership or an own child (guardianship)
+   * Upsert on (event, member). RLS enforces can_act_for_member: own row or own child - coaches may answer for anyone in the club.
+   * 
+   * `PUT /events/{eventId}/rsvp`
+   */
+  async putEventsByEventIdRsvp(eventId: string, body: M.EventRsvpUpsert, options?: RequestOptions): Promise<M.EventRsvp> {
+    return this.request<M.EventRsvp>("PUT", `/events/${encodeURIComponent(eventId)}/rsvp`, { body, auth: true, options });
+  }
+
+  /**
+   * Record attendance for a member (coach and above, incl. guest_coach)
+   * 
+   * `PUT /events/{eventId}/attendance`
+   */
+  async putEventsByEventIdAttendance(eventId: string, body: M.AttendanceUpsert, options?: RequestOptions): Promise<M.Attendance> {
+    return this.request<M.Attendance>("PUT", `/events/${encodeURIComponent(eventId)}/attendance`, { body, auth: true, options });
+  }
+
+  /**
+   * List routines of a club
+   * 
+   * `GET /routines`
+   */
+  async getRoutines(query: { "club_id": string }, options?: RequestOptions): Promise<M.Routine[]> {
+    return this.request<M.Routine[]>("GET", "/routines", { query, auth: true, options });
+  }
+
+  /**
+   * Create a routine (coaching staff incl. guest_coach)
+   * 
+   * `POST /routines`
+   */
+  async postRoutines(body: M.RoutineCreate, options?: RequestOptions): Promise<M.Routine> {
+    return this.request<M.Routine>("POST", "/routines", { body, auth: true, options });
+  }
+
+  /**
+   * Get a routine
+   * 
+   * `GET /routines/{routineId}`
+   */
+  async getRoutinesByRoutineId(routineId: string, options?: RequestOptions): Promise<M.Routine> {
+    return this.request<M.Routine>("GET", `/routines/${encodeURIComponent(routineId)}`, { auth: true, options });
+  }
+
+  /**
+   * List time markers of a routine
+   * 
+   * `GET /routines/{routineId}/markers`
+   */
+  async getRoutinesByRoutineIdMarkers(routineId: string, options?: RequestOptions): Promise<M.RoutineMarker[]> {
+    return this.request<M.RoutineMarker[]>("GET", `/routines/${encodeURIComponent(routineId)}/markers`, { auth: true, options });
+  }
+
+  /**
+   * Add a time marker (coaching staff incl. guest_coach)
+   * 
+   * `POST /routines/{routineId}/markers`
+   */
+  async postRoutinesByRoutineIdMarkers(routineId: string, body: M.RoutineMarkerCreate, options?: RequestOptions): Promise<M.RoutineMarker> {
+    return this.request<M.RoutineMarker>("POST", `/routines/${encodeURIComponent(routineId)}/markers`, { body, auth: true, options });
+  }
+
+  /**
+   * Score history of a routine
+   * 
+   * `GET /routines/{routineId}/scores`
+   */
+  async getRoutinesByRoutineIdScores(routineId: string, options?: RequestOptions): Promise<M.RoutineScore[]> {
+    return this.request<M.RoutineScore[]>("GET", `/routines/${encodeURIComponent(routineId)}/scores`, { auth: true, options });
+  }
+
+  /**
+   * Record a score (coaching staff incl. guest_coach)
+   * 
+   * `POST /routines/{routineId}/scores`
+   */
+  async postRoutinesByRoutineIdScores(routineId: string, body: M.RoutineScoreCreate, options?: RequestOptions): Promise<M.RoutineScore> {
+    return this.request<M.RoutineScore>("POST", `/routines/${encodeURIComponent(routineId)}/scores`, { body, auth: true, options });
+  }
+
+  /**
+   * List invoices (RLS: finance roles see all, members their own/children)
+   * 
+   * `GET /invoices`
+   */
+  async getInvoices(query: { "club_id": string }, options?: RequestOptions): Promise<M.Invoice[]> {
+    return this.request<M.Invoice[]>("GET", "/invoices", { query, auth: true, options });
+  }
+
+  /**
+   * Create an invoice (owner/admin/treasurer) with a race-free number
+   * Service-mode operation: the invoice number comes from app.next_invoice_number() (service_role only). The finance role is re-verified against the database, not just claims.
+   * 
+   * `POST /invoices`
+   */
+  async postInvoices(body: M.InvoiceCreate, options?: RequestOptions): Promise<M.Invoice> {
+    return this.request<M.Invoice>("POST", "/invoices", { body, auth: true, options });
+  }
+
+  /**
+   * Send a payment reminder (stub: bumps dunning_level + logs)
+   * 
+   * `POST /invoices/{invoiceId}/send-reminder`
+   */
+  async postInvoicesByInvoiceIdSendReminder(invoiceId: string, options?: RequestOptions): Promise<M.Invoice> {
+    return this.request<M.Invoice>("POST", `/invoices/${encodeURIComponent(invoiceId)}/send-reminder`, { auth: true, options });
+  }
+
+  /**
+   * Club license entitlements (read-only; written only by the webhook service)
+   * 
+   * `GET /entitlements/{clubId}`
+   */
+  async getEntitlementsByClubId(clubId: string, options?: RequestOptions): Promise<M.Entitlement[]> {
+    return this.request<M.Entitlement[]>("GET", `/entitlements/${encodeURIComponent(clubId)}`, { auth: true, options });
+  }
+
+  /**
+   * Product catalog (single source of truth for pricing, read-only)
+   * 
+   * `GET /products`
+   */
+  async getProducts(options?: RequestOptions): Promise<M.Product[]> {
+    return this.request<M.Product[]>("GET", "/products", { auth: true, options });
+  }
+
+  /**
+   * Dunning run (dry_run defaults to true; stages >= 2 always need approval)
+   * Computes due dunning-stage changes along the timeline +7/+21/+35/+49 days after due_on. Only stage 1 (payment reminder) is ever applied automatically (dry_run=false); every stage >= 2 is returned as pending_approval and never written by the run itself.
+   * 
+   * `POST /clubs/{clubId}/dunning/run`
+   */
+  async postClubsByClubIdDunningRun(clubId: string, body?: M.DunningRunRequest, options?: RequestOptions): Promise<M.DunningRunResult> {
+    return this.request<M.DunningRunResult>("POST", `/clubs/${encodeURIComponent(clubId)}/dunning/run`, { body, auth: true, options });
+  }
+
+}

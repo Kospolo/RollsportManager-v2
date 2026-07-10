@@ -43,3 +43,6 @@ apps/android/local.properties
 *.log
 .cache/
 coverage/
+
+# Build-Output
+dist/

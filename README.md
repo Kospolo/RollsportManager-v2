@@ -20,13 +20,13 @@ apps/web/       Next.js-Portal (App Router, DE/EN, Port 3021)
 apps/ios/       später: SwiftUI (xcodegen)
 apps/android/   später: Compose
 packages/tokens/     Token-Pipeline (tokens.json → CSS/Swift/Kotlin)
-packages/contracts/  OpenAPI, Sync-Spec, Widget-Contract, Codegen
-services/api/        Hono-API (Writes, Geld-Ops, Entitlements)
-services/media/      Upload, Waveform-Peaks, signierte URLs
-supabase/            Migrationen, Schemas, pgTAP-Tests, Seeds
-sync/                PowerSync Sync Rules
-etl/                 v1→v2-Migration (idempotent, verifiziert)
-infra/               Hetzner-Prod, Proxmox-Staging, Runbooks
+packages/contracts/  OpenAPI (Quelle: services/api), Codegen TS/Swift/Kotlin, Sync-Spec
+services/api/        Hono-API, Port 3022 (Writes, Geld-Ops, Entitlements, Billing/Webhooks)
+services/media/      später: Upload, Waveform-Peaks, signierte URLs
+supabase/            Migrationen 0001–0006, Schema-Doku, Seed, SQL-Sicherheitstests
+sync/                später: PowerSync Sync Rules (Spec: packages/contracts/sync-spec.md)
+etl/                 später: v1→v2-Migration (idempotent, verifiziert)
+infra/               später: Hetzner-Prod, Proxmox-Staging, Runbooks
 ```
 
 ## Portal starten
@@ -37,6 +37,20 @@ npm install
 npm run tokens   # generiert app/tokens.css aus design/tokens.json
 npm run dev      # http://localhost:3021
 ```
+
+## Backend prüfen (alle lokal, Wegwerf-Postgres `rsm2-pg-test`)
+
+```bash
+supabase/scripts/db-test.sh              # Schema + Seed + RLS-Grundchecks
+supabase/tests/run-tests.sh              # 155 SQL-Sicherheitstests (RLS/Mandanten/GoBD)
+cd services/api && npm test              # Unit-Tests (ohne Netz/DB)
+cd services/api && npm run db:test       # API-End-to-End-Smoke über HTTP
+cd packages/contracts && npm run check   # Contract-Gate (Spec-Frische + Codegen-Drift)
+```
+
+Alle drei Shell-Harnesse teilen sich `supabase/scripts/lib/pg-harness.sh`
+(Container `rsm2-pg-test`, `postgres:16-alpine`, `127.0.0.1:55432`, `--rm`) —
+sie dürfen nicht gleichzeitig laufen und fassen nie Produktions-Container an.
 
 ## Eiserne Regeln dieser Phase
 

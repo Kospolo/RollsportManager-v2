@@ -1,0 +1,15 @@
+{
+  "name": "@rsm2/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RollsportManager v2 shared contract: OpenAPI source of truth + template-based codegen (TS/Swift/Kotlin) + sync semantics. Zero dependencies by design (Blueprint ADR-E1 codegen gate).",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "openapi": "npm run openapi --prefix ../../services/api",
+    "generate": "node codegen/gen-ts.mjs && node codegen/gen-swift.mjs && node codegen/gen-kotlin.mjs",
+    "check": "node codegen/check.mjs"
+  }
+}
