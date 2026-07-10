@@ -485,6 +485,60 @@ values
    'a0000000-0000-4000-8000-000000000003', '2. Mahnung — Vereinsbeitrag Q2', now() - interval '3 days');
 
 -- ----------------------------------------------------------------------------
+-- Membership categories (Beitragskategorien, 0014). The club's public fee
+-- model: Kind/Jugend/Erwachsen monthly, Passiv yearly. amount_cents = integer
+-- cents; period drives how the summary endpoint annualises them.
+-- ----------------------------------------------------------------------------
+insert into app.membership_categories (id, club_id, name, amount_cents, period, is_active, sort_order)
+values
+  ('bc100000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'Kind',      800::bigint,  'monthly', true, 1),
+  ('bc100000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'Jugend',   1200::bigint,  'monthly', true, 2),
+  ('bc100000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'Erwachsen',1800::bigint,  'monthly', true, 3),
+  ('bc100000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001', 'Passiv',   6000::bigint,  'yearly',  true, 4);
+
+-- ----------------------------------------------------------------------------
+-- Member fees (Beitragszuordnung, 0014). Assigns a category to ~10 members for
+-- an open-ended window (valid_until null). Two overrides: a hardship rate for
+-- Katrin (custom 900) and a board waiver for the treasurer Beate (custom 0).
+-- ----------------------------------------------------------------------------
+insert into app.member_fees (club_id, member_id, category_id, custom_amount_cents, valid_from, valid_until)
+select 'c1ab0000-0000-4000-8000-000000000001', v.member_id::uuid, v.category_id::uuid,
+       v.custom_amount_cents, v.valid_from, null
+from (values
+  ('a0000000-0000-4000-8000-000000000007', 'bc100000-0000-4000-8000-000000000001', null::bigint, date '2021-09-01'),  -- Lina, Kind
+  ('a0000000-0000-4000-8000-000000000008', 'bc100000-0000-4000-8000-000000000001', null,          date '2023-03-01'),  -- Emma, Kind
+  ('a0000000-0000-4000-8000-000000000010', 'bc100000-0000-4000-8000-000000000002', null,          date '2020-01-15'),  -- Sofia, Jugend
+  ('a0000000-0000-4000-8000-000000000011', 'bc100000-0000-4000-8000-000000000001', null,          date '2022-04-01'),  -- Ben, Kind
+  ('a0000000-0000-4000-8000-000000000013', 'bc100000-0000-4000-8000-000000000002', null,          date '2021-02-01'),  -- Finn, Jugend
+  ('a0000000-0000-4000-8000-000000000009', 'bc100000-0000-4000-8000-000000000003', 900::bigint,   date '2021-09-01'),  -- Katrin, Erwachsen (Härtefall 9,00)
+  ('a0000000-0000-4000-8000-000000000012', 'bc100000-0000-4000-8000-000000000003', null,          date '2020-01-15'),  -- Stefanie, Erwachsen
+  ('a0000000-0000-4000-8000-000000000014', 'bc100000-0000-4000-8000-000000000003', null,          date '2021-02-01'),  -- Petra, Erwachsen
+  ('a0000000-0000-4000-8000-000000000003', 'bc100000-0000-4000-8000-000000000003', 0::bigint,     date '2006-01-10'),  -- Beate, Erwachsen (Vorstand beitragsfrei)
+  ('a0000000-0000-4000-8000-000000000002', 'bc100000-0000-4000-8000-000000000004', null,          date '1998-03-15')   -- Jürgen, Passiv
+) as v(member_id, category_id, custom_amount_cents, valid_from);
+
+-- ----------------------------------------------------------------------------
+-- Family discounts (Familien-Rabatte, 0014). One rebate: ab dem 2. Kind 50 %.
+-- ----------------------------------------------------------------------------
+insert into app.family_discounts (id, club_id, label, kind, value_numeric, applies_from_child, is_active)
+values
+  ('fd100000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Geschwisterrabatt ab dem 2. Kind', 'percent', 50, 2, true);
+
+-- ----------------------------------------------------------------------------
+-- SEPA mandates (0014). DATENSCHUTZ: only iban_last4 + reference are stored,
+-- never the full IBAN. Three paying guardians/adults, all active.
+-- ----------------------------------------------------------------------------
+insert into app.sepa_mandates (id, club_id, member_id, mandate_reference, iban_last4, account_holder, signed_on, status)
+values
+  ('5e9a0000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000009', 'RSV-M-2021-0009', '4321', 'Katrin Grünewald',  '2021-09-01', 'active'),
+  ('5e9a0000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000012', 'RSV-M-2020-0012', '8877', 'Stefanie Müller',   '2020-01-15', 'active'),
+  ('5e9a0000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000014', 'RSV-M-2021-0014', '1290', 'Petra Köhler',      '2021-02-01', 'active');
+
+-- ----------------------------------------------------------------------------
 -- Tasks (mock task-01 … task-07)
 -- ----------------------------------------------------------------------------
 insert into app.tasks (club_id, title, done, due_on, assignee_member_id, competition_id)

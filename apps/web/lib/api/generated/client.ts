@@ -1051,6 +1051,165 @@ export class ApiClient {
   }
 
   /**
+   * Fee catalog of a club (any club member may read)
+   * The public fee model of the club: name, amount_cents and billing period. Readable by every club member (RLS: is_club_member); only finance roles may edit.
+   * 
+   * `GET /membership-categories`
+   */
+  async getMembershipCategories(query: { "club_id": string }, options?: RequestOptions): Promise<M.MembershipCategory[]> {
+    return this.request<M.MembershipCategory[]>("GET", "/membership-categories", { query, auth: true, options });
+  }
+
+  /**
+   * Create a fee category (can_manage_finance)
+   * 
+   * `POST /membership-categories`
+   */
+  async postMembershipCategories(body: M.MembershipCategoryCreate, options?: RequestOptions): Promise<M.MembershipCategory> {
+    return this.request<M.MembershipCategory>("POST", "/membership-categories", { body, auth: true, options });
+  }
+
+  /**
+   * Update a fee category (can_manage_finance)
+   * 
+   * `PATCH /membership-categories/{categoryId}`
+   */
+  async patchMembershipCategoriesByCategoryId(categoryId: string, body: M.MembershipCategoryUpdate, options?: RequestOptions): Promise<M.MembershipCategory> {
+    return this.request<M.MembershipCategory>("PATCH", `/membership-categories/${encodeURIComponent(categoryId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a fee category (can_manage_finance)
+   * 
+   * `DELETE /membership-categories/{categoryId}`
+   */
+  async deleteMembershipCategoriesByCategoryId(categoryId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/membership-categories/${encodeURIComponent(categoryId)}`, { auth: true, options });
+  }
+
+  /**
+   * Expected annual fee income by period (can_manage_finance)
+   * Aggregates the currently valid, active fee assignments. Effective amount = custom_amount_cents when set, else the category amount. annual_cents annualises each period (monthly×12, quarterly×4, yearly×1, once excluded from the recurring total).
+   * 
+   * `GET /member-fees/summary`
+   */
+  async getMemberFeesSummary(query: { "club_id": string }, options?: RequestOptions): Promise<M.MemberFeeSummary> {
+    return this.request<M.MemberFeeSummary>("GET", "/member-fees/summary", { query, auth: true, options });
+  }
+
+  /**
+   * List fee assignments (RLS: finance sees all, members their own/children)
+   * Optional member_id filter. A plain member only ever sees their own / their children's assignments regardless of the filter (RLS). Left-joins the category.
+   * 
+   * `GET /member-fees`
+   */
+  async getMemberFees(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.MemberFee[]> {
+    return this.request<M.MemberFee[]>("GET", "/member-fees", { query, auth: true, options });
+  }
+
+  /**
+   * Assign a fee category to a member (can_manage_finance)
+   * 
+   * `POST /member-fees`
+   */
+  async postMemberFees(body: M.MemberFeeCreate, options?: RequestOptions): Promise<M.MemberFee> {
+    return this.request<M.MemberFee>("POST", "/member-fees", { body, auth: true, options });
+  }
+
+  /**
+   * Update a fee assignment (can_manage_finance)
+   * 
+   * `PATCH /member-fees/{feeId}`
+   */
+  async patchMemberFeesByFeeId(feeId: string, body: M.MemberFeeUpdate, options?: RequestOptions): Promise<M.MemberFee> {
+    return this.request<M.MemberFee>("PATCH", `/member-fees/${encodeURIComponent(feeId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a fee assignment (can_manage_finance)
+   * 
+   * `DELETE /member-fees/{feeId}`
+   */
+  async deleteMemberFeesByFeeId(feeId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/member-fees/${encodeURIComponent(feeId)}`, { auth: true, options });
+  }
+
+  /**
+   * Family/sibling discounts of a club (any club member may read)
+   * kind=percent → value_numeric is a percentage (0–100); kind=fixed → value_numeric is a fixed cent amount. applies_from_child = the ordinal the rebate starts at ("ab dem 2. Kind" → 2). Readable by every member; only finance may edit.
+   * 
+   * `GET /family-discounts`
+   */
+  async getFamilyDiscounts(query: { "club_id": string }, options?: RequestOptions): Promise<M.FamilyDiscount[]> {
+    return this.request<M.FamilyDiscount[]>("GET", "/family-discounts", { query, auth: true, options });
+  }
+
+  /**
+   * Create a family discount (can_manage_finance)
+   * 
+   * `POST /family-discounts`
+   */
+  async postFamilyDiscounts(body: M.FamilyDiscountCreate, options?: RequestOptions): Promise<M.FamilyDiscount> {
+    return this.request<M.FamilyDiscount>("POST", "/family-discounts", { body, auth: true, options });
+  }
+
+  /**
+   * Update a family discount (can_manage_finance)
+   * 
+   * `PATCH /family-discounts/{discountId}`
+   */
+  async patchFamilyDiscountsByDiscountId(discountId: string, body: M.FamilyDiscountUpdate, options?: RequestOptions): Promise<M.FamilyDiscount> {
+    return this.request<M.FamilyDiscount>("PATCH", `/family-discounts/${encodeURIComponent(discountId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a family discount (can_manage_finance)
+   * 
+   * `DELETE /family-discounts/{discountId}`
+   */
+  async deleteFamilyDiscountsByDiscountId(discountId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/family-discounts/${encodeURIComponent(discountId)}`, { auth: true, options });
+  }
+
+  /**
+   * List SEPA mandates (RLS: finance sees all, members their own/children)
+   * Only iban_last4 is ever returned (never a full IBAN). Optional member_id filter; a plain member only ever sees their own / their children's mandate (RLS).
+   * 
+   * `GET /sepa-mandates`
+   */
+  async getSepaMandates(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.SepaMandate[]> {
+    return this.request<M.SepaMandate[]>("GET", "/sepa-mandates", { query, auth: true, options });
+  }
+
+  /**
+   * Create a SEPA mandate (can_manage_finance)
+   * DATENSCHUTZ: pass ONLY iban_last4 (4 digits) - a full IBAN is rejected by validation.
+   * 
+   * `POST /sepa-mandates`
+   */
+  async postSepaMandates(body: M.SepaMandateCreate, options?: RequestOptions): Promise<M.SepaMandate> {
+    return this.request<M.SepaMandate>("POST", "/sepa-mandates", { body, auth: true, options });
+  }
+
+  /**
+   * Update or revoke a SEPA mandate (can_manage_finance)
+   * 
+   * `PATCH /sepa-mandates/{mandateId}`
+   */
+  async patchSepaMandatesByMandateId(mandateId: string, body: M.SepaMandateUpdate, options?: RequestOptions): Promise<M.SepaMandate> {
+    return this.request<M.SepaMandate>("PATCH", `/sepa-mandates/${encodeURIComponent(mandateId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a SEPA mandate (can_manage_finance)
+   * 
+   * `DELETE /sepa-mandates/{mandateId}`
+   */
+  async deleteSepaMandatesByMandateId(mandateId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/sepa-mandates/${encodeURIComponent(mandateId)}`, { auth: true, options });
+  }
+
+  /**
    * Club license entitlements (read-only; written only by the webhook service)
    * 
    * `GET /entitlements/{clubId}`

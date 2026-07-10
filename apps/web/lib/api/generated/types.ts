@@ -1001,6 +1001,152 @@ export interface LedgerReverse {
   "description"?: string;
 }
 
+export type MembershipPeriod = "monthly" | "quarterly" | "yearly" | "once";
+export const MembershipPeriodValues: readonly MembershipPeriod[] = ["monthly", "quarterly", "yearly", "once"] as const;
+
+export interface MembershipCategory {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "amount_cents": number | null;
+  "period": MembershipPeriod;
+  "is_active": boolean;
+  "sort_order": number | null;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface MembershipCategoryCreate {
+  "club_id": string;
+  "name": string;
+  "amount_cents": number;
+  "period": MembershipPeriod;
+  "is_active"?: boolean;
+  "sort_order"?: number;
+}
+
+export interface MembershipCategoryUpdate {
+  "name"?: string;
+  "amount_cents"?: number;
+  "period"?: MembershipPeriod;
+  "is_active"?: boolean;
+  "sort_order"?: number;
+}
+
+export interface MemberFeeSummaryBucket {
+  "period": MembershipPeriod;
+  "count": number | null;
+  "amount_cents": number | null;
+  "annual_cents": number | null;
+}
+
+export interface MemberFeeSummary {
+  "club_id": string;
+  "by_period": MemberFeeSummaryBucket[];
+  "total_annual_cents": number | null;
+}
+
+export interface MemberFee {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "category_id": string;
+  "custom_amount_cents": number | null;
+  "valid_from": string;
+  "valid_until": string | null;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+  "category_name"?: string | null;
+  "category_amount_cents"?: number | null;
+  "category_period"?: MembershipPeriod;
+}
+
+export interface MemberFeeCreate {
+  "club_id": string;
+  "member_id": string;
+  "category_id": string;
+  "custom_amount_cents"?: number;
+  "valid_from": string;
+  "valid_until"?: string;
+}
+
+export interface MemberFeeUpdate {
+  "category_id"?: string;
+  "custom_amount_cents"?: number | null;
+  "valid_from"?: string;
+  "valid_until"?: string | null;
+}
+
+export type FamilyDiscountKind = "percent" | "fixed";
+export const FamilyDiscountKindValues: readonly FamilyDiscountKind[] = ["percent", "fixed"] as const;
+
+export interface FamilyDiscount {
+  "id": string;
+  "club_id": string;
+  "label": string;
+  "kind": FamilyDiscountKind;
+  "value_numeric": number | null;
+  "applies_from_child": number | null;
+  "is_active": boolean;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface FamilyDiscountCreate {
+  "club_id": string;
+  "label": string;
+  "kind": FamilyDiscountKind;
+  "value_numeric": number;
+  "applies_from_child"?: number;
+  "is_active"?: boolean;
+}
+
+export interface FamilyDiscountUpdate {
+  "label"?: string;
+  "kind"?: FamilyDiscountKind;
+  "value_numeric"?: number;
+  "applies_from_child"?: number;
+  "is_active"?: boolean;
+}
+
+export type SepaMandateStatus = "active" | "revoked";
+export const SepaMandateStatusValues: readonly SepaMandateStatus[] = ["active", "revoked"] as const;
+
+export interface SepaMandate {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "mandate_reference": string;
+  "iban_last4": string | null;
+  "account_holder": string;
+  "signed_on": string | null;
+  "status": SepaMandateStatus;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface SepaMandateCreate {
+  "club_id": string;
+  "member_id": string;
+  "mandate_reference": string;
+  "iban_last4"?: string;
+  "account_holder": string;
+  "signed_on"?: string;
+  "status"?: SepaMandateStatus;
+}
+
+export interface SepaMandateUpdate {
+  "mandate_reference"?: string;
+  "iban_last4"?: string | null;
+  "account_holder"?: string;
+  "signed_on"?: string | null;
+  "status"?: SepaMandateStatus;
+}
+
 export interface Entitlement {
   "id": string;
   "subject_type": "club" | "profile";

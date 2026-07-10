@@ -536,6 +536,205 @@ export const dunningApplyResultSchema = z
   })
   .openapi('DunningApplyResult');
 
+// ---------------------------------------------------------------------------
+// Beitragswesen — Finance depth B (migration 0014): membership categories,
+// member fees (Beitragszuordnung), family discounts, SEPA mandates.
+// ---------------------------------------------------------------------------
+
+export const membershipPeriodSchema = z
+  .enum(['monthly', 'quarterly', 'yearly', 'once'])
+  .openapi('MembershipPeriod');
+
+export const membershipCategorySchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    /** Blueprint §4: money is integer cents, never float. */
+    amount_cents: z.coerce.number().int(),
+    period: membershipPeriodSchema,
+    is_active: z.boolean(),
+    sort_order: z.coerce.number().int(),
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('MembershipCategory');
+
+export const membershipCategoryCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    amount_cents: z.number().int().nonnegative(),
+    period: membershipPeriodSchema,
+    is_active: z.boolean().default(true),
+    sort_order: z.number().int().default(0),
+  })
+  .openapi('MembershipCategoryCreate');
+
+/** PATCH a category: every field optional; deleted_at is set via DELETE (soft). */
+export const membershipCategoryUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    amount_cents: z.number().int().nonnegative().optional(),
+    period: membershipPeriodSchema.optional(),
+    is_active: z.boolean().optional(),
+    sort_order: z.number().int().optional(),
+  })
+  .openapi('MembershipCategoryUpdate');
+
+export const memberFeeSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    category_id: uuid,
+    /** Per-member override; null = use the category's amount_cents. */
+    custom_amount_cents: z.coerce.number().int().nullable(),
+    valid_from: isoDate,
+    valid_until: isoDate.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+    /** Joined from app.membership_categories in GET /member-fees. */
+    category_name: z.string().nullable().optional(),
+    category_amount_cents: z.coerce.number().int().nullable().optional(),
+    category_period: membershipPeriodSchema.nullable().optional(),
+  })
+  .openapi('MemberFee');
+
+export const memberFeeCreateSchema = z
+  .object({
+    club_id: uuid,
+    member_id: uuid,
+    category_id: uuid,
+    custom_amount_cents: z.number().int().nonnegative().optional(),
+    valid_from: z.string().date(),
+    valid_until: z.string().date().optional(),
+  })
+  .openapi('MemberFeeCreate');
+
+export const memberFeeUpdateSchema = z
+  .object({
+    category_id: uuid.optional(),
+    custom_amount_cents: z.number().int().nonnegative().nullable().optional(),
+    valid_from: z.string().date().optional(),
+    valid_until: z.string().date().nullable().optional(),
+  })
+  .openapi('MemberFeeUpdate');
+
+/**
+ * GET /member-fees/summary — expected annual fee income by period. Each period
+ * bucket carries the raw count + summed cents at their native period; annual_cents
+ * annualises them (monthly×12, quarterly×4, yearly×1, once excluded from the
+ * recurring total). custom_amount_cents overrides the category amount per fee.
+ */
+export const memberFeeSummarySchema = z
+  .object({
+    club_id: uuid,
+    /** per-period breakdown of active fee assignments. */
+    by_period: z.array(
+      z
+        .object({
+          period: membershipPeriodSchema,
+          /** number of active member_fees in this period bucket. */
+          count: z.coerce.number().int(),
+          /** summed effective amount at the native period (not annualised). */
+          amount_cents: z.coerce.number().int(),
+          /** annualised contribution of this bucket (once = 0). */
+          annual_cents: z.coerce.number().int(),
+        })
+        .openapi('MemberFeeSummaryBucket'),
+    ),
+    /** total expected recurring income per year across all buckets. */
+    total_annual_cents: z.coerce.number().int(),
+  })
+  .openapi('MemberFeeSummary');
+
+export const familyDiscountKindSchema = z.enum(['percent', 'fixed']).openapi('FamilyDiscountKind');
+
+export const familyDiscountSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    label: z.string(),
+    kind: familyDiscountKindSchema,
+    /** percent → a percentage (0–100); fixed → a cent amount. */
+    value_numeric: z.coerce.number(),
+    applies_from_child: z.coerce.number().int(),
+    is_active: z.boolean(),
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('FamilyDiscount');
+
+export const familyDiscountCreateSchema = z
+  .object({
+    club_id: uuid,
+    label: z.string().min(1),
+    kind: familyDiscountKindSchema,
+    value_numeric: z.number().nonnegative(),
+    applies_from_child: z.number().int().min(1).default(2),
+    is_active: z.boolean().default(true),
+  })
+  .refine((v) => v.kind !== 'percent' || v.value_numeric <= 100, {
+    message: 'a percent discount cannot exceed 100',
+  })
+  .openapi('FamilyDiscountCreate');
+
+export const familyDiscountUpdateSchema = z
+  .object({
+    label: z.string().min(1).optional(),
+    kind: familyDiscountKindSchema.optional(),
+    value_numeric: z.number().nonnegative().optional(),
+    applies_from_child: z.number().int().min(1).optional(),
+    is_active: z.boolean().optional(),
+  })
+  .openapi('FamilyDiscountUpdate');
+
+export const sepaMandateStatusSchema = z.enum(['active', 'revoked']).openapi('SepaMandateStatus');
+
+export const sepaMandateSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    mandate_reference: z.string(),
+    /** DATENSCHUTZ: only the last 4 IBAN digits are ever stored/returned. */
+    iban_last4: z.string().nullable(),
+    account_holder: z.string(),
+    signed_on: isoDate.nullable(),
+    status: sepaMandateStatusSchema,
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('SepaMandate');
+
+export const sepaMandateCreateSchema = z
+  .object({
+    club_id: uuid,
+    member_id: uuid,
+    mandate_reference: z.string().min(1),
+    /** DATENSCHUTZ: pass ONLY the last 4 digits — never a full IBAN. */
+    iban_last4: z.string().regex(/^[0-9]{4}$/).optional(),
+    account_holder: z.string().min(1),
+    signed_on: z.string().date().optional(),
+    status: sepaMandateStatusSchema.default('active'),
+  })
+  .openapi('SepaMandateCreate');
+
+export const sepaMandateUpdateSchema = z
+  .object({
+    mandate_reference: z.string().min(1).optional(),
+    iban_last4: z.string().regex(/^[0-9]{4}$/).nullable().optional(),
+    account_holder: z.string().min(1).optional(),
+    signed_on: z.string().date().nullable().optional(),
+    status: sepaMandateStatusSchema.optional(),
+  })
+  .openapi('SepaMandateUpdate');
+
 export const competitionEntrySchema = z
   .object({
     id: uuid,

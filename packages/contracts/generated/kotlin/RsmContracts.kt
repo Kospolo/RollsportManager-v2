@@ -184,6 +184,26 @@ enum class LedgerCategoryKind {
 }
 
 @Serializable
+enum class MembershipPeriod {
+    @SerialName("monthly") MONTHLY,
+    @SerialName("quarterly") QUARTERLY,
+    @SerialName("yearly") YEARLY,
+    @SerialName("once") ONCE;
+}
+
+@Serializable
+enum class FamilyDiscountKind {
+    @SerialName("percent") PERCENT,
+    @SerialName("fixed") FIXED;
+}
+
+@Serializable
+enum class SepaMandateStatus {
+    @SerialName("active") ACTIVE,
+    @SerialName("revoked") REVOKED;
+}
+
+@Serializable
 enum class DunningLogAction {
     @SerialName("reminder") REMINDER,
     @SerialName("dunning") DUNNING,
@@ -1274,6 +1294,157 @@ data class LedgerCategoryCreate(
 @Serializable
 data class LedgerReverse(
     val description: String? = null
+)
+
+@Serializable
+data class MembershipCategory(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    @SerialName("amount_cents") val amountCents: Long?,
+    val period: MembershipPeriod,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("sort_order") val sortOrder: Long?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class MembershipCategoryCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    @SerialName("amount_cents") val amountCents: Long,
+    val period: MembershipPeriod,
+    @SerialName("is_active") val isActive: Boolean? = true,
+    @SerialName("sort_order") val sortOrder: Long? = 0L
+)
+
+@Serializable
+data class MembershipCategoryUpdate(
+    val name: String? = null,
+    @SerialName("amount_cents") val amountCents: Long? = null,
+    val period: MembershipPeriod? = null,
+    @SerialName("is_active") val isActive: Boolean? = null,
+    @SerialName("sort_order") val sortOrder: Long? = null
+)
+
+@Serializable
+data class MemberFeeSummaryBucket(
+    val period: MembershipPeriod,
+    val count: Long?,
+    @SerialName("amount_cents") val amountCents: Long?,
+    @SerialName("annual_cents") val annualCents: Long?
+)
+
+@Serializable
+data class MemberFeeSummary(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("by_period") val byPeriod: List<MemberFeeSummaryBucket>,
+    @SerialName("total_annual_cents") val totalAnnualCents: Long?
+)
+
+@Serializable
+data class MemberFee(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("custom_amount_cents") val customAmountCents: Long?,
+    @SerialName("valid_from") val validFrom: String,
+    @SerialName("valid_until") val validUntil: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?,
+    @SerialName("category_name") val categoryName: String? = null,
+    @SerialName("category_amount_cents") val categoryAmountCents: Long? = null,
+    @SerialName("category_period") val categoryPeriod: MembershipPeriod? = null
+)
+
+@Serializable
+data class MemberFeeCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("custom_amount_cents") val customAmountCents: Long? = null,
+    @SerialName("valid_from") val validFrom: String,
+    @SerialName("valid_until") val validUntil: String? = null
+)
+
+@Serializable
+data class MemberFeeUpdate(
+    @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("custom_amount_cents") val customAmountCents: Long? = null,
+    @SerialName("valid_from") val validFrom: String? = null,
+    @SerialName("valid_until") val validUntil: String? = null
+)
+
+@Serializable
+data class FamilyDiscount(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val label: String,
+    val kind: FamilyDiscountKind,
+    @SerialName("value_numeric") val valueNumeric: Double?,
+    @SerialName("applies_from_child") val appliesFromChild: Long?,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class FamilyDiscountCreate(
+    @SerialName("club_id") val clubId: String,
+    val label: String,
+    val kind: FamilyDiscountKind,
+    @SerialName("value_numeric") val valueNumeric: Double,
+    @SerialName("applies_from_child") val appliesFromChild: Long? = 2L,
+    @SerialName("is_active") val isActive: Boolean? = true
+)
+
+@Serializable
+data class FamilyDiscountUpdate(
+    val label: String? = null,
+    val kind: FamilyDiscountKind? = null,
+    @SerialName("value_numeric") val valueNumeric: Double? = null,
+    @SerialName("applies_from_child") val appliesFromChild: Long? = null,
+    @SerialName("is_active") val isActive: Boolean? = null
+)
+
+@Serializable
+data class SepaMandate(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("mandate_reference") val mandateReference: String,
+    @SerialName("iban_last4") val ibanLast4: String?,
+    @SerialName("account_holder") val accountHolder: String,
+    @SerialName("signed_on") val signedOn: String?,
+    val status: SepaMandateStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class SepaMandateCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("mandate_reference") val mandateReference: String,
+    @SerialName("iban_last4") val ibanLast4: String? = null,
+    @SerialName("account_holder") val accountHolder: String,
+    @SerialName("signed_on") val signedOn: String? = null,
+    val status: SepaMandateStatus? = SepaMandateStatus.ACTIVE
+)
+
+@Serializable
+data class SepaMandateUpdate(
+    @SerialName("mandate_reference") val mandateReference: String? = null,
+    @SerialName("iban_last4") val ibanLast4: String? = null,
+    @SerialName("account_holder") val accountHolder: String? = null,
+    @SerialName("signed_on") val signedOn: String? = null,
+    val status: SepaMandateStatus? = null
 )
 
 @Serializable
