@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useT } from "@/lib/i18n";
+import { useLocale, useT } from "@/lib/i18n";
 import { shellDict } from "@/lib/i18n/shell";
+import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
+import { dataSource } from "@/lib/data";
 import { club, currentUser, upcomingEvents } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "./icons";
@@ -17,9 +19,33 @@ import { useVisibleNavItems } from "./useNav";
  */
 export function Sidebar() {
   const t = useT(shellDict);
+  const { locale } = useLocale();
+  const { session } = useAuth();
   const pathname = usePathname();
   const eventBadge = upcomingEvents(7).length;
   const navItems = useVisibleNavItems();
+
+  // Anzeigedaten der User-Card: echte Persona im api-Modus, sonst Demo-Nutzerin
+  // (gleiche Ableitung wie im Topbar-UserMenu, damit beide konsistent sind).
+  const apiSession = dataSource === "api" ? session : null;
+  const persona = apiSession ? personaByKey(apiSession.persona) : undefined;
+  const displayName = apiSession ? apiSession.profile.display_name : t("userName");
+  const roleLabel = apiSession
+    ? (persona?.role[locale] ??
+      (apiSession.profile.club_role
+        ? ROLE_LABELS[apiSession.profile.club_role][locale]
+        : t("userRole")))
+    : t("userRole");
+  const avatarId = apiSession
+    ? (apiSession.profile.member_id ?? apiSession.profile.sub)
+    : currentUser.id;
+  const nameParts = displayName.trim().split(/\s+/);
+  const firstName = apiSession
+    ? nameParts.slice(0, -1).join(" ") || displayName
+    : currentUser.firstName;
+  const lastName = apiSession
+    ? (nameParts.length > 1 ? nameParts[nameParts.length - 1] : "")
+    : currentUser.lastName;
 
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col gap-0.5 overflow-y-auto border-r border-line bg-surface px-3.5 pb-4 pt-5 lg:flex">
@@ -83,17 +109,12 @@ export function Sidebar() {
 
       {/* User-Card */}
       <div className="flex items-center gap-2.5 rounded-lg border border-line bg-canvas px-3 py-2.5">
-        <Avatar
-          personId={currentUser.id}
-          firstName={currentUser.firstName}
-          lastName={currentUser.lastName}
-          size="m"
-        />
+        <Avatar personId={avatarId} firstName={firstName} lastName={lastName} size="m" />
         <span className="min-w-0">
           <b className="block truncate text-[13.5px] font-bold leading-tight text-ink">
-            {t("userName")}
+            {displayName}
           </b>
-          <span className="block truncate text-[11.5px] text-ink-faint">{t("userRole")}</span>
+          <span className="block truncate text-[11.5px] text-ink-faint">{roleLabel}</span>
         </span>
       </div>
     </aside>
