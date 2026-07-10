@@ -1,0 +1,325 @@
+// ============================================================================
+// lib/validation.ts - shared Zod schemas (request AND response typing).
+// Everything the OpenAPI spec exposes lives here so the codegen (Blueprint
+// ADR-E1) sees one consistent vocabulary. snake_case on the wire, matching
+// the database (ADR-E7) - clients get generated types anyway.
+// ============================================================================
+
+import { z } from '@hono/zod-openapi';
+import { CLUB_ROLES } from '../middleware/auth.js';
+
+export const uuid = z.string().uuid();
+
+export const clubRoleSchema = z.enum(CLUB_ROLES).openapi('ClubRole');
+
+/** Roles assignable through the API. `owner` transfers are a dedicated,
+ *  deliberately unimplemented flow (Phase 2) - never a plain role PATCH. */
+export const assignableRoleSchema = z
+  .enum(['admin', 'treasurer', 'coach', 'member', 'guest_coach'])
+  .openapi('AssignableClubRole');
+
+export const memberStatusSchema = z.enum(['pending', 'active', 'inactive', 'left']).openapi('MemberStatus');
+export const eventTypeSchema = z.enum(['training', 'competition', 'other']).openapi('EventType');
+export const rsvpStatusSchema = z.enum(['going', 'declined', 'maybe', 'sick']).openapi('RsvpStatus');
+export const attendanceStatusSchema = z.enum(['present', 'late', 'excused', 'absent']).openapi('AttendanceStatus');
+export const routineStatusSchema = z.enum(['draft', 'ready', 'competition', 'archived']).openapi('RoutineStatus');
+export const invoiceStatusSchema = z.enum(['draft', 'open', 'paid', 'cancelled']).openapi('InvoiceStatus');
+
+const timestamp = z.union([z.string(), z.date()]).transform((v) => (v instanceof Date ? v.toISOString() : v));
+const isoDate = z.string(); // plain DATE columns come back as 'YYYY-MM-DD'
+
+export const problemSchema = z
+  .object({
+    type: z.string(),
+    title: z.string(),
+    status: z.number().int(),
+    detail: z.string().optional(),
+    instance: z.string().optional(),
+    request_id: z.string().optional(),
+  })
+  .openapi('Problem');
+
+// ---------------------------------------------------------------------------
+// Entities (wire shape = DB shape; snake_case)
+// ---------------------------------------------------------------------------
+
+export const clubSchema = z
+  .object({
+    id: uuid,
+    name: z.string(),
+    short_name: z.string().nullable(),
+    city: z.string().nullable(),
+    discipline: z.string().nullable(),
+    founded_year: z.number().int().nullable(),
+    join_code: z.string().nullable(),
+    settings: z.record(z.unknown()),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Club');
+
+export const clubUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    short_name: z.string().nullable().optional(),
+    city: z.string().nullable().optional(),
+    discipline: z.string().nullable().optional(),
+    settings: z.record(z.unknown()).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ClubUpdate');
+
+export const memberSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    profile_id: uuid.nullable(),
+    first_name: z.string(),
+    last_name: z.string(),
+    email: z.string().nullable(),
+    birth_date: isoDate.nullable(),
+    role: clubRoleSchema,
+    status: memberStatusSchema,
+    joined_on: isoDate.nullable(),
+    valid_until: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('ClubMember');
+
+export const memberCreateSchema = z
+  .object({
+    first_name: z.string().min(1),
+    last_name: z.string().min(1),
+    email: z.string().email().optional(),
+    birth_date: z.string().date().optional(),
+    role: assignableRoleSchema.default('member'),
+    joined_on: z.string().date().optional(),
+    /** required for guest_coach (DB check constraint) */
+    valid_until: z.string().datetime({ offset: true }).optional(),
+  })
+  .refine((v) => v.role !== 'guest_coach' || v.valid_until !== undefined, {
+    message: 'guest_coach requires valid_until',
+  })
+  .openapi('ClubMemberCreate');
+
+export const roleChangeSchema = z
+  .object({ role: assignableRoleSchema })
+  .openapi('ClubMemberRoleChange');
+
+export const inviteSchema = z
+  .object({
+    email: z.string().email(),
+    role: assignableRoleSchema.default('member'),
+  })
+  .openapi('ClubMemberInvite');
+
+export const eventSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    type: eventTypeSchema,
+    title: z.string(),
+    note: z.string().nullable(),
+    location: z.string().nullable(),
+    starts_at: timestamp,
+    ends_at: timestamp,
+    competition_id: uuid.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Event');
+
+export const eventCreateSchema = z
+  .object({
+    club_id: uuid,
+    type: eventTypeSchema.default('training'),
+    title: z.string().min(1),
+    note: z.string().optional(),
+    location: z.string().optional(),
+    starts_at: z.string().datetime({ offset: true }),
+    ends_at: z.string().datetime({ offset: true }),
+    team_ids: z.array(uuid).default([]),
+  })
+  .refine((v) => new Date(v.ends_at) > new Date(v.starts_at), { message: 'ends_at must be after starts_at' })
+  .openapi('EventCreate');
+
+export const rsvpSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    event_id: uuid,
+    member_id: uuid,
+    status: rsvpStatusSchema,
+    comment: z.string().nullable(),
+    responded_at: timestamp,
+  })
+  .openapi('EventRsvp');
+
+export const rsvpUpsertSchema = z
+  .object({
+    /** club_members.id - own membership or a child via guardianship */
+    member_id: uuid,
+    status: rsvpStatusSchema,
+    comment: z.string().max(500).optional(),
+  })
+  .openapi('EventRsvpUpsert');
+
+export const attendanceSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    event_id: uuid,
+    member_id: uuid,
+    status: attendanceStatusSchema,
+    checked_in_at: timestamp.nullable(),
+  })
+  .openapi('Attendance');
+
+export const attendanceUpsertSchema = z
+  .object({
+    member_id: uuid,
+    status: attendanceStatusSchema,
+    checked_in_at: z.string().datetime({ offset: true }).optional(),
+  })
+  .openapi('AttendanceUpsert');
+
+export const routineSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    team_id: uuid.nullable(),
+    title: z.string(),
+    status: routineStatusSchema,
+    category: z.string().nullable(),
+    music_title: z.string().nullable(),
+    music_artist: z.string().nullable(),
+    music_bpm: z.number().int().nullable(),
+    music_duration_ms: z.coerce.number().int().nullable(),
+    audio_asset_id: uuid.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Routine');
+
+export const routineCreateSchema = z
+  .object({
+    club_id: uuid,
+    title: z.string().min(1),
+    team_id: uuid.optional(),
+    category: z.string().optional(),
+    music_title: z.string().optional(),
+    music_artist: z.string().optional(),
+    music_bpm: z.number().int().positive().optional(),
+    music_duration_ms: z.number().int().positive().optional(),
+    skater_member_ids: z.array(uuid).default([]),
+  })
+  .openapi('RoutineCreate');
+
+export const markerSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    routine_id: uuid,
+    time_ms: z.coerce.number().int(),
+    label: z.string(),
+    element_code: z.string().nullable(),
+  })
+  .openapi('RoutineMarker');
+
+export const markerCreateSchema = z
+  .object({
+    time_ms: z.number().int().nonnegative(),
+    label: z.string().min(1),
+    element_code: z.string().optional(),
+  })
+  .openapi('RoutineMarkerCreate');
+
+export const scoreSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    routine_id: uuid,
+    competition_id: uuid.nullable(),
+    scored_on: isoDate,
+    scoring_system: z.string(),
+    technical_score: z.coerce.number().nullable(),
+    components_score: z.coerce.number().nullable(),
+    total_score: z.coerce.number().nullable(),
+    note: z.string().nullable(),
+  })
+  .openapi('RoutineScore');
+
+export const scoreCreateSchema = z
+  .object({
+    scored_on: z.string().date(),
+    scoring_system: z.string().default('rollart'),
+    technical_score: z.number().optional(),
+    components_score: z.number().optional(),
+    total_score: z.number().optional(),
+    competition_id: uuid.optional(),
+    note: z.string().optional(),
+  })
+  .openapi('RoutineScoreCreate');
+
+export const invoiceSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    number: z.string(),
+    title: z.string(),
+    amount_cents: z.coerce.number().int(),
+    currency: z.string(),
+    status: invoiceStatusSchema,
+    dunning_level: z.number().int(),
+    issued_on: isoDate.nullable(),
+    due_on: isoDate.nullable(),
+    paid_at: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Invoice');
+
+export const invoiceCreateSchema = z
+  .object({
+    club_id: uuid,
+    member_id: uuid,
+    title: z.string().min(1),
+    /** Blueprint §4: money is integer cents, never float. */
+    amount_cents: z.number().int().nonnegative(),
+    due_on: z.string().date().optional(),
+    /** true = issue immediately (status open, issued_on today), false = draft */
+    issue: z.boolean().default(false),
+  })
+  .openapi('InvoiceCreate');
+
+export const entitlementSchema = z
+  .object({
+    id: uuid,
+    subject_type: z.enum(['club', 'profile']),
+    subject_id: uuid,
+    entitlement: z.string(),
+    source: z.enum(['stripe', 'revenuecat', 'manual']),
+    product_id: uuid.nullable(),
+    valid_until: timestamp.nullable(),
+  })
+  .openapi('Entitlement');
+
+export const productSchema = z
+  .object({
+    id: uuid,
+    code: z.string(),
+    kind: z.enum(['club_license', 'personal_pro']),
+    name: z.string(),
+    description: z.string().nullable(),
+    /** Blueprint §4: money is integer cents (BIGINT), never float. */
+    price_cents: z.coerce.number().int(),
+    currency: z.string(),
+    billing_interval: z.enum(['month', 'year']),
+    max_members: z.number().int().nullable(),
+    active: z.boolean(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Product');

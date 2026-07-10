@@ -1,0 +1,33 @@
+{
+  "name": "@rsm2/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RollsportManager v2 - thin typed API layer (Hono). All writes and money ops go through here; RLS stays the second line of defense via per-request impersonation.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "openapi": "tsx src/scripts/write-openapi.ts",
+    "db:test": "bash scripts/api-db-test.sh"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@hono/zod-openapi": "^0.19.6",
+    "hono": "^4.7.0",
+    "jose": "^6.0.10",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
+  }
+}
