@@ -118,7 +118,7 @@ function methodSignature(op) {
   for (const p of op.pathParams) args.push(`${camelCase(p.name)}: ${tsType(p.ir)}`);
   if (op.queryParams.length > 0) {
     const fields = op.queryParams
-      .map((q) => `${JSON.stringify(q.name)}${q.required ? "" : "?"}: ${tsType(q.ir)}`)
+      .map((q) => `${JSON.stringify(q.name)}${q.required ? "" : "?"}: ${qualify(tsType(q.ir))}`)
       .join("; ");
     const allOptional = op.queryParams.every((q) => !q.required);
     args.push(`query${allOptional ? "?" : ""}: { ${fields} }`);

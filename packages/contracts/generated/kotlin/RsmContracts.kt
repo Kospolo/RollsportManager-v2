@@ -91,6 +91,17 @@ enum class CompetitionEntryStatus {
 }
 
 @Serializable
+enum class ExerciseCategory {
+    @SerialName("warmup") WARMUP,
+    @SerialName("stretching") STRETCHING,
+    @SerialName("strength") STRENGTH,
+    @SerialName("jump") JUMP,
+    @SerialName("spin") SPIN,
+    @SerialName("steps") STEPS,
+    @SerialName("combination") COMBINATION;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -517,6 +528,100 @@ data class Task(
 @Serializable
 data class TaskUpdate(
     val done: Boolean
+)
+
+@Serializable
+data class News(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("author_member_id") val authorMemberId: String,
+    val title: String,
+    val body: String,
+    @SerialName("is_pinned") val isPinned: Boolean,
+    @SerialName("published_at") val publishedAt: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class NewsCreate(
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    val body: String,
+    @SerialName("is_pinned") val isPinned: Boolean? = false,
+    @SerialName("published_at") val publishedAt: String? = null
+)
+
+@Serializable
+data class NewsUpdate(
+    val title: String? = null,
+    val body: String? = null,
+    @SerialName("is_pinned") val isPinned: Boolean? = null,
+    @SerialName("published_at") val publishedAt: String? = null
+)
+
+@Serializable
+data class Note(
+    val id: String,
+    @SerialName("owner_profile_id") val ownerProfileId: String,
+    @SerialName("club_id") val clubId: String?,
+    val title: String,
+    val body: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class NoteCreate(
+    val title: String,
+    val body: String,
+    @SerialName("club_id") val clubId: String? = null
+)
+
+@Serializable
+data class NoteUpdate(
+    val title: String? = null,
+    val body: String? = null,
+    @SerialName("club_id") val clubId: String? = null
+)
+
+@Serializable
+data class Exercise(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("created_by_member_id") val createdByMemberId: String,
+    val name: String,
+    val description: String?,
+    val category: ExerciseCategory,
+    val difficulty: Long?,
+    @SerialName("video_url") val videoUrl: String?,
+    val instructions: String?,
+    @SerialName("duration_seconds") val durationSeconds: Long?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class ExerciseCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val category: ExerciseCategory,
+    val difficulty: Long,
+    val description: String? = null,
+    @SerialName("video_url") val videoUrl: String? = null,
+    val instructions: String? = null,
+    @SerialName("duration_seconds") val durationSeconds: Long? = null
+)
+
+@Serializable
+data class ExerciseUpdate(
+    val name: String? = null,
+    val category: ExerciseCategory? = null,
+    val difficulty: Long? = null,
+    val description: String? = null,
+    @SerialName("video_url") val videoUrl: String? = null,
+    val instructions: String? = null,
+    @SerialName("duration_seconds") val durationSeconds: Long? = null
 )
 
 @Serializable

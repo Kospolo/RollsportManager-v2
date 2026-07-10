@@ -482,4 +482,64 @@ select 'club', 'c1ab0000-0000-4000-8000-000000000001', 'club_license', 'manual',
 from app.products p
 where p.code = 'club_tier_s';
 
+-- ----------------------------------------------------------------------------
+-- News (modules batch 1) — 3 announcements by the coaching staff
+--   author m-01 = Sandra Vogel (coach), m-02 = Jürgen Häberle (owner)
+-- ----------------------------------------------------------------------------
+insert into app.news (id, club_id, author_member_id, title, body, is_pinned, published_at)
+values
+  ('e5a00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000002',
+   'Bezirksmeisterschaft in Ludwigsburg',
+   'Am kommenden Wochenende starten unsere Läuferinnen und Läufer bei der Bezirksmeisterschaft. Meldeschluss für Fahrgemeinschaften ist Donnerstag — bitte im Team-Chat eintragen. Wir drücken die Daumen!',
+   true,  now() - interval '2 days'),
+  ('e5a00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000001',
+   'Neue Trainingszeiten ab Juli',
+   'Ab Juli trainiert die Wettkampfgruppe zusätzlich am Freitagabend von 18 bis 20 Uhr in der Ballei-Sporthalle. Die Anfängergruppe bleibt beim gewohnten Dienstagstermin.',
+   false, now() - interval '6 days'),
+  ('e5a00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000001',
+   'Sommerfest & Vereinsgrillen',
+   'Zum Saisonabschluss laden wir alle Familien zum Sommerfest ein. Für Kuchen- und Salatspenden hängt ab nächster Woche eine Liste am schwarzen Brett aus.',
+   false, now() - interval '10 days');
+
+-- ----------------------------------------------------------------------------
+-- Exercises (modules batch 1) — 5 drills across categories & difficulties
+--   created_by m-01 = Sandra Vogel (coach), m-05 = Anna-Lena Böhm (coach)
+-- ----------------------------------------------------------------------------
+insert into app.exercises
+  (club_id, created_by_member_id, name, description, category, difficulty, video_url, instructions, duration_seconds)
+values
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001',
+   'Einlaufen & Gelenkmobilisation', 'Lockeres Einrollen mit Fußgelenk- und Hüftkreisen zum Warmwerden.',
+   'warmup', 1, null, 'Zwei ruhige Runden fahren, dann an der Bande Sprung- und Hüftgelenke mobilisieren.', 600),
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000005',
+   'Beinrückseiten-Dehnung', 'Statische Dehnung der hinteren Kette nach dem Training.',
+   'stretching', 2, null, 'Gestrecktes Bein auf die Bande, Oberkörper gerade nach vorn, 30 Sekunden halten. Seitenwechsel.', 300),
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001',
+   'Ausfallschritt-Kraft', 'Kräftigung der Oberschenkel für stabile Landungen.',
+   'strength', 3, null, 'Tiefe Ausfallschritte im Wechsel, Rumpf aufrecht, 3 Sätze à 12 Wiederholungen pro Seite.', 480),
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000005',
+   'Waltzsprung-Technik', 'Grundlegender Sprung mit halber Drehung — sauberer Absprung und Landung.',
+   'jump', 3, 'https://example.org/videos/waltzsprung.mp4',
+   'Vorwärts einfahren, vom Außenbogen abspringen, halbe Drehung, rückwärts auf dem Außenbogen landen.', 240),
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001',
+   'Standwaage-Pirouette Kombination', 'Übergang von der Standwaage in eine Aufsprungpirouette.',
+   'combination', 5, null, 'Standwaage sauber halten, kontrolliert in die Pirouette eindrehen, Zentrierung halten.', 360);
+
+-- ----------------------------------------------------------------------------
+-- Notes (modules batch 1) — STRICTLY PRIVATE, owned by Sandra Vogel (coach,
+-- profile 90..01). Nobody else — not even a platform admin — may read these.
+-- ----------------------------------------------------------------------------
+insert into app.notes (id, owner_profile_id, club_id, title, body)
+values
+  ('a5e00000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000001',
+   'c1ab0000-0000-4000-8000-000000000001',
+   'Wettkampf-Vorbereitung Lina',
+   'Landung beim Waltzsprung noch unsicher — vor Ludwigsburg gezielt üben. Musikschnitt final abstimmen.'),
+  ('a5e00000-0000-4000-8000-000000000002', '90000000-0000-4000-8000-000000000001', null,
+   'Materialbestellung',
+   'Neue Schleifsteine und zwei Paar Ersatzrollen bestellen. Angebot von Sportbedarf Schmid abwarten.');
+
 commit;

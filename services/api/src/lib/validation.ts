@@ -452,6 +452,128 @@ export const entitlementSchema = z
   .openapi('Entitlement');
 
 // ---------------------------------------------------------------------------
+// Modules batch 1 (migration 0008): news, notes, exercises.
+// ---------------------------------------------------------------------------
+
+// news -----------------------------------------------------------------------
+export const newsSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** club_members.id of the (trainer) author. */
+    author_member_id: uuid,
+    title: z.string(),
+    body: z.string(),
+    is_pinned: z.boolean(),
+    published_at: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('News');
+
+export const newsCreateSchema = z
+  .object({
+    club_id: uuid,
+    title: z.string().min(1),
+    body: z.string().min(1),
+    is_pinned: z.boolean().default(false),
+    /** Defaults to "now" (published immediately) when omitted. */
+    published_at: z.string().datetime({ offset: true }).optional(),
+  })
+  .openapi('NewsCreate');
+
+export const newsUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    body: z.string().min(1).optional(),
+    is_pinned: z.boolean().optional(),
+    published_at: z.string().datetime({ offset: true }).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('NewsUpdate');
+
+// notes ----------------------------------------------------------------------
+export const noteSchema = z
+  .object({
+    id: uuid,
+    /** auth.users id of the owner (app.profiles.id). */
+    owner_profile_id: uuid,
+    club_id: uuid.nullable(),
+    title: z.string(),
+    body: z.string(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Note');
+
+export const noteCreateSchema = z
+  .object({
+    title: z.string().min(1),
+    body: z.string().min(1),
+    /** Optional club context; grants no one else access. */
+    club_id: uuid.optional(),
+  })
+  .openapi('NoteCreate');
+
+export const noteUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    body: z.string().min(1).optional(),
+    club_id: uuid.nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('NoteUpdate');
+
+// exercises ------------------------------------------------------------------
+export const exerciseCategorySchema = z
+  .enum(['warmup', 'stretching', 'strength', 'jump', 'spin', 'steps', 'combination'])
+  .openapi('ExerciseCategory');
+
+export const exerciseSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** club_members.id of the (trainer) author. */
+    created_by_member_id: uuid,
+    name: z.string(),
+    description: z.string().nullable(),
+    category: exerciseCategorySchema,
+    difficulty: z.coerce.number().int(),
+    video_url: z.string().nullable(),
+    instructions: z.string().nullable(),
+    duration_seconds: z.coerce.number().int().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Exercise');
+
+export const exerciseCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    category: exerciseCategorySchema,
+    difficulty: z.number().int().min(1).max(5),
+    description: z.string().optional(),
+    video_url: z.string().url().optional(),
+    instructions: z.string().optional(),
+    duration_seconds: z.number().int().positive().optional(),
+  })
+  .openapi('ExerciseCreate');
+
+export const exerciseUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    category: exerciseCategorySchema.optional(),
+    difficulty: z.number().int().min(1).max(5).optional(),
+    description: z.string().nullable().optional(),
+    video_url: z.string().url().nullable().optional(),
+    instructions: z.string().nullable().optional(),
+    duration_seconds: z.number().int().positive().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ExerciseUpdate');
+
+// ---------------------------------------------------------------------------
 // Platform (super_admin) read models - cross-club, only for platform admins.
 // ---------------------------------------------------------------------------
 

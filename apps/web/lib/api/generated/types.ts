@@ -354,6 +354,94 @@ export interface TaskUpdate {
   "done": boolean;
 }
 
+export interface News {
+  "id": string;
+  "club_id": string;
+  "author_member_id": string;
+  "title": string;
+  "body": string;
+  "is_pinned": boolean;
+  "published_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface NewsCreate {
+  "club_id": string;
+  "title": string;
+  "body": string;
+  "is_pinned"?: boolean;
+  "published_at"?: string;
+}
+
+export interface NewsUpdate {
+  "title"?: string;
+  "body"?: string;
+  "is_pinned"?: boolean;
+  "published_at"?: string | null;
+}
+
+export interface Note {
+  "id": string;
+  "owner_profile_id": string;
+  "club_id": string | null;
+  "title": string;
+  "body": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface NoteCreate {
+  "title": string;
+  "body": string;
+  "club_id"?: string;
+}
+
+export interface NoteUpdate {
+  "title"?: string;
+  "body"?: string;
+  "club_id"?: string | null;
+}
+
+export type ExerciseCategory = "warmup" | "stretching" | "strength" | "jump" | "spin" | "steps" | "combination";
+export const ExerciseCategoryValues: readonly ExerciseCategory[] = ["warmup", "stretching", "strength", "jump", "spin", "steps", "combination"] as const;
+
+export interface Exercise {
+  "id": string;
+  "club_id": string;
+  "created_by_member_id": string;
+  "name": string;
+  "description": string | null;
+  "category": ExerciseCategory;
+  "difficulty": number | null;
+  "video_url": string | null;
+  "instructions": string | null;
+  "duration_seconds": number | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface ExerciseCreate {
+  "club_id": string;
+  "name": string;
+  "category": ExerciseCategory;
+  "difficulty": number;
+  "description"?: string;
+  "video_url"?: string;
+  "instructions"?: string;
+  "duration_seconds"?: number;
+}
+
+export interface ExerciseUpdate {
+  "name"?: string;
+  "category"?: ExerciseCategory;
+  "difficulty"?: number;
+  "description"?: string | null;
+  "video_url"?: string | null;
+  "instructions"?: string | null;
+  "duration_seconds"?: number | null;
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 

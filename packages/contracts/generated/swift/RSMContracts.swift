@@ -117,6 +117,16 @@ public enum CompetitionEntryStatus: String, Codable, CaseIterable, Sendable, Equ
     case withdrawn = "withdrawn"
 }
 
+public enum ExerciseCategory: String, Codable, CaseIterable, Sendable, Equatable {
+    case warmup = "warmup"
+    case stretching = "stretching"
+    case strength = "strength"
+    case jump = "jump"
+    case spin = "spin"
+    case steps = "steps"
+    case combination = "combination"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -1465,6 +1475,345 @@ public struct TaskUpdate: Codable, Equatable, Sendable {
         done: Bool
     ) {
         self.done = done
+    }
+}
+
+public struct News: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var authorMemberId: String
+    public var title: String
+    public var body: String
+    public var isPinned: Bool
+    public var publishedAt: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case authorMemberId = "author_member_id"
+        case title
+        case body
+        case isPinned = "is_pinned"
+        case publishedAt = "published_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        authorMemberId: String,
+        title: String,
+        body: String,
+        isPinned: Bool,
+        publishedAt: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.authorMemberId = authorMemberId
+        self.title = title
+        self.body = body
+        self.isPinned = isPinned
+        self.publishedAt = publishedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct NewsCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var body: String
+    public var isPinned: Bool?
+    /// Format: date-time
+    public var publishedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case title
+        case body
+        case isPinned = "is_pinned"
+        case publishedAt = "published_at"
+    }
+
+    public init(
+        clubId: String,
+        title: String,
+        body: String,
+        isPinned: Bool? = false,
+        publishedAt: String? = nil
+    ) {
+        self.clubId = clubId
+        self.title = title
+        self.body = body
+        self.isPinned = isPinned
+        self.publishedAt = publishedAt
+    }
+}
+
+public struct NewsUpdate: Codable, Equatable, Sendable {
+    public var title: String?
+    public var body: String?
+    public var isPinned: Bool?
+    /// Format: date-time
+    public var publishedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case body
+        case isPinned = "is_pinned"
+        case publishedAt = "published_at"
+    }
+
+    public init(
+        title: String? = nil,
+        body: String? = nil,
+        isPinned: Bool? = nil,
+        publishedAt: String? = nil
+    ) {
+        self.title = title
+        self.body = body
+        self.isPinned = isPinned
+        self.publishedAt = publishedAt
+    }
+}
+
+public struct Note: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var ownerProfileId: String
+    /// Format: uuid
+    public var clubId: String?
+    public var title: String
+    public var body: String
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case ownerProfileId = "owner_profile_id"
+        case clubId = "club_id"
+        case title
+        case body
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        ownerProfileId: String,
+        clubId: String? = nil,
+        title: String,
+        body: String,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.ownerProfileId = ownerProfileId
+        self.clubId = clubId
+        self.title = title
+        self.body = body
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct NoteCreate: Codable, Equatable, Sendable {
+    public var title: String
+    public var body: String
+    /// Format: uuid
+    public var clubId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case body
+        case clubId = "club_id"
+    }
+
+    public init(
+        title: String,
+        body: String,
+        clubId: String? = nil
+    ) {
+        self.title = title
+        self.body = body
+        self.clubId = clubId
+    }
+}
+
+public struct NoteUpdate: Codable, Equatable, Sendable {
+    public var title: String?
+    public var body: String?
+    /// Format: uuid
+    public var clubId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case body
+        case clubId = "club_id"
+    }
+
+    public init(
+        title: String? = nil,
+        body: String? = nil,
+        clubId: String? = nil
+    ) {
+        self.title = title
+        self.body = body
+        self.clubId = clubId
+    }
+}
+
+public struct Exercise: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var createdByMemberId: String
+    public var name: String
+    public var description: String?
+    public var category: ExerciseCategory
+    public var difficulty: Int?
+    public var videoUrl: String?
+    public var instructions: String?
+    public var durationSeconds: Int?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case createdByMemberId = "created_by_member_id"
+        case name
+        case description
+        case category
+        case difficulty
+        case videoUrl = "video_url"
+        case instructions
+        case durationSeconds = "duration_seconds"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        createdByMemberId: String,
+        name: String,
+        description: String? = nil,
+        category: ExerciseCategory,
+        difficulty: Int? = nil,
+        videoUrl: String? = nil,
+        instructions: String? = nil,
+        durationSeconds: Int? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.createdByMemberId = createdByMemberId
+        self.name = name
+        self.description = description
+        self.category = category
+        self.difficulty = difficulty
+        self.videoUrl = videoUrl
+        self.instructions = instructions
+        self.durationSeconds = durationSeconds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct ExerciseCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var category: ExerciseCategory
+    public var difficulty: Int
+    public var description: String?
+    /// Format: uri
+    public var videoUrl: String?
+    public var instructions: String?
+    public var durationSeconds: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case category
+        case difficulty
+        case description
+        case videoUrl = "video_url"
+        case instructions
+        case durationSeconds = "duration_seconds"
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        category: ExerciseCategory,
+        difficulty: Int,
+        description: String? = nil,
+        videoUrl: String? = nil,
+        instructions: String? = nil,
+        durationSeconds: Int? = nil
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.category = category
+        self.difficulty = difficulty
+        self.description = description
+        self.videoUrl = videoUrl
+        self.instructions = instructions
+        self.durationSeconds = durationSeconds
+    }
+}
+
+public struct ExerciseUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var category: ExerciseCategory?
+    public var difficulty: Int?
+    public var description: String?
+    /// Format: uri
+    public var videoUrl: String?
+    public var instructions: String?
+    public var durationSeconds: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case category
+        case difficulty
+        case description
+        case videoUrl = "video_url"
+        case instructions
+        case durationSeconds = "duration_seconds"
+    }
+
+    public init(
+        name: String? = nil,
+        category: ExerciseCategory? = nil,
+        difficulty: Int? = nil,
+        description: String? = nil,
+        videoUrl: String? = nil,
+        instructions: String? = nil,
+        durationSeconds: Int? = nil
+    ) {
+        self.name = name
+        self.category = category
+        self.difficulty = difficulty
+        self.description = description
+        self.videoUrl = videoUrl
+        self.instructions = instructions
+        self.durationSeconds = durationSeconds
     }
 }
 

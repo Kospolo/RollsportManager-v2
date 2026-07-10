@@ -397,6 +397,114 @@ export class ApiClient {
   }
 
   /**
+   * List club news (pinned first, then newest published)
+   * 
+   * `GET /news`
+   */
+  async getNews(query: { "club_id": string }, options?: RequestOptions): Promise<M.News[]> {
+    return this.request<M.News[]>("GET", "/news", { query, auth: true, options });
+  }
+
+  /**
+   * Create a news item (coaching staff, is_club_trainer)
+   * 
+   * `POST /news`
+   */
+  async postNews(body: M.NewsCreate, options?: RequestOptions): Promise<M.News> {
+    return this.request<M.News>("POST", "/news", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a news item (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /news/{newsId}`
+   */
+  async patchNewsByNewsId(newsId: string, body: M.NewsUpdate, options?: RequestOptions): Promise<M.News> {
+    return this.request<M.News>("PATCH", `/news/${encodeURIComponent(newsId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a news item (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /news/{newsId}`
+   */
+  async deleteNewsByNewsId(newsId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/news/${encodeURIComponent(newsId)}`, { auth: true, options });
+  }
+
+  /**
+   * List the caller's own notes (strictly private)
+   * 
+   * `GET /notes`
+   */
+  async getNotes(options?: RequestOptions): Promise<M.Note[]> {
+    return this.request<M.Note[]>("GET", "/notes", { auth: true, options });
+  }
+
+  /**
+   * Create a private note
+   * 
+   * `POST /notes`
+   */
+  async postNotes(body: M.NoteCreate, options?: RequestOptions): Promise<M.Note> {
+    return this.request<M.Note>("POST", "/notes", { body, auth: true, options });
+  }
+
+  /**
+   * Edit an own note
+   * 
+   * `PATCH /notes/{noteId}`
+   */
+  async patchNotesByNoteId(noteId: string, body: M.NoteUpdate, options?: RequestOptions): Promise<M.Note> {
+    return this.request<M.Note>("PATCH", `/notes/${encodeURIComponent(noteId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an own note
+   * 
+   * `DELETE /notes/{noteId}`
+   */
+  async deleteNotesByNoteId(noteId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/notes/${encodeURIComponent(noteId)}`, { auth: true, options });
+  }
+
+  /**
+   * List exercises of a club (optionally filtered by category)
+   * 
+   * `GET /exercises`
+   */
+  async getExercises(query: { "club_id": string; "category"?: M.ExerciseCategory }, options?: RequestOptions): Promise<M.Exercise[]> {
+    return this.request<M.Exercise[]>("GET", "/exercises", { query, auth: true, options });
+  }
+
+  /**
+   * Create an exercise (coaching staff, is_club_trainer)
+   * 
+   * `POST /exercises`
+   */
+  async postExercises(body: M.ExerciseCreate, options?: RequestOptions): Promise<M.Exercise> {
+    return this.request<M.Exercise>("POST", "/exercises", { body, auth: true, options });
+  }
+
+  /**
+   * Edit an exercise (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /exercises/{exerciseId}`
+   */
+  async patchExercisesByExerciseId(exerciseId: string, body: M.ExerciseUpdate, options?: RequestOptions): Promise<M.Exercise> {
+    return this.request<M.Exercise>("PATCH", `/exercises/${encodeURIComponent(exerciseId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an exercise (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /exercises/{exerciseId}`
+   */
+  async deleteExercisesByExerciseId(exerciseId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/exercises/${encodeURIComponent(exerciseId)}`, { auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * 
    * `GET /invoices`
