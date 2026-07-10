@@ -14,6 +14,7 @@ import { openInvoices } from "../derive";
 import { moduleRepository } from "./modules";
 import { moduleRepositoryBatch2 } from "./modules-batch2";
 import { moduleRepositoryBatch3 } from "./modules-batch3";
+import { moduleRepositoryBatch4 } from "./modules-batch4";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -235,6 +236,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Trainingsplan, Pflichtstunden, Auswertung (Batch 3) ---------- */
   ...moduleRepositoryBatch3,
+
+  /* ---------- Module: Chat, Check-in, überregionale Events (Batch 4) ---------- */
+  ...moduleRepositoryBatch4,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

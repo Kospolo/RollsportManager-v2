@@ -17,9 +17,9 @@ import { mehrDict, type MehrKey } from "./i18n";
  * Zwei Abschnitte: „Verfügbar" verlinkt die gebauten (Termine, Mitglieder,
  * Küren, Wettkampf, Finanzen, Verwaltung) und die neuen Module (News, Notizen,
  * Übungen, Familie, Belegungsplan, Ausrüstung, Medaillen, Trainingsplan,
- * Pflichtstunden, Auswertung — mit „Neu"-Badge). „Bald verfügbar" listet die
- * noch nicht gebauten Module (Chat, Check-in, Galerie, Dokumente) als dezente,
- * nicht klickbare Kacheln mit „Bald"-Badge.
+ * Pflichtstunden, Auswertung, Chat, Check-in, Überregionale Events — mit
+ * „Neu"-Badge). „Bald verfügbar" listet die noch nicht gebauten Module
+ * (Galerie, Dokumente) als dezente, nicht klickbare Kacheln mit „Bald"-Badge.
  *
  * Die Verwaltungs-Kachel erscheint nur für Vereins-Admins (analog zur Nav);
  * der echte Schutz bleibt serverseitig (RLS + API). Alle Lese-Bereiche sind
@@ -71,6 +71,9 @@ const AVAILABLE: AvailableTile[] = [
   { key: "trainingplan", href: "/trainingsplan", icon: { mehr: "trainingplan" }, tone: "brand", titleKey: "trainingplan", descKey: "trainingplanDesc", isNew: true },
   { key: "hours", href: "/pflichtstunden", icon: { mehr: "hours" }, tone: "info", titleKey: "hours", descKey: "hoursDesc", isNew: true },
   { key: "chart", href: "/auswertung", icon: { mehr: "chart" }, tone: "success", titleKey: "chart", descKey: "chartDesc", isNew: true },
+  { key: "chat", href: "/chat", icon: { mehr: "chat" }, tone: "brand", titleKey: "chat", descKey: "chatDesc", isNew: true },
+  { key: "checkin", href: "/checkin", icon: { mehr: "checkin" }, tone: "success", titleKey: "checkin", descKey: "checkinDesc", isNew: true },
+  { key: "regevents", href: "/events", icon: { mehr: "regevents" }, tone: "warn", titleKey: "regevents", descKey: "regeventsDesc", isNew: true },
   { key: "events", href: "/termine", icon: { shell: "events" }, tone: "brand", titleKey: "events", descKey: "eventsDesc" },
   { key: "members", href: "/mitglieder", icon: { shell: "members" }, tone: "info", titleKey: "members", descKey: "membersDesc" },
   { key: "routines", href: "/kueren", icon: { shell: "routines" }, tone: "neutral", titleKey: "routines", descKey: "routinesDesc" },
@@ -81,8 +84,6 @@ const AVAILABLE: AvailableTile[] = [
 
 /** Noch nicht gebaute Module — Reihenfolge grob nach Referenz 3.1. */
 const SOON: SoonTile[] = [
-  { key: "chat", icon: { mehr: "chat" }, titleKey: "chat", descKey: "chatDesc" },
-  { key: "checkin", icon: { mehr: "checkin" }, titleKey: "checkin", descKey: "checkinDesc" },
   { key: "gallery", icon: { mehr: "gallery" }, titleKey: "gallery", descKey: "galleryDesc" },
   { key: "document", icon: { mehr: "document" }, titleKey: "document", descKey: "documentDesc" },
 ];

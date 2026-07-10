@@ -90,7 +90,7 @@ checkinsRouter.openapi(
       const rows = await tx`
         insert into app.checkins (club_id, member_id, event_id, method, checked_in_at)
         values (${body.club_id}, ${body.member_id}, ${body.event_id ?? null},
-                ${body.method}, ${body.checked_in_at ?? null})
+                ${body.method}, coalesce(${body.checked_in_at ?? null}::timestamptz, now()))
         returning *`;
       return rows[0];
     });

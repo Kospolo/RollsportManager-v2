@@ -22,6 +22,7 @@ export type MehrIconName =
   | "medal"
   | "hours"
   | "checkin"
+  | "regevents"
   | "gallery"
   | "document"
   | "chart";
@@ -104,6 +105,13 @@ const PATHS: Record<MehrIconName, ReactNode> = {
       <rect x="14" y="4" width="6" height="6" rx="1" />
       <rect x="4" y="14" width="6" height="6" rx="1" />
       <path d="M14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5z" />
+    </>
+  ),
+  regevents: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <ellipse cx="12" cy="12" rx="3.4" ry="8" />
+      <path d="M4.2 12h15.6" />
     </>
   ),
   gallery: (

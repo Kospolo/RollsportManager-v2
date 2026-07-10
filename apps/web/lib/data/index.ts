@@ -61,6 +61,13 @@ export type {
   UpdateDutyRequirementInput,
   UpdateTrainingSlotInput,
 } from "./inputs-batch3";
+export type {
+  ChatMessageQuery,
+  CreateCheckinInput,
+  CreateRegionalEventInput,
+  SendChatMessageInput,
+  UpdateRegionalEventInput,
+} from "./inputs-batch4";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

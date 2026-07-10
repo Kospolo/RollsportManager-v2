@@ -19,6 +19,12 @@ export type * from "./types-batch2";
 export type * from "./types-batch3";
 export { dutyKindLabels, weekdayLabels } from "./types-batch3";
 
+// Batch-4-Modul-Typen (Chat, Check-in, überregionale Events) leben ausgelagert
+// in lib/types-batch4.ts. Die Label-Maps (chatChannelTypeLabels/
+// checkinMethodLabels) sind Werte und werden zusätzlich als Werte re-exportiert.
+export type * from "./types-batch4";
+export { chatChannelTypeLabels, checkinMethodLabels } from "./types-batch4";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

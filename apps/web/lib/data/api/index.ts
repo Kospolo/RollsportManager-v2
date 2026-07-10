@@ -6,6 +6,7 @@ import { activeClubId, apiClient } from "./client";
 import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
+import { moduleApiRepositoryBatch4 } from "./modules-batch4";
 import {
   mapAttendance,
   mapClub,
@@ -302,6 +303,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Trainingsplan, Pflichtstunden, Auswertung (Batch 3) ---------- */
   ...moduleApiRepositoryBatch3,
+
+  /* ---------- Module: Chat, Check-in, überregionale Events (Batch 4) ---------- */
+  ...moduleApiRepositoryBatch4,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {
