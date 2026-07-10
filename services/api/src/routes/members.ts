@@ -12,6 +12,7 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
+  guardianshipSchema,
   inviteSchema,
   memberCreateSchema,
   memberSchema,
@@ -19,6 +20,7 @@ import {
   uuid,
 } from '../lib/validation.js';
 import { withUser } from '../db.js';
+import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import {
   ADMIN_ROLES,
@@ -35,6 +37,15 @@ const memberParams = z.object({
   clubId: uuid.openapi({ param: { name: 'clubId', in: 'path' } }),
   memberId: uuid.openapi({ param: { name: 'memberId', in: 'path' } }),
 });
+
+/** team_ids of one member (app.team_members, soft-deleted excluded). */
+async function teamIdsOf(tx: Tx, memberId: string): Promise<unknown> {
+  const rows = await tx`
+    select coalesce(jsonb_agg(tm.team_id order by tm.created_at), '[]'::jsonb) as ids
+    from app.team_members tm
+    where tm.member_id = ${memberId} and tm.deleted_at is null`;
+  return rows[0]?.['ids'] ?? [];
+}
 
 membersRouter.openapi(
   createRoute({
@@ -53,9 +64,14 @@ membersRouter.openapi(
     const { clubId } = c.req.valid('param');
     requireClubMember(c.get('claims'), clubId);
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.club_members
-         where club_id = ${clubId} and deleted_at is null
-         order by last_name, first_name`,
+      tx`select m.*,
+           coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
+                     from app.team_members tm
+                     where tm.member_id = m.id and tm.deleted_at is null),
+                    '[]'::jsonb) as team_ids
+         from app.club_members m
+         where m.club_id = ${clubId} and m.deleted_at is null
+         order by m.last_name, m.first_name`,
     );
     return c.json(z.array(memberSchema).parse(rows), 200);
   },
@@ -94,7 +110,8 @@ membersRouter.openapi(
             ${body.joined_on ?? null}, ${body.valid_until ?? null})
          returning *`,
     );
-    return c.json(memberSchema.parse(rows[0]), 201);
+    // A brand-new membership row has no team links yet.
+    return c.json(memberSchema.parse({ ...rows[0], team_ids: [] }), 201);
   },
 );
 
@@ -127,6 +144,33 @@ membersRouter.openapi(
       `[members] invite stub: club=${clubId} email=${body.email} role=${body.role} (request ${c.get('requestId')})`,
     );
     return c.json({ status: 'queued' as const, email: body.email }, 202);
+  },
+);
+
+membersRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/clubs/{clubId}/guardianships',
+    tags: ['members'],
+    summary: 'List guardianships (family model) of a club',
+    description:
+      'RLS-scoped: owner/admin see all relations, guardians/children only their own family rows.',
+    security: [{ bearerAuth: [] }],
+    request: { params: clubIdParam },
+    responses: {
+      200: jsonContent(z.array(guardianshipSchema), 'Guardianships visible to the caller'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId } = c.req.valid('param');
+    requireClubMember(c.get('claims'), clubId);
+    const rows = await withUser(c.get('claims'), (tx) =>
+      tx`select * from app.guardianships
+         where club_id = ${clubId} and deleted_at is null
+         order by created_at`,
+    );
+    return c.json(z.array(guardianshipSchema).parse(rows), 200);
   },
 );
 
@@ -178,7 +222,7 @@ membersRouter.openapi(
       const rows = await tx`
         update app.club_members set role = ${newRole}
         where id = ${memberId} returning *`;
-      return rows[0];
+      return { ...rows[0], team_ids: await teamIdsOf(tx, memberId) };
     });
 
     return c.json(memberSchema.parse(updated), 200);

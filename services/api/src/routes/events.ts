@@ -64,11 +64,20 @@ eventsRouter.openapi(
     const { club_id, from, to } = c.req.valid('query');
     requireClubMember(c.get('claims'), club_id);
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.events
-         where club_id = ${club_id} and deleted_at is null
-           and (${from ?? null}::timestamptz is null or starts_at >= ${from ?? null})
-           and (${to ?? null}::timestamptz is null or starts_at <= ${to ?? null})
-         order by starts_at`,
+      tx`select e.*,
+           coalesce((select jsonb_agg(et.team_id order by et.created_at)
+                     from app.event_teams et
+                     where et.event_id = e.id and et.deleted_at is null),
+                    '[]'::jsonb) as team_ids,
+           coalesce((select jsonb_agg(to_jsonb(r) order by r.responded_at)
+                     from app.event_rsvps r
+                     where r.event_id = e.id and r.deleted_at is null),
+                    '[]'::jsonb) as rsvps
+         from app.events e
+         where e.club_id = ${club_id} and e.deleted_at is null
+           and (${from ?? null}::timestamptz is null or e.starts_at >= ${from ?? null})
+           and (${to ?? null}::timestamptz is null or e.starts_at <= ${to ?? null})
+         order by e.starts_at`,
     );
     return c.json(z.array(eventSchema).parse(rows), 200);
   },
@@ -105,7 +114,8 @@ eventsRouter.openapi(
           insert into app.event_teams (club_id, event_id, team_id)
           values (${body.club_id}, ${event.id}, ${teamId})`;
       }
-      return rows[0];
+      // Fresh event: team links from the request body, no RSVPs yet.
+      return { ...rows[0], team_ids: body.team_ids, rsvps: [] };
     });
     return c.json(eventSchema.parse(created), 201);
   },
@@ -150,6 +160,37 @@ eventsRouter.openapi(
       return rows[0];
     });
     return c.json(rsvpSchema.parse(stored), 200);
+  },
+);
+
+eventsRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/attendance',
+    tags: ['events'],
+    summary: 'List attendance records of a club (optionally for one event)',
+    security: [{ bearerAuth: [] }],
+    request: {
+      query: z.object({
+        club_id: uuid,
+        event_id: uuid.optional(),
+      }),
+    },
+    responses: {
+      200: jsonContent(z.array(attendanceSchema), 'Attendance records visible to the caller'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { club_id, event_id } = c.req.valid('query');
+    requireClubMember(c.get('claims'), club_id);
+    const rows = await withUser(c.get('claims'), (tx) =>
+      tx`select * from app.attendance
+         where club_id = ${club_id} and deleted_at is null
+           and (${event_id ?? null}::uuid is null or event_id = ${event_id ?? null})
+         order by created_at`,
+    );
+    return c.json(z.array(attendanceSchema).parse(rows), 200);
   },
 );
 

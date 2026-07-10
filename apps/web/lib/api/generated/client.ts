@@ -1,6 +1,6 @@
 // GENERIERT — NICHT VON HAND AENDERN
 //
-// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.1.0).
+// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.2.0).
 // Regenerate with: npm run generate   (in packages/contracts)
 // Source of truth is the API layer; the spec itself is produced by
 // "npm run openapi" in services/api - never edit either by hand.
@@ -159,12 +159,31 @@ export class ApiClient {
   }
 
   /**
+   * List guardianships (family model) of a club
+   * RLS-scoped: owner/admin see all relations, guardians/children only their own family rows.
+   * 
+   * `GET /clubs/{clubId}/guardianships`
+   */
+  async getClubsByClubIdGuardianships(clubId: string, options?: RequestOptions): Promise<M.Guardianship[]> {
+    return this.request<M.Guardianship[]>("GET", `/clubs/${encodeURIComponent(clubId)}/guardianships`, { auth: true, options });
+  }
+
+  /**
    * Change a member role (owner/admin; never self; last owner protected)
    * 
    * `PATCH /clubs/{clubId}/members/{memberId}/role`
    */
   async patchClubsByClubIdMembersByMemberIdRole(clubId: string, memberId: string, body: M.ClubMemberRoleChange, options?: RequestOptions): Promise<M.ClubMember> {
     return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/role`, { body, auth: true, options });
+  }
+
+  /**
+   * List teams of a club incl. skater/coach member ids
+   * 
+   * `GET /clubs/{clubId}/teams`
+   */
+  async getClubsByClubIdTeams(clubId: string, options?: RequestOptions): Promise<M.Team[]> {
+    return this.request<M.Team[]>("GET", `/clubs/${encodeURIComponent(clubId)}/teams`, { auth: true, options });
   }
 
   /**
@@ -193,6 +212,15 @@ export class ApiClient {
    */
   async putEventsByEventIdRsvp(eventId: string, body: M.EventRsvpUpsert, options?: RequestOptions): Promise<M.EventRsvp> {
     return this.request<M.EventRsvp>("PUT", `/events/${encodeURIComponent(eventId)}/rsvp`, { body, auth: true, options });
+  }
+
+  /**
+   * List attendance records of a club (optionally for one event)
+   * 
+   * `GET /attendance`
+   */
+  async getAttendance(query: { "club_id": string; "event_id"?: string }, options?: RequestOptions): Promise<M.Attendance[]> {
+    return this.request<M.Attendance[]>("GET", "/attendance", { query, auth: true, options });
   }
 
   /**
@@ -268,6 +296,33 @@ export class ApiClient {
   }
 
   /**
+   * List competitions of a club incl. entries (start list)
+   * 
+   * `GET /competitions`
+   */
+  async getCompetitions(query: { "club_id": string }, options?: RequestOptions): Promise<M.Competition[]> {
+    return this.request<M.Competition[]>("GET", "/competitions", { query, auth: true, options });
+  }
+
+  /**
+   * List tasks of a club (open first, then by due date)
+   * 
+   * `GET /tasks`
+   */
+  async getTasks(query: { "club_id": string }, options?: RequestOptions): Promise<M.Task[]> {
+    return this.request<M.Task[]>("GET", "/tasks", { query, auth: true, options });
+  }
+
+  /**
+   * Tick a task off / reopen it (staff or assignee)
+   * 
+   * `PATCH /tasks/{taskId}`
+   */
+  async patchTasksByTaskId(taskId: string, body: M.TaskUpdate, options?: RequestOptions): Promise<M.Task> {
+    return this.request<M.Task>("PATCH", `/tasks/${encodeURIComponent(taskId)}`, { body, auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * 
    * `GET /invoices`
@@ -284,6 +339,16 @@ export class ApiClient {
    */
   async postInvoices(body: M.InvoiceCreate, options?: RequestOptions): Promise<M.Invoice> {
     return this.request<M.Invoice>("POST", "/invoices", { body, auth: true, options });
+  }
+
+  /**
+   * Cash book (Kassenbuch) of a club - finance roles only
+   * Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, corrections via reversal entries. RLS restricts reads to owner/admin/treasurer.
+   * 
+   * `GET /ledger`
+   */
+  async getLedger(query: { "club_id": string }, options?: RequestOptions): Promise<M.LedgerEntry[]> {
+    return this.request<M.LedgerEntry[]>("GET", "/ledger", { query, auth: true, options });
   }
 
   /**

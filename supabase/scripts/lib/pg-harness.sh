@@ -15,15 +15,23 @@
 # container is ALWAYS removed. No production container is ever touched.
 #
 # Caller contract:
-#   HARNESS_LOG_PREFIX  optional log tag (defaults to pg-harness)
-#   SUPABASE_DIR        required by harness_apply_migrations_and_seed
+#   HARNESS_LOG_PREFIX   optional log tag (defaults to pg-harness)
+#   SUPABASE_DIR         required by harness_apply_migrations_and_seed
+#   HARNESS_CONTAINER    optional container name override (default rsm2-pg-test)
+#   HARNESS_HOST_PORT    optional host port override (default 55432)
+#   HARNESS_PERSIST_DIR  optional: host dir bind-mounted to /var/lib/postgresql/data.
+#                        When set, harness_start becomes IDEMPOTENT and PERSISTENT:
+#                        a running container is reused, a stopped one is started,
+#                        and the container is created WITHOUT --rm (data survives).
+#                        Used by scripts/dev-stack.sh (rsm2-pg-dev on 55433).
+#                        Unset (the default) = classic throwaway test behaviour.
 # Provides:
 #   CONTAINER HOST_PORT DB PGPASS
 #   pgexec, harness_start, harness_apply_migrations_and_seed, harness_teardown
 # =============================================================================
 
-CONTAINER="rsm2-pg-test"
-HOST_PORT="55432"
+CONTAINER="${HARNESS_CONTAINER:-rsm2-pg-test}"
+HOST_PORT="${HARNESS_HOST_PORT:-55432}"
 DB="rsm2"
 # throwaway credential for the ephemeral test container only — not a real secret
 PGPASS="${RSM2_TEST_PGPASSWORD:-rsm2-local-test}"
@@ -41,15 +49,37 @@ harness_teardown() {
   docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 }
 
-# Boot the throwaway container, wait for readiness, install the Supabase shim.
+# Boot the container, wait for readiness, install the Supabase shim.
+# Default: throwaway (--rm, always recreated). With HARNESS_PERSIST_DIR set:
+# persistent bind-mount + idempotent reuse of an existing container.
 harness_start() {
-  _harness_log "starting $CONTAINER (postgres:16-alpine on 127.0.0.1:$HOST_PORT) ..."
-  docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
-  docker run -d --rm --name "$CONTAINER" \
-    -p "127.0.0.1:${HOST_PORT}:5432" \
-    -e POSTGRES_PASSWORD="$PGPASS" \
-    -e POSTGRES_DB="$DB" \
-    postgres:16-alpine >/dev/null
+  if [ -n "${HARNESS_PERSIST_DIR:-}" ]; then
+    mkdir -p "$HARNESS_PERSIST_DIR"
+    local running
+    running="$(docker inspect -f '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo missing)"
+    if [ "$running" = "true" ]; then
+      _harness_log "$CONTAINER already running on 127.0.0.1:$HOST_PORT - reusing"
+    elif [ "$running" = "false" ]; then
+      _harness_log "starting existing container $CONTAINER (127.0.0.1:$HOST_PORT) ..."
+      docker start "$CONTAINER" >/dev/null
+    else
+      _harness_log "creating $CONTAINER (postgres:16-alpine on 127.0.0.1:$HOST_PORT, data: $HARNESS_PERSIST_DIR) ..."
+      docker run -d --name "$CONTAINER" \
+        -p "127.0.0.1:${HOST_PORT}:5432" \
+        -v "$HARNESS_PERSIST_DIR:/var/lib/postgresql/data" \
+        -e POSTGRES_PASSWORD="$PGPASS" \
+        -e POSTGRES_DB="$DB" \
+        postgres:16-alpine >/dev/null
+    fi
+  else
+    _harness_log "starting $CONTAINER (postgres:16-alpine on 127.0.0.1:$HOST_PORT) ..."
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    docker run -d --rm --name "$CONTAINER" \
+      -p "127.0.0.1:${HOST_PORT}:5432" \
+      -e POSTGRES_PASSWORD="$PGPASS" \
+      -e POSTGRES_DB="$DB" \
+      postgres:16-alpine >/dev/null
+  fi
 
   # readiness: TCP check hits only the FINAL server (the init-time temp server
   # listens on the unix socket only), so this cannot race the initdb restart.

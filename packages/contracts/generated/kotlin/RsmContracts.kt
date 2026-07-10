@@ -1,6 +1,6 @@
 // GENERIERT — NICHT VON HAND AENDERN
 //
-// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.1.0).
+// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.2.0).
 // Regenerate with: npm run generate   (in packages/contracts)
 // Source of truth is the API layer; the spec itself is produced by
 // "npm run openapi" in services/api - never edit either by hand.
@@ -74,11 +74,32 @@ enum class RoutineStatus {
 }
 
 @Serializable
+enum class CompetitionStatus {
+    @SerialName("upcoming") UPCOMING,
+    @SerialName("running") RUNNING,
+    @SerialName("done") DONE,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class CompetitionEntryStatus {
+    @SerialName("registered") REGISTERED,
+    @SerialName("confirmed") CONFIRMED,
+    @SerialName("withdrawn") WITHDRAWN;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
     @SerialName("paid") PAID,
     @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class CounterpartyKind {
+    @SerialName("person") PERSON,
+    @SerialName("org") ORG;
 }
 
 /** Inline enum of Health.status (hoisted by codegen). */
@@ -191,6 +212,7 @@ data class ClubMember(
     val status: MemberStatus,
     @SerialName("joined_on") val joinedOn: String?,
     @SerialName("valid_until") val validUntil: String?,
+    @SerialName("team_ids") val teamIds: List<String>,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -219,8 +241,41 @@ data class ClubMemberInvite(
 )
 
 @Serializable
+data class Guardianship(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("guardian_member_id") val guardianMemberId: String,
+    @SerialName("child_member_id") val childMemberId: String,
+    val relation: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
 data class ClubMemberRoleChange(
     val role: AssignableClubRole
+)
+
+@Serializable
+data class Team(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    @SerialName("age_group") val ageGroup: String?,
+    @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
+    @SerialName("coach_member_ids") val coachMemberIds: List<String>,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class EventRsvp(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("member_id") val memberId: String,
+    val status: RsvpStatus,
+    val comment: String?,
+    @SerialName("responded_at") val respondedAt: String
 )
 
 @Serializable
@@ -234,6 +289,8 @@ data class Event(
     @SerialName("starts_at") val startsAt: String,
     @SerialName("ends_at") val endsAt: String,
     @SerialName("competition_id") val competitionId: String?,
+    @SerialName("team_ids") val teamIds: List<String>,
+    val rsvps: List<EventRsvp>,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -248,17 +305,6 @@ data class EventCreate(
     @SerialName("starts_at") val startsAt: String,
     @SerialName("ends_at") val endsAt: String,
     @SerialName("team_ids") val teamIds: List<String>? = emptyList()
-)
-
-@Serializable
-data class EventRsvp(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("event_id") val eventId: String,
-    @SerialName("member_id") val memberId: String,
-    val status: RsvpStatus,
-    val comment: String?,
-    @SerialName("responded_at") val respondedAt: String
 )
 
 @Serializable
@@ -298,6 +344,8 @@ data class Routine(
     @SerialName("music_bpm") val musicBpm: Long?,
     @SerialName("music_duration_ms") val musicDurationMs: Long?,
     @SerialName("audio_asset_id") val audioAssetId: String?,
+    @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
+    @SerialName("waveform_peaks") val waveformPeaks: List<Double>?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -358,6 +406,47 @@ data class RoutineScoreCreate(
 )
 
 @Serializable
+data class CompetitionEntry(
+    val id: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("routine_id") val routineId: String?,
+    val status: CompetitionEntryStatus
+)
+
+@Serializable
+data class Competition(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val location: String?,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("registration_deadline") val registrationDeadline: String?,
+    val status: CompetitionStatus,
+    val entries: List<CompetitionEntry>,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class Task(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    val done: Boolean,
+    @SerialName("due_on") val dueOn: String?,
+    @SerialName("assignee_member_id") val assigneeMemberId: String?,
+    @SerialName("competition_id") val competitionId: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class TaskUpdate(
+    val done: Boolean
+)
+
+@Serializable
 data class Invoice(
     val id: String,
     @SerialName("club_id") val clubId: String,
@@ -373,6 +462,23 @@ data class Invoice(
     @SerialName("paid_at") val paidAt: String?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class LedgerEntry(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("entry_on") val entryOn: String,
+    val description: String,
+    @SerialName("counterparty_kind") val counterpartyKind: CounterpartyKind,
+    @SerialName("counterparty_member_id") val counterpartyMemberId: String?,
+    @SerialName("counterparty_name") val counterpartyName: String?,
+    @SerialName("amount_cents") val amountCents: Long?,
+    val currency: String,
+    val category: String?,
+    @SerialName("invoice_id") val invoiceId: String?,
+    @SerialName("reverses_entry_id") val reversesEntryId: String?,
+    @SerialName("created_at") val createdAt: String
 )
 
 @Serializable

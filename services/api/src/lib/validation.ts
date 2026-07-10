@@ -24,6 +24,9 @@ export const rsvpStatusSchema = z.enum(['going', 'declined', 'maybe', 'sick']).o
 export const attendanceStatusSchema = z.enum(['present', 'late', 'excused', 'absent']).openapi('AttendanceStatus');
 export const routineStatusSchema = z.enum(['draft', 'ready', 'competition', 'archived']).openapi('RoutineStatus');
 export const invoiceStatusSchema = z.enum(['draft', 'open', 'paid', 'cancelled']).openapi('InvoiceStatus');
+export const competitionStatusSchema = z.enum(['upcoming', 'running', 'done', 'cancelled']).openapi('CompetitionStatus');
+export const entryStatusSchema = z.enum(['registered', 'confirmed', 'withdrawn']).openapi('CompetitionEntryStatus');
+export const counterpartyKindSchema = z.enum(['person', 'org']).openapi('CounterpartyKind');
 
 const timestamp = z.union([z.string(), z.date()]).transform((v) => (v instanceof Date ? v.toISOString() : v));
 const isoDate = z.string(); // plain DATE columns come back as 'YYYY-MM-DD'
@@ -82,6 +85,8 @@ export const memberSchema = z
     status: memberStatusSchema,
     joined_on: isoDate.nullable(),
     valid_until: timestamp.nullable(),
+    /** Teams (skater or coach) this member belongs to - from app.team_members. */
+    team_ids: z.array(uuid),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -114,6 +119,18 @@ export const inviteSchema = z
   })
   .openapi('ClubMemberInvite');
 
+export const rsvpSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    event_id: uuid,
+    member_id: uuid,
+    status: rsvpStatusSchema,
+    comment: z.string().nullable(),
+    responded_at: timestamp,
+  })
+  .openapi('EventRsvp');
+
 export const eventSchema = z
   .object({
     id: uuid,
@@ -125,6 +142,10 @@ export const eventSchema = z
     starts_at: timestamp,
     ends_at: timestamp,
     competition_id: uuid.nullable(),
+    /** Linked teams (app.event_teams). */
+    team_ids: z.array(uuid),
+    /** Current RSVP state of the event (app.event_rsvps, soft-deleted excluded). */
+    rsvps: z.array(rsvpSchema),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -143,18 +164,6 @@ export const eventCreateSchema = z
   })
   .refine((v) => new Date(v.ends_at) > new Date(v.starts_at), { message: 'ends_at must be after starts_at' })
   .openapi('EventCreate');
-
-export const rsvpSchema = z
-  .object({
-    id: uuid,
-    club_id: uuid,
-    event_id: uuid,
-    member_id: uuid,
-    status: rsvpStatusSchema,
-    comment: z.string().nullable(),
-    responded_at: timestamp,
-  })
-  .openapi('EventRsvp');
 
 export const rsvpUpsertSchema = z
   .object({
@@ -197,6 +206,10 @@ export const routineSchema = z
     music_bpm: z.number().int().nullable(),
     music_duration_ms: z.coerce.number().int().nullable(),
     audio_asset_id: uuid.nullable(),
+    /** Skaters of this routine (app.routine_skaters) - single, pair or group. */
+    skater_member_ids: z.array(uuid),
+    /** Normalized waveform peaks (0..1) of the linked audio asset, when present. */
+    waveform_peaks: z.array(z.number()).nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -293,6 +306,96 @@ export const invoiceCreateSchema = z
     issue: z.boolean().default(false),
   })
   .openapi('InvoiceCreate');
+
+export const teamSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    age_group: z.string().nullable(),
+    /** Member ids with team role 'skater' (app.team_members). */
+    skater_member_ids: z.array(uuid),
+    /** Member ids with team role 'coach' (app.team_members). */
+    coach_member_ids: z.array(uuid),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Team');
+
+export const guardianshipSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    guardian_member_id: uuid,
+    child_member_id: uuid,
+    /** parent | guardian | other (free text, DB default 'parent'). */
+    relation: z.string(),
+    created_at: timestamp,
+  })
+  .openapi('Guardianship');
+
+export const ledgerEntrySchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    entry_on: isoDate,
+    description: z.string(),
+    counterparty_kind: counterpartyKindSchema,
+    counterparty_member_id: uuid.nullable(),
+    counterparty_name: z.string().nullable(),
+    /** Signed integer cents: income > 0, expense < 0 (Blueprint §4). */
+    amount_cents: z.coerce.number().int(),
+    currency: z.string(),
+    category: z.string().nullable(),
+    invoice_id: uuid.nullable(),
+    reverses_entry_id: uuid.nullable(),
+    created_at: timestamp,
+  })
+  .openapi('LedgerEntry');
+
+export const competitionEntrySchema = z
+  .object({
+    id: uuid,
+    member_id: uuid,
+    routine_id: uuid.nullable(),
+    status: entryStatusSchema,
+  })
+  .openapi('CompetitionEntry');
+
+export const competitionSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    location: z.string().nullable(),
+    starts_at: timestamp,
+    ends_at: timestamp,
+    registration_deadline: isoDate.nullable(),
+    status: competitionStatusSchema,
+    /** Start list (app.competition_entries, soft-deleted excluded). */
+    entries: z.array(competitionEntrySchema),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Competition');
+
+export const taskSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    title: z.string(),
+    done: z.boolean(),
+    due_on: isoDate.nullable(),
+    assignee_member_id: uuid.nullable(),
+    competition_id: uuid.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Task');
+
+export const taskUpdateSchema = z
+  .object({ done: z.boolean() })
+  .openapi('TaskUpdate');
 
 export const entitlementSchema = z
   .object({

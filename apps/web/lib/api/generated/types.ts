@@ -1,6 +1,6 @@
 // GENERIERT — NICHT VON HAND AENDERN
 //
-// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.1.0).
+// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.2.0).
 // Regenerate with: npm run generate   (in packages/contracts)
 // Source of truth is the API layer; the spec itself is produced by
 // "npm run openapi" in services/api - never edit either by hand.
@@ -64,6 +64,7 @@ export interface ClubMember {
   "status": MemberStatus;
   "joined_on": string | null;
   "valid_until": string | null;
+  "team_ids": string[];
   "created_at": string;
   "updated_at": string;
 }
@@ -91,12 +92,45 @@ export interface ClubMemberInvite {
   "role"?: AssignableClubRole;
 }
 
+export interface Guardianship {
+  "id": string;
+  "club_id": string;
+  "guardian_member_id": string;
+  "child_member_id": string;
+  "relation": string;
+  "created_at": string;
+}
+
 export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
 }
 
+export interface Team {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "age_group": string | null;
+  "skater_member_ids": string[];
+  "coach_member_ids": string[];
+  "created_at": string;
+  "updated_at": string;
+}
+
 export type EventType = "training" | "competition" | "other";
 export const EventTypeValues: readonly EventType[] = ["training", "competition", "other"] as const;
+
+export type RsvpStatus = "going" | "declined" | "maybe" | "sick";
+export const RsvpStatusValues: readonly RsvpStatus[] = ["going", "declined", "maybe", "sick"] as const;
+
+export interface EventRsvp {
+  "id": string;
+  "club_id": string;
+  "event_id": string;
+  "member_id": string;
+  "status": RsvpStatus;
+  "comment": string | null;
+  "responded_at": string;
+}
 
 export interface Event {
   "id": string;
@@ -108,6 +142,8 @@ export interface Event {
   "starts_at": string;
   "ends_at": string;
   "competition_id": string | null;
+  "team_ids": string[];
+  "rsvps": EventRsvp[];
   "created_at": string;
   "updated_at": string;
 }
@@ -121,19 +157,6 @@ export interface EventCreate {
   "starts_at": string;
   "ends_at": string;
   "team_ids"?: string[];
-}
-
-export type RsvpStatus = "going" | "declined" | "maybe" | "sick";
-export const RsvpStatusValues: readonly RsvpStatus[] = ["going", "declined", "maybe", "sick"] as const;
-
-export interface EventRsvp {
-  "id": string;
-  "club_id": string;
-  "event_id": string;
-  "member_id": string;
-  "status": RsvpStatus;
-  "comment": string | null;
-  "responded_at": string;
 }
 
 export interface EventRsvpUpsert {
@@ -175,6 +198,8 @@ export interface Routine {
   "music_bpm": number | null;
   "music_duration_ms": number | null;
   "audio_asset_id": string | null;
+  "skater_member_ids": string[];
+  "waveform_peaks": number[] | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -229,6 +254,49 @@ export interface RoutineScoreCreate {
   "note"?: string;
 }
 
+export type CompetitionStatus = "upcoming" | "running" | "done" | "cancelled";
+export const CompetitionStatusValues: readonly CompetitionStatus[] = ["upcoming", "running", "done", "cancelled"] as const;
+
+export type CompetitionEntryStatus = "registered" | "confirmed" | "withdrawn";
+export const CompetitionEntryStatusValues: readonly CompetitionEntryStatus[] = ["registered", "confirmed", "withdrawn"] as const;
+
+export interface CompetitionEntry {
+  "id": string;
+  "member_id": string;
+  "routine_id": string | null;
+  "status": CompetitionEntryStatus;
+}
+
+export interface Competition {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "location": string | null;
+  "starts_at": string;
+  "ends_at": string;
+  "registration_deadline": string | null;
+  "status": CompetitionStatus;
+  "entries": CompetitionEntry[];
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface Task {
+  "id": string;
+  "club_id": string;
+  "title": string;
+  "done": boolean;
+  "due_on": string | null;
+  "assignee_member_id": string | null;
+  "competition_id": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface TaskUpdate {
+  "done": boolean;
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 
@@ -247,6 +315,25 @@ export interface Invoice {
   "paid_at": string | null;
   "created_at": string;
   "updated_at": string;
+}
+
+export type CounterpartyKind = "person" | "org";
+export const CounterpartyKindValues: readonly CounterpartyKind[] = ["person", "org"] as const;
+
+export interface LedgerEntry {
+  "id": string;
+  "club_id": string;
+  "entry_on": string;
+  "description": string;
+  "counterparty_kind": CounterpartyKind;
+  "counterparty_member_id": string | null;
+  "counterparty_name": string | null;
+  "amount_cents": number | null;
+  "currency": string;
+  "category": string | null;
+  "invoice_id": string | null;
+  "reverses_entry_id": string | null;
+  "created_at": string;
 }
 
 export interface InvoiceCreate {

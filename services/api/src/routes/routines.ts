@@ -36,6 +36,21 @@ async function loadRoutine(tx: Tx, routineId: string): Promise<{ id: string; clu
   return routine as { id: string; club_id: string };
 }
 
+/** One enriched routine row (skaters + waveform of the linked audio asset). */
+async function selectRoutine(tx: Tx, routineId: string): Promise<unknown | undefined> {
+  const rows = await tx`
+    select r.*,
+      coalesce((select jsonb_agg(rs.member_id order by rs.created_at)
+                from app.routine_skaters rs
+                where rs.routine_id = r.id and rs.deleted_at is null),
+               '[]'::jsonb) as skater_member_ids,
+      (select ma.waveform_peaks from app.media_assets ma
+        where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
+    from app.routines r
+    where r.id = ${routineId} and r.deleted_at is null`;
+  return rows[0];
+}
+
 routinesRouter.openapi(
   createRoute({
     method: 'get',
@@ -53,9 +68,16 @@ routinesRouter.openapi(
     const { club_id } = c.req.valid('query');
     requireClubMember(c.get('claims'), club_id);
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.routines
-         where club_id = ${club_id} and deleted_at is null
-         order by title`,
+      tx`select r.*,
+           coalesce((select jsonb_agg(rs.member_id order by rs.created_at)
+                     from app.routine_skaters rs
+                     where rs.routine_id = r.id and rs.deleted_at is null),
+                    '[]'::jsonb) as skater_member_ids,
+           (select ma.waveform_peaks from app.media_assets ma
+             where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
+         from app.routines r
+         where r.club_id = ${club_id} and r.deleted_at is null
+         order by r.title`,
     );
     return c.json(z.array(routineSchema).parse(rows), 200);
   },
@@ -96,7 +118,8 @@ routinesRouter.openapi(
           insert into app.routine_skaters (club_id, routine_id, member_id)
           values (${body.club_id}, ${routine.id}, ${memberId})`;
       }
-      return rows[0];
+      // Fresh routine: skaters from the request body, no audio asset yet.
+      return { ...rows[0], skater_member_ids: body.skater_member_ids, waveform_peaks: null };
     });
     return c.json(routineSchema.parse(created), 201);
   },
@@ -117,11 +140,9 @@ routinesRouter.openapi(
   }),
   async (c) => {
     const { routineId } = c.req.valid('param');
-    const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.routines where id = ${routineId} and deleted_at is null`,
-    );
-    if (rows.length === 0) throw problem(404, 'Not Found', 'Routine not found');
-    return c.json(routineSchema.parse(rows[0]), 200);
+    const row = await withUser(c.get('claims'), (tx) => selectRoutine(tx, routineId));
+    if (row === undefined) throw problem(404, 'Not Found', 'Routine not found');
+    return c.json(routineSchema.parse(row), 200);
   },
 );
 

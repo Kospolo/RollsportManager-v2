@@ -16,7 +16,7 @@
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
-import { invoiceCreateSchema, invoiceSchema, uuid } from '../lib/validation.js';
+import { invoiceCreateSchema, invoiceSchema, ledgerEntrySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
@@ -69,6 +69,34 @@ invoicesRouter.openapi(
          order by number desc`,
     );
     return c.json(z.array(invoiceSchema).parse(rows), 200);
+  },
+);
+
+invoicesRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/ledger',
+    tags: ['invoices'],
+    summary: 'Cash book (Kassenbuch) of a club - finance roles only',
+    description:
+      'Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, ' +
+      'corrections via reversal entries. RLS restricts reads to owner/admin/treasurer.',
+    security: [{ bearerAuth: [] }],
+    request: { query: z.object({ club_id: uuid }) },
+    responses: {
+      200: jsonContent(z.array(ledgerEntrySchema), 'Ledger entries, newest first'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { club_id } = c.req.valid('query');
+    requireClubRole(c.get('claims'), club_id, FINANCE_ROLES);
+    const rows = await withUser(c.get('claims'), (tx) =>
+      tx`select * from app.ledger_entries
+         where club_id = ${club_id}
+         order by entry_on desc, created_at desc`,
+    );
+    return c.json(z.array(ledgerEntrySchema).parse(rows), 200);
   },
 );
 

@@ -1,6 +1,6 @@
 // GENERIERT — NICHT VON HAND AENDERN
 //
-// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.1.0).
+// Generated from packages/contracts/openapi.json (RollsportManager v2 API v0.2.0).
 // Regenerate with: npm run generate   (in packages/contracts)
 // Source of truth is the API layer; the spec itself is produced by
 // "npm run openapi" in services/api - never edit either by hand.
@@ -102,11 +102,29 @@ public enum RoutineStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case archived = "archived"
 }
 
+public enum CompetitionStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case upcoming = "upcoming"
+    case running = "running"
+    case done = "done"
+    case cancelled = "cancelled"
+}
+
+public enum CompetitionEntryStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case registered = "registered"
+    case confirmed = "confirmed"
+    case withdrawn = "withdrawn"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
     case paid = "paid"
     case cancelled = "cancelled"
+}
+
+public enum CounterpartyKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case person = "person"
+    case org = "org"
 }
 
 /// Inline enum of Health.status (hoisted by codegen).
@@ -326,6 +344,8 @@ public struct ClubMember: Codable, Equatable, Sendable {
     public var status: MemberStatus
     public var joinedOn: String?
     public var validUntil: String?
+    /// Format: [uuid]
+    public var teamIds: [String]
     public var createdAt: String
     public var updatedAt: String
 
@@ -341,6 +361,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         case status
         case joinedOn = "joined_on"
         case validUntil = "valid_until"
+        case teamIds = "team_ids"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -357,6 +378,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         status: MemberStatus,
         joinedOn: String? = nil,
         validUntil: String? = nil,
+        teamIds: [String],
         createdAt: String,
         updatedAt: String
     ) {
@@ -371,6 +393,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         self.status = status
         self.joinedOn = joinedOn
         self.validUntil = validUntil
+        self.teamIds = teamIds
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -455,6 +478,44 @@ public struct ClubMemberInvite: Codable, Equatable, Sendable {
     }
 }
 
+public struct Guardianship: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var guardianMemberId: String
+    /// Format: uuid
+    public var childMemberId: String
+    public var relation: String
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case guardianMemberId = "guardian_member_id"
+        case childMemberId = "child_member_id"
+        case relation
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        guardianMemberId: String,
+        childMemberId: String,
+        relation: String,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.guardianMemberId = guardianMemberId
+        self.childMemberId = childMemberId
+        self.relation = relation
+        self.createdAt = createdAt
+    }
+}
+
 public struct ClubMemberRoleChange: Codable, Equatable, Sendable {
     public var role: AssignableClubRole
 
@@ -466,6 +527,94 @@ public struct ClubMemberRoleChange: Codable, Equatable, Sendable {
         role: AssignableClubRole
     ) {
         self.role = role
+    }
+}
+
+public struct Team: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var ageGroup: String?
+    /// Format: [uuid]
+    public var skaterMemberIds: [String]
+    /// Format: [uuid]
+    public var coachMemberIds: [String]
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case ageGroup = "age_group"
+        case skaterMemberIds = "skater_member_ids"
+        case coachMemberIds = "coach_member_ids"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        ageGroup: String? = nil,
+        skaterMemberIds: [String],
+        coachMemberIds: [String],
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.ageGroup = ageGroup
+        self.skaterMemberIds = skaterMemberIds
+        self.coachMemberIds = coachMemberIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct EventRsvp: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var eventId: String
+    /// Format: uuid
+    public var memberId: String
+    public var status: RsvpStatus
+    public var comment: String?
+    public var respondedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case eventId = "event_id"
+        case memberId = "member_id"
+        case status
+        case comment
+        case respondedAt = "responded_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        eventId: String,
+        memberId: String,
+        status: RsvpStatus,
+        comment: String? = nil,
+        respondedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.eventId = eventId
+        self.memberId = memberId
+        self.status = status
+        self.comment = comment
+        self.respondedAt = respondedAt
     }
 }
 
@@ -482,6 +631,9 @@ public struct Event: Codable, Equatable, Sendable {
     public var endsAt: String
     /// Format: uuid
     public var competitionId: String?
+    /// Format: [uuid]
+    public var teamIds: [String]
+    public var rsvps: [EventRsvp]
     public var createdAt: String
     public var updatedAt: String
 
@@ -495,6 +647,8 @@ public struct Event: Codable, Equatable, Sendable {
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case competitionId = "competition_id"
+        case teamIds = "team_ids"
+        case rsvps
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -509,6 +663,8 @@ public struct Event: Codable, Equatable, Sendable {
         startsAt: String,
         endsAt: String,
         competitionId: String? = nil,
+        teamIds: [String],
+        rsvps: [EventRsvp],
         createdAt: String,
         updatedAt: String
     ) {
@@ -521,6 +677,8 @@ public struct Event: Codable, Equatable, Sendable {
         self.startsAt = startsAt
         self.endsAt = endsAt
         self.competitionId = competitionId
+        self.teamIds = teamIds
+        self.rsvps = rsvps
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -569,48 +727,6 @@ public struct EventCreate: Codable, Equatable, Sendable {
         self.startsAt = startsAt
         self.endsAt = endsAt
         self.teamIds = teamIds
-    }
-}
-
-public struct EventRsvp: Codable, Equatable, Sendable {
-    /// Format: uuid
-    public var id: String
-    /// Format: uuid
-    public var clubId: String
-    /// Format: uuid
-    public var eventId: String
-    /// Format: uuid
-    public var memberId: String
-    public var status: RsvpStatus
-    public var comment: String?
-    public var respondedAt: String
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case clubId = "club_id"
-        case eventId = "event_id"
-        case memberId = "member_id"
-        case status
-        case comment
-        case respondedAt = "responded_at"
-    }
-
-    public init(
-        id: String,
-        clubId: String,
-        eventId: String,
-        memberId: String,
-        status: RsvpStatus,
-        comment: String? = nil,
-        respondedAt: String
-    ) {
-        self.id = id
-        self.clubId = clubId
-        self.eventId = eventId
-        self.memberId = memberId
-        self.status = status
-        self.comment = comment
-        self.respondedAt = respondedAt
     }
 }
 
@@ -715,6 +831,9 @@ public struct Routine: Codable, Equatable, Sendable {
     public var musicDurationMs: Int?
     /// Format: uuid
     public var audioAssetId: String?
+    /// Format: [uuid]
+    public var skaterMemberIds: [String]
+    public var waveformPeaks: [Double]?
     public var createdAt: String
     public var updatedAt: String
 
@@ -730,6 +849,8 @@ public struct Routine: Codable, Equatable, Sendable {
         case musicBpm = "music_bpm"
         case musicDurationMs = "music_duration_ms"
         case audioAssetId = "audio_asset_id"
+        case skaterMemberIds = "skater_member_ids"
+        case waveformPeaks = "waveform_peaks"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -746,6 +867,8 @@ public struct Routine: Codable, Equatable, Sendable {
         musicBpm: Int? = nil,
         musicDurationMs: Int? = nil,
         audioAssetId: String? = nil,
+        skaterMemberIds: [String],
+        waveformPeaks: [Double]? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -760,6 +883,8 @@ public struct Routine: Codable, Equatable, Sendable {
         self.musicBpm = musicBpm
         self.musicDurationMs = musicDurationMs
         self.audioAssetId = audioAssetId
+        self.skaterMemberIds = skaterMemberIds
+        self.waveformPeaks = waveformPeaks
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -967,6 +1092,155 @@ public struct RoutineScoreCreate: Codable, Equatable, Sendable {
     }
 }
 
+public struct CompetitionEntry: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var memberId: String
+    /// Format: uuid
+    public var routineId: String?
+    public var status: CompetitionEntryStatus
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case memberId = "member_id"
+        case routineId = "routine_id"
+        case status
+    }
+
+    public init(
+        id: String,
+        memberId: String,
+        routineId: String? = nil,
+        status: CompetitionEntryStatus
+    ) {
+        self.id = id
+        self.memberId = memberId
+        self.routineId = routineId
+        self.status = status
+    }
+}
+
+public struct Competition: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var location: String?
+    public var startsAt: String
+    public var endsAt: String
+    public var registrationDeadline: String?
+    public var status: CompetitionStatus
+    public var entries: [CompetitionEntry]
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case location
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case registrationDeadline = "registration_deadline"
+        case status
+        case entries
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        location: String? = nil,
+        startsAt: String,
+        endsAt: String,
+        registrationDeadline: String? = nil,
+        status: CompetitionStatus,
+        entries: [CompetitionEntry],
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.location = location
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.registrationDeadline = registrationDeadline
+        self.status = status
+        self.entries = entries
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct Task: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var done: Bool
+    public var dueOn: String?
+    /// Format: uuid
+    public var assigneeMemberId: String?
+    /// Format: uuid
+    public var competitionId: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case title
+        case done
+        case dueOn = "due_on"
+        case assigneeMemberId = "assignee_member_id"
+        case competitionId = "competition_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        title: String,
+        done: Bool,
+        dueOn: String? = nil,
+        assigneeMemberId: String? = nil,
+        competitionId: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.title = title
+        self.done = done
+        self.dueOn = dueOn
+        self.assigneeMemberId = assigneeMemberId
+        self.competitionId = competitionId
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct TaskUpdate: Codable, Equatable, Sendable {
+    public var done: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case done
+    }
+
+    public init(
+        done: Bool
+    ) {
+        self.done = done
+    }
+}
+
 public struct Invoice: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String
@@ -1033,6 +1307,73 @@ public struct Invoice: Codable, Equatable, Sendable {
         self.paidAt = paidAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+}
+
+public struct LedgerEntry: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var entryOn: String
+    public var description: String
+    public var counterpartyKind: CounterpartyKind
+    /// Format: uuid
+    public var counterpartyMemberId: String?
+    public var counterpartyName: String?
+    public var amountCents: Int?
+    public var currency: String
+    public var category: String?
+    /// Format: uuid
+    public var invoiceId: String?
+    /// Format: uuid
+    public var reversesEntryId: String?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case entryOn = "entry_on"
+        case description
+        case counterpartyKind = "counterparty_kind"
+        case counterpartyMemberId = "counterparty_member_id"
+        case counterpartyName = "counterparty_name"
+        case amountCents = "amount_cents"
+        case currency
+        case category
+        case invoiceId = "invoice_id"
+        case reversesEntryId = "reverses_entry_id"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        entryOn: String,
+        description: String,
+        counterpartyKind: CounterpartyKind,
+        counterpartyMemberId: String? = nil,
+        counterpartyName: String? = nil,
+        amountCents: Int? = nil,
+        currency: String,
+        category: String? = nil,
+        invoiceId: String? = nil,
+        reversesEntryId: String? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.entryOn = entryOn
+        self.description = description
+        self.counterpartyKind = counterpartyKind
+        self.counterpartyMemberId = counterpartyMemberId
+        self.counterpartyName = counterpartyName
+        self.amountCents = amountCents
+        self.currency = currency
+        self.category = category
+        self.invoiceId = invoiceId
+        self.reversesEntryId = reversesEntryId
+        self.createdAt = createdAt
     }
 }
 
