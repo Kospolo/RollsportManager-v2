@@ -46,8 +46,8 @@ export interface ClubUpdate {
   "settings"?: Record<string, unknown>;
 }
 
-export type ClubRole = "owner" | "admin" | "treasurer" | "coach" | "member" | "guest_coach";
-export const ClubRoleValues: readonly ClubRole[] = ["owner", "admin", "treasurer", "coach", "member", "guest_coach"] as const;
+export type ClubRole = "owner" | "admin" | "moderator" | "treasurer" | "coach" | "member" | "guest_coach";
+export const ClubRoleValues: readonly ClubRole[] = ["owner", "admin", "moderator", "treasurer", "coach", "member", "guest_coach"] as const;
 
 export type MemberStatus = "pending" | "active" | "inactive" | "left";
 export const MemberStatusValues: readonly MemberStatus[] = ["pending", "active", "inactive", "left"] as const;
@@ -69,8 +69,8 @@ export interface ClubMember {
   "updated_at": string;
 }
 
-export type AssignableClubRole = "admin" | "treasurer" | "coach" | "member" | "guest_coach";
-export const AssignableClubRoleValues: readonly AssignableClubRole[] = ["admin", "treasurer", "coach", "member", "guest_coach"] as const;
+export type AssignableClubRole = "admin" | "moderator" | "treasurer" | "coach" | "member" | "guest_coach";
+export const AssignableClubRoleValues: readonly AssignableClubRole[] = ["admin", "moderator", "treasurer", "coach", "member", "guest_coach"] as const;
 
 export interface ClubMemberCreate {
   "first_name": string;
@@ -101,6 +101,15 @@ export interface Guardianship {
   "created_at": string;
 }
 
+export interface ClubMemberUpdate {
+  "first_name"?: string;
+  "last_name"?: string;
+  "email"?: string | null;
+  "birth_date"?: string | null;
+  "status"?: MemberStatus;
+  "valid_until"?: string | null;
+}
+
 export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
 }
@@ -114,6 +123,54 @@ export interface Team {
   "coach_member_ids": string[];
   "created_at": string;
   "updated_at": string;
+}
+
+export interface TeamCreate {
+  "name": string;
+  "age_group"?: string;
+}
+
+export interface TeamUpdate {
+  "name"?: string;
+  "age_group"?: string | null;
+}
+
+export interface Deleted {
+  "status": "deleted";
+  "id": string;
+}
+
+export interface TeamMembersSet {
+  "skater_member_ids"?: string[];
+  "coach_member_ids"?: string[];
+}
+
+export interface PlatformClub {
+  "id": string;
+  "name": string;
+  "short_name": string | null;
+  "city": string | null;
+  "discipline": string | null;
+  "member_count": number | null;
+  "created_at": string;
+}
+
+export interface PlatformUser {
+  "id": string;
+  "display_name": string | null;
+  "locale": string;
+  "club_count": number | null;
+  "created_at": string;
+}
+
+export interface PlatformStats {
+  "clubs": number | null;
+  "users": number | null;
+  "members": number | null;
+  "active_members": number | null;
+  "teams": number | null;
+  "events": number | null;
+  "open_invoices": number | null;
 }
 
 export type EventType = "training" | "competition" | "other";

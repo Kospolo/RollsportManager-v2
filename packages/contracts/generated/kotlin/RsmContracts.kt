@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonObject
 enum class ClubRole {
     @SerialName("owner") OWNER,
     @SerialName("admin") ADMIN,
+    @SerialName("moderator") MODERATOR,
     @SerialName("treasurer") TREASURER,
     @SerialName("coach") COACH,
     @SerialName("member") MEMBER,
@@ -36,6 +37,7 @@ enum class MemberStatus {
 @Serializable
 enum class AssignableClubRole {
     @SerialName("admin") ADMIN,
+    @SerialName("moderator") MODERATOR,
     @SerialName("treasurer") TREASURER,
     @SerialName("coach") COACH,
     @SerialName("member") MEMBER,
@@ -112,6 +114,12 @@ enum class HealthStatus {
 @Serializable
 enum class InviteQueuedStatus {
     @SerialName("queued") QUEUED;
+}
+
+/** Inline enum of Deleted.status (hoisted by codegen). */
+@Serializable
+enum class DeletedStatus {
+    @SerialName("deleted") DELETED;
 }
 
 /** Inline enum of Entitlement.subject_type (hoisted by codegen). */
@@ -251,6 +259,16 @@ data class Guardianship(
 )
 
 @Serializable
+data class ClubMemberUpdate(
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
+    val email: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null,
+    val status: MemberStatus? = null,
+    @SerialName("valid_until") val validUntil: String? = null
+)
+
+@Serializable
 data class ClubMemberRoleChange(
     val role: AssignableClubRole
 )
@@ -265,6 +283,61 @@ data class Team(
     @SerialName("coach_member_ids") val coachMemberIds: List<String>,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class TeamCreate(
+    val name: String,
+    @SerialName("age_group") val ageGroup: String? = null
+)
+
+@Serializable
+data class TeamUpdate(
+    val name: String? = null,
+    @SerialName("age_group") val ageGroup: String? = null
+)
+
+@Serializable
+data class Deleted(
+    val status: DeletedStatus,
+    val id: String
+)
+
+@Serializable
+data class TeamMembersSet(
+    @SerialName("skater_member_ids") val skaterMemberIds: List<String>? = emptyList(),
+    @SerialName("coach_member_ids") val coachMemberIds: List<String>? = emptyList()
+)
+
+@Serializable
+data class PlatformClub(
+    val id: String,
+    val name: String,
+    @SerialName("short_name") val shortName: String?,
+    val city: String?,
+    val discipline: String?,
+    @SerialName("member_count") val memberCount: Long?,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class PlatformUser(
+    val id: String,
+    @SerialName("display_name") val displayName: String?,
+    val locale: String,
+    @SerialName("club_count") val clubCount: Long?,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class PlatformStats(
+    val clubs: Long?,
+    val users: Long?,
+    val members: Long?,
+    @SerialName("active_members") val activeMembers: Long?,
+    val teams: Long?,
+    val events: Long?,
+    @SerialName("open_invoices") val openInvoices: Long?
 )
 
 @Serializable

@@ -82,6 +82,45 @@ describe('POST /dev/login (AUTH_MODE=dev)', () => {
     expect(res.status).toBe(422);
   });
 
+  it('maps moderator to the moderator club role', async () => {
+    const app = devApp();
+    const res = await login(app, { persona: 'moderator' });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      access_token: string;
+      profile: { club_role: string; display_name: string };
+    };
+    expect(json.profile.club_role).toBe('moderator');
+    expect(json.profile.display_name).toBe('Petra Köhler');
+    const { payload } = await jwtVerify(
+      json.access_token,
+      new TextEncoder().encode(TEST_SECRET),
+      { algorithms: ['HS256'], audience: 'authenticated' },
+    );
+    expect(authClaimsSchema.parse(payload).club_roles[DEV_CLUB_ID]).toBe('moderator');
+  });
+
+  it('issues a platform-admin token with the app_metadata claim and no club role', async () => {
+    const app = devApp();
+    const res = await login(app, { persona: 'platform' });
+    expect(res.status).toBe(200);
+    const json = (await res.json()) as {
+      access_token: string;
+      profile: { club_role: string | null; club_id: string | null; is_platform_admin: boolean };
+    };
+    expect(json.profile.club_role).toBeNull();
+    expect(json.profile.club_id).toBeNull();
+    expect(json.profile.is_platform_admin).toBe(true);
+    const { payload } = await jwtVerify(
+      json.access_token,
+      new TextEncoder().encode(TEST_SECRET),
+      { algorithms: ['HS256'], audience: 'authenticated' },
+    );
+    const claims = authClaimsSchema.parse(payload);
+    expect(claims.app_metadata?.is_platform_admin).toBe(true);
+    expect(Object.keys(claims.club_roles)).toHaveLength(0);
+  });
+
   it('is reachable without a bearer token (PUBLIC_PATHS wiring)', async () => {
     const app = devApp();
     // 422 (validation), NOT 401 - proves requireAuth is skipped

@@ -54,6 +54,7 @@ public enum JSONValue: Codable, Equatable, Sendable {
 public enum ClubRole: String, Codable, CaseIterable, Sendable, Equatable {
     case owner = "owner"
     case admin = "admin"
+    case moderator = "moderator"
     case treasurer = "treasurer"
     case coach = "coach"
     case member = "member"
@@ -69,6 +70,7 @@ public enum MemberStatus: String, Codable, CaseIterable, Sendable, Equatable {
 
 public enum AssignableClubRole: String, Codable, CaseIterable, Sendable, Equatable {
     case admin = "admin"
+    case moderator = "moderator"
     case treasurer = "treasurer"
     case coach = "coach"
     case member = "member"
@@ -135,6 +137,11 @@ public enum HealthStatus: String, Codable, CaseIterable, Sendable, Equatable {
 /// Inline enum of InviteQueued.status (hoisted by codegen).
 public enum InviteQueuedStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case queued = "queued"
+}
+
+/// Inline enum of Deleted.status (hoisted by codegen).
+public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case deleted = "deleted"
 }
 
 /// Inline enum of Entitlement.subject_type (hoisted by codegen).
@@ -516,6 +523,43 @@ public struct Guardianship: Codable, Equatable, Sendable {
     }
 }
 
+public struct ClubMemberUpdate: Codable, Equatable, Sendable {
+    public var firstName: String?
+    public var lastName: String?
+    /// Format: email
+    public var email: String?
+    /// Format: date
+    public var birthDate: String?
+    public var status: MemberStatus?
+    /// Format: date-time
+    public var validUntil: String?
+
+    enum CodingKeys: String, CodingKey {
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+        case birthDate = "birth_date"
+        case status
+        case validUntil = "valid_until"
+    }
+
+    public init(
+        firstName: String? = nil,
+        lastName: String? = nil,
+        email: String? = nil,
+        birthDate: String? = nil,
+        status: MemberStatus? = nil,
+        validUntil: String? = nil
+    ) {
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+        self.birthDate = birthDate
+        self.status = status
+        self.validUntil = validUntil
+    }
+}
+
 public struct ClubMemberRoleChange: Codable, Equatable, Sendable {
     public var role: AssignableClubRole
 
@@ -573,6 +617,189 @@ public struct Team: Codable, Equatable, Sendable {
         self.coachMemberIds = coachMemberIds
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+}
+
+public struct TeamCreate: Codable, Equatable, Sendable {
+    public var name: String
+    public var ageGroup: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case ageGroup = "age_group"
+    }
+
+    public init(
+        name: String,
+        ageGroup: String? = nil
+    ) {
+        self.name = name
+        self.ageGroup = ageGroup
+    }
+}
+
+public struct TeamUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var ageGroup: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case ageGroup = "age_group"
+    }
+
+    public init(
+        name: String? = nil,
+        ageGroup: String? = nil
+    ) {
+        self.name = name
+        self.ageGroup = ageGroup
+    }
+}
+
+public struct Deleted: Codable, Equatable, Sendable {
+    public var status: DeletedStatus
+    /// Format: uuid
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case id
+    }
+
+    public init(
+        status: DeletedStatus,
+        id: String
+    ) {
+        self.status = status
+        self.id = id
+    }
+}
+
+public struct TeamMembersSet: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var skaterMemberIds: [String]?
+    /// Format: [uuid]
+    public var coachMemberIds: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case skaterMemberIds = "skater_member_ids"
+        case coachMemberIds = "coach_member_ids"
+    }
+
+    public init(
+        skaterMemberIds: [String]? = [],
+        coachMemberIds: [String]? = []
+    ) {
+        self.skaterMemberIds = skaterMemberIds
+        self.coachMemberIds = coachMemberIds
+    }
+}
+
+public struct PlatformClub: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    public var name: String
+    public var shortName: String?
+    public var city: String?
+    public var discipline: String?
+    public var memberCount: Int?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case shortName = "short_name"
+        case city
+        case discipline
+        case memberCount = "member_count"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        name: String,
+        shortName: String? = nil,
+        city: String? = nil,
+        discipline: String? = nil,
+        memberCount: Int? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.name = name
+        self.shortName = shortName
+        self.city = city
+        self.discipline = discipline
+        self.memberCount = memberCount
+        self.createdAt = createdAt
+    }
+}
+
+public struct PlatformUser: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    public var displayName: String?
+    public var locale: String
+    public var clubCount: Int?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case displayName = "display_name"
+        case locale
+        case clubCount = "club_count"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        displayName: String? = nil,
+        locale: String,
+        clubCount: Int? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.locale = locale
+        self.clubCount = clubCount
+        self.createdAt = createdAt
+    }
+}
+
+public struct PlatformStats: Codable, Equatable, Sendable {
+    public var clubs: Int?
+    public var users: Int?
+    public var members: Int?
+    public var activeMembers: Int?
+    public var teams: Int?
+    public var events: Int?
+    public var openInvoices: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case clubs
+        case users
+        case members
+        case activeMembers = "active_members"
+        case teams
+        case events
+        case openInvoices = "open_invoices"
+    }
+
+    public init(
+        clubs: Int? = nil,
+        users: Int? = nil,
+        members: Int? = nil,
+        activeMembers: Int? = nil,
+        teams: Int? = nil,
+        events: Int? = nil,
+        openInvoices: Int? = nil
+    ) {
+        self.clubs = clubs
+        self.users = users
+        self.members = members
+        self.activeMembers = activeMembers
+        self.teams = teams
+        self.events = events
+        self.openInvoices = openInvoices
     }
 }
 

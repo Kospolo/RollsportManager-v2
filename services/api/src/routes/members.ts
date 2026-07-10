@@ -16,6 +16,7 @@ import {
   inviteSchema,
   memberCreateSchema,
   memberSchema,
+  memberUpdateSchema,
   roleChangeSchema,
   uuid,
 } from '../lib/validation.js';
@@ -24,6 +25,8 @@ import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import {
   ADMIN_ROLES,
+  MANAGE_MEMBER_ROLES,
+  canAssignRole,
   checkRoleChange,
   requireClubMember,
   requireClubRole,
@@ -82,9 +85,11 @@ membersRouter.openapi(
     method: 'post',
     path: '/clubs/{clubId}/members',
     tags: ['members'],
-    summary: 'Create a membership row (owner/admin)',
+    summary: 'Create a membership row (can_manage_members)',
     description:
-      'Creates a person in the roster (e.g. a child without an account). The owner role is never assignable here.',
+      'Creates a person in the roster (e.g. a child without an account). owner/admin/moderator/treasurer may create; ' +
+      'the assigned role is gated by can_change_member_role (treasurer may only create plain members, ' +
+      'moderator only ranks below moderator). The owner role is never assignable here.',
     security: [{ bearerAuth: [] }],
     request: {
       params: clubIdParam,
@@ -99,7 +104,10 @@ membersRouter.openapi(
   async (c) => {
     const { clubId } = c.req.valid('param');
     const body = c.req.valid('json');
-    requireClubRole(c.get('claims'), clubId, ADMIN_ROLES);
+    const callerRole = requireClubRole(c.get('claims'), clubId, MANAGE_MEMBER_ROLES);
+    if (!canAssignRole(callerRole, body.role)) {
+      throw problem(403, 'Forbidden', `Your role (${callerRole}) may not assign role '${body.role}'`);
+    }
 
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`insert into app.club_members
@@ -120,7 +128,7 @@ membersRouter.openapi(
     method: 'post',
     path: '/clubs/{clubId}/members/invite',
     tags: ['members'],
-    summary: 'Invite a person by e-mail (stub, owner/admin)',
+    summary: 'Invite a person by e-mail (stub, can_manage_members)',
     description:
       'Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.',
     security: [{ bearerAuth: [] }],
@@ -139,7 +147,10 @@ membersRouter.openapi(
   (c) => {
     const { clubId } = c.req.valid('param');
     const body = c.req.valid('json');
-    requireClubRole(c.get('claims'), clubId, ADMIN_ROLES);
+    const callerRole = requireClubRole(c.get('claims'), clubId, MANAGE_MEMBER_ROLES);
+    if (!canAssignRole(callerRole, body.role)) {
+      throw problem(403, 'Forbidden', `Your role (${callerRole}) may not invite role '${body.role}'`);
+    }
     console.info(
       `[members] invite stub: club=${clubId} email=${body.email} role=${body.role} (request ${c.get('requestId')})`,
     );
@@ -171,6 +182,43 @@ membersRouter.openapi(
          order by created_at`,
     );
     return c.json(z.array(guardianshipSchema).parse(rows), 200);
+  },
+);
+
+membersRouter.openapi(
+  createRoute({
+    method: 'patch',
+    path: '/clubs/{clubId}/members/{memberId}',
+    tags: ['members'],
+    summary: 'Edit member master data (can_manage_members; never the role)',
+    description:
+      'Updates first/last name, e-mail, birth date, status and validity. The ROLE is deliberately not editable ' +
+      'here - use PATCH .../members/{memberId}/role. can_manage_members = owner/admin/moderator/treasurer.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: memberParams,
+      body: { content: { 'application/json': { schema: memberUpdateSchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(memberSchema, 'Updated membership'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId, memberId } = c.req.valid('param');
+    const body = c.req.valid('json');
+    requireClubRole(c.get('claims'), clubId, MANAGE_MEMBER_ROLES);
+
+    const updated = await withUser(c.get('claims'), async (tx) => {
+      const rows = await tx`
+        update app.club_members set ${tx(body)}
+        where id = ${memberId} and club_id = ${clubId} and deleted_at is null
+        returning *`;
+      if (rows.length === 0) throw problem(404, 'Not Found', 'Membership not found');
+      return { ...rows[0], team_ids: await teamIdsOf(tx, memberId) };
+    });
+
+    return c.json(memberSchema.parse(updated), 200);
   },
 );
 

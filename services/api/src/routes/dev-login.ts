@@ -30,11 +30,14 @@ export const DEV_CLUB_ID = 'c1ab0000-0000-4000-8000-000000000001';
 export interface DevPersona {
   /** auth.users.id / app.profiles.id from the seed -> JWT `sub`. */
   sub: string;
-  /** app.club_members.id from the seed (handy for RSVP calls etc.). */
-  memberId: string;
+  /** app.club_members.id from the seed (null for the platform admin: no membership row). */
+  memberId: string | null;
   displayName: string;
   email: string;
-  clubRole: ClubRole;
+  /** Role in the demo club, or null for a pure platform admin (no club role). */
+  clubRole: ClubRole | null;
+  /** True for the platform (super_admin) persona -> app_metadata.is_platform_admin. */
+  platformAdmin?: boolean;
 }
 
 /** Personas straight from supabase/seed/seed.sql - keep in sync with the seed. */
@@ -67,6 +70,13 @@ export const DEV_PERSONAS = {
     email: 'thomas.krueger@example.org',
     clubRole: 'admin',
   },
+  moderator: {
+    sub: '90000000-0000-4000-8000-000000000014',
+    memberId: 'a0000000-0000-4000-8000-000000000014',
+    displayName: 'Petra Köhler',
+    email: 'petra.koehler@example.org',
+    clubRole: 'moderator',
+  },
   member: {
     sub: '90000000-0000-4000-8000-000000000009',
     memberId: 'a0000000-0000-4000-8000-000000000009',
@@ -80,6 +90,16 @@ export const DEV_PERSONAS = {
     displayName: 'Milena Öztürk',
     email: 'milena.oeztuerk@example.org',
     clubRole: 'guest_coach',
+  },
+  // PLATFORM super-admin: no club_members row, no club role. Cross-club READ via
+  // the app_metadata.is_platform_admin claim (seed profile ...090).
+  platform: {
+    sub: '90000000-0000-4000-8000-000000000090',
+    memberId: null,
+    displayName: 'RSM Plattform-Admin',
+    email: 'platform.admin@rollsportmanager.app',
+    clubRole: null,
+    platformAdmin: true,
   },
 } as const satisfies Record<string, DevPersona>;
 
@@ -111,12 +131,20 @@ export function createDevLoginRouter(): Hono<AuthEnv> {
       );
     }
 
-    const persona = DEV_PERSONAS[parsed.data.persona];
-    const jwt = new SignJWT({
+    const persona: DevPersona = DEV_PERSONAS[parsed.data.persona];
+    const isPlatform = persona.platformAdmin === true;
+    // Mirror the GoTrue access-token hook: club_roles map + (for the platform
+    // admin) app_metadata.is_platform_admin so app.is_platform_admin() fires.
+    const claims: Record<string, unknown> = {
       sub: persona.sub,
       role: 'authenticated',
-      club_roles: { [DEV_CLUB_ID]: persona.clubRole },
-    })
+      club_roles: persona.clubRole ? { [DEV_CLUB_ID]: persona.clubRole } : {},
+    };
+    if (isPlatform) {
+      claims['app_metadata'] = { is_platform_admin: true };
+      claims['is_platform_admin'] = true;
+    }
+    const jwt = new SignJWT(claims)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS);
@@ -135,8 +163,9 @@ export function createDevLoginRouter(): Hono<AuthEnv> {
         member_id: persona.memberId,
         display_name: persona.displayName,
         email: persona.email,
-        club_id: DEV_CLUB_ID,
+        club_id: persona.clubRole ? DEV_CLUB_ID : null,
         club_role: persona.clubRole,
+        is_platform_admin: isPlatform,
       },
     });
   });

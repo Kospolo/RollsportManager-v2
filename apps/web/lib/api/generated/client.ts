@@ -139,8 +139,8 @@ export class ApiClient {
   }
 
   /**
-   * Create a membership row (owner/admin)
-   * Creates a person in the roster (e.g. a child without an account). The owner role is never assignable here.
+   * Create a membership row (can_manage_members)
+   * Creates a person in the roster (e.g. a child without an account). owner/admin/moderator/treasurer may create; the assigned role is gated by can_change_member_role (treasurer may only create plain members, moderator only ranks below moderator). The owner role is never assignable here.
    * 
    * `POST /clubs/{clubId}/members`
    */
@@ -149,7 +149,7 @@ export class ApiClient {
   }
 
   /**
-   * Invite a person by e-mail (stub, owner/admin)
+   * Invite a person by e-mail (stub, can_manage_members)
    * Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.
    * 
    * `POST /clubs/{clubId}/members/invite`
@@ -169,6 +169,16 @@ export class ApiClient {
   }
 
   /**
+   * Edit member master data (can_manage_members; never the role)
+   * Updates first/last name, e-mail, birth date, status and validity. The ROLE is deliberately not editable here - use PATCH .../members/{memberId}/role. can_manage_members = owner/admin/moderator/treasurer.
+   * 
+   * `PATCH /clubs/{clubId}/members/{memberId}`
+   */
+  async patchClubsByClubIdMembersByMemberId(clubId: string, memberId: string, body: M.ClubMemberUpdate, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}`, { body, auth: true, options });
+  }
+
+  /**
    * Change a member role (owner/admin; never self; last owner protected)
    * 
    * `PATCH /clubs/{clubId}/members/{memberId}/role`
@@ -184,6 +194,70 @@ export class ApiClient {
    */
   async getClubsByClubIdTeams(clubId: string, options?: RequestOptions): Promise<M.Team[]> {
     return this.request<M.Team[]>("GET", `/clubs/${encodeURIComponent(clubId)}/teams`, { auth: true, options });
+  }
+
+  /**
+   * Create a team (is_club_admin)
+   * 
+   * `POST /clubs/{clubId}/teams`
+   */
+  async postClubsByClubIdTeams(clubId: string, body: M.TeamCreate, options?: RequestOptions): Promise<M.Team> {
+    return this.request<M.Team>("POST", `/clubs/${encodeURIComponent(clubId)}/teams`, { body, auth: true, options });
+  }
+
+  /**
+   * Rename a team / change age group (is_club_admin)
+   * 
+   * `PATCH /clubs/{clubId}/teams/{teamId}`
+   */
+  async patchClubsByClubIdTeamsByTeamId(clubId: string, teamId: string, body: M.TeamUpdate, options?: RequestOptions): Promise<M.Team> {
+    return this.request<M.Team>("PATCH", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a team (is_club_admin)
+   * 
+   * `DELETE /clubs/{clubId}/teams/{teamId}`
+   */
+  async deleteClubsByClubIdTeamsByTeamId(clubId: string, teamId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}`, { auth: true, options });
+  }
+
+  /**
+   * Replace a team roster: skaters + coaches (is_club_admin)
+   * Full replace. Member ids must belong to the club. A member may hold exactly one role per team (coach wins on overlap). Missing members are soft-detached.
+   * 
+   * `PUT /clubs/{clubId}/teams/{teamId}/members`
+   */
+  async putClubsByClubIdTeamsByTeamIdMembers(clubId: string, teamId: string, body: M.TeamMembersSet, options?: RequestOptions): Promise<M.Team> {
+    return this.request<M.Team>("PUT", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}/members`, { body, auth: true, options });
+  }
+
+  /**
+   * All clubs incl. member count (platform admin only)
+   * 
+   * `GET /platform/clubs`
+   */
+  async getPlatformClubs(options?: RequestOptions): Promise<M.PlatformClub[]> {
+    return this.request<M.PlatformClub[]>("GET", "/platform/clubs", { auth: true, options });
+  }
+
+  /**
+   * All user profiles incl. club count (platform admin only)
+   * 
+   * `GET /platform/users`
+   */
+  async getPlatformUsers(options?: RequestOptions): Promise<M.PlatformUser[]> {
+    return this.request<M.PlatformUser[]>("GET", "/platform/users", { auth: true, options });
+  }
+
+  /**
+   * Platform key figures (platform admin only)
+   * 
+   * `GET /platform/stats`
+   */
+  async getPlatformStats(options?: RequestOptions): Promise<M.PlatformStats> {
+    return this.request<M.PlatformStats>("GET", "/platform/stats", { auth: true, options });
   }
 
   /**

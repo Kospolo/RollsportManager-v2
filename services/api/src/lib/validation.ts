@@ -13,9 +13,10 @@ export const uuid = z.string().uuid();
 export const clubRoleSchema = z.enum(CLUB_ROLES).openapi('ClubRole');
 
 /** Roles assignable through the API. `owner` transfers are a dedicated,
- *  deliberately unimplemented flow (Phase 2) - never a plain role PATCH. */
+ *  deliberately unimplemented flow (Phase 2) - never a plain role PATCH.
+ *  `moderator` IS assignable (owner/admin may grant it; see can_change_member_role). */
 export const assignableRoleSchema = z
-  .enum(['admin', 'treasurer', 'coach', 'member', 'guest_coach'])
+  .enum(['admin', 'moderator', 'treasurer', 'coach', 'member', 'guest_coach'])
   .openapi('AssignableClubRole');
 
 export const memberStatusSchema = z.enum(['pending', 'active', 'inactive', 'left']).openapi('MemberStatus');
@@ -111,6 +112,20 @@ export const memberCreateSchema = z
 export const roleChangeSchema = z
   .object({ role: assignableRoleSchema })
   .openapi('ClubMemberRoleChange');
+
+/** Edit member MASTER DATA (never the role - that is the dedicated role endpoint). */
+export const memberUpdateSchema = z
+  .object({
+    first_name: z.string().min(1).optional(),
+    last_name: z.string().min(1).optional(),
+    email: z.string().email().nullable().optional(),
+    birth_date: z.string().date().nullable().optional(),
+    status: memberStatusSchema.optional(),
+    /** guest_coach expiry; nullable to clear it for non-guest roles */
+    valid_until: z.string().datetime({ offset: true }).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ClubMemberUpdate');
 
 export const inviteSchema = z
   .object({
@@ -322,6 +337,33 @@ export const teamSchema = z
   })
   .openapi('Team');
 
+export const teamCreateSchema = z
+  .object({
+    name: z.string().min(1),
+    age_group: z.string().optional(),
+  })
+  .openapi('TeamCreate');
+
+export const teamUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    age_group: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('TeamUpdate');
+
+/** Full replace of a team's roster: skaters + coaches (member ids). */
+export const teamMembersSetSchema = z
+  .object({
+    skater_member_ids: z.array(uuid).default([]),
+    coach_member_ids: z.array(uuid).default([]),
+  })
+  .openapi('TeamMembersSet');
+
+export const deletedSchema = z
+  .object({ status: z.literal('deleted'), id: uuid })
+  .openapi('Deleted');
+
 export const guardianshipSchema = z
   .object({
     id: uuid,
@@ -408,6 +450,46 @@ export const entitlementSchema = z
     valid_until: timestamp.nullable(),
   })
   .openapi('Entitlement');
+
+// ---------------------------------------------------------------------------
+// Platform (super_admin) read models - cross-club, only for platform admins.
+// ---------------------------------------------------------------------------
+
+export const platformClubSchema = z
+  .object({
+    id: uuid,
+    name: z.string(),
+    short_name: z.string().nullable(),
+    city: z.string().nullable(),
+    discipline: z.string().nullable(),
+    /** Active, non-deleted membership rows in this club. */
+    member_count: z.coerce.number().int(),
+    created_at: timestamp,
+  })
+  .openapi('PlatformClub');
+
+export const platformUserSchema = z
+  .object({
+    id: uuid,
+    display_name: z.string().nullable(),
+    locale: z.string(),
+    /** Distinct clubs this profile is an active member of. */
+    club_count: z.coerce.number().int(),
+    created_at: timestamp,
+  })
+  .openapi('PlatformUser');
+
+export const platformStatsSchema = z
+  .object({
+    clubs: z.coerce.number().int(),
+    users: z.coerce.number().int(),
+    members: z.coerce.number().int(),
+    active_members: z.coerce.number().int(),
+    teams: z.coerce.number().int(),
+    events: z.coerce.number().int(),
+    open_invoices: z.coerce.number().int(),
+  })
+  .openapi('PlatformStats');
 
 export const productSchema = z
   .object({

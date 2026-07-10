@@ -14,6 +14,7 @@ import { createDevLoginRouter } from './routes/dev-login.js';
 import { clubsRouter } from './routes/clubs.js';
 import { membersRouter } from './routes/members.js';
 import { teamsRouter } from './routes/teams.js';
+import { platformRouter } from './routes/platform.js';
 import { eventsRouter } from './routes/events.js';
 import { routinesRouter } from './routes/routines.js';
 import { competitionsRouter } from './routes/competitions.js';
@@ -73,6 +74,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', clubsRouter);
   app.route('/', membersRouter);
   app.route('/', teamsRouter);
+  app.route('/', platformRouter);
   app.route('/', eventsRouter);
   app.route('/', routinesRouter);
   app.route('/', competitionsRouter);
@@ -115,7 +117,8 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'system', description: 'Health & meta' },
     { name: 'clubs', description: 'Clubs (tenant root)' },
     { name: 'members', description: 'Roster, roles & guardianships (family model)' },
-    { name: 'teams', description: 'Teams incl. skater/coach member ids (read model)' },
+    { name: 'teams', description: 'Teams incl. skater/coach member ids + management' },
+    { name: 'platform', description: 'Cross-club super-admin console (platform admin claim only)' },
     { name: 'events', description: 'Events, RSVPs, attendance' },
     { name: 'routines', description: 'Küren: routines, markers, scores' },
     { name: 'competitions', description: 'Competitions incl. start list (read model)' },

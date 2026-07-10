@@ -23,14 +23,43 @@ import { z } from '@hono/zod-openapi';
 import { getConfig } from '../config.js';
 import { problem } from './error.js';
 
-export const CLUB_ROLES = ['owner', 'admin', 'treasurer', 'coach', 'member', 'guest_coach'] as const;
+// Enum order mirrors the DB (app.club_member_role): rank owner > admin >
+// moderator > treasurer > coach ... ('moderator' re-added in migration 0007).
+export const CLUB_ROLES = [
+  'owner',
+  'admin',
+  'moderator',
+  'treasurer',
+  'coach',
+  'member',
+  'guest_coach',
+] as const;
 export type ClubRole = (typeof CLUB_ROLES)[number];
+
+/**
+ * PLATFORM admin ("super_admin" level) is NOT a club role - it is a JWT claim.
+ * GoTrue emits raw_app_meta_data into the access token, so the flag arrives as
+ * app_metadata.is_platform_admin (the custom access-token hook must copy it in;
+ * see supabase migration 0007 / dev-login). We also accept the top-level and
+ * platform_role variants that app.is_platform_admin() reads, so the API guard
+ * mirrors the DB helper exactly.
+ */
+const platformMetaSchema = z
+  .object({
+    is_platform_admin: z.boolean().optional(),
+    role: z.string().optional(),
+  })
+  .passthrough();
 
 export const authClaimsSchema = z
   .object({
     sub: z.string().uuid(),
     role: z.literal('authenticated'),
     club_roles: z.record(z.string().uuid(), z.enum(CLUB_ROLES)).default({}),
+    // platform-admin claim variants (all optional; end users simply omit them)
+    is_platform_admin: z.boolean().optional(),
+    platform_role: z.string().optional(),
+    app_metadata: platformMetaSchema.optional(),
   })
   .passthrough();
 

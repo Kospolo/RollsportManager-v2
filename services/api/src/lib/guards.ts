@@ -10,12 +10,26 @@
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
 
-/** Roles allowed to manage club structure / roster. */
-export const ADMIN_ROLES: readonly ClubRole[] = ['owner', 'admin'];
-/** Roles allowed to run trainings (events, attendance, routines). */
-export const COACH_ROLES: readonly ClubRole[] = ['owner', 'admin', 'coach', 'guest_coach'];
-/** Roles allowed to see/manage money. */
-export const FINANCE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'treasurer'];
+// ---------------------------------------------------------------------------
+// Role sets = the Referenz 1.3 capability matrix, mirrored from the DB helpers
+// (app.is_club_admin / is_club_trainer / can_manage_finance / can_manage_members
+// in migration 0007). moderator counts as admin-near; treasurer manages
+// members+finance but never roles.
+// ---------------------------------------------------------------------------
+
+/** is_club_admin - club settings, teams, structure (moderator counts as admin). */
+export const ADMIN_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
+/** is_club_trainer - events, attendance, routines (+ guest_coach, time-boxed in DB). */
+export const COACH_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'coach', 'guest_coach'];
+/** can_manage_finance - invoices, ledger (owner/admin/moderator/treasurer). */
+export const FINANCE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'treasurer'];
+/** can_manage_members - roster create/edit/status (owner/admin/moderator/treasurer). */
+export const MANAGE_MEMBER_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'treasurer'];
+
+/** Roles that may change other members' roles at all (can_change_member_role > none). */
+const ROLE_CHANGERS: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
+/** Ranks a moderator may never grant or touch (owner/admin/moderator). */
+const MODERATOR_BLOCKED: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
 
 export function clubRole(claims: AuthClaims, clubId: string): ClubRole | undefined {
   return claims.club_roles[clubId];
@@ -47,6 +61,44 @@ export function requireClubRole(claims: AuthClaims, clubId: string, roles: reado
 }
 
 // ---------------------------------------------------------------------------
+// Platform admin (super_admin level) - a JWT claim, NOT a club role.
+// Mirrors app.is_platform_admin() (migration 0007): app_metadata.is_platform_admin
+// (GoTrue emits raw_app_meta_data), a top-level flag, or a super_admin role claim.
+// ---------------------------------------------------------------------------
+
+export function isPlatformAdmin(claims: AuthClaims): boolean {
+  return (
+    claims.is_platform_admin === true ||
+    claims.app_metadata?.is_platform_admin === true ||
+    claims.app_metadata?.role === 'super_admin' ||
+    claims.platform_role === 'super_admin'
+  );
+}
+
+/** Throw 403 unless the caller carries the platform-admin claim. */
+export function requirePlatformAdmin(claims: AuthClaims): void {
+  if (!isPlatformAdmin(claims)) {
+    throw problem(403, 'Forbidden', 'Platform administrator privileges required');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Role ASSIGNMENT rule (INSERT / invite) - mirrors app.can_change_member_role.
+//   owner     -> any role (incl. owner)
+//   admin     -> any role except owner
+//   moderator -> only ranks below moderator (member/coach/treasurer/guest_coach)
+//   treasurer -> only 'member'
+//   everyone else -> nothing
+// ---------------------------------------------------------------------------
+export function canAssignRole(callerRole: ClubRole, targetRole: ClubRole): boolean {
+  if (targetRole === 'owner') return callerRole === 'owner';
+  if (callerRole === 'owner' || callerRole === 'admin') return true;
+  if (callerRole === 'moderator') return !MODERATOR_BLOCKED.includes(targetRole);
+  if (callerRole === 'treasurer') return targetRole === 'member';
+  return false;
+}
+
+// ---------------------------------------------------------------------------
 // Role-change rules (clubs/:id/members/:memberId/role)
 // ---------------------------------------------------------------------------
 
@@ -65,32 +117,39 @@ export interface RoleChangeInput {
 
 /**
  * Returns undefined when the change is allowed, otherwise a ProblemError.
+ * Mirrors app.can_change_member_role + protect_club_membership (migration 0007).
  *
- * Rules (v1 gap closed + task requirement):
- *   1. Only owner/admin may change roles at all.
- *   2. Nobody changes their OWN role - not even to demote themselves
- *      (mirrors the protect_club_membership trigger).
- *   3. Owner rows are only touched by owners (trigger mirrors this too).
- *   4. The LAST active owner can never be demoted - a club must always
- *      keep at least one owner (checked only in the API; the DB cannot
- *      know this rule per-row).
+ * Rules (Referenz 1.3 - full hierarchy):
+ *   1. Only owner/admin/moderator may change roles at all (treasurer & below: no).
+ *   2. Nobody changes their OWN role (mirrors the protect_club_membership trigger).
+ *   3. Owner rows (old OR would-be owner) are only touched by owners.
+ *   4. A moderator may only change roles whose OLD and NEW rank are both below
+ *      moderator (never owner/admin/moderator) - the admin-near-but-not-admin rule.
+ *   5. The LAST active owner can never be demoted (API-only; the DB cannot know
+ *      this per-row).
  */
 export function checkRoleChange(input: RoleChangeInput): ReturnType<typeof problem> | undefined {
   const { callerRole, callerIsTarget, targetRole, newRole, activeOwnerCount } = input;
 
-  if (!ADMIN_ROLES.includes(callerRole)) {
-    return problem(403, 'Forbidden', 'Only owner or admin may change member roles');
+  if (!ROLE_CHANGERS.includes(callerRole)) {
+    return problem(403, 'Forbidden', 'Only owner, admin or moderator may change member roles');
   }
   if (callerIsTarget) {
     return problem(403, 'Forbidden', 'Changing your own role is not allowed');
   }
-  if (targetRole === 'owner') {
-    if (callerRole !== 'owner') {
-      return problem(403, 'Forbidden', 'Only owners may change owner roles');
-    }
-    if (activeOwnerCount <= 1) {
-      return problem(409, 'Conflict', 'Cannot demote the last owner of the club');
-    }
+  // Owner rows are owner-only (newRole can never be 'owner' via the API).
+  if (targetRole === 'owner' && callerRole !== 'owner') {
+    return problem(403, 'Forbidden', 'Only owners may change owner roles');
+  }
+  // Moderator rank guard: both the current and the target role must be below moderator.
+  if (
+    callerRole === 'moderator' &&
+    (MODERATOR_BLOCKED.includes(targetRole) || MODERATOR_BLOCKED.includes(newRole))
+  ) {
+    return problem(403, 'Forbidden', 'Moderators may only assign roles below their own rank');
+  }
+  if (targetRole === 'owner' && activeOwnerCount <= 1) {
+    return problem(409, 'Conflict', 'Cannot demote the last owner of the club');
   }
   return undefined;
 }

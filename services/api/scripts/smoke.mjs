@@ -21,6 +21,8 @@ const SUB = {
   admin: '90000000-0000-4000-8000-000000000004', // Thomas Krüger
   guest: '90000000-0000-4000-8000-000000000006', // Milena Öztürk (valid 30 days)
   parent: '90000000-0000-4000-8000-000000000009', // Katrin Grünewald (member)
+  moderator: '90000000-0000-4000-8000-000000000014', // Petra Köhler (moderator)
+  platform: '90000000-0000-4000-8000-000000000090', // RSM Plattform-Admin (no club row)
 };
 const MEMBER = {
   owner: 'a0000000-0000-4000-8000-000000000002',
@@ -28,6 +30,7 @@ const MEMBER = {
   linaChildOfParent: 'a0000000-0000-4000-8000-000000000007',
   sofiaNotHerChild: 'a0000000-0000-4000-8000-000000000010',
   petraPlainMember: 'a0000000-0000-4000-8000-000000000014',
+  stefanieMember: 'a0000000-0000-4000-8000-000000000012',
 };
 
 let failures = 0;
@@ -69,6 +72,22 @@ async function call(method, path, { as, body } = {}) {
   return { status: res.status, json };
 }
 
+/** Platform-admin token: no club role, app_metadata.is_platform_admin (mirrors GoTrue). */
+async function platformToken() {
+  return new SignJWT({
+    sub: SUB.platform,
+    role: 'authenticated',
+    club_roles: {},
+    is_platform_admin: true,
+    app_metadata: { is_platform_admin: true },
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setAudience('authenticated')
+    .setExpirationTime('10m')
+    .sign(new TextEncoder().encode(SECRET));
+}
+
 const t = {
   coach: await token(SUB.coach, 'coach'),
   owner: await token(SUB.owner, 'owner'),
@@ -76,6 +95,8 @@ const t = {
   admin: await token(SUB.admin, 'admin'),
   guest: await token(SUB.guest, 'guest_coach'),
   parent: await token(SUB.parent, 'member'),
+  moderator: await token(SUB.moderator, 'moderator'),
+  platform: await platformToken(),
   foreign: await token('99999999-0000-4000-8000-000000000099', 'owner', FOREIGN_CLUB),
 };
 
@@ -235,6 +256,103 @@ console.log('[smoke] money ops (service-mode number + DB-verified role)');
     },
   });
   assertEq('stale/forged treasurer claim rejected against DB (403)', r.status, 403);
+}
+
+console.log('[smoke] moderator hierarchy + member master data (0007 matrix)');
+{
+  // moderator may edit member master data (can_manage_members)
+  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.stefanieMember}`, {
+    as: t.moderator,
+    body: { last_name: 'Müller-Test' },
+  });
+  assertEq('moderator edits member master data -> 200', r.status, 200);
+  assertEq('...last_name persisted', r.json?.last_name, 'Müller-Test');
+  assertEq('...role untouched by the master-data endpoint', r.json?.role, 'member');
+}
+{
+  // moderator may NOT promote anyone to admin (target rank too high)
+  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.stefanieMember}/role`, {
+    as: t.moderator,
+    body: { role: 'admin' },
+  });
+  assertEq('moderator promoting to admin -> 403', r.status, 403);
+}
+{
+  // moderator MAY set a member to coach (below its own rank)
+  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.stefanieMember}/role`, {
+    as: t.moderator,
+    body: { role: 'coach' },
+  });
+  assertEq('moderator setting member -> coach -> 200', r.status, 200);
+  assertEq('...role persisted', r.json?.role, 'coach');
+}
+{
+  // treasurer manages members but may only create PLAIN members
+  const bad = await call('POST', `/clubs/${CLUB}/members`, {
+    as: t.treasurer,
+    body: { first_name: 'Kass', last_name: 'Enwart', role: 'coach' },
+  });
+  assertEq('treasurer creating a coach -> 403', bad.status, 403);
+  const good = await call('POST', `/clubs/${CLUB}/members`, {
+    as: t.treasurer,
+    body: { first_name: 'Neu', last_name: 'Mitglied' },
+  });
+  assertEq('treasurer creating a plain member -> 201', good.status, 201);
+}
+
+console.log('[smoke] teams CRUD (is_club_admin) + roster');
+{
+  const created = await call('POST', `/clubs/${CLUB}/teams`, {
+    as: t.owner,
+    body: { name: 'Smoke-Team', age_group: 'U15' },
+  });
+  assertEq('owner creates a team -> 201', created.status, 201);
+  const teamId = created.json?.id;
+
+  const denied = await call('POST', `/clubs/${CLUB}/teams`, {
+    as: t.coach,
+    body: { name: 'Coach darf nicht' },
+  });
+  assertEq('coach cannot create teams (is_club_admin) -> 403', denied.status, 403);
+
+  const renamed = await call('PATCH', `/clubs/${CLUB}/teams/${teamId}`, {
+    as: t.moderator,
+    body: { name: 'Smoke-Team umbenannt' },
+  });
+  assertEq('moderator renames the team -> 200', renamed.status, 200);
+  assertEq('...name persisted', renamed.json?.name, 'Smoke-Team umbenannt');
+
+  const roster = await call('PUT', `/clubs/${CLUB}/teams/${teamId}/members`, {
+    as: t.owner,
+    body: { skater_member_ids: [MEMBER.stefanieMember], coach_member_ids: [MEMBER.admin] },
+  });
+  assertEq('owner sets the team roster -> 200', roster.status, 200);
+  assertEq('...skater linked', roster.json?.skater_member_ids?.includes(MEMBER.stefanieMember), true);
+  assertEq('...coach linked', roster.json?.coach_member_ids?.includes(MEMBER.admin), true);
+
+  const del = await call('DELETE', `/clubs/${CLUB}/teams/${teamId}`, { as: t.owner });
+  assertEq('owner soft-deletes the team -> 200', del.status, 200);
+  assertEq('...status deleted', del.json?.status, 'deleted');
+}
+
+console.log('[smoke] platform console (is_platform_admin ONLY)');
+{
+  const stats = await call('GET', '/platform/stats', { as: t.platform });
+  assertEq('platform admin reads stats -> 200', stats.status, 200);
+  if ((stats.json?.clubs ?? 0) >= 1) ok(`stats.clubs >= 1 (${stats.json.clubs})`);
+  else fail('platform stats.clubs', `got ${stats.json?.clubs}`);
+
+  const clubs = await call('GET', '/platform/clubs', { as: t.platform });
+  assertEq('platform admin lists clubs -> 200', clubs.status, 200);
+  const seen = clubs.json?.find?.((c) => c.id === CLUB);
+  if (seen && typeof seen.member_count === 'number') ok(`club carries member_count (${seen.member_count})`);
+  else fail('platform club member_count', `got ${JSON.stringify(seen)}`);
+
+  const users = await call('GET', '/platform/users', { as: t.platform });
+  assertEq('platform admin lists users -> 200', users.status, 200);
+
+  const denied = await call('GET', '/platform/clubs', { as: t.owner });
+  assertEq('club owner is NOT a platform admin -> 403', denied.status, 403);
 }
 
 console.log('');
