@@ -956,10 +956,11 @@ export class ApiClient {
 
   /**
    * List invoices (RLS: finance roles see all, members their own/children)
+   * Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever see their own / their children's invoices regardless of the filter (RLS).
    * 
    * `GET /invoices`
    */
-  async getInvoices(query: { "club_id": string }, options?: RequestOptions): Promise<M.Invoice[]> {
+  async getInvoices(query: { "club_id": string; "status"?: M.InvoiceStatus; "member_id"?: string }, options?: RequestOptions): Promise<M.Invoice[]> {
     return this.request<M.Invoice[]>("GET", "/invoices", { query, auth: true, options });
   }
 
@@ -974,13 +975,22 @@ export class ApiClient {
   }
 
   /**
-   * Cash book (Kassenbuch) of a club - finance roles only
-   * Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, corrections via reversal entries. RLS restricts reads to owner/admin/treasurer.
+   * Invoice detail (RLS: finance sees all, members their own/children)
    * 
-   * `GET /ledger`
+   * `GET /invoices/{invoiceId}`
    */
-  async getLedger(query: { "club_id": string }, options?: RequestOptions): Promise<M.LedgerEntry[]> {
-    return this.request<M.LedgerEntry[]>("GET", "/ledger", { query, auth: true, options });
+  async getInvoicesByInvoiceId(invoiceId: string, options?: RequestOptions): Promise<M.Invoice> {
+    return this.request<M.Invoice>("GET", `/invoices/${encodeURIComponent(invoiceId)}`, { auth: true, options });
+  }
+
+  /**
+   * Settle an invoice: mark paid or cancelled (can_manage_finance)
+   * open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.
+   * 
+   * `PATCH /invoices/{invoiceId}`
+   */
+  async patchInvoicesByInvoiceId(invoiceId: string, body: M.InvoiceUpdate, options?: RequestOptions): Promise<M.Invoice> {
+    return this.request<M.Invoice>("PATCH", `/invoices/${encodeURIComponent(invoiceId)}`, { body, auth: true, options });
   }
 
   /**
@@ -990,6 +1000,54 @@ export class ApiClient {
    */
   async postInvoicesByInvoiceIdSendReminder(invoiceId: string, options?: RequestOptions): Promise<M.Invoice> {
     return this.request<M.Invoice>("POST", `/invoices/${encodeURIComponent(invoiceId)}/send-reminder`, { auth: true, options });
+  }
+
+  /**
+   * Cash book (Kassenbuch) of a club - finance roles only
+   * Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, corrections via reversal entries. Left-joins app.ledger_categories for the label. RLS restricts reads to can_manage_finance.
+   * 
+   * `GET /ledger`
+   */
+  async getLedger(query: { "club_id": string }, options?: RequestOptions): Promise<M.LedgerEntry[]> {
+    return this.request<M.LedgerEntry[]>("GET", "/ledger", { query, auth: true, options });
+  }
+
+  /**
+   * Append a cash-book entry (can_manage_finance)
+   * GoBD append-only booking: amount_cents is signed (income > 0, expense < 0). Corrections are never edits - use POST /ledger/{entryId}/reverse.
+   * 
+   * `POST /ledger`
+   */
+  async postLedger(body: M.LedgerEntryCreate, options?: RequestOptions): Promise<M.LedgerEntry> {
+    return this.request<M.LedgerEntry>("POST", "/ledger", { body, auth: true, options });
+  }
+
+  /**
+   * Cash-book categories of a club (can_manage_finance)
+   * 
+   * `GET /ledger/categories`
+   */
+  async getLedgerCategories(query: { "club_id": string }, options?: RequestOptions): Promise<M.LedgerCategory[]> {
+    return this.request<M.LedgerCategory[]>("GET", "/ledger/categories", { query, auth: true, options });
+  }
+
+  /**
+   * Create a cash-book category (can_manage_finance)
+   * 
+   * `POST /ledger/categories`
+   */
+  async postLedgerCategories(body: M.LedgerCategoryCreate, options?: RequestOptions): Promise<M.LedgerCategory> {
+    return this.request<M.LedgerCategory>("POST", "/ledger/categories", { body, auth: true, options });
+  }
+
+  /**
+   * Reverse a cash-book entry (Storno, GoBD-safe)
+   * Appends a counter-entry (negated amount, reverses_entry_id set) instead of deleting the original - the documented GoBD correction path. Finance roles only.
+   * 
+   * `POST /ledger/{entryId}/reverse`
+   */
+  async postLedgerByEntryIdReverse(entryId: string, body?: M.LedgerReverse, options?: RequestOptions): Promise<M.LedgerEntry> {
+    return this.request<M.LedgerEntry>("POST", `/ledger/${encodeURIComponent(entryId)}/reverse`, { body, auth: true, options });
   }
 
   /**
@@ -1018,6 +1076,25 @@ export class ApiClient {
    */
   async postClubsByClubIdDunningRun(clubId: string, body?: M.DunningRunRequest, options?: RequestOptions): Promise<M.DunningRunResult> {
     return this.request<M.DunningRunResult>("POST", `/clubs/${encodeURIComponent(clubId)}/dunning/run`, { body, auth: true, options });
+  }
+
+  /**
+   * Apply a dunning stage to invoices + write the audit log (finance only)
+   * Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step.
+   * 
+   * `POST /clubs/{clubId}/dunning/apply`
+   */
+  async postClubsByClubIdDunningApply(clubId: string, body: M.DunningApplyRequest, options?: RequestOptions): Promise<M.DunningApplyResult> {
+    return this.request<M.DunningApplyResult>("POST", `/clubs/${encodeURIComponent(clubId)}/dunning/apply`, { body, auth: true, options });
+  }
+
+  /**
+   * Dunning audit log of a club (finance only)
+   * 
+   * `GET /clubs/{clubId}/dunning/log`
+   */
+  async getClubsByClubIdDunningLog(clubId: string, query?: { "invoice_id"?: string }, options?: RequestOptions): Promise<M.DunningLogEntry[]> {
+    return this.request<M.DunningLogEntry[]>("GET", `/clubs/${encodeURIComponent(clubId)}/dunning/log`, { query, auth: true, options });
   }
 
 }

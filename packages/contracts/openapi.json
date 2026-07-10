@@ -4050,6 +4050,10 @@
               }
             ]
           },
+          "paid_via": {
+            "type": "string",
+            "nullable": true
+          },
           "created_at": {
             "anyOf": [
               {
@@ -4084,8 +4088,71 @@
           "issued_on",
           "due_on",
           "paid_at",
+          "paid_via",
           "created_at",
           "updated_at"
+        ]
+      },
+      "InvoiceCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "due_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "issue": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "club_id",
+          "member_id",
+          "title",
+          "amount_cents"
+        ]
+      },
+      "InvoiceUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "paid",
+              "cancelled"
+            ]
+          },
+          "paid_via": {
+            "type": "string",
+            "minLength": 1
+          },
+          "post_to_ledger": {
+            "type": "boolean",
+            "default": true
+          },
+          "ledger_category_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "CounterpartyKind": {
@@ -4093,6 +4160,14 @@
         "enum": [
           "person",
           "org"
+        ]
+      },
+      "LedgerCategoryKind": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "income",
+          "expense"
         ]
       },
       "LedgerEntry": {
@@ -4135,6 +4210,18 @@
             "type": "string",
             "nullable": true
           },
+          "category_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "category_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "category_kind": {
+            "$ref": "#/components/schemas/LedgerCategoryKind"
+          },
           "invoice_id": {
             "type": "string",
             "nullable": true,
@@ -4167,45 +4254,150 @@
           "amount_cents",
           "currency",
           "category",
+          "category_id",
           "invoice_id",
           "reverses_entry_id",
           "created_at"
         ]
       },
-      "InvoiceCreate": {
+      "LedgerEntryCreate": {
         "type": "object",
         "properties": {
           "club_id": {
             "type": "string",
             "format": "uuid"
           },
-          "member_id": {
+          "entry_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "counterparty_kind": {
+            "$ref": "#/components/schemas/CounterpartyKind"
+          },
+          "counterparty_member_id": {
             "type": "string",
             "format": "uuid"
           },
-          "title": {
+          "counterparty_name": {
             "type": "string",
             "minLength": 1
           },
           "amount_cents": {
-            "type": "integer",
-            "minimum": 0
+            "type": "integer"
           },
-          "due_on": {
+          "category": {
             "type": "string",
-            "format": "date"
+            "minLength": 1
           },
-          "issue": {
-            "type": "boolean",
-            "default": false
+          "category_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
           "club_id",
-          "member_id",
-          "title",
+          "entry_on",
+          "description",
+          "counterparty_kind",
           "amount_cents"
         ]
+      },
+      "LedgerCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LedgerCategoryKind"
+          },
+          "sort_order": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "name",
+          "kind",
+          "sort_order",
+          "created_at",
+          "deleted_at"
+        ]
+      },
+      "LedgerCategoryCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LedgerCategoryKind"
+          },
+          "sort_order": {
+            "type": "integer",
+            "default": 0
+          }
+        },
+        "required": [
+          "club_id",
+          "name",
+          "kind"
+        ]
+      },
+      "LedgerReverse": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       },
       "Entitlement": {
         "type": "object",
@@ -4480,6 +4672,156 @@
             "format": "date"
           }
         }
+      },
+      "DunningLogAction": {
+        "type": "string",
+        "enum": [
+          "reminder",
+          "dunning",
+          "handover"
+        ]
+      },
+      "DunningSkip": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "invoice_id",
+          "reason"
+        ]
+      },
+      "DunningLogEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "from_stage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "to_stage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "action": {
+            "$ref": "#/components/schemas/DunningLogAction"
+          },
+          "actor_member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "invoice_id",
+          "from_stage",
+          "to_stage",
+          "action",
+          "actor_member_id",
+          "note",
+          "created_at"
+        ]
+      },
+      "DunningApplyResult": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "to_stage": {
+            "type": "integer"
+          },
+          "action": {
+            "$ref": "#/components/schemas/DunningLogAction"
+          },
+          "applied": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DunningSkip"
+            }
+          },
+          "log": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DunningLogEntry"
+            }
+          }
+        },
+        "required": [
+          "club_id",
+          "to_stage",
+          "action",
+          "applied",
+          "skipped",
+          "log"
+        ]
+      },
+      "DunningApplyRequest": {
+        "type": "object",
+        "properties": {
+          "invoice_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "minItems": 1
+          },
+          "to_stage": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "approve_escalation": {
+            "type": "boolean",
+            "default": false
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "invoice_ids",
+          "to_stage"
+        ]
       }
     },
     "parameters": {}
@@ -12091,6 +12433,7 @@
           "invoices"
         ],
         "summary": "List invoices (RLS: finance roles see all, members their own/children)",
+        "description": "Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever see their own / their children's invoices regardless of the filter (RLS).",
         "security": [
           {
             "bearerAuth": []
@@ -12104,6 +12447,23 @@
             },
             "required": true,
             "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/InvoiceStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "member_id",
             "in": "query"
           }
         ],
@@ -12238,13 +12598,12 @@
         }
       }
     },
-    "/ledger": {
+    "/invoices/{invoiceId}": {
       "get": {
         "tags": [
           "invoices"
         ],
-        "summary": "Cash book (Kassenbuch) of a club - finance roles only",
-        "description": "Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, corrections via reversal entries. RLS restricts reads to owner/admin/treasurer.",
+        "summary": "Invoice detail (RLS: finance sees all, members their own/children)",
         "security": [
           {
             "bearerAuth": []
@@ -12257,20 +12616,17 @@
               "format": "uuid"
             },
             "required": true,
-            "name": "club_id",
-            "in": "query"
+            "name": "invoiceId",
+            "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Ledger entries, newest first",
+            "description": "The invoice, if visible to the caller",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LedgerEntry"
-                  }
+                  "$ref": "#/components/schemas/Invoice"
                 }
               }
             }
@@ -12311,6 +12667,102 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Settle an invoice: mark paid or cancelled (can_manage_finance)",
+        "description": "open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invoiceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated invoice",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Invoice"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal status transition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
                 }
               }
             }
@@ -12393,6 +12845,410 @@
           },
           "409": {
             "description": "Invoice is not open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Cash book (Kassenbuch) of a club - finance roles only",
+        "description": "Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, corrections via reversal entries. Left-joins app.ledger_categories for the label. RLS restricts reads to can_manage_finance.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger entries, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Append a cash-book entry (can_manage_finance)",
+        "description": "GoBD append-only booking: amount_cents is signed (income > 0, expense < 0). Corrections are never edits - use POST /ledger/{entryId}/reverse.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerEntryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The appended entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger/categories": {
+      "get": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Cash-book categories of a club (can_manage_finance)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Categories, income first then expense, by sort_order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerCategory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Create a cash-book category (can_manage_finance)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerCategoryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerCategory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ledger/{entryId}/reverse": {
+      "post": {
+        "tags": [
+          "ledger"
+        ],
+        "summary": "Reverse a cash-book entry (Storno, GoBD-safe)",
+        "description": "Appends a counter-entry (negated amount, reverses_entry_id set) instead of deleting the original - the documented GoBD correction path. Finance roles only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "entryId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LedgerReverse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The appended reversal entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Entry is itself a reversal / already reversed",
             "content": {
               "application/json": {
                 "schema": {
@@ -12592,6 +13448,181 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DunningRunResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/dunning/apply": {
+      "post": {
+        "tags": [
+          "dunning"
+        ],
+        "summary": "Apply a dunning stage to invoices + write the audit log (finance only)",
+        "description": "Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DunningApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied stage changes + the audit rows written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DunningApplyResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/dunning/log": {
+      "get": {
+        "tags": [
+          "dunning"
+        ],
+        "summary": "Dunning audit log of a club (finance only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "invoice_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dunning log entries, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DunningLogEntry"
+                  }
                 }
               }
             }

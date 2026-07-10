@@ -304,6 +304,8 @@ export const invoiceSchema = z
     issued_on: isoDate.nullable(),
     due_on: isoDate.nullable(),
     paid_at: timestamp.nullable(),
+    /** How a paid invoice was settled (SEPA/bar/Überweisung…), free text. */
+    paid_via: z.string().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -321,6 +323,24 @@ export const invoiceCreateSchema = z
     issue: z.boolean().default(false),
   })
   .openapi('InvoiceCreate');
+
+/**
+ * PATCH an invoice's lifecycle: open → paid or open/draft → cancelled.
+ * `paid` optionally posts a matching income row into the cash book
+ * (post_to_ledger, default true) under ledger_category_id when given.
+ * Corrections stay GoBD-safe: a cancelled/paid invoice is never re-opened here.
+ */
+export const invoiceUpdateSchema = z
+  .object({
+    status: z.enum(['paid', 'cancelled']),
+    /** How it was settled (only meaningful for status=paid). */
+    paid_via: z.string().min(1).optional(),
+    /** status=paid: also append a Kassenbuch income entry (default true). */
+    post_to_ledger: z.boolean().default(true),
+    /** Category for the auto-posted ledger income row (status=paid only). */
+    ledger_category_id: uuid.optional(),
+  })
+  .openapi('InvoiceUpdate');
 
 export const teamSchema = z
   .object({
@@ -376,6 +396,29 @@ export const guardianshipSchema = z
   })
   .openapi('Guardianship');
 
+export const ledgerCategoryKindSchema = z.enum(['income', 'expense']).openapi('LedgerCategoryKind');
+
+export const ledgerCategorySchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    kind: ledgerCategoryKindSchema,
+    sort_order: z.coerce.number().int(),
+    created_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('LedgerCategory');
+
+export const ledgerCategoryCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    kind: ledgerCategoryKindSchema,
+    sort_order: z.number().int().default(0),
+  })
+  .openapi('LedgerCategoryCreate');
+
 export const ledgerEntrySchema = z
   .object({
     id: uuid,
@@ -388,12 +431,110 @@ export const ledgerEntrySchema = z
     /** Signed integer cents: income > 0, expense < 0 (Blueprint §4). */
     amount_cents: z.coerce.number().int(),
     currency: z.string(),
+    /** Legacy free-text category (kept for import/back-compat). */
     category: z.string().nullable(),
+    /** Structured category (app.ledger_categories), or null. */
+    category_id: uuid.nullable(),
+    /** Joined from app.ledger_categories in GET /ledger (absent on writes). */
+    category_name: z.string().nullable().optional(),
+    category_kind: ledgerCategoryKindSchema.nullable().optional(),
     invoice_id: uuid.nullable(),
     reverses_entry_id: uuid.nullable(),
     created_at: timestamp,
   })
   .openapi('LedgerEntry');
+
+/**
+ * Append a Kassenbuch entry (GoBD: journal is append-only, corrections go
+ * through POST /ledger/{id}/reverse). amount_cents is SIGNED — income > 0,
+ * expense < 0. Counterparty is a member (person) or a free-text org name.
+ */
+export const ledgerEntryCreateSchema = z
+  .object({
+    club_id: uuid,
+    entry_on: z.string().date(),
+    description: z.string().min(1),
+    counterparty_kind: counterpartyKindSchema,
+    /** required for counterparty_kind='person'. */
+    counterparty_member_id: uuid.optional(),
+    /** required for counterparty_kind='org'. */
+    counterparty_name: z.string().min(1).optional(),
+    /** Signed integer cents: income > 0, expense < 0. */
+    amount_cents: z.number().int(),
+    category: z.string().min(1).optional(),
+    category_id: uuid.optional(),
+    /** Optionally tie the entry to an invoice (e.g. a manual payment). */
+    invoice_id: uuid.optional(),
+  })
+  .refine(
+    (v) => (v.counterparty_kind === 'person' ? v.counterparty_member_id !== undefined : v.counterparty_name !== undefined),
+    { message: "person entries need counterparty_member_id, org entries need counterparty_name" },
+  )
+  .openapi('LedgerEntryCreate');
+
+/**
+ * Storno: reverse an existing ledger entry by appending a mirror row with the
+ * negated amount and reverses_entry_id set — never a DELETE/UPDATE (GoBD).
+ */
+export const ledgerReverseSchema = z
+  .object({
+    /** Overrides the auto-generated "Storno: …" description when given. */
+    description: z.string().min(1).optional(),
+  })
+  .openapi('LedgerReverse');
+
+// ---------------------------------------------------------------------------
+// Dunning apply + log (migration 0013). The dry-run preview lives in
+// modules/dunning (DunningRunResult); these cover the WRITE path: applying a
+// stage to a set of invoices and reading the resulting audit trail.
+// ---------------------------------------------------------------------------
+
+export const dunningActionSchema = z.enum(['reminder', 'dunning', 'handover']).openapi('DunningLogAction');
+
+export const dunningLogSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    invoice_id: uuid,
+    from_stage: z.coerce.number().int(),
+    to_stage: z.coerce.number().int(),
+    action: dunningActionSchema,
+    /** club_members.id of the treasurer/admin who applied the step, or null. */
+    actor_member_id: uuid.nullable(),
+    note: z.string().nullable(),
+    created_at: timestamp,
+  })
+  .openapi('DunningLogEntry');
+
+/**
+ * Apply a dunning stage to a set of open invoices. Stage 1 (reminder) is the
+ * routine step; stages >= 2 (dunning/handover) ONLY apply when approve_escalation
+ * is explicitly true (the deliberate human sign-off — never automatic).
+ */
+export const dunningApplyRequestSchema = z
+  .object({
+    invoice_ids: z.array(uuid).min(1),
+    /** 1 = reminder, 2/3 = dunning, 4 = handover. */
+    to_stage: z.number().int().min(1).max(4),
+    /** Required true to apply any stage >= 2. */
+    approve_escalation: z.boolean().default(false),
+    note: z.string().max(500).optional(),
+  })
+  .openapi('DunningApplyRequest');
+
+export const dunningApplyResultSchema = z
+  .object({
+    club_id: uuid,
+    to_stage: z.number().int(),
+    action: dunningActionSchema,
+    /** number of invoices whose stage was raised + logged. */
+    applied: z.number().int(),
+    /** invoices left untouched, with the reason (not open / already >= stage / not found). */
+    skipped: z.array(z.object({ invoice_id: uuid, reason: z.string() }).openapi('DunningSkip')),
+    /** the audit rows just written. */
+    log: z.array(dunningLogSchema),
+  })
+  .openapi('DunningApplyResult');
 
 export const competitionEntrySchema = z
   .object({

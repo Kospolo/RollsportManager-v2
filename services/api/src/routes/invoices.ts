@@ -16,7 +16,7 @@
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
-import { invoiceCreateSchema, invoiceSchema, ledgerEntrySchema, uuid } from '../lib/validation.js';
+import { invoiceCreateSchema, invoiceSchema, invoiceStatusSchema, invoiceUpdateSchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
@@ -53,19 +53,30 @@ invoicesRouter.openapi(
     path: '/invoices',
     tags: ['invoices'],
     summary: 'List invoices (RLS: finance roles see all, members their own/children)',
+    description:
+      'Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever ' +
+      'see their own / their children\'s invoices regardless of the filter (RLS).',
     security: [{ bearerAuth: [] }],
-    request: { query: z.object({ club_id: uuid }) },
+    request: {
+      query: z.object({
+        club_id: uuid,
+        status: invoiceStatusSchema.optional(),
+        member_id: uuid.optional(),
+      }),
+    },
     responses: {
       200: jsonContent(z.array(invoiceSchema), 'Invoices visible to the caller'),
       ...errorResponses,
     },
   }),
   async (c) => {
-    const { club_id } = c.req.valid('query');
+    const { club_id, status, member_id } = c.req.valid('query');
     requireClubMember(c.get('claims'), club_id);
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`select * from app.invoices
          where club_id = ${club_id}
+           and (${status ?? null}::app.invoice_status is null or status = ${status ?? null}::app.invoice_status)
+           and (${member_id ?? null}::uuid is null or member_id = ${member_id ?? null}::uuid)
          order by number desc`,
     );
     return c.json(z.array(invoiceSchema).parse(rows), 200);
@@ -75,28 +86,24 @@ invoicesRouter.openapi(
 invoicesRouter.openapi(
   createRoute({
     method: 'get',
-    path: '/ledger',
+    path: '/invoices/{invoiceId}',
     tags: ['invoices'],
-    summary: 'Cash book (Kassenbuch) of a club - finance roles only',
-    description:
-      'Append-only GoBD journal (app.ledger_entries): income positive, expenses negative, ' +
-      'corrections via reversal entries. RLS restricts reads to owner/admin/treasurer.',
+    summary: 'Invoice detail (RLS: finance sees all, members their own/children)',
     security: [{ bearerAuth: [] }],
-    request: { query: z.object({ club_id: uuid }) },
+    request: { params: invoiceIdParam },
     responses: {
-      200: jsonContent(z.array(ledgerEntrySchema), 'Ledger entries, newest first'),
+      200: jsonContent(invoiceSchema, 'The invoice, if visible to the caller'),
       ...errorResponses,
     },
   }),
   async (c) => {
-    const { club_id } = c.req.valid('query');
-    requireClubRole(c.get('claims'), club_id, FINANCE_ROLES);
-    const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.ledger_entries
-         where club_id = ${club_id}
-         order by entry_on desc, created_at desc`,
-    );
-    return c.json(z.array(ledgerEntrySchema).parse(rows), 200);
+    const { invoiceId } = c.req.valid('param');
+    const row = await withUser(c.get('claims'), async (tx) => {
+      const rows = await tx`select * from app.invoices where id = ${invoiceId}`;
+      return rows[0];
+    });
+    if (!row) throw problem(404, 'Not Found', 'Invoice not found');
+    return c.json(invoiceSchema.parse(row), 200);
   },
 );
 
@@ -194,6 +201,89 @@ invoicesRouter.openapi(
     const parsed = invoiceSchema.parse(updated);
     console.info(
       `[invoices] reminder stub: invoice=${parsed.number} new dunning_level=${parsed.dunning_level} (request ${c.get('requestId')}) - mail delivery lands with the portal phase`,
+    );
+    return c.json(parsed, 200);
+  },
+);
+
+invoicesRouter.openapi(
+  createRoute({
+    method: 'patch',
+    path: '/invoices/{invoiceId}',
+    tags: ['invoices'],
+    summary: 'Settle an invoice: mark paid or cancelled (can_manage_finance)',
+    description:
+      'open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) ' +
+      'or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). ' +
+      'The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: invoiceIdParam,
+      body: { content: { 'application/json': { schema: invoiceUpdateSchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(invoiceSchema, 'The updated invoice'),
+      409: jsonContent(z.object({}).passthrough(), 'Illegal status transition'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { invoiceId } = c.req.valid('param');
+    const body = c.req.valid('json');
+    const claims = c.get('claims');
+
+    const updated = await withUser(claims, async (tx) => {
+      const rows = await tx`
+        select id, club_id, member_id, title, amount_cents, status
+        from app.invoices where id = ${invoiceId}`;
+      const invoice = rows[0] as
+        | { club_id: string; member_id: string; title: string; amount_cents: string; status: string }
+        | undefined;
+      if (!invoice) throw problem(404, 'Not Found', 'Invoice not found');
+      requireClubRole(claims, invoice.club_id, FINANCE_ROLES);
+
+      // GoBD-safe transitions: paid only from open; cancel only from draft/open.
+      if (body.status === 'paid' && invoice.status !== 'open') {
+        throw problem(409, 'Conflict', `Only open invoices can be marked paid (status: ${invoice.status})`);
+      }
+      if (body.status === 'cancelled' && !['draft', 'open'].includes(invoice.status)) {
+        throw problem(409, 'Conflict', `Only draft/open invoices can be cancelled (status: ${invoice.status})`);
+      }
+
+      const result =
+        body.status === 'paid'
+          ? await tx`
+              update app.invoices
+              set status = 'paid', paid_at = now(), paid_via = ${body.paid_via ?? null}
+              where id = ${invoiceId} and status = 'open'
+              returning *`
+          : await tx`
+              update app.invoices
+              set status = 'cancelled'
+              where id = ${invoiceId} and status in ('draft', 'open')
+              returning *`;
+      if (result.length === 0) throw problem(403, 'Forbidden', 'Update rejected (role or concurrent change)');
+
+      // status=paid: optionally post the matching Kassenbuch income row. Skipped
+      // for a zero-amount invoice (nothing to book).
+      if (body.status === 'paid' && body.post_to_ledger && Number(invoice.amount_cents) > 0) {
+        await tx`
+          insert into app.ledger_entries
+            (club_id, entry_on, description, counterparty_kind, counterparty_member_id,
+             amount_cents, category_id, invoice_id, created_by)
+          values
+            (${invoice.club_id}, current_date, ${`Zahlungseingang: ${invoice.title}`},
+             'person', ${invoice.member_id}, ${invoice.amount_cents}::bigint,
+             ${body.ledger_category_id ?? null}, ${invoiceId}, ${claims.sub})`;
+      }
+      return result[0];
+    });
+
+    const parsed = invoiceSchema.parse(updated);
+    console.info(
+      `[invoices] patch: invoice=${parsed.number} -> ${parsed.status}` +
+        (body.status === 'paid' && body.post_to_ledger ? ' (+ledger income)' : '') +
+        ` (request ${c.get('requestId')})`,
     );
     return c.json(parsed, 200);
   },

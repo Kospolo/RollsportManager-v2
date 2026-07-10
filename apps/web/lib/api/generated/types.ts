@@ -921,12 +921,32 @@ export interface Invoice {
   "issued_on": string | null;
   "due_on": string | null;
   "paid_at": string | null;
+  "paid_via": string | null;
   "created_at": string;
   "updated_at": string;
 }
 
+export interface InvoiceCreate {
+  "club_id": string;
+  "member_id": string;
+  "title": string;
+  "amount_cents": number;
+  "due_on"?: string;
+  "issue"?: boolean;
+}
+
+export interface InvoiceUpdate {
+  "status": "paid" | "cancelled";
+  "paid_via"?: string;
+  "post_to_ledger"?: boolean;
+  "ledger_category_id"?: string;
+}
+
 export type CounterpartyKind = "person" | "org";
 export const CounterpartyKindValues: readonly CounterpartyKind[] = ["person", "org"] as const;
+
+export type LedgerCategoryKind = "income" | "expense";
+export const LedgerCategoryKindValues: readonly LedgerCategoryKind[] = ["income", "expense"] as const;
 
 export interface LedgerEntry {
   "id": string;
@@ -939,18 +959,46 @@ export interface LedgerEntry {
   "amount_cents": number | null;
   "currency": string;
   "category": string | null;
+  "category_id": string | null;
+  "category_name"?: string | null;
+  "category_kind"?: LedgerCategoryKind;
   "invoice_id": string | null;
   "reverses_entry_id": string | null;
   "created_at": string;
 }
 
-export interface InvoiceCreate {
+export interface LedgerEntryCreate {
   "club_id": string;
-  "member_id": string;
-  "title": string;
+  "entry_on": string;
+  "description": string;
+  "counterparty_kind": CounterpartyKind;
+  "counterparty_member_id"?: string;
+  "counterparty_name"?: string;
   "amount_cents": number;
-  "due_on"?: string;
-  "issue"?: boolean;
+  "category"?: string;
+  "category_id"?: string;
+  "invoice_id"?: string;
+}
+
+export interface LedgerCategory {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "kind": LedgerCategoryKind;
+  "sort_order": number | null;
+  "created_at": string;
+  "deleted_at": string | null;
+}
+
+export interface LedgerCategoryCreate {
+  "club_id": string;
+  "name": string;
+  "kind": LedgerCategoryKind;
+  "sort_order"?: number;
+}
+
+export interface LedgerReverse {
+  "description"?: string;
 }
 
 export interface Entitlement {
@@ -1006,5 +1054,41 @@ export interface DunningRunResult {
 export interface DunningRunRequest {
   "dry_run"?: boolean;
   "as_of"?: string;
+}
+
+export type DunningLogAction = "reminder" | "dunning" | "handover";
+export const DunningLogActionValues: readonly DunningLogAction[] = ["reminder", "dunning", "handover"] as const;
+
+export interface DunningSkip {
+  "invoice_id": string;
+  "reason": string;
+}
+
+export interface DunningLogEntry {
+  "id": string;
+  "club_id": string;
+  "invoice_id": string;
+  "from_stage": number | null;
+  "to_stage": number | null;
+  "action": DunningLogAction;
+  "actor_member_id": string | null;
+  "note": string | null;
+  "created_at": string;
+}
+
+export interface DunningApplyResult {
+  "club_id": string;
+  "to_stage": number;
+  "action": DunningLogAction;
+  "applied": number;
+  "skipped": DunningSkip[];
+  "log": DunningLogEntry[];
+}
+
+export interface DunningApplyRequest {
+  "invoice_ids": string[];
+  "to_stage": number;
+  "approve_escalation"?: boolean;
+  "note"?: string;
 }
 

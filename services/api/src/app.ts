@@ -37,6 +37,7 @@ import { galleryRouter } from './routes/gallery.js';
 import { documentsRouter } from './routes/documents.js';
 import { reportsRouter } from './routes/reports.js';
 import { invoicesRouter } from './routes/invoices.js';
+import { ledgerRouter } from './routes/ledger.js';
 import { entitlementsRouter } from './routes/entitlements.js';
 import { productsRouter } from './modules/billing/products.js';
 import { createWebhooksRouter } from './modules/billing/webhooks.js';
@@ -115,6 +116,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', documentsRouter);
   app.route('/', reportsRouter);
   app.route('/', invoicesRouter);
+  app.route('/', ledgerRouter);
   app.route('/', entitlementsRouter);
   app.route('/', productsRouter);
   app.route('/', dunningRouter);

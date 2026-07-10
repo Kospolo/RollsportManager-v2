@@ -431,12 +431,33 @@ insert into app.invoice_counters (club_id, year, last_value)
 values ('c1ab0000-0000-4000-8000-000000000001', extract(year from now())::int, 90);
 
 -- ----------------------------------------------------------------------------
+-- Ledger categories (Kassenbuch-Kategorien, 0013). Income vs. expense buckets
+-- the App filters/colours by; the ledger rows below link to them via category_id.
+-- ----------------------------------------------------------------------------
+insert into app.ledger_categories (id, club_id, name, kind, sort_order)
+values
+  ('ca100000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'Beitrag',   'income',  1),
+  ('ca100000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'Spende',    'income',  2),
+  ('ca100000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'Halle',     'expense', 3),
+  ('ca100000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001', 'Material',  'expense', 4),
+  ('ca100000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001', 'Sonstiges', 'expense', 5);
+
+-- ----------------------------------------------------------------------------
 -- Ledger (cash book, mock l-01 … l-10). Income rows for paid invoices carry
 -- the invoice_id and the identical amount (consistency rule of the mocks).
+-- category_id (0013) is derived from the legacy free-text category so a few
+-- entries carry the structured category too (Beitrag/Halle/Material/Sonstiges).
 -- ----------------------------------------------------------------------------
-insert into app.ledger_entries (club_id, entry_on, description, counterparty_kind, counterparty_member_id, counterparty_name, amount_cents, category, invoice_id, created_by)
+insert into app.ledger_entries (club_id, entry_on, description, counterparty_kind, counterparty_member_id, counterparty_name, amount_cents, category, category_id, invoice_id, created_by)
 select 'c1ab0000-0000-4000-8000-000000000001', v.entry_on, v.description, v.kind::app.counterparty_kind,
-       v.member_id::uuid, v.name, v.amount_cents, v.category, v.invoice_id::uuid,
+       v.member_id::uuid, v.name, v.amount_cents, v.category,
+       case v.category
+         when 'Beiträge'      then 'ca100000-0000-4000-8000-000000000001'::uuid
+         when 'Miete'         then 'ca100000-0000-4000-8000-000000000003'::uuid
+         when 'Material'      then 'ca100000-0000-4000-8000-000000000004'::uuid
+         else                      'ca100000-0000-4000-8000-000000000005'::uuid
+       end,
+       v.invoice_id::uuid,
        '90000000-0000-4000-8000-000000000003'  -- Beate Schäfer (treasurer)
 from (values
   (current_date - 12, 'Vereinsbeitrag Q2 — Johanna Bär',          'person', 'a0000000-0000-4000-8000-000000000017', null,                             5400::bigint,  'Beiträge',       'f0000000-0000-4000-8000-000000000006'),
@@ -450,6 +471,18 @@ from (values
   (current_date - 4,  'Ersatzrollen und Schleifservice',          'org',    null,                                   'Sportbedarf Schmid',            -8750::bigint,  'Material',       null),
   (current_date - 3,  'SEPA-Lauf Monatsbeiträge Juni',            'org',    null,                                   'SEPA-Sammellauf',               43200::bigint,  'Beiträge',       null)
 ) as v(entry_on, description, kind, member_id, name, amount_cents, category, invoice_id);
+
+-- ----------------------------------------------------------------------------
+-- Dunning log (0013) — audit trail of the two escalated open invoices. Actor
+-- is Beate Schäfer (treasurer, member a…-003). f…-001 sits at stage 2, f…-005
+-- at stage 3, so the log mirrors how they got there (each a manual approval).
+-- ----------------------------------------------------------------------------
+insert into app.dunning_log (club_id, invoice_id, from_stage, to_stage, action, actor_member_id, note, created_at)
+values
+  ('c1ab0000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000001', 1, 2, 'dunning',
+   'a0000000-0000-4000-8000-000000000003', '1. Mahnung — Familie Grünewald', now() - interval '9 days'),
+  ('c1ab0000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000005', 2, 3, 'dunning',
+   'a0000000-0000-4000-8000-000000000003', '2. Mahnung — Vereinsbeitrag Q2', now() - interval '3 days');
 
 -- ----------------------------------------------------------------------------
 -- Tasks (mock task-01 … task-07)

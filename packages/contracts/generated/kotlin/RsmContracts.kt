@@ -177,6 +177,19 @@ enum class CounterpartyKind {
     @SerialName("org") ORG;
 }
 
+@Serializable
+enum class LedgerCategoryKind {
+    @SerialName("income") INCOME,
+    @SerialName("expense") EXPENSE;
+}
+
+@Serializable
+enum class DunningLogAction {
+    @SerialName("reminder") REMINDER,
+    @SerialName("dunning") DUNNING,
+    @SerialName("handover") HANDOVER;
+}
+
 /** Inline enum of Health.status (hoisted by codegen). */
 @Serializable
 enum class HealthStatus {
@@ -193,6 +206,13 @@ enum class InviteQueuedStatus {
 @Serializable
 enum class DeletedStatus {
     @SerialName("deleted") DELETED;
+}
+
+/** Inline enum of InvoiceUpdate.status (hoisted by codegen). */
+@Serializable
+enum class InvoiceUpdateStatus {
+    @SerialName("paid") PAID,
+    @SerialName("cancelled") CANCELLED;
 }
 
 /** Inline enum of Entitlement.subject_type (hoisted by codegen). */
@@ -1175,8 +1195,27 @@ data class Invoice(
     @SerialName("issued_on") val issuedOn: String?,
     @SerialName("due_on") val dueOn: String?,
     @SerialName("paid_at") val paidAt: String?,
+    @SerialName("paid_via") val paidVia: String?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class InvoiceCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val title: String,
+    @SerialName("amount_cents") val amountCents: Long,
+    @SerialName("due_on") val dueOn: String? = null,
+    val issue: Boolean? = false
+)
+
+@Serializable
+data class InvoiceUpdate(
+    val status: InvoiceUpdateStatus,
+    @SerialName("paid_via") val paidVia: String? = null,
+    @SerialName("post_to_ledger") val postToLedger: Boolean? = true,
+    @SerialName("ledger_category_id") val ledgerCategoryId: String? = null
 )
 
 @Serializable
@@ -1191,19 +1230,50 @@ data class LedgerEntry(
     @SerialName("amount_cents") val amountCents: Long?,
     val currency: String,
     val category: String?,
+    @SerialName("category_id") val categoryId: String?,
+    @SerialName("category_name") val categoryName: String? = null,
+    @SerialName("category_kind") val categoryKind: LedgerCategoryKind? = null,
     @SerialName("invoice_id") val invoiceId: String?,
     @SerialName("reverses_entry_id") val reversesEntryId: String?,
     @SerialName("created_at") val createdAt: String
 )
 
 @Serializable
-data class InvoiceCreate(
+data class LedgerEntryCreate(
     @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    val title: String,
+    @SerialName("entry_on") val entryOn: String,
+    val description: String,
+    @SerialName("counterparty_kind") val counterpartyKind: CounterpartyKind,
+    @SerialName("counterparty_member_id") val counterpartyMemberId: String? = null,
+    @SerialName("counterparty_name") val counterpartyName: String? = null,
     @SerialName("amount_cents") val amountCents: Long,
-    @SerialName("due_on") val dueOn: String? = null,
-    val issue: Boolean? = false
+    val category: String? = null,
+    @SerialName("category_id") val categoryId: String? = null,
+    @SerialName("invoice_id") val invoiceId: String? = null
+)
+
+@Serializable
+data class LedgerCategory(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val kind: LedgerCategoryKind,
+    @SerialName("sort_order") val sortOrder: Long?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class LedgerCategoryCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val kind: LedgerCategoryKind,
+    @SerialName("sort_order") val sortOrder: Long? = 0L
+)
+
+@Serializable
+data class LedgerReverse(
+    val description: String? = null
 )
 
 @Serializable
@@ -1264,4 +1334,41 @@ data class DunningRunResult(
 data class DunningRunRequest(
     @SerialName("dry_run") val dryRun: Boolean? = true,
     @SerialName("as_of") val asOf: String? = null
+)
+
+@Serializable
+data class DunningSkip(
+    @SerialName("invoice_id") val invoiceId: String,
+    val reason: String
+)
+
+@Serializable
+data class DunningLogEntry(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("invoice_id") val invoiceId: String,
+    @SerialName("from_stage") val fromStage: Long?,
+    @SerialName("to_stage") val toStage: Long?,
+    val action: DunningLogAction,
+    @SerialName("actor_member_id") val actorMemberId: String?,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class DunningApplyResult(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("to_stage") val toStage: Long,
+    val action: DunningLogAction,
+    val applied: Long,
+    val skipped: List<DunningSkip>,
+    val log: List<DunningLogEntry>
+)
+
+@Serializable
+data class DunningApplyRequest(
+    @SerialName("invoice_ids") val invoiceIds: List<String>,
+    @SerialName("to_stage") val toStage: Long,
+    @SerialName("approve_escalation") val approveEscalation: Boolean? = false,
+    val note: String? = null
 )

@@ -192,6 +192,17 @@ public enum CounterpartyKind: String, Codable, CaseIterable, Sendable, Equatable
     case org = "org"
 }
 
+public enum LedgerCategoryKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case income = "income"
+    case expense = "expense"
+}
+
+public enum DunningLogAction: String, Codable, CaseIterable, Sendable, Equatable {
+    case reminder = "reminder"
+    case dunning = "dunning"
+    case handover = "handover"
+}
+
 /// Inline enum of Health.status (hoisted by codegen).
 public enum HealthStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case ok = "ok"
@@ -205,6 +216,12 @@ public enum InviteQueuedStatus: String, Codable, CaseIterable, Sendable, Equatab
 /// Inline enum of Deleted.status (hoisted by codegen).
 public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case deleted = "deleted"
+}
+
+/// Inline enum of InvoiceUpdate.status (hoisted by codegen).
+public enum InvoiceUpdateStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case paid = "paid"
+    case cancelled = "cancelled"
 }
 
 /// Inline enum of Entitlement.subject_type (hoisted by codegen).
@@ -3651,6 +3668,7 @@ public struct Invoice: Codable, Equatable, Sendable {
     public var issuedOn: String?
     public var dueOn: String?
     public var paidAt: String?
+    public var paidVia: String?
     public var createdAt: String
     public var updatedAt: String
 
@@ -3667,6 +3685,7 @@ public struct Invoice: Codable, Equatable, Sendable {
         case issuedOn = "issued_on"
         case dueOn = "due_on"
         case paidAt = "paid_at"
+        case paidVia = "paid_via"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -3684,6 +3703,7 @@ public struct Invoice: Codable, Equatable, Sendable {
         issuedOn: String? = nil,
         dueOn: String? = nil,
         paidAt: String? = nil,
+        paidVia: String? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -3699,75 +3719,9 @@ public struct Invoice: Codable, Equatable, Sendable {
         self.issuedOn = issuedOn
         self.dueOn = dueOn
         self.paidAt = paidAt
+        self.paidVia = paidVia
         self.createdAt = createdAt
         self.updatedAt = updatedAt
-    }
-}
-
-public struct LedgerEntry: Codable, Equatable, Sendable {
-    /// Format: uuid
-    public var id: String
-    /// Format: uuid
-    public var clubId: String
-    public var entryOn: String
-    public var description: String
-    public var counterpartyKind: CounterpartyKind
-    /// Format: uuid
-    public var counterpartyMemberId: String?
-    public var counterpartyName: String?
-    public var amountCents: Int?
-    public var currency: String
-    public var category: String?
-    /// Format: uuid
-    public var invoiceId: String?
-    /// Format: uuid
-    public var reversesEntryId: String?
-    public var createdAt: String
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case clubId = "club_id"
-        case entryOn = "entry_on"
-        case description
-        case counterpartyKind = "counterparty_kind"
-        case counterpartyMemberId = "counterparty_member_id"
-        case counterpartyName = "counterparty_name"
-        case amountCents = "amount_cents"
-        case currency
-        case category
-        case invoiceId = "invoice_id"
-        case reversesEntryId = "reverses_entry_id"
-        case createdAt = "created_at"
-    }
-
-    public init(
-        id: String,
-        clubId: String,
-        entryOn: String,
-        description: String,
-        counterpartyKind: CounterpartyKind,
-        counterpartyMemberId: String? = nil,
-        counterpartyName: String? = nil,
-        amountCents: Int? = nil,
-        currency: String,
-        category: String? = nil,
-        invoiceId: String? = nil,
-        reversesEntryId: String? = nil,
-        createdAt: String
-    ) {
-        self.id = id
-        self.clubId = clubId
-        self.entryOn = entryOn
-        self.description = description
-        self.counterpartyKind = counterpartyKind
-        self.counterpartyMemberId = counterpartyMemberId
-        self.counterpartyName = counterpartyName
-        self.amountCents = amountCents
-        self.currency = currency
-        self.category = category
-        self.invoiceId = invoiceId
-        self.reversesEntryId = reversesEntryId
-        self.createdAt = createdAt
     }
 }
 
@@ -3805,6 +3759,249 @@ public struct InvoiceCreate: Codable, Equatable, Sendable {
         self.amountCents = amountCents
         self.dueOn = dueOn
         self.issue = issue
+    }
+}
+
+public struct InvoiceUpdate: Codable, Equatable, Sendable {
+    public var status: InvoiceUpdateStatus
+    public var paidVia: String?
+    public var postToLedger: Bool?
+    /// Format: uuid
+    public var ledgerCategoryId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case paidVia = "paid_via"
+        case postToLedger = "post_to_ledger"
+        case ledgerCategoryId = "ledger_category_id"
+    }
+
+    public init(
+        status: InvoiceUpdateStatus,
+        paidVia: String? = nil,
+        postToLedger: Bool? = true,
+        ledgerCategoryId: String? = nil
+    ) {
+        self.status = status
+        self.paidVia = paidVia
+        self.postToLedger = postToLedger
+        self.ledgerCategoryId = ledgerCategoryId
+    }
+}
+
+public struct LedgerEntry: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var entryOn: String
+    public var description: String
+    public var counterpartyKind: CounterpartyKind
+    /// Format: uuid
+    public var counterpartyMemberId: String?
+    public var counterpartyName: String?
+    public var amountCents: Int?
+    public var currency: String
+    public var category: String?
+    /// Format: uuid
+    public var categoryId: String?
+    public var categoryName: String?
+    public var categoryKind: LedgerCategoryKind?
+    /// Format: uuid
+    public var invoiceId: String?
+    /// Format: uuid
+    public var reversesEntryId: String?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case entryOn = "entry_on"
+        case description
+        case counterpartyKind = "counterparty_kind"
+        case counterpartyMemberId = "counterparty_member_id"
+        case counterpartyName = "counterparty_name"
+        case amountCents = "amount_cents"
+        case currency
+        case category
+        case categoryId = "category_id"
+        case categoryName = "category_name"
+        case categoryKind = "category_kind"
+        case invoiceId = "invoice_id"
+        case reversesEntryId = "reverses_entry_id"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        entryOn: String,
+        description: String,
+        counterpartyKind: CounterpartyKind,
+        counterpartyMemberId: String? = nil,
+        counterpartyName: String? = nil,
+        amountCents: Int? = nil,
+        currency: String,
+        category: String? = nil,
+        categoryId: String? = nil,
+        categoryName: String? = nil,
+        categoryKind: LedgerCategoryKind? = nil,
+        invoiceId: String? = nil,
+        reversesEntryId: String? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.entryOn = entryOn
+        self.description = description
+        self.counterpartyKind = counterpartyKind
+        self.counterpartyMemberId = counterpartyMemberId
+        self.counterpartyName = counterpartyName
+        self.amountCents = amountCents
+        self.currency = currency
+        self.category = category
+        self.categoryId = categoryId
+        self.categoryName = categoryName
+        self.categoryKind = categoryKind
+        self.invoiceId = invoiceId
+        self.reversesEntryId = reversesEntryId
+        self.createdAt = createdAt
+    }
+}
+
+public struct LedgerEntryCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: date
+    public var entryOn: String
+    public var description: String
+    public var counterpartyKind: CounterpartyKind
+    /// Format: uuid
+    public var counterpartyMemberId: String?
+    public var counterpartyName: String?
+    public var amountCents: Int
+    public var category: String?
+    /// Format: uuid
+    public var categoryId: String?
+    /// Format: uuid
+    public var invoiceId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case entryOn = "entry_on"
+        case description
+        case counterpartyKind = "counterparty_kind"
+        case counterpartyMemberId = "counterparty_member_id"
+        case counterpartyName = "counterparty_name"
+        case amountCents = "amount_cents"
+        case category
+        case categoryId = "category_id"
+        case invoiceId = "invoice_id"
+    }
+
+    public init(
+        clubId: String,
+        entryOn: String,
+        description: String,
+        counterpartyKind: CounterpartyKind,
+        counterpartyMemberId: String? = nil,
+        counterpartyName: String? = nil,
+        amountCents: Int,
+        category: String? = nil,
+        categoryId: String? = nil,
+        invoiceId: String? = nil
+    ) {
+        self.clubId = clubId
+        self.entryOn = entryOn
+        self.description = description
+        self.counterpartyKind = counterpartyKind
+        self.counterpartyMemberId = counterpartyMemberId
+        self.counterpartyName = counterpartyName
+        self.amountCents = amountCents
+        self.category = category
+        self.categoryId = categoryId
+        self.invoiceId = invoiceId
+    }
+}
+
+public struct LedgerCategory: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var kind: LedgerCategoryKind
+    public var sortOrder: Int?
+    public var createdAt: String
+    public var deletedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case kind
+        case sortOrder = "sort_order"
+        case createdAt = "created_at"
+        case deletedAt = "deleted_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        kind: LedgerCategoryKind,
+        sortOrder: Int? = nil,
+        createdAt: String,
+        deletedAt: String? = nil
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.kind = kind
+        self.sortOrder = sortOrder
+        self.createdAt = createdAt
+        self.deletedAt = deletedAt
+    }
+}
+
+public struct LedgerCategoryCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var kind: LedgerCategoryKind
+    public var sortOrder: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case kind
+        case sortOrder = "sort_order"
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        kind: LedgerCategoryKind,
+        sortOrder: Int? = 0
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.kind = kind
+        self.sortOrder = sortOrder
+    }
+}
+
+public struct LedgerReverse: Codable, Equatable, Sendable {
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+        case description
+    }
+
+    public init(
+        description: String? = nil
+    ) {
+        self.description = description
     }
 }
 
@@ -4023,5 +4220,136 @@ public struct DunningRunRequest: Codable, Equatable, Sendable {
     ) {
         self.dryRun = dryRun
         self.asOf = asOf
+    }
+}
+
+public struct DunningSkip: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var invoiceId: String
+    public var reason: String
+
+    enum CodingKeys: String, CodingKey {
+        case invoiceId = "invoice_id"
+        case reason
+    }
+
+    public init(
+        invoiceId: String,
+        reason: String
+    ) {
+        self.invoiceId = invoiceId
+        self.reason = reason
+    }
+}
+
+public struct DunningLogEntry: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var invoiceId: String
+    public var fromStage: Int?
+    public var toStage: Int?
+    public var action: DunningLogAction
+    /// Format: uuid
+    public var actorMemberId: String?
+    public var note: String?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case invoiceId = "invoice_id"
+        case fromStage = "from_stage"
+        case toStage = "to_stage"
+        case action
+        case actorMemberId = "actor_member_id"
+        case note
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        invoiceId: String,
+        fromStage: Int? = nil,
+        toStage: Int? = nil,
+        action: DunningLogAction,
+        actorMemberId: String? = nil,
+        note: String? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.invoiceId = invoiceId
+        self.fromStage = fromStage
+        self.toStage = toStage
+        self.action = action
+        self.actorMemberId = actorMemberId
+        self.note = note
+        self.createdAt = createdAt
+    }
+}
+
+public struct DunningApplyResult: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var toStage: Int
+    public var action: DunningLogAction
+    public var applied: Int
+    public var skipped: [DunningSkip]
+    public var log: [DunningLogEntry]
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case toStage = "to_stage"
+        case action
+        case applied
+        case skipped
+        case log
+    }
+
+    public init(
+        clubId: String,
+        toStage: Int,
+        action: DunningLogAction,
+        applied: Int,
+        skipped: [DunningSkip],
+        log: [DunningLogEntry]
+    ) {
+        self.clubId = clubId
+        self.toStage = toStage
+        self.action = action
+        self.applied = applied
+        self.skipped = skipped
+        self.log = log
+    }
+}
+
+public struct DunningApplyRequest: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var invoiceIds: [String]
+    public var toStage: Int
+    public var approveEscalation: Bool?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case invoiceIds = "invoice_ids"
+        case toStage = "to_stage"
+        case approveEscalation = "approve_escalation"
+        case note
+    }
+
+    public init(
+        invoiceIds: [String],
+        toStage: Int,
+        approveEscalation: Bool? = false,
+        note: String? = nil
+    ) {
+        self.invoiceIds = invoiceIds
+        self.toStage = toStage
+        self.approveEscalation = approveEscalation
+        self.note = note
     }
 }
