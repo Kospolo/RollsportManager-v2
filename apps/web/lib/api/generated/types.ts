@@ -817,6 +817,56 @@ export interface RegionalEventUpdate {
   "description"?: string | null;
 }
 
+export type GalleryKind = "photo" | "video";
+export const GalleryKindValues: readonly GalleryKind[] = ["photo", "video"] as const;
+
+export interface GalleryItem {
+  "id": string;
+  "club_id": string;
+  "album": string | null;
+  "title": string;
+  "kind": GalleryKind;
+  "storage_key": string;
+  "content_type": string;
+  "size_bytes": number | null;
+  "thumbnail_key": string | null;
+  "uploaded_by_member_id": string;
+  "created_at": string;
+}
+
+export interface GalleryItemCreate {
+  "club_id": string;
+  "title": string;
+  "kind": GalleryKind;
+  "storage_key": string;
+  "content_type": string;
+  "size_bytes": number;
+  "album"?: string;
+  "thumbnail_key"?: string;
+}
+
+export interface Document {
+  "id": string;
+  "club_id": string;
+  "title": string;
+  "category": string;
+  "storage_key": string;
+  "content_type": string;
+  "size_bytes": number | null;
+  "uploaded_by_member_id": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface DocumentCreate {
+  "club_id": string;
+  "title": string;
+  "storage_key": string;
+  "content_type": string;
+  "size_bytes": number;
+  "category"?: string;
+}
+
 export interface ReportRoleCount {
   "role": ClubRole;
   "count": number | null;

@@ -892,6 +892,60 @@ export class ApiClient {
   }
 
   /**
+   * List gallery items (PRO; newest first)
+   * 
+   * `GET /gallery`
+   */
+  async getGallery(query: { "club_id": string }, options?: RequestOptions): Promise<M.GalleryItem[]> {
+    return this.request<M.GalleryItem[]>("GET", "/gallery", { query, auth: true, options });
+  }
+
+  /**
+   * Add a gallery item after upload (PRO; coaching staff)
+   * 
+   * `POST /gallery`
+   */
+  async postGallery(body: M.GalleryItemCreate, options?: RequestOptions): Promise<M.GalleryItem> {
+    return this.request<M.GalleryItem>("POST", "/gallery", { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a gallery item (PRO; coaching staff)
+   * 
+   * `DELETE /gallery/{itemId}`
+   */
+  async deleteGalleryByItemId(itemId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/gallery/${encodeURIComponent(itemId)}`, { auth: true, options });
+  }
+
+  /**
+   * List documents (PRO; newest first)
+   * 
+   * `GET /documents`
+   */
+  async getDocuments(query: { "club_id": string }, options?: RequestOptions): Promise<M.Document[]> {
+    return this.request<M.Document[]>("GET", "/documents", { query, auth: true, options });
+  }
+
+  /**
+   * Add a document after upload (PRO; coaching staff)
+   * 
+   * `POST /documents`
+   */
+  async postDocuments(body: M.DocumentCreate, options?: RequestOptions): Promise<M.Document> {
+    return this.request<M.Document>("POST", "/documents", { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a document (PRO; coaching staff)
+   * 
+   * `DELETE /documents/{documentId}`
+   */
+  async deleteDocumentsByDocumentId(documentId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/documents/${encodeURIComponent(documentId)}`, { auth: true, options });
+  }
+
+  /**
    * Club evaluation summary (is_club_trainer / is_club_admin only)
    * 
    * `GET /reports/summary`

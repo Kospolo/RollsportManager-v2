@@ -475,10 +475,15 @@ insert into app.products (code, kind, name, description, price_cents, billing_in
   ('club_tier_l',  'club_license', 'Vereinslizenz L',  'Bis 200 Mitglieder',      5900, 'month', 200),
   ('personal_pro', 'personal_pro', 'Pro (persönlich)', 'Eigene Küren & Trainings-Audio über das Vereinskontingent hinaus', 499, 'month', null);
 
--- Beta club is grandfathered via a manual entitlement (ADR-E6: source=manual)
-insert into app.entitlements (subject_type, subject_id, entitlement, source, product_id, provider_ref, valid_until)
+-- Beta club is grandfathered via a manual entitlement (ADR-E6: source=manual).
+-- metadata carries the state-machine fields (tier/status) that the API writes
+-- via applyEntitlementChange(); here we grant the demo club tier 'pro' active so
+-- the PRO-gated modules (Galerie & Dokumente, migration 0012 / app.is_club_pro)
+-- are usable in the seed. The gate logic itself stays real (club B has NO pro).
+insert into app.entitlements (subject_type, subject_id, entitlement, source, product_id, provider_ref, valid_until, metadata)
 select 'club', 'c1ab0000-0000-4000-8000-000000000001', 'club_license', 'manual', p.id,
-       'beta-grandfather', now() + interval '180 days'
+       'beta-grandfather', now() + interval '180 days',
+       jsonb_build_object('tier', 'pro', 'status', 'active')
 from app.products p
 where p.code = 'club_tier_s';
 
@@ -813,5 +818,51 @@ values
    current_date + 21, null,
    'https://driv.example.org/fortbildung/sprungtechnik',
    'Tagesseminar für Übungsleiter und Trainer zu Absprung- und Landetechnik.');
+
+-- ----------------------------------------------------------------------------
+-- Gallery items (modules batch 5, PRO) — 3 photos + 1 video clip.
+-- storage_key points at the committed demo assets under supabase/seed/media/;
+-- the API serve route (GET /media/{key}) falls back to that bundled directory
+-- when a key is not in MEDIA_DIR, so seeded rows serve real bytes anywhere.
+-- Uploaders: coach Sandra (a-01), owner Jürgen (a-02). Sizes match the files.
+-- ----------------------------------------------------------------------------
+insert into app.gallery_items
+  (id, club_id, album, title, kind, storage_key, content_type, size_bytes, thumbnail_key, uploaded_by_member_id, created_at)
+values
+  ('6a110000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Sommerfest 2026', 'Gruppenfoto beim Vereinsgrillen', 'photo',
+   'seed-gallery-sommerfest-01.png', 'image/png', 69, null,
+   'a0000000-0000-4000-8000-000000000002', now() - interval '9 days'),
+  ('6a110000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'Wettkämpfe', 'Siegerehrung Bezirksmeisterschaft', 'photo',
+   'seed-gallery-bezirksmeisterschaft-02.png', 'image/png', 69, null,
+   'a0000000-0000-4000-8000-000000000001', now() - interval '5 days'),
+  ('6a110000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'Training', 'Pirouetten-Training der Kürgruppe', 'photo',
+   'seed-gallery-training-03.png', 'image/png', 69, null,
+   'a0000000-0000-4000-8000-000000000001', now() - interval '3 days'),
+  ('6a110000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'Wettkämpfe', 'Kür-Mitschnitt Charlotte (Ausschnitt)', 'video',
+   'seed-gallery-kuer-clip-01.mp4', 'video/mp4', 38, 'seed-gallery-kuer-clip-01-thumb.png',
+   'a0000000-0000-4000-8000-000000000001', now() - interval '2 days');
+
+-- ----------------------------------------------------------------------------
+-- Documents (modules batch 5, PRO) — 3 club documents across categories.
+-- ----------------------------------------------------------------------------
+insert into app.documents
+  (id, club_id, title, category, storage_key, content_type, size_bytes, uploaded_by_member_id, created_at)
+values
+  ('d0c00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Vereinssatzung 2026', 'Satzung',
+   'seed-doc-satzung-2026.pdf', 'application/pdf', 411,
+   'a0000000-0000-4000-8000-000000000002', now() - interval '30 days'),
+  ('d0c00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'Hallenordnung Ballei-Sporthalle', 'Ordnung',
+   'seed-doc-hallenordnung.pdf', 'application/pdf', 415,
+   'a0000000-0000-4000-8000-000000000004', now() - interval '20 days'),
+  ('d0c00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'Elterninfo Sommerfest', 'Elterninfo',
+   'seed-doc-elterninfo-sommerfest.pdf', 'application/pdf', 405,
+   'a0000000-0000-4000-8000-000000000001', now() - interval '8 days');
 
 commit;

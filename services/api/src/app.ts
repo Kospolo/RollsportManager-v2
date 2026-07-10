@@ -33,11 +33,14 @@ import { dutyEntriesRouter } from './routes/duty-entries.js';
 import { chatRouter } from './routes/chat.js';
 import { checkinsRouter } from './routes/checkins.js';
 import { regionalEventsRouter } from './routes/regional-events.js';
+import { galleryRouter } from './routes/gallery.js';
+import { documentsRouter } from './routes/documents.js';
 import { reportsRouter } from './routes/reports.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { entitlementsRouter } from './routes/entitlements.js';
 import { productsRouter } from './modules/billing/products.js';
 import { createWebhooksRouter } from './modules/billing/webhooks.js';
+import { createMediaRouter } from './modules/media/routes.js';
 import { dunningRouter } from './modules/dunning/routes.js';
 
 /**
@@ -108,6 +111,8 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', chatRouter);
   app.route('/', checkinsRouter);
   app.route('/', regionalEventsRouter);
+  app.route('/', galleryRouter);
+  app.route('/', documentsRouter);
   app.route('/', reportsRouter);
   app.route('/', invoicesRouter);
   app.route('/', entitlementsRouter);
@@ -115,6 +120,10 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', dunningRouter);
   // plain Hono router - webhooks are deliberately NOT in the OpenAPI contract
   app.route('/', createWebhooksRouter());
+  // plain Hono router - binary upload/serve for the PRO media modules; moves
+  // raw bytes, so deliberately NOT in the OpenAPI contract (like the webhooks).
+  // Requires auth (not in PUBLIC_PATHS): POST /media/upload, GET /media/{key}.
+  app.route('/', createMediaRouter());
   // plain Hono router - dev-only persona login, 404 unless AUTH_MODE=dev,
   // deliberately NOT in the OpenAPI contract (see routes/dev-login.ts)
   app.route('/', createDevLoginRouter());
@@ -159,6 +168,8 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'chat', description: 'Team channels & direct messages (members/team-scoped, server-enforced)' },
     { name: 'checkins', description: 'Attendance check-in (QR/manual): self-checkin or staff for anyone' },
     { name: 'regional-events', description: 'Supra-regional events (read = member, curate = staff)' },
+    { name: 'gallery', description: 'Galerie (PRO): photos & video clips — read = member+PRO, curate = staff+PRO' },
+    { name: 'documents', description: 'Dokumente (PRO): club files — read = member+PRO, curate = staff+PRO' },
     { name: 'invoices', description: 'Money ops (invoice numbers are service-mode only)' },
     { name: 'entitlements', description: 'License state - read-only for clients' },
     { name: 'products', description: 'Product catalog (single source of truth for pricing)' },

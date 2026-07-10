@@ -175,6 +175,11 @@ public enum CheckinMethod: String, Codable, CaseIterable, Sendable, Equatable {
     case manual = "manual"
 }
 
+public enum GalleryKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case photo = "photo"
+    case video = "video"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -3294,6 +3299,194 @@ public struct RegionalEventUpdate: Codable, Equatable, Sendable {
         self.location = location
         self.registrationUrl = registrationUrl
         self.description = description
+    }
+}
+
+public struct GalleryItem: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var album: String?
+    public var title: String
+    public var kind: GalleryKind
+    public var storageKey: String
+    public var contentType: String
+    public var sizeBytes: Int?
+    public var thumbnailKey: String?
+    /// Format: uuid
+    public var uploadedByMemberId: String
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case album
+        case title
+        case kind
+        case storageKey = "storage_key"
+        case contentType = "content_type"
+        case sizeBytes = "size_bytes"
+        case thumbnailKey = "thumbnail_key"
+        case uploadedByMemberId = "uploaded_by_member_id"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        album: String? = nil,
+        title: String,
+        kind: GalleryKind,
+        storageKey: String,
+        contentType: String,
+        sizeBytes: Int? = nil,
+        thumbnailKey: String? = nil,
+        uploadedByMemberId: String,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.album = album
+        self.title = title
+        self.kind = kind
+        self.storageKey = storageKey
+        self.contentType = contentType
+        self.sizeBytes = sizeBytes
+        self.thumbnailKey = thumbnailKey
+        self.uploadedByMemberId = uploadedByMemberId
+        self.createdAt = createdAt
+    }
+}
+
+public struct GalleryItemCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var kind: GalleryKind
+    public var storageKey: String
+    public var contentType: String
+    public var sizeBytes: Int
+    public var album: String?
+    public var thumbnailKey: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case title
+        case kind
+        case storageKey = "storage_key"
+        case contentType = "content_type"
+        case sizeBytes = "size_bytes"
+        case album
+        case thumbnailKey = "thumbnail_key"
+    }
+
+    public init(
+        clubId: String,
+        title: String,
+        kind: GalleryKind,
+        storageKey: String,
+        contentType: String,
+        sizeBytes: Int,
+        album: String? = nil,
+        thumbnailKey: String? = nil
+    ) {
+        self.clubId = clubId
+        self.title = title
+        self.kind = kind
+        self.storageKey = storageKey
+        self.contentType = contentType
+        self.sizeBytes = sizeBytes
+        self.album = album
+        self.thumbnailKey = thumbnailKey
+    }
+}
+
+public struct Document: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var category: String
+    public var storageKey: String
+    public var contentType: String
+    public var sizeBytes: Int?
+    /// Format: uuid
+    public var uploadedByMemberId: String
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case title
+        case category
+        case storageKey = "storage_key"
+        case contentType = "content_type"
+        case sizeBytes = "size_bytes"
+        case uploadedByMemberId = "uploaded_by_member_id"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        title: String,
+        category: String,
+        storageKey: String,
+        contentType: String,
+        sizeBytes: Int? = nil,
+        uploadedByMemberId: String,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.title = title
+        self.category = category
+        self.storageKey = storageKey
+        self.contentType = contentType
+        self.sizeBytes = sizeBytes
+        self.uploadedByMemberId = uploadedByMemberId
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct DocumentCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var storageKey: String
+    public var contentType: String
+    public var sizeBytes: Int
+    public var category: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case title
+        case storageKey = "storage_key"
+        case contentType = "content_type"
+        case sizeBytes = "size_bytes"
+        case category
+    }
+
+    public init(
+        clubId: String,
+        title: String,
+        storageKey: String,
+        contentType: String,
+        sizeBytes: Int,
+        category: String? = "allgemein"
+    ) {
+        self.clubId = clubId
+        self.title = title
+        self.storageKey = storageKey
+        self.contentType = contentType
+        self.sizeBytes = sizeBytes
+        self.category = category
     }
 }
 

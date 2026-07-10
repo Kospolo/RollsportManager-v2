@@ -1169,6 +1169,83 @@ export const regionalEventUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('RegionalEventUpdate');
 
+// ---------------------------------------------------------------------------
+// Modules batch 5 (migration 0012): gallery_items, documents — the two
+// PRO-gated modules (app.is_club_pro). The bytes live outside the DB; these
+// schemas carry only metadata + the opaque storage_key (see modules/media).
+// The upload itself is a separate multipart endpoint (POST /media/upload),
+// deliberately OUTSIDE this typed spec — like the webhooks (app.ts).
+// ---------------------------------------------------------------------------
+
+export const galleryKindSchema = z.enum(['photo', 'video']).openapi('GalleryKind');
+
+// gallery_items --------------------------------------------------------------
+export const galleryItemSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** Named album/gallery, or null for ungrouped items. */
+    album: z.string().nullable(),
+    title: z.string(),
+    kind: galleryKindSchema,
+    /** Opaque handle; fetch the bytes via GET /media/{storage_key}. */
+    storage_key: z.string(),
+    content_type: z.string(),
+    size_bytes: z.coerce.number().int(),
+    /** Optional poster/preview key (typically for videos). */
+    thumbnail_key: z.string().nullable(),
+    /** club_members.id of the (trainer) uploader. */
+    uploaded_by_member_id: uuid,
+    created_at: timestamp,
+  })
+  .openapi('GalleryItem');
+
+/**
+ * Create a gallery item AFTER the bytes were stored via POST /media/upload
+ * (which returns storage_key/content_type/size_bytes). The uploader member id
+ * is resolved server-side from the caller's claims — never trusted from input.
+ */
+export const galleryItemCreateSchema = z
+  .object({
+    club_id: uuid,
+    title: z.string().min(1),
+    kind: galleryKindSchema,
+    storage_key: z.string().min(1),
+    content_type: z.string().min(1),
+    size_bytes: z.number().int().nonnegative(),
+    album: z.string().min(1).optional(),
+    thumbnail_key: z.string().min(1).optional(),
+  })
+  .openapi('GalleryItemCreate');
+
+// documents ------------------------------------------------------------------
+export const documentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    title: z.string(),
+    category: z.string(),
+    storage_key: z.string(),
+    content_type: z.string(),
+    size_bytes: z.coerce.number().int(),
+    uploaded_by_member_id: uuid,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Document');
+
+export const documentCreateSchema = z
+  .object({
+    club_id: uuid,
+    title: z.string().min(1),
+    storage_key: z.string().min(1),
+    content_type: z.string().min(1),
+    size_bytes: z.number().int().nonnegative(),
+    /** Free-text bucket the App renders as a label/filter. */
+    category: z.string().min(1).default('allgemein'),
+  })
+  .openapi('DocumentCreate');
+
 export const productSchema = z
   .object({
     id: uuid,

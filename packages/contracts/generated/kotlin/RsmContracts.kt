@@ -158,6 +158,12 @@ enum class CheckinMethod {
 }
 
 @Serializable
+enum class GalleryKind {
+    @SerialName("photo") PHOTO,
+    @SerialName("video") VIDEO;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -1059,6 +1065,57 @@ data class RegionalEventUpdate(
     val location: String? = null,
     @SerialName("registration_url") val registrationUrl: String? = null,
     val description: String? = null
+)
+
+@Serializable
+data class GalleryItem(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val album: String?,
+    val title: String,
+    val kind: GalleryKind,
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("size_bytes") val sizeBytes: Long?,
+    @SerialName("thumbnail_key") val thumbnailKey: String?,
+    @SerialName("uploaded_by_member_id") val uploadedByMemberId: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class GalleryItemCreate(
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    val kind: GalleryKind,
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    val album: String? = null,
+    @SerialName("thumbnail_key") val thumbnailKey: String? = null
+)
+
+@Serializable
+data class Document(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    val category: String,
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("size_bytes") val sizeBytes: Long?,
+    @SerialName("uploaded_by_member_id") val uploadedByMemberId: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class DocumentCreate(
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    val category: String? = "allgemein"
 )
 
 @Serializable
