@@ -505,6 +505,186 @@ export class ApiClient {
   }
 
   /**
+   * List facilities of a club
+   * 
+   * `GET /facilities`
+   */
+  async getFacilities(query: { "club_id": string }, options?: RequestOptions): Promise<M.Facility[]> {
+    return this.request<M.Facility[]>("GET", "/facilities", { query, auth: true, options });
+  }
+
+  /**
+   * Create a facility (coaching staff, is_club_trainer)
+   * 
+   * `POST /facilities`
+   */
+  async postFacilities(body: M.FacilityCreate, options?: RequestOptions): Promise<M.Facility> {
+    return this.request<M.Facility>("POST", "/facilities", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a facility (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /facilities/{facilityId}`
+   */
+  async patchFacilitiesByFacilityId(facilityId: string, body: M.FacilityUpdate, options?: RequestOptions): Promise<M.Facility> {
+    return this.request<M.Facility>("PATCH", `/facilities/${encodeURIComponent(facilityId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a facility (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /facilities/{facilityId}`
+   */
+  async deleteFacilitiesByFacilityId(facilityId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/facilities/${encodeURIComponent(facilityId)}`, { auth: true, options });
+  }
+
+  /**
+   * List bookings of a club (optionally filtered by facility)
+   * 
+   * `GET /facility-bookings`
+   */
+  async getFacilityBookings(query: { "club_id": string; "facility_id"?: string }, options?: RequestOptions): Promise<M.FacilityBooking[]> {
+    return this.request<M.FacilityBooking[]>("GET", "/facility-bookings", { query, auth: true, options });
+  }
+
+  /**
+   * Create a booking (staff for anyone, or a member for themselves)
+   * 
+   * `POST /facility-bookings`
+   */
+  async postFacilityBookings(body: M.FacilityBookingCreate, options?: RequestOptions): Promise<M.FacilityBooking> {
+    return this.request<M.FacilityBooking>("POST", "/facility-bookings", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a booking (creator or coaching staff)
+   * 
+   * `PATCH /facility-bookings/{bookingId}`
+   */
+  async patchFacilityBookingsByBookingId(bookingId: string, body: M.FacilityBookingUpdate, options?: RequestOptions): Promise<M.FacilityBooking> {
+    return this.request<M.FacilityBooking>("PATCH", `/facility-bookings/${encodeURIComponent(bookingId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a booking (creator or coaching staff)
+   * 
+   * `DELETE /facility-bookings/{bookingId}`
+   */
+  async deleteFacilityBookingsByBookingId(bookingId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/facility-bookings/${encodeURIComponent(bookingId)}`, { auth: true, options });
+  }
+
+  /**
+   * List equipment of a club
+   * 
+   * `GET /equipment`
+   */
+  async getEquipment(query: { "club_id": string }, options?: RequestOptions): Promise<M.Equipment[]> {
+    return this.request<M.Equipment[]>("GET", "/equipment", { query, auth: true, options });
+  }
+
+  /**
+   * Create an equipment item (coaching staff, is_club_trainer)
+   * 
+   * `POST /equipment`
+   */
+  async postEquipment(body: M.EquipmentCreate, options?: RequestOptions): Promise<M.Equipment> {
+    return this.request<M.Equipment>("POST", "/equipment", { body, auth: true, options });
+  }
+
+  /**
+   * Edit an equipment item (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /equipment/{equipmentId}`
+   */
+  async patchEquipmentByEquipmentId(equipmentId: string, body: M.EquipmentUpdate, options?: RequestOptions): Promise<M.Equipment> {
+    return this.request<M.Equipment>("PATCH", `/equipment/${encodeURIComponent(equipmentId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an equipment item (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /equipment/{equipmentId}`
+   */
+  async deleteEquipmentByEquipmentId(equipmentId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/equipment/${encodeURIComponent(equipmentId)}`, { auth: true, options });
+  }
+
+  /**
+   * List reservations of a club (optionally filtered by equipment)
+   * 
+   * `GET /equipment-reservations`
+   */
+  async getEquipmentReservations(query: { "club_id": string; "equipment_id"?: string }, options?: RequestOptions): Promise<M.EquipmentReservation[]> {
+    return this.request<M.EquipmentReservation[]>("GET", "/equipment-reservations", { query, auth: true, options });
+  }
+
+  /**
+   * Create a reservation (staff for anyone, or a member for themselves)
+   * 
+   * `POST /equipment-reservations`
+   */
+  async postEquipmentReservations(body: M.EquipmentReservationCreate, options?: RequestOptions): Promise<M.EquipmentReservation> {
+    return this.request<M.EquipmentReservation>("POST", "/equipment-reservations", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a reservation (creator or coaching staff)
+   * 
+   * `PATCH /equipment-reservations/{reservationId}`
+   */
+  async patchEquipmentReservationsByReservationId(reservationId: string, body: M.EquipmentReservationUpdate, options?: RequestOptions): Promise<M.EquipmentReservation> {
+    return this.request<M.EquipmentReservation>("PATCH", `/equipment-reservations/${encodeURIComponent(reservationId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a reservation (creator or coaching staff)
+   * 
+   * `DELETE /equipment-reservations/{reservationId}`
+   */
+  async deleteEquipmentReservationsByReservationId(reservationId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/equipment-reservations/${encodeURIComponent(reservationId)}`, { auth: true, options });
+  }
+
+  /**
+   * List medals of a club (optionally filtered by member)
+   * 
+   * `GET /achievements`
+   */
+  async getAchievements(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.Achievement[]> {
+    return this.request<M.Achievement[]>("GET", "/achievements", { query, auth: true, options });
+  }
+
+  /**
+   * Award a medal (coaching staff, is_club_trainer)
+   * 
+   * `POST /achievements`
+   */
+  async postAchievements(body: M.AchievementCreate, options?: RequestOptions): Promise<M.Achievement> {
+    return this.request<M.Achievement>("POST", "/achievements", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a medal (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /achievements/{achievementId}`
+   */
+  async patchAchievementsByAchievementId(achievementId: string, body: M.AchievementUpdate, options?: RequestOptions): Promise<M.Achievement> {
+    return this.request<M.Achievement>("PATCH", `/achievements/${encodeURIComponent(achievementId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a medal (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /achievements/{achievementId}`
+   */
+  async deleteAchievementsByAchievementId(achievementId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/achievements/${encodeURIComponent(achievementId)}`, { auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * 
    * `GET /invoices`

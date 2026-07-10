@@ -127,6 +127,37 @@ public enum ExerciseCategory: String, Codable, CaseIterable, Sendable, Equatable
     case combination = "combination"
 }
 
+public enum FacilityKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case hall = "hall"
+    case room = "room"
+    case outdoor = "outdoor"
+    case other = "other"
+}
+
+public enum BookingStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case confirmed = "confirmed"
+    case pending = "pending"
+    case cancelled = "cancelled"
+}
+
+public enum EquipmentCondition: String, Codable, CaseIterable, Sendable, Equatable {
+    case good = "good"
+    case fair = "fair"
+    case defect = "defect"
+}
+
+public enum ReservationStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case active = "active"
+    case returned = "returned"
+    case cancelled = "cancelled"
+}
+
+public enum Medal: String, Codable, CaseIterable, Sendable, Equatable {
+    case gold = "gold"
+    case silver = "silver"
+    case bronze = "bronze"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -1814,6 +1845,646 @@ public struct ExerciseUpdate: Codable, Equatable, Sendable {
         self.videoUrl = videoUrl
         self.instructions = instructions
         self.durationSeconds = durationSeconds
+    }
+}
+
+public struct Facility: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var kind: FacilityKind
+    public var address: String?
+    public var capacity: Int?
+    public var notes: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case kind
+        case address
+        case capacity
+        case notes
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        kind: FacilityKind,
+        address: String? = nil,
+        capacity: Int? = nil,
+        notes: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.kind = kind
+        self.address = address
+        self.capacity = capacity
+        self.notes = notes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct FacilityCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var kind: FacilityKind?
+    public var address: String?
+    public var capacity: Int?
+    public var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case kind
+        case address
+        case capacity
+        case notes
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        kind: FacilityKind? = .hall,
+        address: String? = nil,
+        capacity: Int? = nil,
+        notes: String? = nil
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.kind = kind
+        self.address = address
+        self.capacity = capacity
+        self.notes = notes
+    }
+}
+
+public struct FacilityUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var kind: FacilityKind?
+    public var address: String?
+    public var capacity: Int?
+    public var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case kind
+        case address
+        case capacity
+        case notes
+    }
+
+    public init(
+        name: String? = nil,
+        kind: FacilityKind? = nil,
+        address: String? = nil,
+        capacity: Int? = nil,
+        notes: String? = nil
+    ) {
+        self.name = name
+        self.kind = kind
+        self.address = address
+        self.capacity = capacity
+        self.notes = notes
+    }
+}
+
+public struct FacilityBooking: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var facilityId: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var bookedByMemberId: String
+    /// Format: uuid
+    public var teamId: String?
+    public var title: String
+    public var startsAt: String
+    public var endsAt: String
+    public var status: BookingStatus
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case facilityId = "facility_id"
+        case clubId = "club_id"
+        case bookedByMemberId = "booked_by_member_id"
+        case teamId = "team_id"
+        case title
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        facilityId: String,
+        clubId: String,
+        bookedByMemberId: String,
+        teamId: String? = nil,
+        title: String,
+        startsAt: String,
+        endsAt: String,
+        status: BookingStatus,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.facilityId = facilityId
+        self.clubId = clubId
+        self.bookedByMemberId = bookedByMemberId
+        self.teamId = teamId
+        self.title = title
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct FacilityBookingCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var facilityId: String
+    /// Format: uuid
+    public var bookedByMemberId: String
+    /// Format: uuid
+    public var teamId: String?
+    public var title: String
+    /// Format: date-time
+    public var startsAt: String
+    /// Format: date-time
+    public var endsAt: String
+    public var status: BookingStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case facilityId = "facility_id"
+        case bookedByMemberId = "booked_by_member_id"
+        case teamId = "team_id"
+        case title
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case status
+    }
+
+    public init(
+        clubId: String,
+        facilityId: String,
+        bookedByMemberId: String,
+        teamId: String? = nil,
+        title: String,
+        startsAt: String,
+        endsAt: String,
+        status: BookingStatus? = .confirmed
+    ) {
+        self.clubId = clubId
+        self.facilityId = facilityId
+        self.bookedByMemberId = bookedByMemberId
+        self.teamId = teamId
+        self.title = title
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.status = status
+    }
+}
+
+public struct FacilityBookingUpdate: Codable, Equatable, Sendable {
+    public var title: String?
+    /// Format: uuid
+    public var teamId: String?
+    /// Format: date-time
+    public var startsAt: String?
+    /// Format: date-time
+    public var endsAt: String?
+    public var status: BookingStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case teamId = "team_id"
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case status
+    }
+
+    public init(
+        title: String? = nil,
+        teamId: String? = nil,
+        startsAt: String? = nil,
+        endsAt: String? = nil,
+        status: BookingStatus? = nil
+    ) {
+        self.title = title
+        self.teamId = teamId
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.status = status
+    }
+}
+
+public struct Equipment: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var category: String?
+    public var totalQuantity: Int?
+    public var availableQuantity: Int?
+    public var condition: EquipmentCondition
+    public var notes: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case category
+        case totalQuantity = "total_quantity"
+        case availableQuantity = "available_quantity"
+        case condition
+        case notes
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        category: String? = nil,
+        totalQuantity: Int? = nil,
+        availableQuantity: Int? = nil,
+        condition: EquipmentCondition,
+        notes: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.category = category
+        self.totalQuantity = totalQuantity
+        self.availableQuantity = availableQuantity
+        self.condition = condition
+        self.notes = notes
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct EquipmentCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var category: String?
+    public var totalQuantity: Int?
+    public var availableQuantity: Int?
+    public var condition: EquipmentCondition?
+    public var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case category
+        case totalQuantity = "total_quantity"
+        case availableQuantity = "available_quantity"
+        case condition
+        case notes
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        category: String? = nil,
+        totalQuantity: Int? = 1,
+        availableQuantity: Int? = nil,
+        condition: EquipmentCondition? = .good,
+        notes: String? = nil
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.category = category
+        self.totalQuantity = totalQuantity
+        self.availableQuantity = availableQuantity
+        self.condition = condition
+        self.notes = notes
+    }
+}
+
+public struct EquipmentUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var category: String?
+    public var totalQuantity: Int?
+    public var availableQuantity: Int?
+    public var condition: EquipmentCondition?
+    public var notes: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case category
+        case totalQuantity = "total_quantity"
+        case availableQuantity = "available_quantity"
+        case condition
+        case notes
+    }
+
+    public init(
+        name: String? = nil,
+        category: String? = nil,
+        totalQuantity: Int? = nil,
+        availableQuantity: Int? = nil,
+        condition: EquipmentCondition? = nil,
+        notes: String? = nil
+    ) {
+        self.name = name
+        self.category = category
+        self.totalQuantity = totalQuantity
+        self.availableQuantity = availableQuantity
+        self.condition = condition
+        self.notes = notes
+    }
+}
+
+public struct EquipmentReservation: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var equipmentId: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var reservedByMemberId: String
+    public var quantity: Int?
+    public var fromAt: String
+    public var toAt: String
+    public var status: ReservationStatus
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case equipmentId = "equipment_id"
+        case clubId = "club_id"
+        case reservedByMemberId = "reserved_by_member_id"
+        case quantity
+        case fromAt = "from_at"
+        case toAt = "to_at"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        equipmentId: String,
+        clubId: String,
+        reservedByMemberId: String,
+        quantity: Int? = nil,
+        fromAt: String,
+        toAt: String,
+        status: ReservationStatus,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.equipmentId = equipmentId
+        self.clubId = clubId
+        self.reservedByMemberId = reservedByMemberId
+        self.quantity = quantity
+        self.fromAt = fromAt
+        self.toAt = toAt
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct EquipmentReservationCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var equipmentId: String
+    /// Format: uuid
+    public var reservedByMemberId: String
+    public var quantity: Int?
+    /// Format: date-time
+    public var fromAt: String
+    /// Format: date-time
+    public var toAt: String
+    public var status: ReservationStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case equipmentId = "equipment_id"
+        case reservedByMemberId = "reserved_by_member_id"
+        case quantity
+        case fromAt = "from_at"
+        case toAt = "to_at"
+        case status
+    }
+
+    public init(
+        clubId: String,
+        equipmentId: String,
+        reservedByMemberId: String,
+        quantity: Int? = 1,
+        fromAt: String,
+        toAt: String,
+        status: ReservationStatus? = .active
+    ) {
+        self.clubId = clubId
+        self.equipmentId = equipmentId
+        self.reservedByMemberId = reservedByMemberId
+        self.quantity = quantity
+        self.fromAt = fromAt
+        self.toAt = toAt
+        self.status = status
+    }
+}
+
+public struct EquipmentReservationUpdate: Codable, Equatable, Sendable {
+    public var quantity: Int?
+    /// Format: date-time
+    public var fromAt: String?
+    /// Format: date-time
+    public var toAt: String?
+    public var status: ReservationStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case quantity
+        case fromAt = "from_at"
+        case toAt = "to_at"
+        case status
+    }
+
+    public init(
+        quantity: Int? = nil,
+        fromAt: String? = nil,
+        toAt: String? = nil,
+        status: ReservationStatus? = nil
+    ) {
+        self.quantity = quantity
+        self.fromAt = fromAt
+        self.toAt = toAt
+        self.status = status
+    }
+}
+
+public struct Achievement: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    public var title: String
+    public var competitionName: String?
+    public var placement: Int?
+    public var medal: Medal
+    public var achievedOn: String
+    public var note: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case title
+        case competitionName = "competition_name"
+        case placement
+        case medal
+        case achievedOn = "achieved_on"
+        case note
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        memberId: String,
+        title: String,
+        competitionName: String? = nil,
+        placement: Int? = nil,
+        medal: Medal,
+        achievedOn: String,
+        note: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.memberId = memberId
+        self.title = title
+        self.competitionName = competitionName
+        self.placement = placement
+        self.medal = medal
+        self.achievedOn = achievedOn
+        self.note = note
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct AchievementCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    public var title: String
+    public var competitionName: String?
+    public var placement: Int?
+    public var medal: Medal?
+    /// Format: date
+    public var achievedOn: String
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case title
+        case competitionName = "competition_name"
+        case placement
+        case medal
+        case achievedOn = "achieved_on"
+        case note
+    }
+
+    public init(
+        clubId: String,
+        memberId: String,
+        title: String,
+        competitionName: String? = nil,
+        placement: Int? = nil,
+        medal: Medal? = nil,
+        achievedOn: String,
+        note: String? = nil
+    ) {
+        self.clubId = clubId
+        self.memberId = memberId
+        self.title = title
+        self.competitionName = competitionName
+        self.placement = placement
+        self.medal = medal
+        self.achievedOn = achievedOn
+        self.note = note
+    }
+}
+
+public struct AchievementUpdate: Codable, Equatable, Sendable {
+    public var title: String?
+    public var competitionName: String?
+    public var placement: Int?
+    public var medal: Medal?
+    /// Format: date
+    public var achievedOn: String?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case competitionName = "competition_name"
+        case placement
+        case medal
+        case achievedOn = "achieved_on"
+        case note
+    }
+
+    public init(
+        title: String? = nil,
+        competitionName: String? = nil,
+        placement: Int? = nil,
+        medal: Medal? = nil,
+        achievedOn: String? = nil,
+        note: String? = nil
+    ) {
+        self.title = title
+        self.competitionName = competitionName
+        self.placement = placement
+        self.medal = medal
+        self.achievedOn = achievedOn
+        self.note = note
     }
 }
 

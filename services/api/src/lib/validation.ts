@@ -574,6 +574,233 @@ export const exerciseUpdateSchema = z
   .openapi('ExerciseUpdate');
 
 // ---------------------------------------------------------------------------
+// Modules batch 2 (migration 0009): facilities, facility_bookings, equipment,
+// equipment_reservations, achievements. Enum-like columns are TEXT + CHECK in
+// the DB; here they are z.enum so the wire contract stays typed.
+// ---------------------------------------------------------------------------
+
+export const facilityKindSchema = z
+  .enum(['hall', 'room', 'outdoor', 'other'])
+  .openapi('FacilityKind');
+export const bookingStatusSchema = z
+  .enum(['confirmed', 'pending', 'cancelled'])
+  .openapi('BookingStatus');
+export const equipmentConditionSchema = z
+  .enum(['good', 'fair', 'defect'])
+  .openapi('EquipmentCondition');
+export const reservationStatusSchema = z
+  .enum(['active', 'returned', 'cancelled'])
+  .openapi('ReservationStatus');
+export const medalSchema = z.enum(['gold', 'silver', 'bronze']).openapi('Medal');
+
+// facilities -----------------------------------------------------------------
+export const facilitySchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    kind: facilityKindSchema,
+    address: z.string().nullable(),
+    capacity: z.coerce.number().int().nullable(),
+    notes: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Facility');
+
+export const facilityCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    kind: facilityKindSchema.default('hall'),
+    address: z.string().optional(),
+    capacity: z.number().int().nonnegative().optional(),
+    notes: z.string().optional(),
+  })
+  .openapi('FacilityCreate');
+
+export const facilityUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    kind: facilityKindSchema.optional(),
+    address: z.string().nullable().optional(),
+    capacity: z.number().int().nonnegative().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('FacilityUpdate');
+
+// facility_bookings ----------------------------------------------------------
+export const facilityBookingSchema = z
+  .object({
+    id: uuid,
+    facility_id: uuid,
+    club_id: uuid,
+    /** club_members.id of the booker (self-service) or the team's coach. */
+    booked_by_member_id: uuid,
+    team_id: uuid.nullable(),
+    title: z.string(),
+    starts_at: timestamp,
+    ends_at: timestamp,
+    status: bookingStatusSchema,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('FacilityBooking');
+
+export const facilityBookingCreateSchema = z
+  .object({
+    club_id: uuid,
+    facility_id: uuid,
+    /** Own membership (self-service) or, for staff, any member of the club. */
+    booked_by_member_id: uuid,
+    team_id: uuid.optional(),
+    title: z.string().min(1),
+    starts_at: z.string().datetime({ offset: true }),
+    ends_at: z.string().datetime({ offset: true }),
+    status: bookingStatusSchema.default('confirmed'),
+  })
+  .refine((v) => new Date(v.ends_at) > new Date(v.starts_at), { message: 'ends_at must be after starts_at' })
+  .openapi('FacilityBookingCreate');
+
+export const facilityBookingUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    team_id: uuid.nullable().optional(),
+    starts_at: z.string().datetime({ offset: true }).optional(),
+    ends_at: z.string().datetime({ offset: true }).optional(),
+    status: bookingStatusSchema.optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('FacilityBookingUpdate');
+
+// equipment ------------------------------------------------------------------
+export const equipmentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    category: z.string().nullable(),
+    total_quantity: z.coerce.number().int(),
+    available_quantity: z.coerce.number().int(),
+    condition: equipmentConditionSchema,
+    notes: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Equipment');
+
+export const equipmentCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    category: z.string().optional(),
+    total_quantity: z.number().int().nonnegative().default(1),
+    available_quantity: z.number().int().nonnegative().optional(),
+    condition: equipmentConditionSchema.default('good'),
+    notes: z.string().optional(),
+  })
+  .refine((v) => v.available_quantity === undefined || v.available_quantity <= v.total_quantity, {
+    message: 'available_quantity must not exceed total_quantity',
+  })
+  .openapi('EquipmentCreate');
+
+export const equipmentUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    category: z.string().nullable().optional(),
+    total_quantity: z.number().int().nonnegative().optional(),
+    available_quantity: z.number().int().nonnegative().optional(),
+    condition: equipmentConditionSchema.optional(),
+    notes: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('EquipmentUpdate');
+
+// equipment_reservations -----------------------------------------------------
+export const equipmentReservationSchema = z
+  .object({
+    id: uuid,
+    equipment_id: uuid,
+    club_id: uuid,
+    /** club_members.id of the borrower (self-service) or a staff-created row. */
+    reserved_by_member_id: uuid,
+    quantity: z.coerce.number().int(),
+    from_at: timestamp,
+    to_at: timestamp,
+    status: reservationStatusSchema,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('EquipmentReservation');
+
+export const equipmentReservationCreateSchema = z
+  .object({
+    club_id: uuid,
+    equipment_id: uuid,
+    /** Own membership (self-service) or, for staff, any member of the club. */
+    reserved_by_member_id: uuid,
+    quantity: z.number().int().positive().default(1),
+    from_at: z.string().datetime({ offset: true }),
+    to_at: z.string().datetime({ offset: true }),
+    status: reservationStatusSchema.default('active'),
+  })
+  .refine((v) => new Date(v.to_at) > new Date(v.from_at), { message: 'to_at must be after from_at' })
+  .openapi('EquipmentReservationCreate');
+
+export const equipmentReservationUpdateSchema = z
+  .object({
+    quantity: z.number().int().positive().optional(),
+    from_at: z.string().datetime({ offset: true }).optional(),
+    to_at: z.string().datetime({ offset: true }).optional(),
+    status: reservationStatusSchema.optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('EquipmentReservationUpdate');
+
+// achievements ---------------------------------------------------------------
+export const achievementSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    title: z.string(),
+    competition_name: z.string().nullable(),
+    placement: z.coerce.number().int().nullable(),
+    medal: medalSchema.nullable(),
+    achieved_on: isoDate,
+    note: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Achievement');
+
+export const achievementCreateSchema = z
+  .object({
+    club_id: uuid,
+    member_id: uuid,
+    title: z.string().min(1),
+    competition_name: z.string().optional(),
+    placement: z.number().int().positive().optional(),
+    medal: medalSchema.optional(),
+    achieved_on: z.string().date(),
+    note: z.string().optional(),
+  })
+  .openapi('AchievementCreate');
+
+export const achievementUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    competition_name: z.string().nullable().optional(),
+    placement: z.number().int().positive().nullable().optional(),
+    medal: medalSchema.nullable().optional(),
+    achieved_on: z.string().date().optional(),
+    note: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('AchievementUpdate');
+
+// ---------------------------------------------------------------------------
 // Platform (super_admin) read models - cross-club, only for platform admins.
 // ---------------------------------------------------------------------------
 

@@ -102,6 +102,42 @@ enum class ExerciseCategory {
 }
 
 @Serializable
+enum class FacilityKind {
+    @SerialName("hall") HALL,
+    @SerialName("room") ROOM,
+    @SerialName("outdoor") OUTDOOR,
+    @SerialName("other") OTHER;
+}
+
+@Serializable
+enum class BookingStatus {
+    @SerialName("confirmed") CONFIRMED,
+    @SerialName("pending") PENDING,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class EquipmentCondition {
+    @SerialName("good") GOOD,
+    @SerialName("fair") FAIR,
+    @SerialName("defect") DEFECT;
+}
+
+@Serializable
+enum class ReservationStatus {
+    @SerialName("active") ACTIVE,
+    @SerialName("returned") RETURNED,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class Medal {
+    @SerialName("gold") GOLD,
+    @SerialName("silver") SILVER,
+    @SerialName("bronze") BRONZE;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -622,6 +658,179 @@ data class ExerciseUpdate(
     @SerialName("video_url") val videoUrl: String? = null,
     val instructions: String? = null,
     @SerialName("duration_seconds") val durationSeconds: Long? = null
+)
+
+@Serializable
+data class Facility(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val kind: FacilityKind,
+    val address: String?,
+    val capacity: Long?,
+    val notes: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class FacilityCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val kind: FacilityKind? = FacilityKind.HALL,
+    val address: String? = null,
+    val capacity: Long? = null,
+    val notes: String? = null
+)
+
+@Serializable
+data class FacilityUpdate(
+    val name: String? = null,
+    val kind: FacilityKind? = null,
+    val address: String? = null,
+    val capacity: Long? = null,
+    val notes: String? = null
+)
+
+@Serializable
+data class FacilityBooking(
+    val id: String,
+    @SerialName("facility_id") val facilityId: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("booked_by_member_id") val bookedByMemberId: String,
+    @SerialName("team_id") val teamId: String?,
+    val title: String,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    val status: BookingStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class FacilityBookingCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("facility_id") val facilityId: String,
+    @SerialName("booked_by_member_id") val bookedByMemberId: String,
+    @SerialName("team_id") val teamId: String? = null,
+    val title: String,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    val status: BookingStatus? = BookingStatus.CONFIRMED
+)
+
+@Serializable
+data class FacilityBookingUpdate(
+    val title: String? = null,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("ends_at") val endsAt: String? = null,
+    val status: BookingStatus? = null
+)
+
+@Serializable
+data class Equipment(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val category: String?,
+    @SerialName("total_quantity") val totalQuantity: Long?,
+    @SerialName("available_quantity") val availableQuantity: Long?,
+    val condition: EquipmentCondition,
+    val notes: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class EquipmentCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val category: String? = null,
+    @SerialName("total_quantity") val totalQuantity: Long? = 1L,
+    @SerialName("available_quantity") val availableQuantity: Long? = null,
+    val condition: EquipmentCondition? = EquipmentCondition.GOOD,
+    val notes: String? = null
+)
+
+@Serializable
+data class EquipmentUpdate(
+    val name: String? = null,
+    val category: String? = null,
+    @SerialName("total_quantity") val totalQuantity: Long? = null,
+    @SerialName("available_quantity") val availableQuantity: Long? = null,
+    val condition: EquipmentCondition? = null,
+    val notes: String? = null
+)
+
+@Serializable
+data class EquipmentReservation(
+    val id: String,
+    @SerialName("equipment_id") val equipmentId: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("reserved_by_member_id") val reservedByMemberId: String,
+    val quantity: Long?,
+    @SerialName("from_at") val fromAt: String,
+    @SerialName("to_at") val toAt: String,
+    val status: ReservationStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class EquipmentReservationCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("equipment_id") val equipmentId: String,
+    @SerialName("reserved_by_member_id") val reservedByMemberId: String,
+    val quantity: Long? = 1L,
+    @SerialName("from_at") val fromAt: String,
+    @SerialName("to_at") val toAt: String,
+    val status: ReservationStatus? = ReservationStatus.ACTIVE
+)
+
+@Serializable
+data class EquipmentReservationUpdate(
+    val quantity: Long? = null,
+    @SerialName("from_at") val fromAt: String? = null,
+    @SerialName("to_at") val toAt: String? = null,
+    val status: ReservationStatus? = null
+)
+
+@Serializable
+data class Achievement(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val title: String,
+    @SerialName("competition_name") val competitionName: String?,
+    val placement: Long?,
+    val medal: Medal,
+    @SerialName("achieved_on") val achievedOn: String,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class AchievementCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val title: String,
+    @SerialName("competition_name") val competitionName: String? = null,
+    val placement: Long? = null,
+    val medal: Medal? = null,
+    @SerialName("achieved_on") val achievedOn: String,
+    val note: String? = null
+)
+
+@Serializable
+data class AchievementUpdate(
+    val title: String? = null,
+    @SerialName("competition_name") val competitionName: String? = null,
+    val placement: Long? = null,
+    val medal: Medal? = null,
+    @SerialName("achieved_on") val achievedOn: String? = null,
+    val note: String? = null
 )
 
 @Serializable

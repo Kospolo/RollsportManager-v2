@@ -22,6 +22,11 @@ import { tasksRouter } from './routes/tasks.js';
 import { newsRouter } from './routes/news.js';
 import { notesRouter } from './routes/notes.js';
 import { exercisesRouter } from './routes/exercises.js';
+import { facilitiesRouter } from './routes/facilities.js';
+import { facilityBookingsRouter } from './routes/facility-bookings.js';
+import { equipmentRouter } from './routes/equipment.js';
+import { equipmentReservationsRouter } from './routes/equipment-reservations.js';
+import { achievementsRouter } from './routes/achievements.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { entitlementsRouter } from './routes/entitlements.js';
 import { productsRouter } from './modules/billing/products.js';
@@ -85,6 +90,11 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', newsRouter);
   app.route('/', notesRouter);
   app.route('/', exercisesRouter);
+  app.route('/', facilitiesRouter);
+  app.route('/', facilityBookingsRouter);
+  app.route('/', equipmentRouter);
+  app.route('/', equipmentReservationsRouter);
+  app.route('/', achievementsRouter);
   app.route('/', invoicesRouter);
   app.route('/', entitlementsRouter);
   app.route('/', productsRouter);
@@ -129,6 +139,9 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'routines', description: 'Küren: routines, markers, scores' },
     { name: 'competitions', description: 'Competitions incl. start list (read model)' },
     { name: 'tasks', description: 'Club to-dos (tick-off by staff or assignee)' },
+    { name: 'facilities', description: 'Halls & rooms incl. bookings (self-service or staff)' },
+    { name: 'equipment', description: 'Gear inventory incl. reservations (self-service or staff)' },
+    { name: 'achievements', description: 'Medals & competition results (read = member, award = staff)' },
     { name: 'invoices', description: 'Money ops (invoice numbers are service-mode only)' },
     { name: 'entitlements', description: 'License state - read-only for clients' },
     { name: 'products', description: 'Product catalog (single source of truth for pricing)' },

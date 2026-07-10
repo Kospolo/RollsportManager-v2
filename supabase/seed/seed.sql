@@ -542,4 +542,103 @@ values
    'Materialbestellung',
    'Neue Schleifsteine und zwei Paar Ersatzrollen bestellen. Angebot von Sportbedarf Schmid abwarten.');
 
+-- ----------------------------------------------------------------------------
+-- Facilities (modules batch 2) — 3 Hallen/Räume the club trains in
+-- ----------------------------------------------------------------------------
+insert into app.facilities (id, club_id, name, kind, address, capacity, notes)
+values
+  ('fac00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Ballei-Sporthalle', 'hall', 'Urbanstraße 12, 74172 Neckarsulm', 120,
+   'Wettkampftauglicher Boden, Musikanlage vorhanden.'),
+  ('fac00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'Pichterichhalle', 'hall', 'Pichterichstraße 5, 74172 Neckarsulm', 80,
+   'Für Anfänger- und Minigruppen, Dienstagnachmittag.'),
+  ('fac00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'Außenbahn Vereinsgelände', 'outdoor', 'Beethovenstraße, 74172 Neckarsulm', null,
+   'Nur bei trockenem Wetter, Sommertraining.');
+
+-- ----------------------------------------------------------------------------
+-- Facility bookings (modules batch 2) — 4 upcoming bookings, relative to today
+--   booked by coaching staff (m-01 Sandra, m-05 Anna-Lena) for their teams
+-- ----------------------------------------------------------------------------
+insert into app.facility_bookings
+  (id, facility_id, club_id, booked_by_member_id, team_id, title, starts_at, ends_at, status)
+values
+  ('b0c00000-0000-4000-8000-000000000001', 'fac00000-0000-4000-8000-000000000001',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000003', 'Training Kürgruppe Leistung',
+   (current_date + 2 + time '18:30')::timestamptz, (current_date + 2 + time '20:30')::timestamptz, 'confirmed'),
+  ('b0c00000-0000-4000-8000-000000000002', 'fac00000-0000-4000-8000-000000000002',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000005',
+   'b0000000-0000-4000-8000-000000000001', 'Training Minis & Anfänger',
+   (current_date + 4 + time '16:00')::timestamptz, (current_date + 4 + time '17:00')::timestamptz, 'confirmed'),
+  ('b0c00000-0000-4000-8000-000000000003', 'fac00000-0000-4000-8000-000000000001',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000002', 'Generalprobe Küren',
+   (current_date + 6 + time '18:00')::timestamptz, (current_date + 6 + time '20:30')::timestamptz, 'pending'),
+  ('b0c00000-0000-4000-8000-000000000004', 'fac00000-0000-4000-8000-000000000003',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000006',
+   null, 'Zusatztraining Außenbahn',
+   (current_date + 8 + time '17:00')::timestamptz, (current_date + 8 + time '18:30')::timestamptz, 'confirmed');
+
+-- ----------------------------------------------------------------------------
+-- Equipment (modules batch 2) — 4 gear items with quantities & condition
+-- ----------------------------------------------------------------------------
+insert into app.equipment
+  (id, club_id, name, category, total_quantity, available_quantity, condition, notes)
+values
+  ('e9000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Leih-Rollschuhe (Gr. 32–40)', 'Rollschuhe', 12, 8, 'good',
+   'Schnupperkurs-Bestand, gemischte Größen.'),
+  ('e9000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'Schoner-Sets (Knie/Ellbogen/Hand)', 'Schoner', 10, 10, 'fair',
+   'Für Anfänger, teils abgenutzt.'),
+  ('e9000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'Musikanlage mobil', 'Technik', 2, 1, 'good',
+   'Für Auswärts-Wettkämpfe, Akku prüfen.'),
+  ('e9000000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'Pylonen-Set (rot)', 'Training', 3, 3, 'defect',
+   'Ein Set mit Rissen, ersetzen.');
+
+-- ----------------------------------------------------------------------------
+-- Equipment reservations (modules batch 2) — 2 borrow records
+--   m-05 Anna-Lena (coach, self) borrows skates; m-09 Katrin (member, self)
+--   borrows the mobile PA. Reflected in available_quantity above.
+-- ----------------------------------------------------------------------------
+insert into app.equipment_reservations
+  (id, equipment_id, club_id, reserved_by_member_id, quantity, from_at, to_at, status)
+values
+  ('e9c00000-0000-4000-8000-000000000001', 'e9000000-0000-4000-8000-000000000001',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000005', 4,
+   (current_date + 4 + time '15:30')::timestamptz, (current_date + 4 + time '17:30')::timestamptz, 'active'),
+  ('e9c00000-0000-4000-8000-000000000002', 'e9000000-0000-4000-8000-000000000003',
+   'c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009', 1,
+   (current_date + 9 + time '07:00')::timestamptz, (current_date + 9 + time '20:00')::timestamptz, 'active');
+
+-- ----------------------------------------------------------------------------
+-- Achievements / medals (modules batch 2) — 6 results across members & medals
+--   Awarded to competition skaters; mix of gold/silver/bronze + placements.
+-- ----------------------------------------------------------------------------
+insert into app.achievements
+  (id, club_id, member_id, title, competition_name, placement, medal, achieved_on, note)
+values
+  ('ac000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000016', 'Jugend Kür A — 1. Platz',
+   'Kreispokal Heilbronn', 1, 'gold', current_date - 21, 'Persönliche Bestleistung mit „Feuervogel".'),
+  ('ac000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000018', 'Junioren Kür — 2. Platz',
+   'Kreispokal Heilbronn', 2, 'silver', current_date - 21, 'Saubere Pirouetten, kleiner Sturzabzug.'),
+  ('ac000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000017', 'Jugend Kür B — 3. Platz',
+   'Kreispokal Heilbronn', 3, 'bronze', current_date - 21, null),
+  ('ac000000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000023', 'Nachwuchspokal — 1. Platz',
+   'Kreispokal Heilbronn', 1, 'gold', current_date - 21, 'Souveräner Auftritt.'),
+  ('ac000000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000021', 'Paarlauf Nachwuchs — 2. Platz',
+   'Landesmeisterschaft 2025', 2, 'silver', current_date - 250, 'Mit Lukas Öhler im Paarlauf.'),
+  ('ac000000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000007', 'Teilnahmeurkunde Pflicht',
+   'Nachwuchssichtung Stuttgart', 5, null, current_date - 90, 'Erste Wettkampferfahrung, ohne Medaille.');
+
 commit;

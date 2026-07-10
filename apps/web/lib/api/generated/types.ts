@@ -442,6 +442,179 @@ export interface ExerciseUpdate {
   "duration_seconds"?: number | null;
 }
 
+export type FacilityKind = "hall" | "room" | "outdoor" | "other";
+export const FacilityKindValues: readonly FacilityKind[] = ["hall", "room", "outdoor", "other"] as const;
+
+export interface Facility {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "kind": FacilityKind;
+  "address": string | null;
+  "capacity": number | null;
+  "notes": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface FacilityCreate {
+  "club_id": string;
+  "name": string;
+  "kind"?: FacilityKind;
+  "address"?: string;
+  "capacity"?: number;
+  "notes"?: string;
+}
+
+export interface FacilityUpdate {
+  "name"?: string;
+  "kind"?: FacilityKind;
+  "address"?: string | null;
+  "capacity"?: number | null;
+  "notes"?: string | null;
+}
+
+export type BookingStatus = "confirmed" | "pending" | "cancelled";
+export const BookingStatusValues: readonly BookingStatus[] = ["confirmed", "pending", "cancelled"] as const;
+
+export interface FacilityBooking {
+  "id": string;
+  "facility_id": string;
+  "club_id": string;
+  "booked_by_member_id": string;
+  "team_id": string | null;
+  "title": string;
+  "starts_at": string;
+  "ends_at": string;
+  "status": BookingStatus;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface FacilityBookingCreate {
+  "club_id": string;
+  "facility_id": string;
+  "booked_by_member_id": string;
+  "team_id"?: string;
+  "title": string;
+  "starts_at": string;
+  "ends_at": string;
+  "status"?: BookingStatus;
+}
+
+export interface FacilityBookingUpdate {
+  "title"?: string;
+  "team_id"?: string | null;
+  "starts_at"?: string;
+  "ends_at"?: string;
+  "status"?: BookingStatus;
+}
+
+export type EquipmentCondition = "good" | "fair" | "defect";
+export const EquipmentConditionValues: readonly EquipmentCondition[] = ["good", "fair", "defect"] as const;
+
+export interface Equipment {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "category": string | null;
+  "total_quantity": number | null;
+  "available_quantity": number | null;
+  "condition": EquipmentCondition;
+  "notes": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface EquipmentCreate {
+  "club_id": string;
+  "name": string;
+  "category"?: string;
+  "total_quantity"?: number;
+  "available_quantity"?: number;
+  "condition"?: EquipmentCondition;
+  "notes"?: string;
+}
+
+export interface EquipmentUpdate {
+  "name"?: string;
+  "category"?: string | null;
+  "total_quantity"?: number;
+  "available_quantity"?: number;
+  "condition"?: EquipmentCondition;
+  "notes"?: string | null;
+}
+
+export type ReservationStatus = "active" | "returned" | "cancelled";
+export const ReservationStatusValues: readonly ReservationStatus[] = ["active", "returned", "cancelled"] as const;
+
+export interface EquipmentReservation {
+  "id": string;
+  "equipment_id": string;
+  "club_id": string;
+  "reserved_by_member_id": string;
+  "quantity": number | null;
+  "from_at": string;
+  "to_at": string;
+  "status": ReservationStatus;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface EquipmentReservationCreate {
+  "club_id": string;
+  "equipment_id": string;
+  "reserved_by_member_id": string;
+  "quantity"?: number;
+  "from_at": string;
+  "to_at": string;
+  "status"?: ReservationStatus;
+}
+
+export interface EquipmentReservationUpdate {
+  "quantity"?: number;
+  "from_at"?: string;
+  "to_at"?: string;
+  "status"?: ReservationStatus;
+}
+
+export type Medal = "gold" | "silver" | "bronze";
+export const MedalValues: readonly Medal[] = ["gold", "silver", "bronze"] as const;
+
+export interface Achievement {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "title": string;
+  "competition_name": string | null;
+  "placement": number | null;
+  "medal": Medal;
+  "achieved_on": string;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface AchievementCreate {
+  "club_id": string;
+  "member_id": string;
+  "title": string;
+  "competition_name"?: string;
+  "placement"?: number;
+  "medal"?: Medal;
+  "achieved_on": string;
+  "note"?: string;
+}
+
+export interface AchievementUpdate {
+  "title"?: string;
+  "competition_name"?: string | null;
+  "placement"?: number | null;
+  "medal"?: Medal;
+  "achieved_on"?: string;
+  "note"?: string | null;
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 
