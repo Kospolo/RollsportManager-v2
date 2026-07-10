@@ -3,7 +3,10 @@
 --
 -- Demo club "RSV Neckarsulm", kept 1:1 consistent with the web mock data in
 -- apps/web/lib/mock/ :
---   * 24 members (m-01…m-24), 3 teams, 5 guardianships (3 families)
+--   * 24 members (m-01…m-24) covering every club role — owner, admin,
+--     moderator (Petra Köhler, m-14), treasurer, coach, guest_coach, member —
+--     3 teams, 5 guardianships (3 families)
+--   * 1 PLATFORM admin (no club_members row; app_metadata.is_platform_admin)
 --   * 15 events relative to today (past trainings with attendance, upcoming
 --     trainings with RSVPs, the Bezirksmeisterschaft in 9 days)
 --   * 6 routines (Küren) with audio media assets, markers and score history
@@ -68,6 +71,18 @@ insert into app.profiles (id, display_name) values
   ('90000000-0000-4000-8000-000000000012', 'Stefanie Müller'),
   ('90000000-0000-4000-8000-000000000014', 'Petra Köhler');
 
+-- Platform administrator ("super_admin" at PLATFORM level, Referenz 1.4). This
+-- is NOT a club role: the person has NO club_members row. Identity is carried
+-- by app_metadata.is_platform_admin in the JWT (GoTrue emits raw_app_meta_data
+-- into the access token) and read server-side by app.is_platform_admin().
+insert into auth.users (id, email, raw_app_meta_data) values
+  ('90000000-0000-4000-8000-000000000090', 'platform.admin@rollsportmanager.app',
+   '{"is_platform_admin": true}'::jsonb)
+on conflict (id) do nothing;
+
+insert into app.profiles (id, display_name) values
+  ('90000000-0000-4000-8000-000000000090', 'RSM Plattform-Admin');
+
 -- ----------------------------------------------------------------------------
 -- Club
 -- ----------------------------------------------------------------------------
@@ -97,7 +112,7 @@ values
   ('a0000000-0000-4000-8000-000000000012', 'c1ab0000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000012', 'Stefanie',  'Müller',    'stefanie.mueller@example.org',  null,         'member',      'active',  '2020-01-15', null),
   -- family Köhler
   ('a0000000-0000-4000-8000-000000000013', 'c1ab0000-0000-4000-8000-000000000001', null,                                   'Finn',      'Köhler',    null,                            '2013-09-08', 'member',      'active',  '2021-02-01', null),
-  ('a0000000-0000-4000-8000-000000000014', 'c1ab0000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000014', 'Petra',     'Köhler',    'petra.koehler@example.org',     null,         'member',      'active',  '2021-02-01', null),
+  ('a0000000-0000-4000-8000-000000000014', 'c1ab0000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000014', 'Petra',     'Köhler',    'petra.koehler@example.org',     null,         'moderator',   'active',  '2021-02-01', null),
   -- skaters
   ('a0000000-0000-4000-8000-000000000015', 'c1ab0000-0000-4000-8000-000000000001', null, 'Leonie',    'Schröder', null, '2012-05-30', 'member', 'active',  '2019-09-01', null),
   ('a0000000-0000-4000-8000-000000000016', 'c1ab0000-0000-4000-8000-000000000001', null, 'Maja',      'Weiß',     null, '2011-01-22', 'member', 'active',  '2018-09-01', null),
