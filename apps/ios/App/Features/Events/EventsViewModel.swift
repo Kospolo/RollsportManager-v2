@@ -100,10 +100,28 @@ final class EventsViewModel: ObservableObject {
         }
     }
 
+    /// Vereins-Teams (für die Team-Auswahl im „Neuer Termin“-Sheet),
+    /// alphabetisch — leer, wenn die Rolle keine Teams lesen darf.
+    var teams: [Team] {
+        teamsById.values.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
+    }
+
     /// Termin-Update aus dem Detail-Sheet (z. B. neue RSVP) in die Liste mergen.
     func apply(updatedEvent: Event) {
         guard let index = events.firstIndex(where: { $0.id == updatedEvent.id }) else { return }
         events[index] = updatedEvent
+    }
+
+    /// Neu angelegten Termin (mit echter ID) in die Liste einfügen — die
+    /// `sections` leiten sich neu ab. Gleiche ID ersetzt statt zu doppeln.
+    func insert(createdEvent event: Event) {
+        if let index = events.firstIndex(where: { $0.id == event.id }) {
+            events[index] = event
+        } else {
+            events.append(event)
+        }
     }
 
     // MARK: - Helfer

@@ -9,6 +9,7 @@ struct EventsRootView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = EventsViewModel()
     @State private var selection: EventSelection?
+    @State private var isCreatingEvent = false
 
     var body: some View {
         Group {
@@ -24,7 +25,31 @@ struct EventsRootView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("events.title"))
         .navigationBarTitleDisplayMode(.large)
-        .task { await model.loadIfNeeded(api: session.api, clubId: session.clubId) }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isCreatingEvent = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .tint(Theme.Colors.brand)
+                .accessibilityLabel(Text("newEvent.a11y.open"))
+            }
+        }
+        .task {
+            await model.loadIfNeeded(api: session.api, clubId: session.clubId)
+#if DEBUG
+            applyEventsDevHooks()
+#endif
+        }
+        .sheet(isPresented: $isCreatingEvent) {
+            NewEventSheet(
+                api: session.api,
+                clubId: session.clubId,
+                teams: model.teams,
+                onCreated: { model.insert(createdEvent: $0) }
+            )
+        }
         .sheet(item: $selection) { selected in
             EventDetailSheet(
                 event: latestEvent(for: selected),
@@ -43,6 +68,22 @@ struct EventsRootView: View {
             Text(verbatim: model.refreshErrorMessage ?? "")
         }
     }
+
+#if DEBUG
+    /// NUR DEBUG/Smoke-Test: setzt nach dem Laden optional den Filter
+    /// (`-devEventFilter competition`) und öffnet das „Neuer Termin“-Sheet
+    /// (`-devOpenNewEvent YES`). Ohne die Flags passiert nichts.
+    private func applyEventsDevHooks() {
+        let defaults = UserDefaults.standard
+        if let rawFilter = defaults.string(forKey: "devEventFilter"),
+           let parsed = EventsFilter(rawValue: rawFilter) {
+            model.filter = parsed
+        }
+        if defaults.bool(forKey: "devOpenNewEvent") {
+            isCreatingEvent = true
+        }
+    }
+#endif
 
     // MARK: - Zustände
 

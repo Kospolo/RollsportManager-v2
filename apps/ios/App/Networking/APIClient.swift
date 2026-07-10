@@ -29,6 +29,20 @@ enum APIError: Error, LocalizedError {
             return "Antwort nicht lesbar: \(error.localizedDescription)"
         }
     }
+
+    /// `true`, wenn der Server ein RFC-7807-`Problem` mit HTTP 403 geliefert hat
+    /// (fehlende Berechtigung, z. B. Rolle `member`/`guest` legt keinen Termin
+    /// an). Screens zeigen dann eine verständliche „Keine Berechtigung“-Meldung
+    /// statt der technischen Fehlerbeschreibung.
+    var isForbidden: Bool {
+        if case .problem(let problem) = self { return problem.status == 403 }
+        return false
+    }
+}
+
+extension Error {
+    /// Bequemer 403-Check auch auf `any Error` (Aufrufer müssen nicht casten).
+    var isForbiddenAPIError: Bool { (self as? APIError)?.isForbidden ?? false }
 }
 
 /// Schlanker URLSession-Client (async/await) für den lokalen Dev-Stack.

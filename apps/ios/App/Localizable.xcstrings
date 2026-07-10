@@ -1,6 +1,174 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "marker.add %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Markierung bei %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add marker at %@" } }
+      }
+    },
+    "marker.a11y.add" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Markierung an aktueller Position hinzufügen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add marker at current position" } }
+      }
+    },
+    "marker.defaultLabel" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neue Markierung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New marker" } }
+      }
+    },
+    "marker.error.forbidden" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Berechtigung, Markierungen zu setzen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You don’t have permission to add markers." } }
+      }
+    },
+    "routines.common.ok" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "newEvent.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neuer Eintrag" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New entry" } }
+      }
+    },
+    "newEvent.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neuer Termin" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New event" } }
+      }
+    },
+    "newEvent.field.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Titel" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Title" } }
+      }
+    },
+    "newEvent.field.title.placeholder" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "z. B. Training Leistungsgruppe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "e.g. Squad training" } }
+      }
+    },
+    "newEvent.field.type" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Art" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Type" } }
+      }
+    },
+    "newEvent.field.date" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Datum" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Date" } }
+      }
+    },
+    "newEvent.field.start" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beginn" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start" } }
+      }
+    },
+    "newEvent.field.end" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ende" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "End" } }
+      }
+    },
+    "newEvent.field.location" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ort" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Location" } }
+      }
+    },
+    "newEvent.field.location.placeholder" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "z. B. Rollsporthalle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "e.g. Main rink" } }
+      }
+    },
+    "newEvent.field.teams" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Teams" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Teams" } }
+      }
+    },
+    "newEvent.field.teams.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mindestens ein Team auswählen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select at least one team." } }
+      }
+    },
+    "newEvent.field.note" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Notiz" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note" } }
+      }
+    },
+    "newEvent.field.note.placeholder" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Optionaler Hinweis für alle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Optional note for everyone" } }
+      }
+    },
+    "newEvent.error.titleRequired" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bitte einen Titel eingeben." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please enter a title." } }
+      }
+    },
+    "newEvent.error.locationRequired" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bitte einen Ort eingeben." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please enter a location." } }
+      }
+    },
+    "newEvent.error.endBeforeStart" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Das Ende muss nach dem Beginn liegen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The end must be after the start." } }
+      }
+    },
+    "newEvent.error.teamsRequired" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bitte mindestens ein Team auswählen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Please select at least one team." } }
+      }
+    },
+    "newEvent.error.forbidden" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Berechtigung, Termine anzulegen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You don’t have permission to create events." } }
+      }
+    },
+    "newEvent.submit" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create" } }
+      }
+    },
+    "newEvent.cancel" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abbrechen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } }
+      }
+    },
+    "newEvent.a11y.open" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neuen Termin anlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create new event" } }
+      }
+    },
+    "newEvent.a11y.submit" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termin anlegen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Create event" } }
+      }
+    },
     "common.logout" : {
       "localizations" : {
         "de" : { "stringUnit" : { "state" : "translated", "value" : "Abmelden" } },

@@ -60,6 +60,14 @@ extension APIClient {
         return try await get("/events", query: query)
     }
 
+    /// POST /events — neuen Termin anlegen (Coach und höher; `member`/`guest`
+    /// bekommen ein RFC-7807-`Problem` mit `status == 403`). `starts_at`/
+    /// `ends_at` müssen volle ISO-8601-`date-time`-Strings sein (Web postet
+    /// dasselbe und erhält 201). Antwort ist der erzeugte `Event` inkl. ID.
+    func createEvent(_ create: EventCreate) async throws -> Event {
+        try await post("/events", body: create)
+    }
+
     func putRsvp(eventId: String, _ upsert: EventRsvpUpsert) async throws -> EventRsvp {
         try await put("/events/\(eventId)/rsvp", body: upsert)
     }
@@ -102,6 +110,17 @@ extension APIClient {
 
     func routineMarkers(routineId: String) async throws -> [RoutineMarker] {
         try await get("/routines/\(routineId)/markers")
+    }
+
+    /// POST /routines/{id}/markers — Zeitmarke an einer Abspielposition setzen
+    /// (Coach und höher; sonst `Problem` mit `status == 403`). `time_ms` ist
+    /// die Position in Millisekunden. Antwort ist der erzeugte `RoutineMarker`
+    /// inkl. ID (für den optimistischen Einschub in die Marker-Liste).
+    func addRoutineMarker(
+        routineId: String,
+        _ create: RoutineMarkerCreate
+    ) async throws -> RoutineMarker {
+        try await post("/routines/\(routineId)/markers", body: create)
     }
 
     func routineScores(routineId: String) async throws -> [RoutineScore] {

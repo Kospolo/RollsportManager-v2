@@ -24,6 +24,7 @@ struct RoutineDetailView: View {
     }
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                 header
@@ -31,6 +32,7 @@ struct RoutineDetailView: View {
 
                 if hasPlayableMusic {
                     RoutinePlayerCard(routine: routine, playback: playback)
+                    addMarkerButton
                 } else {
                     RSMCard {
                         RSMEmptyState(
@@ -42,6 +44,7 @@ struct RoutineDetailView: View {
                 }
 
                 detailSections
+                    .id("routine-markers")
                 RoutineNotesView(routineId: routine.id)
             }
             .padding(Theme.Spacing.s5)
@@ -55,8 +58,75 @@ struct RoutineDetailView: View {
                 routineId: routine.id,
                 clubId: session.clubId
             )
+#if DEBUG
+            // NUR DEBUG/Smoke-Test: `-devAutoAddMarker YES` setzt eine
+            // Zeitmarke über denselben echten Pfad wie der Button
+            // (POST /routines/{id}/markers) an einer festen Demo-Position.
+            if UserDefaults.standard.bool(forKey: "devAutoAddMarker") {
+                await viewModel.addMarker(
+                    api: session.api,
+                    routineId: routine.id,
+                    atMs: 53400
+                )
+                // Zeitmarken-Liste in den sichtbaren Bereich holen, damit ein
+                // Smoke-Screenshot den neuen Marker zeigt (nur DEBUG).
+                try? await _Concurrency.Task.sleep(nanoseconds: 300_000_000)
+                withAnimation { proxy.scrollTo("routine-markers", anchor: .top) }
+            }
+#endif
         }
         .onDisappear { playback.stop() }
+        .alert("routines.detail.error.title", isPresented: markerErrorBinding) {
+            Button("routines.common.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: viewModel.markerError ?? "")
+        }
+        }
+    }
+
+    // MARK: - Markierung an aktueller Position setzen
+
+    /// „Markierung hinzufügen“ an der Playhead-Position (`playback.posMs`).
+    /// Nur sichtbar, wenn die Marker-Liste geladen ist (dort landet der neue
+    /// Marker optimistisch). Während des POST: disabled + Spinner.
+    @ViewBuilder private var addMarkerButton: some View {
+        if case .loaded = viewModel.state {
+            Button {
+                _Concurrency.Task {
+                    await viewModel.addMarker(
+                        api: session.api,
+                        routineId: routine.id,
+                        atMs: playback.posMs
+                    )
+                }
+            } label: {
+                HStack(spacing: Theme.Spacing.s2) {
+                    if viewModel.isAddingMarker {
+                        ProgressView().tint(Theme.Colors.honeyDeep)
+                    } else {
+                        Image(systemName: "mappin.and.ellipse")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    Text("marker.add \(RoutineFormat.mmss(playback.posMs))")
+                        .font(Theme.Fonts.body(size: 13, weight: .heavy))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(Theme.Colors.honeyDeep)
+                .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
+                .background(Capsule().fill(Theme.Colors.honeySoft))
+                .overlay(Capsule().stroke(Theme.Colors.honeyDeep.opacity(0.3), lineWidth: 1))
+            }
+            .buttonStyle(RSMPressableButtonStyle())
+            .disabled(viewModel.isAddingMarker)
+            .accessibilityLabel(Text("marker.a11y.add"))
+        }
+    }
+
+    private var markerErrorBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.markerError != nil },
+            set: { if !$0 { viewModel.markerError = nil } }
+        )
     }
 
     // MARK: - Kopf: Mensch zuerst, dann Kür
