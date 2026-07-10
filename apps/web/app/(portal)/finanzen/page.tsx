@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/shell/PlaceholderPage";
+import { FinanceClient } from "./FinanceClient";
 
 export const metadata: Metadata = { title: "Finanzen" };
 
+/**
+ * Beiträge & Finanzen — Admin-Screen (Seriositätszone, Mockup Screen 3).
+ * Reine Mock-Daten aus lib/mock, alle Interaktionen laufen lokal im Client.
+ */
 export default function FinancePage() {
-  return <PlaceholderPage titleKey="navFinance" subKey="pageFinanceSub" icon="finance" />;
+  return <FinanceClient />;
 }

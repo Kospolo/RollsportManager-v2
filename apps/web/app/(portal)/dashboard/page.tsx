@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/shell/PlaceholderPage";
+import { DashboardClient } from "./_components/DashboardClient";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
+/**
+ * Trainer-Dashboard — Startseite des Portals (app/page.tsx leitet
+ * bereits per redirect auf /dashboard). Daten: ausschließlich lib/mock.
+ */
 export default function DashboardPage() {
-  return (
-    <PlaceholderPage titleKey="navDashboard" subKey="pageDashboardSub" icon="dashboard" showCta={false} />
-  );
+  return <DashboardClient />;
 }

@@ -1,0 +1,266 @@
+import type { Dict } from "@/lib/i18n";
+import type { MemberRole } from "@/lib/types";
+
+/**
+ * Kolokalisiertes Dictionary für den Mitglieder-Bereich (Liste, Detail,
+ * Einladung). Regel: JEDER String in beiden Sprachen, deutsche Strings
+ * mit echten Umlauten (ä/ö/ü/ß).
+ */
+export const mitgliederDict = {
+  de: {
+    title: "Mitglieder",
+    sub: "Alle Menschen im Verein — vom Vorstand bis zu den Minis",
+    invite: "Mitglied einladen",
+
+    searchLabel: "Nach Name suchen",
+    searchPlaceholder: "z. B. Grünewald …",
+    filterLabel: "Mitglieder nach Rolle filtern",
+    fAll: "Alle",
+    fBoard: "Vorstand",
+    fTreasurer: "Kassenwart",
+    fCoach: "Trainer",
+    fMember: "Mitglieder",
+    fGuest: "Gasttrainer",
+
+    listEyebrow: "Übersicht",
+    listTitle: "Alle im Verein",
+    tableCaption: "Mitgliederliste des RSV Neckarsulm",
+    colMember: "Mitglied",
+    colTeams: "Team(s)",
+    colRole: "Rolle",
+    colDues: "Beitragsstatus",
+    colJoined: "Beitritt",
+    colProfile: "Profil öffnen",
+    bornYear: "Jahrgang {year}",
+    openProfile: "Profil öffnen: {name}",
+    shownOf: "{shown} von {total} Mitgliedern angezeigt",
+    rowHint: "Klick auf den Namen öffnet das Profil.",
+    emptyTitle: "Niemand gefunden",
+    emptyBody: "Suche und Filter liefern gerade keine Treffer — probiere einen anderen Namen oder setze den Filter zurück.",
+    emptyReset: "Filter zurücksetzen",
+
+    roleOwner: "Vorstand",
+    roleAdmin: "Verwaltung",
+    roleTreasurer: "Kassenwart",
+    roleCoach: "Trainer:in",
+    roleMember: "Mitglied",
+    roleGuest: "Gasttrainer",
+    guestUntil: "befristet bis {date}",
+
+    duesPaid: "Bezahlt",
+    duesExempt: "Befreit",
+    duesCancelled: "Storniert",
+
+    statusActive: "Aktiv",
+    statusPending: "Ausstehend",
+    statusInactive: "Inaktiv",
+
+    invEyebrow: "Einladung",
+    invTitle: "Mitglied einladen",
+    invEmail: "E-Mail-Adresse",
+    invEmailPlaceholder: "name@beispiel.de",
+    invEmailHint: "An diese Adresse geht der Einladungs-Link.",
+    invEmailError: "Bitte eine gültige E-Mail-Adresse angeben.",
+    invRole: "Rolle im Verein",
+    invMessage: "Persönliche Nachricht (optional)",
+    invMessagePlaceholder: "Schön, dass du dabei bist! Über das Portal siehst du Termine, Beiträge und Küren …",
+    invHint: "Die Einladung enthält einen Link zum Vereinsportal und ist 14 Tage gültig.",
+    invCancel: "Abbrechen",
+    invSend: "Einladung senden",
+    invToast: "Einladung an {email} versendet — Demo",
+
+    breadcrumb: "Brotkrumen-Navigation",
+    backCrumb: "Mitglieder",
+    metaJoined: "dabei seit {date}",
+    noTeam: "kein Team",
+
+    masterEyebrow: "Stammdaten",
+    masterTitle: "Über {name}",
+    lblEmail: "E-Mail",
+    noEmail: "keine hinterlegt",
+    lblBirth: "Geburtsdatum",
+    ageYears: "{age} Jahre",
+    lblJoined: "Beitritt",
+    lblTeams: "Teams",
+    lblStatus: "Status",
+    lblAccess: "Zugang",
+    roleSelect: "Rolle ändern",
+    roleHint: "Demo: Die Änderung wird nur lokal gespeichert.",
+    roleToast: "Rolle geändert zu „{role}“ — Demo",
+
+    famEyebrow: "Familie",
+    famTitle: "Familien-Verknüpfungen",
+    famGuardians: "Erziehungsberechtigt",
+    famChildren: "Kinder",
+    famRelParent: "Elternteil",
+    famRelGrandparent: "Großeltern",
+    famRelOther: "Bezugsperson",
+    famEmpty: "Keine Familien-Verknüpfungen hinterlegt.",
+    famEmptyHint: "Eltern und Kinder lassen sich in der Verwaltung verknüpfen — Beiträge laufen dann gebündelt über die Familie.",
+
+    duesEyebrow: "Beiträge",
+    duesTitle: "Beitrags-Historie",
+    duesCaption: "Rechnungen von {name}",
+    colInvoice: "Rechnung",
+    colDue: "Fällig",
+    colStatus: "Status",
+    colAmount: "Betrag",
+    duesPaidOn: "bezahlt {date}",
+    duesCount: "{n} Rechnungen",
+    duesOpenSum: "Offen: {sum}",
+    duesNone: "Noch keine Rechnungen vorhanden.",
+    duesViaGuardian: "Beiträge dieser Familie laufen über {name} —",
+    duesViaGuardianLink: "Profil öffnen",
+
+    attEyebrow: "Anwesenheit",
+    attTitle: "Trainingsbeteiligung",
+    attOf: "{present} von {total} Einheiten anwesend",
+    attQuoteLabel: "Anwesenheitsquote: {present} von {total} Trainingseinheiten",
+    attTrend: "Verlauf über die letzten {n} Einheiten",
+    attSparkLabel: "Anwesenheitsverlauf in Prozent: {values}",
+    attNoTeam: "Kein Team zugewiesen — es liegen keine Trainingsdaten vor.",
+    attDemo: "Demo-Daten aus dem Mock-Verein",
+
+    notFoundTitle: "Mitglied nicht gefunden",
+    notFoundBody: "Unter dieser Adresse gibt es kein Mitglied — vielleicht wurde der Link falsch kopiert oder das Profil entfernt.",
+    notFoundBack: "Zur Mitgliederliste",
+  },
+  en: {
+    title: "Members",
+    sub: "All the people in your club — from the board to the minis",
+    invite: "Invite member",
+
+    searchLabel: "Search by name",
+    searchPlaceholder: "e.g. Grünewald …",
+    filterLabel: "Filter members by role",
+    fAll: "All",
+    fBoard: "Board",
+    fTreasurer: "Treasurer",
+    fCoach: "Coaches",
+    fMember: "Members",
+    fGuest: "Guest coaches",
+
+    listEyebrow: "Overview",
+    listTitle: "Everyone in the club",
+    tableCaption: "Member list of RSV Neckarsulm",
+    colMember: "Member",
+    colTeams: "Team(s)",
+    colRole: "Role",
+    colDues: "Fee status",
+    colJoined: "Joined",
+    colProfile: "Open profile",
+    bornYear: "Born {year}",
+    openProfile: "Open profile: {name}",
+    shownOf: "{shown} of {total} members shown",
+    rowHint: "Click a name to open the profile.",
+    emptyTitle: "Nobody found",
+    emptyBody: "Search and filter return no matches right now — try another name or reset the filter.",
+    emptyReset: "Reset filters",
+
+    roleOwner: "Board",
+    roleAdmin: "Admin",
+    roleTreasurer: "Treasurer",
+    roleCoach: "Coach",
+    roleMember: "Member",
+    roleGuest: "Guest coach",
+    guestUntil: "limited until {date}",
+
+    duesPaid: "Paid",
+    duesExempt: "Exempt",
+    duesCancelled: "Cancelled",
+
+    statusActive: "Active",
+    statusPending: "Pending",
+    statusInactive: "Inactive",
+
+    invEyebrow: "Invitation",
+    invTitle: "Invite member",
+    invEmail: "Email address",
+    invEmailPlaceholder: "name@example.com",
+    invEmailHint: "The invitation link will be sent to this address.",
+    invEmailError: "Please enter a valid email address.",
+    invRole: "Role in the club",
+    invMessage: "Personal message (optional)",
+    invMessagePlaceholder: "Great to have you! The portal shows events, fees and routines …",
+    invHint: "The invitation contains a link to the club portal and is valid for 14 days.",
+    invCancel: "Cancel",
+    invSend: "Send invitation",
+    invToast: "Invitation sent to {email} — demo",
+
+    breadcrumb: "Breadcrumb navigation",
+    backCrumb: "Members",
+    metaJoined: "member since {date}",
+    noTeam: "no team",
+
+    masterEyebrow: "Master data",
+    masterTitle: "About {name}",
+    lblEmail: "Email",
+    noEmail: "none on file",
+    lblBirth: "Date of birth",
+    ageYears: "{age} years",
+    lblJoined: "Joined",
+    lblTeams: "Teams",
+    lblStatus: "Status",
+    lblAccess: "Access",
+    roleSelect: "Change role",
+    roleHint: "Demo: the change is only stored locally.",
+    roleToast: "Role changed to “{role}” — demo",
+
+    famEyebrow: "Family",
+    famTitle: "Family links",
+    famGuardians: "Guardians",
+    famChildren: "Children",
+    famRelParent: "Parent",
+    famRelGrandparent: "Grandparent",
+    famRelOther: "Caregiver",
+    famEmpty: "No family links on file.",
+    famEmptyHint: "Parents and children can be linked in administration — fees are then bundled per family.",
+
+    duesEyebrow: "Fees",
+    duesTitle: "Fee history",
+    duesCaption: "Invoices of {name}",
+    colInvoice: "Invoice",
+    colDue: "Due",
+    colStatus: "Status",
+    colAmount: "Amount",
+    duesPaidOn: "paid {date}",
+    duesCount: "{n} invoices",
+    duesOpenSum: "Open: {sum}",
+    duesNone: "No invoices yet.",
+    duesViaGuardian: "This family’s fees are billed via {name} —",
+    duesViaGuardianLink: "open profile",
+
+    attEyebrow: "Attendance",
+    attTitle: "Training attendance",
+    attOf: "{present} of {total} sessions attended",
+    attQuoteLabel: "Attendance rate: {present} of {total} training sessions",
+    attTrend: "Trend across the last {n} sessions",
+    attSparkLabel: "Attendance trend in percent: {values}",
+    attNoTeam: "No team assigned — there is no training data.",
+    attDemo: "Demo data from the mock club",
+
+    notFoundTitle: "Member not found",
+    notFoundBody: "There is no member at this address — the link may have been copied incorrectly or the profile removed.",
+    notFoundBack: "Back to member list",
+  },
+} satisfies Dict;
+
+export type MitgliederKey = keyof (typeof mitgliederDict)["de"];
+
+/** Rolle → Dictionary-Key der Rollen-Beschriftung. */
+export function roleKey(role: MemberRole): MitgliederKey {
+  switch (role) {
+    case "owner":
+      return "roleOwner";
+    case "admin":
+      return "roleAdmin";
+    case "treasurer":
+      return "roleTreasurer";
+    case "coach":
+      return "roleCoach";
+    case "guest_coach":
+      return "roleGuest";
+    default:
+      return "roleMember";
+  }
+}

@@ -1,0 +1,147 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { Badge, type BadgeTone } from "@/components/ui/Badge";
+import { Card, CardFooter, CardHeader } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
+import { Icon } from "@/components/shell/icons";
+import { useLocale, useT } from "@/lib/i18n";
+import { dayDiff, relativeDays } from "@/lib/format";
+import { competitions, fullName, memberById, tasks } from "@/lib/mock";
+import type { Task } from "@/lib/types";
+import { dashboardDict } from "../i18n";
+
+/**
+ * Aufgabenliste: abhakbar (lokaler State), erledigt = durchgestrichen,
+ * Fälligkeits-Chip immer Farbe + Wort. Erledigen zeigt einen Toast
+ * mit „Rückgängig“ — nie stilles Handeln.
+ */
+
+const competitionNameById = new Map(competitions.map((c) => [c.id, c.name]));
+
+function taskMeta(task: Task): string {
+  const assignee = task.assigneeId ? memberById(task.assigneeId) : undefined;
+  return [assignee ? fullName(assignee) : undefined, task.competitionId ? competitionNameById.get(task.competitionId) : undefined]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+export function TasksCard() {
+  const t = useT(dashboardDict);
+  const { locale } = useLocale();
+  const { showToast } = useToast();
+
+  /* Reihenfolge einmal fixieren: offene nach Fälligkeit, erledigte unten. */
+  const ordered = useMemo(() => {
+    const open = tasks
+      .filter((task) => !task.done)
+      .sort((a, b) => (a.dueAt ?? "9999").localeCompare(b.dueAt ?? "9999"));
+    return [...open, ...tasks.filter((task) => task.done)];
+  }, []);
+
+  const [doneIds, setDoneIds] = useState<Set<string>>(
+    () => new Set(tasks.filter((task) => task.done).map((task) => task.id)),
+  );
+
+  const setDone = (id: string, done: boolean) => {
+    setDoneIds((prev) => {
+      const next = new Set(prev);
+      if (done) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggle = (task: Task) => {
+    const willBeDone = !doneIds.has(task.id);
+    setDone(task.id, willBeDone);
+    if (willBeDone) {
+      showToast(t("taskDoneToast"), {
+        tone: "success",
+        actionLabel: t("undo"),
+        onAction: () => setDone(task.id, false),
+      });
+    }
+  };
+
+  const openCount = ordered.length - doneIds.size;
+
+  const dueChip = (task: Task): { tone: BadgeTone; text: string } | null => {
+    if (!task.dueAt) return null;
+    const diff = dayDiff(task.dueAt);
+    if (diff < 0) return { tone: "danger", text: t("overdue") };
+    const rel = relativeDays(task.dueAt, locale);
+    if (diff === 0) return { tone: "brand", text: rel };
+    if (diff <= 3) return { tone: "warn", text: rel };
+    return { tone: "neutral", text: rel };
+  };
+
+  return (
+    <Card>
+      <CardHeader
+        eyebrow={t("tasksEyebrow")}
+        title={t("tasksTitle")}
+        action={
+          <Badge tone="neutral">
+            {openCount === 1 ? t("tasksOpenOne") : t("tasksOpenMany", { n: openCount })}
+          </Badge>
+        }
+      />
+
+      <ul>
+        {ordered.map((task) => {
+          const done = doneIds.has(task.id);
+          const chip = done ? null : dueChip(task);
+          return (
+            <li
+              key={task.id}
+              className="flex items-start gap-3 border-t border-dashed border-line py-3.5 first:border-t-0 first:pt-0 last:pb-0"
+            >
+              <button
+                type="button"
+                onClick={() => toggle(task)}
+                aria-pressed={done}
+                aria-label={t("taskToggleAria", { title: task.title })}
+                className={`relative mt-0.5 grid h-[23px] w-[23px] flex-none place-items-center rounded-sm border-2 transition-colors duration-150 before:absolute before:-inset-2.5 before:content-[''] ${
+                  done
+                    ? "border-success bg-success text-canvas"
+                    : "border-line-strong text-transparent hover:border-success"
+                }`}
+              >
+                <Icon name="check" className="ic h-3.5 w-3.5" />
+              </button>
+              <span className="grid min-w-0 gap-px">
+                <b
+                  className={`text-[14px] font-semibold leading-snug ${
+                    done ? "text-ink-faint line-through" : "text-ink"
+                  }`}
+                >
+                  {task.title}
+                </b>
+                {taskMeta(task) && (
+                  <small className="text-caption text-ink-faint">{taskMeta(task)}</small>
+                )}
+              </span>
+              {chip && (
+                <Badge tone={chip.tone} className="ml-auto mt-0.5 flex-none">
+                  {chip.text}
+                </Badge>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <CardFooter>
+        <span>{t("tasksFooter", { done: doneIds.size, total: ordered.length })}</span>
+        <Link
+          href="/wettkampf"
+          className="font-bold text-brand no-underline hover:underline"
+        >
+          {t("tasksCompetitionLink")}
+        </Link>
+      </CardFooter>
+    </Card>
+  );
+}

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { PlaceholderPage } from "@/components/shell/PlaceholderPage";
+import { RoutinesList } from "./_components/RoutinesList";
 
 export const metadata: Metadata = { title: "Küren" };
 
 export default function RoutinesPage() {
-  return <PlaceholderPage titleKey="navRoutines" subKey="pageRoutinesSub" icon="routines" />;
+  return <RoutinesList />;
 }
