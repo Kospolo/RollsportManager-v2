@@ -20,6 +20,7 @@ enum MembersL10n {
         switch role {
         case .owner: "role.owner"
         case .admin: "role.admin"
+        case .moderator: "role.moderator"
         case .treasurer: "role.treasurer"
         case .coach: "role.coach"
         case .member: "role.member"
@@ -30,6 +31,7 @@ enum MembersL10n {
     static func roleKey(_ role: AssignableClubRole) -> LocalizedStringKey {
         switch role {
         case .admin: "role.admin"
+        case .moderator: "role.moderator"
         case .treasurer: "role.treasurer"
         case .coach: "role.coach"
         case .member: "role.member"

@@ -146,4 +146,87 @@ extension APIClient {
     func setTaskDone(taskId: String, done: Bool) async throws -> Task {
         try await patch("/tasks/\(taskId)", body: TaskUpdate(done: done))
     }
+
+    // MARK: - News
+    //
+    // Web-Referenz: /(portal)/news. Liste ist server-sortiert
+    // (angepinnt zuerst, dann neueste veröffentlichte). Schreiben nur
+    // Trainerstab (COACH_ROLES) — `member`/`guest` erhalten 403.
+
+    /// GET /news — Vereins-News, sichtbar für alle Mitglieder.
+    func listNews(clubId: String) async throws -> [News] {
+        try await get("/news", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    /// POST /news — News anlegen (Trainerstab; sonst `Problem` mit 403).
+    /// `clubId` steckt im `NewsCreate` (analog zu `createEvent`).
+    func createNews(_ create: NewsCreate) async throws -> News {
+        try await post("/news", body: create)
+    }
+
+    // MARK: - Chat
+    //
+    // Web-Referenz: /(portal)/chat. Kanäle = Team-Kanäle (Mitgliedschaft)
+    // + Direkt-Threads. Nachrichten chronologisch aufsteigend. Absender ist
+    // serverseitig immer der Aufrufer.
+
+    /// GET /chat/channels — meine Kanäle inkl. letzter Nachricht je Kanal.
+    func listChatChannels(clubId: String) async throws -> [ChatChannel] {
+        try await get("/chat/channels", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    /// GET /chat/messages — Nachrichten EINES Kanals.
+    /// - `channelType == .team` verlangt `teamId` (sonst 400),
+    /// - `channelType == .direct` verlangt `peerMemberId` (sonst 400).
+    func listChatMessages(
+        clubId: String,
+        channelType: ChatChannelType,
+        teamId: String? = nil,
+        peerMemberId: String? = nil
+    ) async throws -> [ChatMessage] {
+        var query = [
+            URLQueryItem(name: "club_id", value: clubId),
+            URLQueryItem(name: "channel_type", value: channelType.rawValue),
+        ]
+        if let teamId { query.append(URLQueryItem(name: "team_id", value: teamId)) }
+        if let peerMemberId { query.append(URLQueryItem(name: "peer_member_id", value: peerMemberId)) }
+        return try await get("/chat/messages", query: query)
+    }
+
+    /// POST /chat/messages — Nachricht senden (Team-Kanal oder Direkt).
+    /// `clubId`/`channelType`/Ziel stecken im `ChatMessageCreate`.
+    func sendChatMessage(_ create: ChatMessageCreate) async throws -> ChatMessage {
+        try await post("/chat/messages", body: create)
+    }
+
+    // MARK: - Medaillen (Achievements)
+    //
+    // Web-Referenz: /(portal)/medaillen. Liste server-sortiert nach
+    // `achieved_on` desc. Optionaler `memberId`-Filter. Schreiben nur
+    // Trainerstab (COACH_ROLES).
+
+    /// GET /achievements — Medaillen des Vereins, optional auf ein Mitglied gefiltert.
+    func listAchievements(clubId: String, memberId: String? = nil) async throws -> [Achievement] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let memberId { query.append(URLQueryItem(name: "member_id", value: memberId)) }
+        return try await get("/achievements", query: query)
+    }
+
+    /// POST /achievements — Medaille vergeben (Trainerstab; sonst 403).
+    /// `clubId`/`memberId` stecken im `AchievementCreate`.
+    func createAchievement(_ create: AchievementCreate) async throws -> Achievement {
+        try await post("/achievements", body: create)
+    }
+
+    // MARK: - Trainingsplan (TrainingSlots)
+    //
+    // Web-Referenz: /(portal)/trainingsplan. Wöchentliche Slots,
+    // server-sortiert nach Wochentag + Startzeit; optionaler `teamId`-Filter.
+
+    /// GET /training-slots — wöchentliche Trainings-Slots des Vereins.
+    func listTrainingSlots(clubId: String, teamId: String? = nil) async throws -> [TrainingSlot] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let teamId { query.append(URLQueryItem(name: "team_id", value: teamId)) }
+        return try await get("/training-slots", query: query)
+    }
 }
