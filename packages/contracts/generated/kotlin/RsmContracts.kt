@@ -146,6 +146,18 @@ enum class DutyKind {
 }
 
 @Serializable
+enum class ChatChannelType {
+    @SerialName("team") TEAM,
+    @SerialName("direct") DIRECT;
+}
+
+@Serializable
+enum class CheckinMethod {
+    @SerialName("qr") QR,
+    @SerialName("manual") MANUAL;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -949,6 +961,104 @@ data class DutyEntryUpdate(
     val kind: DutyKind? = null,
     val note: String? = null,
     val approved: Boolean? = null
+)
+
+@Serializable
+data class ChatChannel(
+    @SerialName("channel_type") val channelType: ChatChannelType,
+    @SerialName("team_id") val teamId: String?,
+    @SerialName("team_name") val teamName: String?,
+    @SerialName("peer_member_id") val peerMemberId: String?,
+    @SerialName("peer_name") val peerName: String?,
+    @SerialName("last_message_id") val lastMessageId: String?,
+    @SerialName("last_body") val lastBody: String?,
+    @SerialName("last_image_url") val lastImageUrl: String?,
+    @SerialName("last_sender_member_id") val lastSenderMemberId: String?,
+    @SerialName("last_message_at") val lastMessageAt: String?
+)
+
+@Serializable
+data class ChatMessage(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("channel_type") val channelType: ChatChannelType,
+    @SerialName("team_id") val teamId: String?,
+    @SerialName("sender_member_id") val senderMemberId: String,
+    @SerialName("recipient_member_id") val recipientMemberId: String?,
+    val body: String?,
+    @SerialName("image_url") val imageUrl: String?,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class ChatMessageCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("channel_type") val channelType: ChatChannelType,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("recipient_member_id") val recipientMemberId: String? = null,
+    val body: String? = null,
+    @SerialName("image_url") val imageUrl: String? = null
+)
+
+@Serializable
+data class Checkin(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("event_id") val eventId: String?,
+    val method: CheckinMethod,
+    @SerialName("checked_in_at") val checkedInAt: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class CheckinCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("event_id") val eventId: String? = null,
+    val method: CheckinMethod? = CheckinMethod.QR,
+    @SerialName("checked_in_at") val checkedInAt: String? = null
+)
+
+@Serializable
+data class RegionalEvent(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    @SerialName("host_org") val hostOrg: String?,
+    val discipline: String?,
+    val location: String?,
+    @SerialName("starts_on") val startsOn: String,
+    @SerialName("ends_on") val endsOn: String?,
+    @SerialName("registration_url") val registrationUrl: String?,
+    val description: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class RegionalEventCreate(
+    @SerialName("club_id") val clubId: String,
+    val title: String,
+    @SerialName("starts_on") val startsOn: String,
+    @SerialName("ends_on") val endsOn: String? = null,
+    @SerialName("host_org") val hostOrg: String? = null,
+    val discipline: String? = null,
+    val location: String? = null,
+    @SerialName("registration_url") val registrationUrl: String? = null,
+    val description: String? = null
+)
+
+@Serializable
+data class RegionalEventUpdate(
+    val title: String? = null,
+    @SerialName("starts_on") val startsOn: String? = null,
+    @SerialName("ends_on") val endsOn: String? = null,
+    @SerialName("host_org") val hostOrg: String? = null,
+    val discipline: String? = null,
+    val location: String? = null,
+    @SerialName("registration_url") val registrationUrl: String? = null,
+    val description: String? = null
 )
 
 @Serializable

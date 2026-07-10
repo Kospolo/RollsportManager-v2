@@ -793,6 +793,105 @@ export class ApiClient {
   }
 
   /**
+   * My chat channels: team channels I belong to + direct threads, newest first
+   * 
+   * `GET /chat/channels`
+   */
+  async getChatChannels(query: { "club_id": string }, options?: RequestOptions): Promise<M.ChatChannel[]> {
+    return this.request<M.ChatChannel[]>("GET", "/chat/channels", { query, auth: true, options });
+  }
+
+  /**
+   * List messages of one channel (team by team_id, direct by peer_member_id)
+   * 
+   * `GET /chat/messages`
+   */
+  async getChatMessages(query: { "club_id": string; "channel_type": "team" | "direct"; "team_id"?: string; "peer_member_id"?: string }, options?: RequestOptions): Promise<M.ChatMessage[]> {
+    return this.request<M.ChatMessage[]>("GET", "/chat/messages", { query, auth: true, options });
+  }
+
+  /**
+   * Send a message (team channel or direct); sender is always the caller
+   * 
+   * `POST /chat/messages`
+   */
+  async postChatMessages(body: M.ChatMessageCreate, options?: RequestOptions): Promise<M.ChatMessage> {
+    return this.request<M.ChatMessage>("POST", "/chat/messages", { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a message (only the sender)
+   * 
+   * `DELETE /chat/messages/{messageId}`
+   */
+  async deleteChatMessagesByMessageId(messageId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/chat/messages/${encodeURIComponent(messageId)}`, { auth: true, options });
+  }
+
+  /**
+   * List check-ins (own history, or the whole club for coaching staff)
+   * 
+   * `GET /checkins`
+   */
+  async getCheckins(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.Checkin[]> {
+    return this.request<M.Checkin[]>("GET", "/checkins", { query, auth: true, options });
+  }
+
+  /**
+   * Check in (a member for themselves, or staff for anyone)
+   * 
+   * `POST /checkins`
+   */
+  async postCheckins(body: M.CheckinCreate, options?: RequestOptions): Promise<M.Checkin> {
+    return this.request<M.Checkin>("POST", "/checkins", { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a check-in (coaching staff only)
+   * 
+   * `DELETE /checkins/{checkinId}`
+   */
+  async deleteCheckinsByCheckinId(checkinId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/checkins/${encodeURIComponent(checkinId)}`, { auth: true, options });
+  }
+
+  /**
+   * List supra-regional events (soonest first)
+   * 
+   * `GET /regional-events`
+   */
+  async getRegionalEvents(query: { "club_id": string }, options?: RequestOptions): Promise<M.RegionalEvent[]> {
+    return this.request<M.RegionalEvent[]>("GET", "/regional-events", { query, auth: true, options });
+  }
+
+  /**
+   * Create a regional event (coaching staff, is_club_trainer)
+   * 
+   * `POST /regional-events`
+   */
+  async postRegionalEvents(body: M.RegionalEventCreate, options?: RequestOptions): Promise<M.RegionalEvent> {
+    return this.request<M.RegionalEvent>("POST", "/regional-events", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a regional event (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /regional-events/{eventId}`
+   */
+  async patchRegionalEventsByEventId(eventId: string, body: M.RegionalEventUpdate, options?: RequestOptions): Promise<M.RegionalEvent> {
+    return this.request<M.RegionalEvent>("PATCH", `/regional-events/${encodeURIComponent(eventId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a regional event (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /regional-events/{eventId}`
+   */
+  async deleteRegionalEventsByEventId(eventId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/regional-events/${encodeURIComponent(eventId)}`, { auth: true, options });
+  }
+
+  /**
    * Club evaluation summary (is_club_trainer / is_club_admin only)
    * 
    * `GET /reports/summary`

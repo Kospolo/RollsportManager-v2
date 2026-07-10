@@ -30,6 +30,9 @@ import { achievementsRouter } from './routes/achievements.js';
 import { trainingSlotsRouter } from './routes/training-slots.js';
 import { dutyRequirementsRouter } from './routes/duty-requirements.js';
 import { dutyEntriesRouter } from './routes/duty-entries.js';
+import { chatRouter } from './routes/chat.js';
+import { checkinsRouter } from './routes/checkins.js';
+import { regionalEventsRouter } from './routes/regional-events.js';
 import { reportsRouter } from './routes/reports.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { entitlementsRouter } from './routes/entitlements.js';
@@ -102,6 +105,9 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', trainingSlotsRouter);
   app.route('/', dutyRequirementsRouter);
   app.route('/', dutyEntriesRouter);
+  app.route('/', chatRouter);
+  app.route('/', checkinsRouter);
+  app.route('/', regionalEventsRouter);
   app.route('/', reportsRouter);
   app.route('/', invoicesRouter);
   app.route('/', entitlementsRouter);
@@ -150,6 +156,9 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'facilities', description: 'Halls & rooms incl. bookings (self-service or staff)' },
     { name: 'equipment', description: 'Gear inventory incl. reservations (self-service or staff)' },
     { name: 'achievements', description: 'Medals & competition results (read = member, award = staff)' },
+    { name: 'chat', description: 'Team channels & direct messages (members/team-scoped, server-enforced)' },
+    { name: 'checkins', description: 'Attendance check-in (QR/manual): self-checkin or staff for anyone' },
+    { name: 'regional-events', description: 'Supra-regional events (read = member, curate = staff)' },
     { name: 'invoices', description: 'Money ops (invoice numbers are service-mode only)' },
     { name: 'entitlements', description: 'License state - read-only for clients' },
     { name: 'products', description: 'Product catalog (single source of truth for pricing)' },

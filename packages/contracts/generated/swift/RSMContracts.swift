@@ -165,6 +165,16 @@ public enum DutyKind: String, Codable, CaseIterable, Sendable, Equatable {
     case other = "other"
 }
 
+public enum ChatChannelType: String, Codable, CaseIterable, Sendable, Equatable {
+    case team = "team"
+    case direct = "direct"
+}
+
+public enum CheckinMethod: String, Codable, CaseIterable, Sendable, Equatable {
+    case qr = "qr"
+    case manual = "manual"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -2910,6 +2920,380 @@ public struct DutyEntryUpdate: Codable, Equatable, Sendable {
         self.kind = kind
         self.note = note
         self.approved = approved
+    }
+}
+
+public struct ChatChannel: Codable, Equatable, Sendable {
+    public var channelType: ChatChannelType
+    /// Format: uuid
+    public var teamId: String?
+    public var teamName: String?
+    /// Format: uuid
+    public var peerMemberId: String?
+    public var peerName: String?
+    /// Format: uuid
+    public var lastMessageId: String?
+    public var lastBody: String?
+    public var lastImageUrl: String?
+    /// Format: uuid
+    public var lastSenderMemberId: String?
+    public var lastMessageAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case channelType = "channel_type"
+        case teamId = "team_id"
+        case teamName = "team_name"
+        case peerMemberId = "peer_member_id"
+        case peerName = "peer_name"
+        case lastMessageId = "last_message_id"
+        case lastBody = "last_body"
+        case lastImageUrl = "last_image_url"
+        case lastSenderMemberId = "last_sender_member_id"
+        case lastMessageAt = "last_message_at"
+    }
+
+    public init(
+        channelType: ChatChannelType,
+        teamId: String? = nil,
+        teamName: String? = nil,
+        peerMemberId: String? = nil,
+        peerName: String? = nil,
+        lastMessageId: String? = nil,
+        lastBody: String? = nil,
+        lastImageUrl: String? = nil,
+        lastSenderMemberId: String? = nil,
+        lastMessageAt: String? = nil
+    ) {
+        self.channelType = channelType
+        self.teamId = teamId
+        self.teamName = teamName
+        self.peerMemberId = peerMemberId
+        self.peerName = peerName
+        self.lastMessageId = lastMessageId
+        self.lastBody = lastBody
+        self.lastImageUrl = lastImageUrl
+        self.lastSenderMemberId = lastSenderMemberId
+        self.lastMessageAt = lastMessageAt
+    }
+}
+
+public struct ChatMessage: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var channelType: ChatChannelType
+    /// Format: uuid
+    public var teamId: String?
+    /// Format: uuid
+    public var senderMemberId: String
+    /// Format: uuid
+    public var recipientMemberId: String?
+    public var body: String?
+    public var imageUrl: String?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case channelType = "channel_type"
+        case teamId = "team_id"
+        case senderMemberId = "sender_member_id"
+        case recipientMemberId = "recipient_member_id"
+        case body
+        case imageUrl = "image_url"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        channelType: ChatChannelType,
+        teamId: String? = nil,
+        senderMemberId: String,
+        recipientMemberId: String? = nil,
+        body: String? = nil,
+        imageUrl: String? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.channelType = channelType
+        self.teamId = teamId
+        self.senderMemberId = senderMemberId
+        self.recipientMemberId = recipientMemberId
+        self.body = body
+        self.imageUrl = imageUrl
+        self.createdAt = createdAt
+    }
+}
+
+public struct ChatMessageCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var channelType: ChatChannelType
+    /// Format: uuid
+    public var teamId: String?
+    /// Format: uuid
+    public var recipientMemberId: String?
+    public var body: String?
+    /// Format: uri
+    public var imageUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case channelType = "channel_type"
+        case teamId = "team_id"
+        case recipientMemberId = "recipient_member_id"
+        case body
+        case imageUrl = "image_url"
+    }
+
+    public init(
+        clubId: String,
+        channelType: ChatChannelType,
+        teamId: String? = nil,
+        recipientMemberId: String? = nil,
+        body: String? = nil,
+        imageUrl: String? = nil
+    ) {
+        self.clubId = clubId
+        self.channelType = channelType
+        self.teamId = teamId
+        self.recipientMemberId = recipientMemberId
+        self.body = body
+        self.imageUrl = imageUrl
+    }
+}
+
+public struct Checkin: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    /// Format: uuid
+    public var eventId: String?
+    public var method: CheckinMethod
+    public var checkedInAt: String
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case eventId = "event_id"
+        case method
+        case checkedInAt = "checked_in_at"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        memberId: String,
+        eventId: String? = nil,
+        method: CheckinMethod,
+        checkedInAt: String,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.memberId = memberId
+        self.eventId = eventId
+        self.method = method
+        self.checkedInAt = checkedInAt
+        self.createdAt = createdAt
+    }
+}
+
+public struct CheckinCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    /// Format: uuid
+    public var eventId: String?
+    public var method: CheckinMethod?
+    /// Format: date-time
+    public var checkedInAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case eventId = "event_id"
+        case method
+        case checkedInAt = "checked_in_at"
+    }
+
+    public init(
+        clubId: String,
+        memberId: String,
+        eventId: String? = nil,
+        method: CheckinMethod? = .qr,
+        checkedInAt: String? = nil
+    ) {
+        self.clubId = clubId
+        self.memberId = memberId
+        self.eventId = eventId
+        self.method = method
+        self.checkedInAt = checkedInAt
+    }
+}
+
+public struct RegionalEvent: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    public var hostOrg: String?
+    public var discipline: String?
+    public var location: String?
+    public var startsOn: String
+    public var endsOn: String?
+    public var registrationUrl: String?
+    public var description: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case title
+        case hostOrg = "host_org"
+        case discipline
+        case location
+        case startsOn = "starts_on"
+        case endsOn = "ends_on"
+        case registrationUrl = "registration_url"
+        case description
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        title: String,
+        hostOrg: String? = nil,
+        discipline: String? = nil,
+        location: String? = nil,
+        startsOn: String,
+        endsOn: String? = nil,
+        registrationUrl: String? = nil,
+        description: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.title = title
+        self.hostOrg = hostOrg
+        self.discipline = discipline
+        self.location = location
+        self.startsOn = startsOn
+        self.endsOn = endsOn
+        self.registrationUrl = registrationUrl
+        self.description = description
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct RegionalEventCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var title: String
+    /// Format: date
+    public var startsOn: String
+    /// Format: date
+    public var endsOn: String?
+    public var hostOrg: String?
+    public var discipline: String?
+    public var location: String?
+    /// Format: uri
+    public var registrationUrl: String?
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case title
+        case startsOn = "starts_on"
+        case endsOn = "ends_on"
+        case hostOrg = "host_org"
+        case discipline
+        case location
+        case registrationUrl = "registration_url"
+        case description
+    }
+
+    public init(
+        clubId: String,
+        title: String,
+        startsOn: String,
+        endsOn: String? = nil,
+        hostOrg: String? = nil,
+        discipline: String? = nil,
+        location: String? = nil,
+        registrationUrl: String? = nil,
+        description: String? = nil
+    ) {
+        self.clubId = clubId
+        self.title = title
+        self.startsOn = startsOn
+        self.endsOn = endsOn
+        self.hostOrg = hostOrg
+        self.discipline = discipline
+        self.location = location
+        self.registrationUrl = registrationUrl
+        self.description = description
+    }
+}
+
+public struct RegionalEventUpdate: Codable, Equatable, Sendable {
+    public var title: String?
+    /// Format: date
+    public var startsOn: String?
+    /// Format: date
+    public var endsOn: String?
+    public var hostOrg: String?
+    public var discipline: String?
+    public var location: String?
+    /// Format: uri
+    public var registrationUrl: String?
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case startsOn = "starts_on"
+        case endsOn = "ends_on"
+        case hostOrg = "host_org"
+        case discipline
+        case location
+        case registrationUrl = "registration_url"
+        case description
+    }
+
+    public init(
+        title: String? = nil,
+        startsOn: String? = nil,
+        endsOn: String? = nil,
+        hostOrg: String? = nil,
+        discipline: String? = nil,
+        location: String? = nil,
+        registrationUrl: String? = nil,
+        description: String? = nil
+    ) {
+        self.title = title
+        self.startsOn = startsOn
+        self.endsOn = endsOn
+        self.hostOrg = hostOrg
+        self.discipline = discipline
+        self.location = location
+        self.registrationUrl = registrationUrl
+        self.description = description
     }
 }
 

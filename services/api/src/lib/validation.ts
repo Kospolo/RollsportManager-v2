@@ -1026,6 +1026,149 @@ export const platformStatsSchema = z
   })
   .openapi('PlatformStats');
 
+// ---------------------------------------------------------------------------
+// Modules batch 4 (migration 0011): chat_messages, checkins, regional_events.
+// Enum-like columns are TEXT + CHECK in the DB; here they are z.enum so the
+// wire contract stays typed.
+// ---------------------------------------------------------------------------
+
+export const chatChannelTypeSchema = z.enum(['team', 'direct']).openapi('ChatChannelType');
+export const checkinMethodSchema = z.enum(['qr', 'manual']).openapi('CheckinMethod');
+
+// chat_messages --------------------------------------------------------------
+export const chatMessageSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    channel_type: chatChannelTypeSchema,
+    /** set for team channels (null for direct messages). */
+    team_id: uuid.nullable(),
+    /** author's club_members.id (always the caller for own writes). */
+    sender_member_id: uuid,
+    /** set for direct messages (null for team channels). */
+    recipient_member_id: uuid.nullable(),
+    body: z.string().nullable(),
+    image_url: z.string().nullable(),
+    created_at: timestamp,
+  })
+  .openapi('ChatMessage');
+
+export const chatMessageCreateSchema = z
+  .object({
+    club_id: uuid,
+    channel_type: chatChannelTypeSchema,
+    /** required for channel_type='team'. */
+    team_id: uuid.optional(),
+    /** required for channel_type='direct'. */
+    recipient_member_id: uuid.optional(),
+    /** text and/or image_url — at least one must be present (DB check). */
+    body: z.string().min(1).max(4000).optional(),
+    image_url: z.string().url().optional(),
+  })
+  .refine((v) => (v.channel_type === 'team' ? v.team_id !== undefined : v.recipient_member_id !== undefined), {
+    message: "team messages need team_id, direct messages need recipient_member_id",
+  })
+  .refine((v) => (v.channel_type === 'team' ? v.recipient_member_id === undefined : v.team_id === undefined), {
+    message: 'team_id and recipient_member_id are mutually exclusive per channel_type',
+  })
+  .refine((v) => (v.body !== undefined && v.body.trim().length > 0) || v.image_url !== undefined, {
+    message: 'a message must carry body text and/or an image_url',
+  })
+  .openapi('ChatMessageCreate');
+
+/** Channel-overview row: my team channels + my direct threads, last msg first. */
+export const chatChannelSchema = z
+  .object({
+    channel_type: chatChannelTypeSchema,
+    /** team channel: the team id + name. */
+    team_id: uuid.nullable(),
+    team_name: z.string().nullable(),
+    /** direct thread: the other party's member id + display name. */
+    peer_member_id: uuid.nullable(),
+    peer_name: z.string().nullable(),
+    /** preview of the most recent (non-deleted) message in the channel. */
+    last_message_id: uuid.nullable(),
+    last_body: z.string().nullable(),
+    last_image_url: z.string().nullable(),
+    last_sender_member_id: uuid.nullable(),
+    last_message_at: timestamp.nullable(),
+  })
+  .openapi('ChatChannel');
+
+// checkins -------------------------------------------------------------------
+export const checkinSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    event_id: uuid.nullable(),
+    method: checkinMethodSchema,
+    checked_in_at: timestamp,
+    created_at: timestamp,
+  })
+  .openapi('Checkin');
+
+export const checkinCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** Own membership (self check-in) or, for staff, any member of the club. */
+    member_id: uuid,
+    event_id: uuid.optional(),
+    method: checkinMethodSchema.default('qr'),
+    /** Defaults to "now" when omitted. */
+    checked_in_at: z.string().datetime({ offset: true }).optional(),
+  })
+  .openapi('CheckinCreate');
+
+// regional_events ------------------------------------------------------------
+export const regionalEventSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    title: z.string(),
+    host_org: z.string().nullable(),
+    discipline: z.string().nullable(),
+    location: z.string().nullable(),
+    starts_on: isoDate,
+    ends_on: isoDate.nullable(),
+    registration_url: z.string().nullable(),
+    description: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('RegionalEvent');
+
+export const regionalEventCreateSchema = z
+  .object({
+    club_id: uuid,
+    title: z.string().min(1),
+    starts_on: z.string().date(),
+    ends_on: z.string().date().optional(),
+    host_org: z.string().optional(),
+    discipline: z.string().optional(),
+    location: z.string().optional(),
+    registration_url: z.string().url().optional(),
+    description: z.string().optional(),
+  })
+  .refine((v) => v.ends_on === undefined || v.ends_on >= v.starts_on, {
+    message: 'ends_on must not be before starts_on',
+  })
+  .openapi('RegionalEventCreate');
+
+export const regionalEventUpdateSchema = z
+  .object({
+    title: z.string().min(1).optional(),
+    starts_on: z.string().date().optional(),
+    ends_on: z.string().date().nullable().optional(),
+    host_org: z.string().nullable().optional(),
+    discipline: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    registration_url: z.string().url().nullable().optional(),
+    description: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('RegionalEventUpdate');
+
 export const productSchema = z
   .object({
     id: uuid,

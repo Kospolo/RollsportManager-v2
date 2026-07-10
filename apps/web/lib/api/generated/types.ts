@@ -721,6 +721,102 @@ export interface DutyEntryUpdate {
   "approved"?: boolean;
 }
 
+export type ChatChannelType = "team" | "direct";
+export const ChatChannelTypeValues: readonly ChatChannelType[] = ["team", "direct"] as const;
+
+export interface ChatChannel {
+  "channel_type": ChatChannelType;
+  "team_id": string | null;
+  "team_name": string | null;
+  "peer_member_id": string | null;
+  "peer_name": string | null;
+  "last_message_id": string | null;
+  "last_body": string | null;
+  "last_image_url": string | null;
+  "last_sender_member_id": string | null;
+  "last_message_at": string | null;
+}
+
+export interface ChatMessage {
+  "id": string;
+  "club_id": string;
+  "channel_type": ChatChannelType;
+  "team_id": string | null;
+  "sender_member_id": string;
+  "recipient_member_id": string | null;
+  "body": string | null;
+  "image_url": string | null;
+  "created_at": string;
+}
+
+export interface ChatMessageCreate {
+  "club_id": string;
+  "channel_type": ChatChannelType;
+  "team_id"?: string;
+  "recipient_member_id"?: string;
+  "body"?: string;
+  "image_url"?: string;
+}
+
+export type CheckinMethod = "qr" | "manual";
+export const CheckinMethodValues: readonly CheckinMethod[] = ["qr", "manual"] as const;
+
+export interface Checkin {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "event_id": string | null;
+  "method": CheckinMethod;
+  "checked_in_at": string;
+  "created_at": string;
+}
+
+export interface CheckinCreate {
+  "club_id": string;
+  "member_id": string;
+  "event_id"?: string;
+  "method"?: CheckinMethod;
+  "checked_in_at"?: string;
+}
+
+export interface RegionalEvent {
+  "id": string;
+  "club_id": string;
+  "title": string;
+  "host_org": string | null;
+  "discipline": string | null;
+  "location": string | null;
+  "starts_on": string;
+  "ends_on": string | null;
+  "registration_url": string | null;
+  "description": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface RegionalEventCreate {
+  "club_id": string;
+  "title": string;
+  "starts_on": string;
+  "ends_on"?: string;
+  "host_org"?: string;
+  "discipline"?: string;
+  "location"?: string;
+  "registration_url"?: string;
+  "description"?: string;
+}
+
+export interface RegionalEventUpdate {
+  "title"?: string;
+  "starts_on"?: string;
+  "ends_on"?: string | null;
+  "host_org"?: string | null;
+  "discipline"?: string | null;
+  "location"?: string | null;
+  "registration_url"?: string | null;
+  "description"?: string | null;
+}
+
 export interface ReportRoleCount {
   "role": ClubRole;
   "count": number | null;

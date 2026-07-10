@@ -711,4 +711,107 @@ values
    'a0000000-0000-4000-8000-000000000005', 5.00, current_date - 10, 'training',
    'Zusatztraining Wettkampfvorbereitung', true);
 
+-- ----------------------------------------------------------------------------
+-- Chat messages (modules batch 4) — one TEAM channel + one DIRECT thread.
+--
+-- Team channel = Kürgruppe Leistung (team b-03). Senders are members of that
+-- team: coach Sandra (a-01), skaters Maja (a-16), Johanna (a-17), Charlotte
+-- (a-18). 5 messages in chronological order.
+--
+-- Direct thread = Sandra Vogel (coach, a-01) <-> Katrin Grünewald (member,
+-- a-09). 3 messages. Both carry a profile (90..01 / 90..09) so the DM is
+-- readable by exactly these two under RLS.
+-- ----------------------------------------------------------------------------
+insert into app.chat_messages
+  (id, club_id, channel_type, team_id, sender_member_id, recipient_member_id, body, image_url, created_at)
+values
+  -- team channel (b-03) ------------------------------------------------------
+  ('c4a70000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'team', 'b0000000-0000-4000-8000-000000000003',
+   'a0000000-0000-4000-8000-000000000001', null,
+   'Denkt bitte an die Generalprobe am Wochenende — Musik und Wettkampfkleidung nicht vergessen!', null,
+   (current_date - 2 + time '19:05')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'team', 'b0000000-0000-4000-8000-000000000003',
+   'a0000000-0000-4000-8000-000000000016', null,
+   'Bin dabei! Soll ich meinen Ersatz-Rollensatz mitbringen?', null,
+   (current_date - 2 + time '19:12')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'team', 'b0000000-0000-4000-8000-000000000003',
+   'a0000000-0000-4000-8000-000000000001', null,
+   'Gute Idee, Maja. Johanna, klappt es bei dir zeitlich?', null,
+   (current_date - 2 + time '19:20')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'team', 'b0000000-0000-4000-8000-000000000003',
+   'a0000000-0000-4000-8000-000000000017', null,
+   'Ja, ich bin um 18 Uhr da. Bringe die Übersicht der Sprungfolgen mit.', null,
+   (current_date - 1 + time '08:41')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   'team', 'b0000000-0000-4000-8000-000000000003',
+   'a0000000-0000-4000-8000-000000000018', null,
+   'Super, freue mich! Bis Samstag 🛼', null,
+   (current_date - 1 + time '09:03')::timestamptz),
+  -- direct thread a-01 <-> a-09 ---------------------------------------------
+  ('c4a70000-0000-4000-8000-000000000011', 'c1ab0000-0000-4000-8000-000000000001',
+   'direct', null,
+   'a0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   'Hallo Katrin, Lina macht beim Waltzsprung tolle Fortschritte. Können wir vor der Bezirksmeisterschaft kurz sprechen?', null,
+   (current_date - 3 + time '17:30')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000012', 'c1ab0000-0000-4000-8000-000000000001',
+   'direct', null,
+   'a0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001',
+   'Hallo Sandra, sehr gerne! Beim Elternabend am Mittwoch passt es mir gut.', null,
+   (current_date - 3 + time '20:58')::timestamptz),
+  ('c4a70000-0000-4000-8000-000000000013', 'c1ab0000-0000-4000-8000-000000000001',
+   'direct', null,
+   'a0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   'Perfekt, dann machen wir das so. Danke dir!', null,
+   (current_date - 2 + time '07:15')::timestamptz);
+
+-- ----------------------------------------------------------------------------
+-- Check-ins (modules batch 4) — 4 attendance records. Katrin (a-09) owns
+-- exactly one (self QR check-in); the other three belong to Kürgruppe skaters
+-- (Maja a-16, Johanna a-17 self-QR; Charlotte a-18 manually by the trainer).
+-- ----------------------------------------------------------------------------
+insert into app.checkins
+  (id, club_id, member_id, event_id, method, checked_in_at)
+values
+  ('c4ec0000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000009', 'e0000000-0000-4000-8000-000000000004',
+   'qr', (current_date - 3 + time '16:56')::timestamptz),
+  ('c4ec0000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000016', 'e0000000-0000-4000-8000-000000000005',
+   'qr', (current_date - 1 + time '18:24')::timestamptz),
+  ('c4ec0000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000017', 'e0000000-0000-4000-8000-000000000005',
+   'qr', (current_date - 1 + time '18:25')::timestamptz),
+  ('c4ec0000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000018', 'e0000000-0000-4000-8000-000000000005',
+   'manual', (current_date - 1 + time '18:30')::timestamptz);
+
+-- ----------------------------------------------------------------------------
+-- Regional events (modules batch 4) — 3 supra-regional events the club tracks.
+-- ----------------------------------------------------------------------------
+insert into app.regional_events
+  (id, club_id, title, host_org, discipline, location, starts_on, ends_on, registration_url, description)
+values
+  ('4e670000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Süddeutsche Meisterschaft Rollkunstlauf', 'DRIV Landesverband Baden-Württemberg',
+   'Rollkunstlauf', 'Rundsporthalle Ludwigsburg',
+   current_date + 42, current_date + 43,
+   'https://driv-bw.example.org/meldung/sddm-2026',
+   'Qualifikation über die Bezirksmeisterschaften. Meldeschluss vier Wochen vorher, Meldung über den Verein.'),
+  ('4e670000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'Deutschland-Pokal Nachwuchs', 'Deutscher Rollsport- und Inline-Verband',
+   'Rollkunstlauf', 'Sporthalle am Berg, Freiburg',
+   current_date + 90, current_date + 92,
+   'https://driv.example.org/deutschlandpokal',
+   'Überregionaler Nachwuchswettbewerb der Pflicht- und Kürgruppen.'),
+  ('4e670000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'Trainer-Fortbildung Sprungtechnik', 'DRIV Trainerakademie',
+   'Rollkunstlauf', 'Landessportschule Albstadt',
+   current_date + 21, null,
+   'https://driv.example.org/fortbildung/sprungtechnik',
+   'Tagesseminar für Übungsleiter und Trainer zu Absprung- und Landetechnik.');
+
 commit;
