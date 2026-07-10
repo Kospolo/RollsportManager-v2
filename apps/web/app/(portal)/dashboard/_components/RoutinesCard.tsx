@@ -9,7 +9,7 @@ import { Sparkline } from "@/components/ui/Sparkline";
 import { Icon } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
-import { memberById } from "@/lib/mock";
+import { memberById } from "@/lib/data";
 import type { Member, Routine } from "@/lib/types";
 import { dashboardDict, type DashboardKey } from "../i18n";
 import { recentRoutines } from "../derive";
@@ -32,9 +32,12 @@ const STATUS_KEY: Partial<Record<Routine["status"], DashboardKey>> = {
   draft: "statusDraft",
 };
 
-function skaterNames(routine: Routine): { first: Member | undefined; label: string } {
+function skaterNames(
+  routine: Routine,
+  members: Member[],
+): { first: Member | undefined; label: string } {
   const skaters = routine.memberIds
-    .map((id) => memberById(id))
+    .map((id) => memberById(members, id))
     .filter((m): m is Member => Boolean(m));
   const first = skaters[0];
   const label =
@@ -46,10 +49,16 @@ function skaterNames(routine: Routine): { first: Member | undefined; label: stri
   return { first, label };
 }
 
-export function RoutinesCard() {
+export function RoutinesCard({
+  routines,
+  members,
+}: {
+  routines: Routine[];
+  members: Member[];
+}) {
   const t = useT(dashboardDict);
   const { locale } = useLocale();
-  const routines = recentRoutines(3);
+  const recent = recentRoutines(routines, 3);
 
   const scoreFormat = new Intl.NumberFormat(locale === "de" ? "de-DE" : "en-GB", {
     minimumFractionDigits: 2,
@@ -69,8 +78,8 @@ export function RoutinesCard() {
       />
 
       <div className="grid gap-3.5 grid-cols-[repeat(auto-fill,minmax(190px,1fr))]">
-        {routines.map((routine) => {
-          const { first, label } = skaterNames(routine);
+        {recent.map((routine) => {
+          const { first, label } = skaterNames(routine, members);
           const totals = routine.scores.map((s) => s.total);
           const latest = totals[totals.length - 1];
           const tone = STATUS_TONE[routine.status] ?? "neutral";

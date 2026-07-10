@@ -1,10 +1,12 @@
-import { invoices, ledger, memberById, members, openInvoices, dateFromNow } from "@/lib/mock";
+import { memberById, openInvoices } from "@/lib/data";
 import { dayDiff } from "@/lib/format";
 import type { DunningLevel, Invoice, LedgerEntry, Member } from "@/lib/types";
 import type { IconName } from "@/components/shell/icons";
 
 /**
- * Abgeleitete Ansichten der Finanz-Mocks (Seriositätszone).
+ * Abgeleitete Ansichten der Finanz-Daten (Seriositätszone).
+ * Alle Funktionen sind PUR und arbeiten auf den von der Facade geladenen
+ * Arrays — sie funktionieren dadurch für mock UND api identisch.
  * KONSISTENZ-REGEL: Alle Summen entstehen aus DENSELBEN Datensätzen —
  * KPI „Offene Posten" und Tabellen-Footer rechnen beide über `OpenItem[]`.
  */
@@ -16,7 +18,7 @@ export type LevelFilter = "all" | "open" | "reminded" | "dunned";
 export type OpenItem = {
   invoice: Invoice;
   member: Member;
-  /** Effektive Stufe — Mock-Stufe plus lokale, optimistische Überschreibung */
+  /** Effektive Stufe — geladene Stufe plus lokale, optimistische Überschreibung */
   level: DunningLevel;
   /** Tage überfällig (positiv) bzw. negativ = noch nicht fällig */
   overdueDays: number;
@@ -30,13 +32,15 @@ export function levelToFilter(level: DunningLevel): LevelFilter {
 
 /** Offene Posten mit lokalem Zustand (Stufen-Overrides + bezahlt markierte). */
 export function deriveOpenItems(
+  invoices: Invoice[],
+  members: Member[],
   levelOverrides: Record<string, DunningLevel>,
   paidIds: ReadonlySet<string>,
 ): OpenItem[] {
-  return openInvoices
+  return openInvoices(invoices)
     .filter((invoice) => !paidIds.has(invoice.id))
     .map((invoice) => {
-      const member = memberById(invoice.memberId);
+      const member = memberById(members, invoice.memberId);
       if (!member) return null;
       return {
         invoice,
@@ -54,19 +58,21 @@ export function sumCents(items: readonly OpenItem[]): number {
 }
 
 /** Absenderin aller Mahn-Mails: die Kassenwartin des Vereins. */
-export const treasurer: Member =
-  members.find((m) => m.role === "treasurer") ?? members[0];
+export function treasurerOf(members: Member[]): Member | undefined {
+  return members.find((m) => m.role === "treasurer") ?? members[0];
+}
 
 /* ---------- Einnahmen der letzten 30 Tage (KPI) ---------- */
 
-const incomeEntries = ledger.filter(
-  (entry) => entry.amountCents > 0 && dayDiff(entry.date) >= -30,
-);
-
-export const income30d = {
-  sumCents: incomeEntries.reduce((sum, entry) => sum + entry.amountCents, 0),
-  count: incomeEntries.length,
-};
+export function income30d(ledger: LedgerEntry[]): { sumCents: number; count: number } {
+  const entries = ledger.filter(
+    (entry) => entry.amountCents > 0 && dayDiff(entry.date) >= -30,
+  );
+  return {
+    sumCents: entries.reduce((sum, entry) => sum + entry.amountCents, 0),
+    count: entries.length,
+  };
+}
 
 /* ---------- Kassenbuch mit laufendem Saldo ---------- */
 
@@ -78,7 +84,7 @@ export type LedgerRow = {
 };
 
 /** Neueste Buchung zuerst — Saldo läuft chronologisch auf (wie ein Kontoauszug). */
-export const ledgerRows: LedgerRow[] = (() => {
+export function buildLedgerRows(ledger: LedgerEntry[], members: Member[]): LedgerRow[] {
   const ascending = [...ledger].sort((a, b) => a.date.localeCompare(b.date));
   let running = 0;
   const rows = ascending.map((entry) => {
@@ -88,18 +94,18 @@ export const ledgerRows: LedgerRow[] = (() => {
       balanceCents: running,
       member:
         entry.counterparty.kind === "person"
-          ? memberById(entry.counterparty.memberId)
+          ? memberById(members, entry.counterparty.memberId)
           : undefined,
     };
   });
   return rows.reverse();
-})();
+}
 
-export function invoiceNumberById(id: string): string | undefined {
+export function invoiceNumberById(invoices: Invoice[], id: string): string | undefined {
   return invoices.find((invoice) => invoice.id === id)?.number;
 }
 
-/** Kategorie → i18n-Key (Mock-Kategorien sind deutsch gepflegt). */
+/** Kategorie → i18n-Key (Demo-Kategorien sind deutsch gepflegt). */
 export const CATEGORY_KEY: Record<string, string> = {
   Beiträge: "catFees",
   Miete: "catRent",
@@ -120,6 +126,19 @@ export function orgIcon(name: string): IconName {
 }
 
 /* ---------- Bankabgleich ---------- */
+
+/**
+ * Lokaler Anzeige-Helfer (ersetzt den früheren Demo-Datums-Helfer im Screen):
+ * ISO-Datum (YYYY-MM-DD) heute + `days` Tage — reine Demo-Darstellung
+ * des Kontoauszugs, bis der Contract einen Bank-Endpoint hat.
+ */
+export function isoDateFromToday(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 
 export const BANK_TOTAL = 34;
 export const BANK_AUTO_MATCHED = 31;
@@ -166,11 +185,12 @@ const SUGGESTION_SEEDS: Array<
   },
 ];
 
-/** Die 3 offenen Zuordnungs-Vorschläge — verweisen auf echte offene Rechnungen. */
-export function buildSuggestions(): BankSuggestion[] {
+/** Die offenen Zuordnungs-Vorschläge — verweisen auf echte offene Rechnungen. */
+export function buildSuggestions(invoices: Invoice[], members: Member[]): BankSuggestion[] {
+  const open = openInvoices(invoices);
   return SUGGESTION_SEEDS.map((seed) => {
-    const invoice = openInvoices.find((i) => i.id === seed.invoiceId);
-    const member = invoice ? memberById(invoice.memberId) : undefined;
+    const invoice = open.find((i) => i.id === seed.invoiceId);
+    const member = invoice ? memberById(members, invoice.memberId) : undefined;
     if (!invoice || !member) return null;
     return {
       id: `sug-${seed.invoiceId}`,
@@ -178,7 +198,7 @@ export function buildSuggestions(): BankSuggestion[] {
       member,
       payer: seed.payer,
       reference: seed.reference,
-      dateIso: dateFromNow(seed.daysAgo),
+      dateIso: isoDateFromToday(seed.daysAgo),
       confidence: seed.confidence,
     };
   }).filter((s): s is BankSuggestion => s !== null);

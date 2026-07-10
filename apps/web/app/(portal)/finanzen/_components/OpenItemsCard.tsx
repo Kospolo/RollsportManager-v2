@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, relativeDays } from "@/lib/format";
-import { fullName } from "@/lib/mock";
+import { fullName } from "@/lib/data";
 import { Card, CardHeader, CardFooter } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { FilterChips, type FilterChipOption } from "@/components/ui/FilterChips";

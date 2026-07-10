@@ -1,11 +1,12 @@
 import type { Competition, Event, Member, Routine, RsvpStatus } from "@/lib/types";
-import { competitions, events, memberById, members, routines } from "@/lib/mock";
+import { memberById } from "@/lib/data";
 import { dayDiff } from "@/lib/format";
 
 /**
- * Abgeleitete Dashboard-Daten — ausschließlich aus lib/mock berechnet,
- * nie hart codiert. Alle Funktionen sind pure Ableitungen und laufen
- * identisch auf Server und Client (Mock-Termine liegen relativ zu heute).
+ * Abgeleitete Dashboard-Daten — pure Funktionen über den von der
+ * Daten-Facade (lib/data) geladenen Arrays, nie hart codiert. Alle
+ * Funktionen sind reine Ableitungen ohne eigenen Datenzugriff und
+ * funktionieren dadurch für Mock- und api-Quelle identisch.
  */
 
 /* ---------- Einheiten (Heute-Karte) ---------- */
@@ -31,7 +32,7 @@ export interface SessionInfo {
   rsvpByMember: Record<string, RsvpStatus>;
 }
 
-function toSessionInfo(event: Event): SessionInfo {
+function toSessionInfo(event: Event, members: Member[]): SessionInfo {
   const roster = members.filter(
     (m) =>
       m.role === "member" &&
@@ -52,14 +53,14 @@ function toSessionInfo(event: Event): SessionInfo {
 
   const going = event.rsvps
     .filter((r) => r.status === "going")
-    .map((r) => memberById(r.memberId))
+    .map((r) => memberById(members, r.memberId))
     .filter((m): m is Member => Boolean(m));
 
   /* Absagegrund-Blase: Absage/Krank zuerst, sonst ein „Vielleicht“-Kommentar. */
   const noteRsvp =
     event.rsvps.find((r) => (r.status === "declined" || r.status === "sick") && r.comment) ??
     event.rsvps.find((r) => r.status === "maybe" && r.comment);
-  const noteMember = noteRsvp ? memberById(noteRsvp.memberId) : undefined;
+  const noteMember = noteRsvp ? memberById(members, noteRsvp.memberId) : undefined;
 
   return {
     event,
@@ -83,23 +84,23 @@ function toSessionInfo(event: Event): SessionInfo {
 }
 
 /** Heutige und nächste Einheiten (heutige bleiben auch nach Ende sichtbar). */
-export function upcomingSessions(limit = 3): SessionInfo[] {
+export function upcomingSessions(events: Event[], members: Member[], limit = 3): SessionInfo[] {
   return events
     .filter((e) => dayDiff(e.startsAt) >= 0)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, limit)
-    .map(toSessionInfo);
+    .map((event) => toSessionInfo(event, members));
 }
 
 /** Alle heutigen Termine (für die Kopfzeile „n Einheiten heute“). */
-export function todayEvents(): Event[] {
+export function todayEvents(events: Event[]): Event[] {
   return events
     .filter((e) => dayDiff(e.startsAt) === 0)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
 /** Der zeitlich nächste, noch nicht gestartete Termin (KPI-Kachel). */
-export function nextEvent(): Event | undefined {
+export function nextEvent(events: Event[]): Event | undefined {
   const now = Date.now();
   return events
     .filter((e) => new Date(e.startsAt).getTime() >= now)
@@ -116,14 +117,18 @@ export interface CompetitionInfo {
   note?: string;
 }
 
-export function nextCompetitionInfo(): CompetitionInfo | null {
+export function nextCompetitionInfo(
+  competitions: Competition[],
+  events: Event[],
+  members: Member[],
+): CompetitionInfo | null {
   const upcoming = competitions
     .filter((c) => c.status === "upcoming" && dayDiff(c.startsAt) >= 0)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
   if (!upcoming) return null;
 
   const participants = upcoming.participantIds
-    .map((id) => memberById(id))
+    .map((id) => memberById(members, id))
     .filter((m): m is Member => Boolean(m));
 
   const linkedEvent = events.find((e) => e.competitionId === upcoming.id);
@@ -138,8 +143,13 @@ export function nextCompetitionInfo(): CompetitionInfo | null {
 
 /* ---------- KPI-Zeile ---------- */
 
-export const activeMemberCount = members.filter((m) => m.status === "active").length;
-export const pendingMemberCount = members.filter((m) => m.status === "pending").length;
+export function activeMemberCount(members: Member[]): number {
+  return members.filter((m) => m.status === "active").length;
+}
+
+export function pendingMemberCount(members: Member[]): number {
+  return members.filter((m) => m.status === "pending").length;
+}
 
 /* ---------- Küren-Schnellzugriff ---------- */
 
@@ -151,7 +161,7 @@ const ROUTINE_ORDER: Record<Routine["status"], number> = {
 };
 
 /** Aktive Küren, Wettkampf-Küren zuerst — die erste gilt als „zuletzt geübt“. */
-export function recentRoutines(limit = 3): Routine[] {
+export function recentRoutines(routines: Routine[], limit = 3): Routine[] {
   return [...routines]
     .filter((r) => r.status !== "archived")
     .sort((a, b) => ROUTINE_ORDER[a.status] - ROUTINE_ORDER[b.status])

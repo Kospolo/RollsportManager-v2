@@ -1,16 +1,22 @@
-import { attendance as mockAttendance, memberById, members, teams } from "@/lib/mock";
+import { memberById } from "@/lib/data";
 import type {
+  Attendance,
   AttendanceStatus,
   Event,
   EventType,
   Member,
   Rsvp,
   RsvpStatus,
+  Team,
 } from "@/lib/types";
 import type { BadgeTone } from "@/components/ui/Badge";
 import type { termineDict } from "./i18n";
 
-/** Kolokalisierte Helfer des Termine-Screens — reine Ableitungen aus lib/mock. */
+/**
+ * Kolokalisierte Helfer des Termine-Screens — reine Ableitungen.
+ * Alle Daten (Mitglieder, Teams, Anwesenheit) kommen als Parameter aus der
+ * Facade (`@/lib/data`) — hier gibt es KEINEN lib/mock-Import mehr.
+ */
 
 export type TermineKey = keyof (typeof termineDict)["de"];
 
@@ -55,7 +61,7 @@ export const RSVP_ORDER: Record<RsvpStatus | "none", number> = {
 };
 
 /** Eingeladen sind alle aktiven Mitglieder der Termin-Teams plus alle, die geantwortet haben. */
-export function participantsOf(event: Event, rsvps: Rsvp[]): Member[] {
+export function participantsOf(event: Event, rsvps: Rsvp[], members: Member[]): Member[] {
   const map = new Map<string, Member>();
   for (const member of members) {
     if (member.role !== "member") continue;
@@ -64,7 +70,7 @@ export function participantsOf(event: Event, rsvps: Rsvp[]): Member[] {
     }
   }
   for (const rsvp of rsvps) {
-    const member = memberById(rsvp.memberId);
+    const member = memberById(members, rsvp.memberId);
     if (member) map.set(member.id, member);
   }
   return [...map.values()];
@@ -95,26 +101,33 @@ export function mergeRsvps(base: Rsvp[], overrides?: Record<string, Rsvp>): Rsvp
   return merged;
 }
 
-export function teamsOf(event: Event) {
+export function teamsOf(event: Event, teams: Team[]): Team[] {
   return teams.filter((team) => event.teamIds.includes(team.id));
 }
 
-export function teamNameOf(member: Member): string | undefined {
+export function teamNameOf(member: Member, teams: Team[]): string | undefined {
   return teams.find((team) => member.teamIds.includes(team.id))?.name;
 }
 
-/** Erfasste Anwesenheit eines Termins aus den Mock-Daten (memberId → Status). */
-export function baseAttendance(eventId: string): Record<string, AttendanceStatus> {
+/** Erfasste Anwesenheit eines Termins aus den geladenen Datensätzen (memberId → Status). */
+export function baseAttendance(
+  eventId: string,
+  records: Attendance[],
+): Record<string, AttendanceStatus> {
   const map: Record<string, AttendanceStatus> = {};
-  for (const record of mockAttendance) {
+  for (const record of records) {
     if (record.eventId === eventId) map[record.memberId] = record.status;
   }
   return map;
 }
 
-/** Check-in-Zeitstempel aus den Mock-Daten, falls vorhanden. */
-export function checkinIso(eventId: string, memberId: string): string | undefined {
-  return mockAttendance.find(
+/** Check-in-Zeitstempel aus den geladenen Datensätzen, falls vorhanden. */
+export function checkinIso(
+  eventId: string,
+  memberId: string,
+  records: Attendance[],
+): string | undefined {
+  return records.find(
     (record) => record.eventId === eventId && record.memberId === memberId,
   )?.checkedInAt;
 }

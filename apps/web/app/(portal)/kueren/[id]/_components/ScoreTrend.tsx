@@ -2,11 +2,14 @@
 
 import { useMemo } from "react";
 import type { Routine } from "@/lib/types";
-import { competitions } from "@/lib/mock";
+import { errorMessage, isNotImplemented } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { Card, CardHeader, CardFooter } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Sparkline } from "@/components/ui/Sparkline";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { kuerenDict, formatPoints, formatPointsDelta } from "../../i18n";
 
@@ -14,6 +17,10 @@ import { kuerenDict, formatPoints, formatPointsDelta } from "../../i18n";
  * RollArt-Verlauf (Jury-Übernahme aus B, DESIGN-SYSTEM §3.9):
  * warme Balken mit Mono-Werten pro Wettkampf, Bestwert in Beere,
  * Delta-Chip — der Trend ist der motivierende Wert, nicht die Einzelzahl.
+ *
+ * Die Scores stecken in der Kür (Facade); die Wettkampf-Namen kommen aus
+ * getCompetitions(). Im api-Modus fehlt dieser Endpoint (NotImplemented) —
+ * dann rendert der Verlauf trotzdem, mit generischem Namen + Hinweiszeile.
  */
 
 const BAR_MIN_PX = 44;
@@ -24,13 +31,13 @@ export function ScoreTrend({ routine }: { routine: Routine }) {
   const { locale } = useLocale();
   const intl = locale === "de" ? "de-DE" : "en-GB";
 
+  /* Nur für die Namens-Auflösung — die Wertungen selbst hängen an der Kür. */
+  const comps = useData((repo) => repo.getCompetitions());
+
   const scores = useMemo(
     () => [...routine.scores].sort((a, b) => a.date.localeCompare(b.date)),
     [routine.scores],
   );
-
-  const eventName = (competitionId?: string) =>
-    competitions.find((c) => c.id === competitionId)?.name ?? t("trainingScore");
 
   if (scores.length === 0) {
     return (
@@ -45,6 +52,37 @@ export function ScoreTrend({ routine }: { routine: Routine }) {
       </Card>
     );
   }
+
+  if (comps.status === "loading") return <SkeletonCard lines={5} />;
+
+  /* Bekannte Contract-Lücke: kein Wettkampf-Endpoint → Verlauf trotzdem
+     zeigen (Scores sind da), Namen generisch + sichtbarer Hinweis. */
+  const compsMissing = comps.status === "error" && isNotImplemented(comps.error);
+
+  if (comps.status === "error" && !compsMissing) {
+    return (
+      <Card>
+        <CardHeader eyebrow={t("scoreEyebrow")} title={t("scoreTitle")} />
+        <div className="grid place-items-center gap-3 py-6 text-center">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-sunken text-ink-soft">
+            <Icon name="zap" className="ic h-5 w-5" />
+          </span>
+          <p className="max-w-xs text-caption text-ink-soft">{errorMessage(comps.error)}</p>
+          <Button variant="secondary" onClick={comps.reload}>
+            {t("retry")}
+          </Button>
+        </div>
+      </Card>
+    );
+  }
+
+  const competitions = comps.status === "ready" ? comps.data : [];
+  const eventName = (competitionId?: string) => {
+    if (!competitionId) return t("trainingScore");
+    const name = competitions.find((c) => c.id === competitionId)?.name;
+    if (name) return name;
+    return compsMissing ? t("competitionFallback") : t("trainingScore");
+  };
 
   const totals = scores.map((s) => s.total);
   const min = Math.min(...totals);
@@ -104,6 +142,10 @@ export function ScoreTrend({ routine }: { routine: Routine }) {
           value: formatPoints(scores[scores.length - 1].components, locale),
         })}
       </p>
+
+      {compsMissing && (
+        <p className="mt-1.5 text-caption text-ink-faint">{t("competitionNamesPending")}</p>
+      )}
 
       <CardFooter>
         <span className="inline-flex flex-wrap items-center gap-2">

@@ -35,6 +35,7 @@ export function DunningAutomationCard({
   stagesOn,
   onStageChange,
   onPreview,
+  onDryRun,
 }: {
   masterOn: boolean;
   onMasterChange: (on: boolean) => void;
@@ -42,6 +43,8 @@ export function DunningAutomationCard({
   onStageChange: (index: number, on: boolean) => void;
   /** Öffnet das E-Mail-Vorschau-Modal (Beispiel-Mahnmail) */
   onPreview: () => void;
+  /** Startet den Mahnlauf als Trockenlauf (dry_run) und öffnet das Ergebnis-Sheet */
+  onDryRun: () => void;
 }) {
   const t = useT(financeDict);
 
@@ -71,6 +74,9 @@ export function DunningAutomationCard({
         title={t("autoTitle")}
         action={
           <>
+            <Button variant="ghost" size="sm" icon="play" onClick={onDryRun}>
+              {t("dunningRunButton")}
+            </Button>
             <Button variant="ghost" size="sm" icon="mail" onClick={onPreview}>
               {t("emailPreview")}
             </Button>

@@ -7,8 +7,8 @@ import { ResponseBar } from "@/components/ui/ResponseBar";
 import { Icon } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatTime } from "@/lib/format";
-import { fullName, memberById } from "@/lib/mock";
-import type { AttendanceStatus, Event, Member, Rsvp } from "@/lib/types";
+import { fullName, memberById } from "@/lib/data";
+import type { AttendanceStatus, Event, Member, Rsvp, Team } from "@/lib/types";
 import { termineDict } from "../i18n";
 import {
   attendanceCounts,
@@ -23,34 +23,42 @@ import {
  * Termin-Karte in der Tagesliste (Mockup .session): Zeitspalte,
  * Titel + Team-Badges, Ort, AvatarStack + ResponseBar, Absagegrund-Blase.
  * Die ganze Karte öffnet das Detail (Overlay-Button, 44-px-Ziel).
+ * Mitglieder/Teams kommen als Props aus der Facade (kein lib/mock).
  */
 export function EventCard({
   event,
   rsvps,
+  members,
+  teams,
   past = false,
   attendanceMap,
+  /** api-Modus: Anwesenheit hat (noch) keinen Lese-Endpoint — Hinweis statt Zahlen */
+  attendanceUnavailable = false,
   onOpen,
 }: {
   event: Event;
   rsvps: Rsvp[];
+  members: Member[];
+  teams: Team[];
   /** Vergangene Termine: ausgegraut, Anwesenheits-Bilanz statt RSVP-Balken */
   past?: boolean;
   attendanceMap?: Record<string, AttendanceStatus>;
+  attendanceUnavailable?: boolean;
   onOpen: () => void;
 }) {
   const t = useT(termineDict);
   const { locale } = useLocale();
 
-  const participants = participantsOf(event, rsvps);
+  const participants = participantsOf(event, rsvps, members);
   const counts = rsvpCounts(participants.length, rsvps);
   const going = rsvps
     .filter((rsvp) => rsvp.status === "going")
-    .map((rsvp) => memberById(rsvp.memberId))
+    .map((rsvp) => memberById(members, rsvp.memberId))
     .filter((member): member is Member => member !== undefined);
   const quote = past
     ? undefined
     : rsvps.find((rsvp) => (rsvp.status === "declined" || rsvp.status === "sick") && rsvp.comment);
-  const quoteMember = quote ? memberById(quote.memberId) : undefined;
+  const quoteMember = quote ? memberById(members, quote.memberId) : undefined;
   const att = attendanceMap ? attendanceCounts(participants, attendanceMap) : undefined;
   const quoted = (text: string) => (locale === "de" ? `„${text}“` : `“${text}”`);
 
@@ -82,7 +90,7 @@ export function EventCard({
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[15.5px] font-bold text-ink">{event.title}</h3>
           <Badge tone={TYPE_TONE[event.type]}>{t(TYPE_LABEL_KEY[event.type])}</Badge>
-          {teamsOf(event).map((team) => (
+          {teamsOf(event, teams).map((team) => (
             <Badge key={team.id} tone="neutral">
               {team.name}
             </Badge>
@@ -108,7 +116,9 @@ export function EventCard({
           >
             {att && att.recorded > 0
               ? t("attendanceOf", { present: att.present, total: participants.length })
-              : t("noAttendance")}
+              : attendanceUnavailable
+                ? t("attendanceUnavailable")
+                : t("noAttendance")}
           </span>
         ) : (
           participants.length > 0 && (

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { Routine, RoutineStatus } from "@/lib/types";
-import { routines, memberById } from "@/lib/mock";
+import type { Member, Routine, RoutineStatus } from "@/lib/types";
+import { errorMessage, isNotImplemented, memberById } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -11,6 +12,7 @@ import { FilterChips, type FilterChipOption } from "@/components/ui/FilterChips"
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { AvatarStack } from "@/components/ui/AvatarStack";
 import { Icon } from "@/components/shell/icons";
 import { useToast } from "@/components/ui/Toast";
@@ -33,26 +35,10 @@ const STATUS_ORDER: Record<RoutineStatus, number> = {
   archived: 3,
 };
 
-export function RoutinesList() {
+/** Kopf (Titel + „Neue Kür") — identisch über Lade-, Fehler- und Datenzustand. */
+function ListShell({ children }: { children: ReactNode }) {
   const t = useT(kuerenDict);
   const { showToast } = useToast();
-  const [filter, setFilter] = useState<StatusFilter>("all");
-
-  const sorted = useMemo(
-    () => [...routines].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
-    [],
-  );
-  const visible = filter === "all" ? sorted : sorted.filter((r) => r.status === filter);
-
-  const countOf = (status: RoutineStatus) => routines.filter((r) => r.status === status).length;
-  const filterOptions: FilterChipOption<StatusFilter>[] = [
-    { value: "all", label: t("filterAll"), count: routines.length },
-    { value: "competition", label: t("statusCompetition"), count: countOf("competition") },
-    { value: "ready", label: t("statusReady"), count: countOf("ready") },
-    { value: "draft", label: t("statusDraft"), count: countOf("draft") },
-    { value: "archived", label: t("statusArchived"), count: countOf("archived") },
-  ];
-
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5">
       <SectionHeader
@@ -68,7 +54,79 @@ export function RoutinesList() {
           </Button>
         }
       />
+      {children}
+    </div>
+  );
+}
 
+export function RoutinesList() {
+  const t = useT(kuerenDict);
+  /* Küren + Mitglieder (für die Läufer:innen-Avatare) gemeinsam laden. */
+  const state = useData((repo) => Promise.all([repo.getRoutines(), repo.getMembers()]));
+
+  if (state.status === "loading") {
+    return (
+      <ListShell>
+        <div aria-hidden="true" className="grid gap-5">
+          <Skeleton className="h-9 w-full max-w-xl rounded-full" />
+          <ul className="grid list-none gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }, (_, i) => (
+              <li key={i}>
+                <SkeletonCard lines={4} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </ListShell>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <ListShell>
+        {isNotImplemented(state.error) ? (
+          <EmptyState
+            icon="sparkle"
+            title={t("notConnectedTitle")}
+            body={t("notConnectedBody")}
+          />
+        ) : (
+          <EmptyState
+            icon="zap"
+            title={t("loadErrorTitle")}
+            body={errorMessage(state.error)}
+            action={<Button onClick={state.reload}>{t("retry")}</Button>}
+          />
+        )}
+      </ListShell>
+    );
+  }
+
+  const [routines, members] = state.data;
+  return <LoadedList routines={routines} members={members} />;
+}
+
+function LoadedList({ routines, members }: { routines: Routine[]; members: Member[] }) {
+  const t = useT(kuerenDict);
+  const [filter, setFilter] = useState<StatusFilter>("all");
+
+  const sorted = useMemo(
+    () => [...routines].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
+    [routines],
+  );
+  const visible = filter === "all" ? sorted : sorted.filter((r) => r.status === filter);
+
+  const countOf = (status: RoutineStatus) => routines.filter((r) => r.status === status).length;
+  const filterOptions: FilterChipOption<StatusFilter>[] = [
+    { value: "all", label: t("filterAll"), count: routines.length },
+    { value: "competition", label: t("statusCompetition"), count: countOf("competition") },
+    { value: "ready", label: t("statusReady"), count: countOf("ready") },
+    { value: "draft", label: t("statusDraft"), count: countOf("draft") },
+    { value: "archived", label: t("statusArchived"), count: countOf("archived") },
+  ];
+
+  return (
+    <ListShell>
       <FilterChips
         options={filterOptions}
         value={filter}
@@ -90,19 +148,19 @@ export function RoutinesList() {
       ) : (
         <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {visible.map((routine) => (
-            <RoutineCard key={routine.id} routine={routine} />
+            <RoutineCard key={routine.id} routine={routine} members={members} />
           ))}
         </ul>
       )}
-    </div>
+    </ListShell>
   );
 }
 
-function RoutineCard({ routine }: { routine: Routine }) {
+function RoutineCard({ routine, members }: { routine: Routine; members: Member[] }) {
   const t = useT(kuerenDict);
   const { locale } = useLocale();
   const skaters = routine.memberIds
-    .map((id) => memberById(id))
+    .map((id) => memberById(members, id))
     .filter((m): m is NonNullable<typeof m> => Boolean(m));
   const skaterNames = skaters.map((m) => `${m.firstName} ${m.lastName}`).join(" & ");
 

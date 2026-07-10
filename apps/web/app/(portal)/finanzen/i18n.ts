@@ -14,6 +14,38 @@ export const financeDict = {
     invoiceRun: "Rechnungslauf starten",
     invoiceRunToast: "Rechnungslauf als Entwurf angelegt — noch nichts versendet.",
 
+    // Laden & Fehler (Facade)
+    retry: "Erneut versuchen",
+    loadErrorTitle: "Daten konnten nicht geladen werden",
+    notImplementedTitle: "Noch nicht angebunden",
+    notImplementedBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    ledgerNotImplementedBody:
+      "Das Kassenbuch hat im api-Modus noch keinen Endpoint — die Buchungen erscheinen hier, sobald der Contract ihn liefert.",
+    kpiUnavailable: "—",
+    kpiIncomeNotImplemented: "im api-Modus noch ohne Endpoint",
+    kpiIncomeError: "konnte nicht geladen werden",
+    kpiIncomeLoading: "wird geladen …",
+
+    // Mahnlauf (Vorschau)
+    dunningRunButton: "Mahnlauf (Vorschau)",
+    dunningRunTitle: "Mahnlauf — Vorschau",
+    dunningRunDryBadge: "Trockenlauf — nichts versendet",
+    dunningRunTotalOne: "1 offener Posten geprüft",
+    dunningRunTotalMany: "{n} offene Posten geprüft",
+    dunningRunAuto: "Zahlungserinnerung (Stufe 1)",
+    dunningRunAutoHint: "würde automatisch versendet — mit Vorschau pro Empfänger",
+    dunningRunApproval: "Mahnung (Stufe 2+)",
+    dunningRunApprovalHint: "wartet auf manuelle Freigabe durch den Vorstand",
+    dunningRunNone: "Keine Aktion fällig",
+    dunningRunNoneHint: "innerhalb der Fristen — es passiert nichts",
+    dunningRunEmptyTitle: "Nichts zu mahnen",
+    dunningRunEmptyBody:
+      "Der Trockenlauf hat keine überfälligen Posten gefunden — gute Nachrichten für die Vereinskasse.",
+    dunningRunErrorTitle: "Mahnlauf konnte nicht gestartet werden",
+    dunningRunNoPermission: "Dafür fehlt dir die Berechtigung.",
+    dunningRunMicro:
+      "Nur eine Vorschau: Der echte Lauf versendet Stufe 1 automatisch — Stufe 2+ niemals ohne Freigabe.",
+
     // KPI-Zeile
     kpiOpen: "Offene Posten",
     kpiOpenSub: "{n} Rechnungen",
@@ -154,6 +186,38 @@ export const financeDict = {
     exportDatevToast: "DATEV export created — {n} entries as CSV.",
     invoiceRun: "Start invoice run",
     invoiceRunToast: "Invoice run saved as draft — nothing sent yet.",
+
+    // Loading & errors (facade)
+    retry: "Try again",
+    loadErrorTitle: "Data could not be loaded",
+    notImplementedTitle: "Not connected yet",
+    notImplementedBody: "This area has no endpoint in api mode yet.",
+    ledgerNotImplementedBody:
+      "The cash book has no endpoint in api mode yet — entries will appear here once the contract provides one.",
+    kpiUnavailable: "—",
+    kpiIncomeNotImplemented: "no endpoint in api mode yet",
+    kpiIncomeError: "could not be loaded",
+    kpiIncomeLoading: "loading …",
+
+    // Dunning run (preview)
+    dunningRunButton: "Dunning run (preview)",
+    dunningRunTitle: "Dunning run — preview",
+    dunningRunDryBadge: "Dry run — nothing sent",
+    dunningRunTotalOne: "1 open item checked",
+    dunningRunTotalMany: "{n} open items checked",
+    dunningRunAuto: "Payment reminder (stage 1)",
+    dunningRunAutoHint: "would be sent automatically — with a preview per recipient",
+    dunningRunApproval: "Dunning notice (stage 2+)",
+    dunningRunApprovalHint: "awaits manual approval by the board",
+    dunningRunNone: "No action due",
+    dunningRunNoneHint: "within the deadlines — nothing happens",
+    dunningRunEmptyTitle: "Nothing to dun",
+    dunningRunEmptyBody:
+      "The dry run found no overdue items — good news for the club till.",
+    dunningRunErrorTitle: "Dunning run could not be started",
+    dunningRunNoPermission: "You do not have permission for this.",
+    dunningRunMicro:
+      "Preview only: a real run sends stage 1 automatically — stage 2+ never without approval.",
 
     // KPI row
     kpiOpen: "Open items",

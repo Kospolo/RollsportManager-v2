@@ -1,15 +1,9 @@
 import type { Locale } from "@/lib/i18n";
-import {
-  competitions,
-  guardianships,
-  invoices,
-  memberById,
-  routineById,
-  tasks,
-  teams,
-} from "@/lib/mock";
+import { memberById, type DataRepository } from "@/lib/data";
 import type {
+  Club,
   Competition,
+  Guardianship,
   Invoice,
   Member,
   RollArtScore,
@@ -18,13 +12,61 @@ import type {
   Team,
 } from "@/lib/types";
 
-/** Kolokalisierte Helfer des Wettkampf-Screens — reine Ableitungen aus lib/mock. */
+/**
+ * Kolokalisierte Helfer des Wettkampf-Screens — reine Ableitungen über den
+ * per Facade geladenen Daten (kein lib/mock mehr, siehe lib/data/MIGRATION.md).
+ */
 
-export const nextCompetition = competitions.find((c) => c.status === "upcoming");
-export const pastCompetitions = competitions.filter((c) => c.status === "done");
+/* ---------- Laden über die Facade ---------- */
 
-export function competitionTasks(competition: Competition): Task[] {
+/** Alles, was der Screen braucht — in einem Rutsch geladen. */
+export type WettkampfData = {
+  club: Club;
+  competitions: Competition[];
+  tasks: Task[];
+  members: Member[];
+  teams: Team[];
+  routines: Routine[];
+  guardianships: Guardianship[];
+  invoices: Invoice[];
+};
+
+/**
+ * Sammel-Read für `useData(loadWettkampfData)`. Im api-Modus (Contract v0.1.0)
+ * werfen getCompetitions/getTasks/getTeams/getGuardianships NotImplementedError —
+ * der Screen zeigt dann den „Noch nicht angebunden“-Hinweis (nie crashen).
+ */
+export async function loadWettkampfData(repo: DataRepository): Promise<WettkampfData> {
+  const [club, competitions, tasks, members, teams, routines, guardianships, invoices] =
+    await Promise.all([
+      repo.getClub(),
+      repo.getCompetitions(),
+      repo.getTasks(),
+      repo.getMembers(),
+      repo.getTeams(),
+      repo.getRoutines(),
+      repo.getGuardianships(),
+      repo.getInvoices(),
+    ]);
+  return { club, competitions, tasks, members, teams, routines, guardianships, invoices };
+}
+
+/* ---------- Wettkämpfe & Aufgaben ---------- */
+
+export function nextCompetition(competitions: Competition[]): Competition | undefined {
+  return competitions.find((c) => c.status === "upcoming");
+}
+
+export function pastCompetitions(competitions: Competition[]): Competition[] {
+  return competitions.filter((c) => c.status === "done");
+}
+
+export function competitionTasks(competition: Competition, tasks: Task[]): Task[] {
   return tasks.filter((task) => task.competitionId === competition.id);
+}
+
+function routineById(routines: Routine[], id: string): Routine | undefined {
+  return routines.find((routine) => routine.id === id);
 }
 
 /* ---------- Meldungen ---------- */
@@ -42,7 +84,11 @@ export type StarterEntry = {
 };
 
 /** Startgeld-Rechnung: direkt an den Starter oder an Erziehungsberechtigte („… — Lina“). */
-function entryFeeInvoiceFor(member: Member): Invoice | undefined {
+function entryFeeInvoiceFor(
+  member: Member,
+  guardianships: Guardianship[],
+  invoices: Invoice[],
+): Invoice | undefined {
   const guardianIds = guardianships
     .filter((g) => g.childId === member.id)
     .map((g) => g.guardianId);
@@ -54,17 +100,27 @@ function entryFeeInvoiceFor(member: Member): Invoice | undefined {
   );
 }
 
-export function starterEntries(competition: Competition): StarterEntry[] {
+/** Nur die Quellen, die die Meldeliste braucht — der volle Bundle passt ebenfalls. */
+export type StarterSources = Pick<
+  WettkampfData,
+  "members" | "teams" | "routines" | "guardianships" | "invoices"
+>;
+
+export function starterEntries(
+  competition: Competition,
+  sources: StarterSources,
+): StarterEntry[] {
+  const { members, teams, routines, guardianships, invoices } = sources;
   const competitionRoutines = competition.routineIds
-    .map((id) => routineById(id))
+    .map((id) => routineById(routines, id))
     .filter((routine): routine is Routine => routine !== undefined);
 
   return competition.participantIds
-    .map((id) => memberById(id))
+    .map((id) => memberById(members, id))
     .filter((member): member is Member => member !== undefined)
     .map((member) => {
       const routine = competitionRoutines.find((r) => r.memberIds.includes(member.id));
-      const invoice = entryFeeInvoiceFor(member);
+      const invoice = entryFeeInvoiceFor(member, guardianships, invoices);
       const feeStatus: FeeStatus =
         invoice === undefined ? "none" : invoice.status === "paid" ? "paid" : "open";
       return {
@@ -118,14 +174,18 @@ export function totalOf(score: EnteredScore): number {
 }
 
 /** Startreihenfolge nach Setzliste: ohne Wertung zuerst, dann aufsteigend nach letzter Gesamtwertung. */
-export function startOrder(competition: Competition): StartItem[] {
+export function startOrder(
+  competition: Competition,
+  routines: Routine[],
+  members: Member[],
+): StartItem[] {
   return competition.routineIds
-    .map((id) => routineById(id))
+    .map((id) => routineById(routines, id))
     .filter((routine): routine is Routine => routine !== undefined)
     .map((routine) => ({
       routine,
       skaters: routine.memberIds
-        .map((id) => memberById(id))
+        .map((id) => memberById(members, id))
         .filter((member): member is Member => member !== undefined),
       lastScore: routine.scores.at(-1),
     }))
@@ -142,9 +202,13 @@ export type PastResult = {
   previous?: RollArtScore;
 };
 
-export function pastResults(competition: Competition): PastResult[] {
+export function pastResults(
+  competition: Competition,
+  routines: Routine[],
+  members: Member[],
+): PastResult[] {
   return competition.routineIds
-    .map((id) => routineById(id))
+    .map((id) => routineById(routines, id))
     .filter((routine): routine is Routine => routine !== undefined)
     .flatMap((routine) => {
       const index = routine.scores.findIndex((s) => s.competitionId === competition.id);
@@ -153,7 +217,7 @@ export function pastResults(competition: Competition): PastResult[] {
         {
           routine,
           skaters: routine.memberIds
-            .map((id) => memberById(id))
+            .map((id) => memberById(members, id))
             .filter((member): member is Member => member !== undefined),
           score: routine.scores[index],
           previous: index > 0 ? routine.scores[index - 1] : undefined,

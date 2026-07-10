@@ -96,6 +96,14 @@ export const dashboardDict = {
     undo: "Rückgängig",
     tasksFooter: "{done} von {total} erledigt",
     tasksCompetitionLink: "Wettkampf öffnen",
+    taskLocalOnly: "Nur lokal geändert — Aufgaben haben im api-Modus noch keinen Endpoint.",
+
+    /* Laden & Fehler (Daten-Facade) */
+    loadErrorTitle: "Daten konnten nicht geladen werden",
+    retry: "Erneut versuchen",
+    notConnectedTitle: "Noch nicht angebunden",
+    notConnectedBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    noPermission: "Keine Berechtigung — die Änderung wurde nicht gespeichert.",
   },
   en: {
     /* Header */
@@ -187,6 +195,14 @@ export const dashboardDict = {
     undo: "Undo",
     tasksFooter: "{done} of {total} done",
     tasksCompetitionLink: "Open competition",
+    taskLocalOnly: "Changed locally only — tasks have no endpoint in api mode yet.",
+
+    /* Loading & errors (data facade) */
+    loadErrorTitle: "Data could not be loaded",
+    retry: "Try again",
+    notConnectedTitle: "Not connected yet",
+    notConnectedBody: "This area has no endpoint in api mode yet.",
+    noPermission: "No permission — the change was not saved.",
   },
 } satisfies Dict;
 

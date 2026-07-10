@@ -39,6 +39,13 @@ export const mitgliederDict = {
     emptyBody: "Suche und Filter liefern gerade keine Treffer — probiere einen anderen Namen oder setze den Filter zurück.",
     emptyReset: "Filter zurücksetzen",
 
+    retry: "Erneut versuchen",
+    loadErrorTitle: "Daten konnten nicht geladen werden",
+    niTitle: "Noch nicht angebunden",
+    niBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    listNiHint: "Teams & Familien sind im api-Modus noch nicht angebunden — Team-Spalte und Familien-Beiträge sind unvollständig.",
+    noPermission: "Keine Berechtigung — die Rolle wurde nicht geändert.",
+
     roleOwner: "Vorstand",
     roleAdmin: "Verwaltung",
     roleTreasurer: "Kassenwart",
@@ -86,7 +93,9 @@ export const mitgliederDict = {
     lblAccess: "Zugang",
     roleSelect: "Rolle ändern",
     roleHint: "Demo: Die Änderung wird nur lokal gespeichert.",
+    roleHintApi: "Die Änderung wird direkt im Verein gespeichert.",
     roleToast: "Rolle geändert zu „{role}“ — Demo",
+    roleToastSaved: "Rolle geändert zu „{role}“",
 
     famEyebrow: "Familie",
     famTitle: "Familien-Verknüpfungen",
@@ -97,6 +106,7 @@ export const mitgliederDict = {
     famRelOther: "Bezugsperson",
     famEmpty: "Keine Familien-Verknüpfungen hinterlegt.",
     famEmptyHint: "Eltern und Kinder lassen sich in der Verwaltung verknüpfen — Beiträge laufen dann gebündelt über die Familie.",
+    famNi: "Familien-Verknüpfungen sind im api-Modus noch nicht angebunden.",
 
     duesEyebrow: "Beiträge",
     duesTitle: "Beitrags-Historie",
@@ -119,6 +129,7 @@ export const mitgliederDict = {
     attTrend: "Verlauf über die letzten {n} Einheiten",
     attSparkLabel: "Anwesenheitsverlauf in Prozent: {values}",
     attNoTeam: "Kein Team zugewiesen — es liegen keine Trainingsdaten vor.",
+    attNi: "Anwesenheits-Daten sind im api-Modus noch nicht angebunden.",
     attDemo: "Demo-Daten aus dem Mock-Verein",
 
     notFoundTitle: "Mitglied nicht gefunden",
@@ -156,6 +167,13 @@ export const mitgliederDict = {
     emptyTitle: "Nobody found",
     emptyBody: "Search and filter return no matches right now — try another name or reset the filter.",
     emptyReset: "Reset filters",
+
+    retry: "Try again",
+    loadErrorTitle: "Data could not be loaded",
+    niTitle: "Not connected yet",
+    niBody: "This area has no endpoint in api mode yet.",
+    listNiHint: "Teams & families are not connected in api mode yet — the team column and family fees are incomplete.",
+    noPermission: "No permission — the role was not changed.",
 
     roleOwner: "Board",
     roleAdmin: "Admin",
@@ -204,7 +222,9 @@ export const mitgliederDict = {
     lblAccess: "Access",
     roleSelect: "Change role",
     roleHint: "Demo: the change is only stored locally.",
+    roleHintApi: "The change is saved directly to the club.",
     roleToast: "Role changed to “{role}” — demo",
+    roleToastSaved: "Role changed to “{role}”",
 
     famEyebrow: "Family",
     famTitle: "Family links",
@@ -215,6 +235,7 @@ export const mitgliederDict = {
     famRelOther: "Caregiver",
     famEmpty: "No family links on file.",
     famEmptyHint: "Parents and children can be linked in administration — fees are then bundled per family.",
+    famNi: "Family links are not connected in api mode yet.",
 
     duesEyebrow: "Fees",
     duesTitle: "Fee history",
@@ -237,6 +258,7 @@ export const mitgliederDict = {
     attTrend: "Trend across the last {n} sessions",
     attSparkLabel: "Attendance trend in percent: {values}",
     attNoTeam: "No team assigned — there is no training data.",
+    attNi: "Attendance data is not connected in api mode yet.",
     attDemo: "Demo data from the mock club",
 
     notFoundTitle: "Member not found",

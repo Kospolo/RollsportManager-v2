@@ -10,7 +10,7 @@ import {
   memberById,
   fullName,
   routines,
-} from "@/lib/mock";
+} from "@/lib/demo";
 import type { Invoice } from "@/lib/types";
 import { Card, CardFooter, CardHeader } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";

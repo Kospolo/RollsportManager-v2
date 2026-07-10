@@ -4,26 +4,39 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
-import { fullName, memberById } from "@/lib/mock";
+import {
+  data,
+  dataSource,
+  errorMessage,
+  fullName,
+  isForbidden,
+  isNotImplemented,
+  type AssignableRole,
+} from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import type { MemberRole, MemberStatus } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge, StatusPill, type BadgeTone } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Select } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { mitgliederDict, roleKey, type MitgliederKey } from "../i18n";
-import { ageYears, ROLE_TONE, teamNames } from "../derive";
+import { ageYears, ROLE_TONE, softNotImplemented, teamNames } from "../derive";
 import { AttendanceCard, DuesCard, FamilyCard } from "./DetailCards";
 
 /**
  * Mitglieder-Profil: Brotkrumen + Kopf mit Avatar/Rolle, Stammdaten-Karte
- * (inkl. Rolle-ändern-Select, lokal + Toast), Familien-Karte,
- * Beitrags-Historie und Anwesenheits-Quote.
+ * (inkl. Rolle-ändern-Select über die Facade: optimistisch + Rollback bei
+ * Fehler, 403 als Klartext-Toast), Familien-Karte, Beitrags-Historie und
+ * Anwesenheits-Quote. Alle Daten laden async über lib/data.
  */
 
-const ROLE_OPTIONS: MemberRole[] = ["member", "coach", "guest_coach", "treasurer", "admin", "owner"];
+/** owner ist nie zuweisbar (Facade-Vertrag) — bleibt nur als Anzeige-Option. */
+const ROLE_OPTIONS: AssignableRole[] = ["member", "coach", "guest_coach", "treasurer", "admin"];
 
 const STATUS_KEY: Record<MemberStatus, MitgliederKey> = {
   active: "statusActive",
@@ -48,13 +61,70 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
   );
 }
 
+function DetailSkeleton() {
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-5" aria-hidden="true">
+      <Skeleton className="h-5 w-44" />
+      <div className="flex flex-wrap items-center gap-4">
+        <Skeleton className="h-14 w-14 rounded-full" />
+        <div className="grid gap-2">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-72 max-w-full" />
+        </div>
+      </div>
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+        <div className="grid gap-5">
+          <SkeletonCard lines={6} />
+          <SkeletonCard lines={3} />
+        </div>
+        <div className="grid gap-5">
+          <SkeletonCard lines={5} />
+          <SkeletonCard lines={3} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function MemberDetail({ id }: { id: string }) {
   const t = useT(mitgliederDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
 
-  const member = memberById(id);
-  const [role, setRole] = useState<MemberRole>(member?.role ?? "member");
+  const state = useData(
+    (repo) => Promise.all([repo.getMemberById(id), softNotImplemented(repo.getTeams())] as const),
+    [id],
+  );
+
+  /**
+   * Optimistische Rollen-Anzeige — an die Mitglieds-ID gebunden, damit beim
+   * Profilwechsel (Familien-Links) kein alter Override mitwandert.
+   * null = Server-Stand des geladenen Mitglieds.
+   */
+  const [override, setOverride] = useState<{ id: string; role: MemberRole } | null>(null);
+  const [savingRole, setSavingRole] = useState(false);
+  const roleOverride = override !== null && override.id === id ? override.role : null;
+
+  if (state.status === "loading") return <DetailSkeleton />;
+
+  if (state.status === "error") {
+    return (
+      <div className="mx-auto grid w-full max-w-6xl gap-5">
+        {isNotImplemented(state.error) ? (
+          <EmptyState icon="sparkle" title={t("niTitle")} body={t("niBody")} />
+        ) : (
+          <EmptyState
+            icon="zap"
+            title={t("loadErrorTitle")}
+            body={errorMessage(state.error)}
+            action={<Button onClick={state.reload}>{t("retry")}</Button>}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const [member, teams] = state.data;
 
   if (!member) {
     return (
@@ -71,11 +141,32 @@ export function MemberDetail({ id }: { id: string }) {
   }
 
   const name = fullName(member);
-  const teams = teamNames(member);
+  /** null ⇒ Teams in der aktiven Datenquelle nicht angebunden (Anzeige „—"). */
+  const memberTeams = teams === null ? null : teamNames(member, teams);
+  const role = roleOverride ?? member.role;
 
-  const changeRole = (next: MemberRole) => {
-    setRole(next);
-    showToast(t("roleToast", { role: t(roleKey(next)) }), { tone: "success" });
+  const changeRole = async (next: MemberRole) => {
+    if (next === role || next === "owner" || savingRole) return;
+    const previous = role;
+    setOverride({ id, role: next }); // optimistisch — UI folgt sofort
+    setSavingRole(true);
+    try {
+      await data.changeMemberRole(member.id, next);
+      showToast(
+        t(dataSource === "api" ? "roleToastSaved" : "roleToast", { role: t(roleKey(next)) }),
+        { tone: "success" },
+      );
+    } catch (error) {
+      // Rollback auf den vorherigen Stand + verständlicher Fehler-Toast (403 = keine Berechtigung).
+      setOverride(previous === member.role ? null : { id, role: previous });
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+        actionLabel: t("retry"),
+        onAction: () => void changeRole(next),
+      });
+    } finally {
+      setSavingRole(false);
+    }
   };
 
   return (
@@ -110,7 +201,7 @@ export function MemberDetail({ id }: { id: string }) {
             <span className="text-caption text-ink-faint">
               {t("metaJoined", { date: formatDateShort(member.joinedAt, locale) })}
               {" · "}
-              {teams.length > 0 ? teams.join(" · ") : t("noTeam")}
+              {memberTeams === null ? "—" : memberTeams.length > 0 ? memberTeams.join(" · ") : t("noTeam")}
             </span>
           </div>
         </div>
@@ -145,8 +236,10 @@ export function MemberDetail({ id }: { id: string }) {
                 <span className="tabular-nums">{formatDateShort(member.joinedAt, locale)}</span>
               </DetailRow>
               <DetailRow label={t("lblTeams")}>
-                {teams.length > 0 ? (
-                  teams.map((team) => (
+                {memberTeams === null ? (
+                  <span className="text-ink-faint">—</span>
+                ) : memberTeams.length > 0 ? (
+                  memberTeams.map((team) => (
                     <Badge key={team} tone="neutral">
                       {team}
                     </Badge>
@@ -170,15 +263,20 @@ export function MemberDetail({ id }: { id: string }) {
             <div className="mt-5">
               <Select
                 label={t("roleSelect")}
-                hint={t("roleHint")}
+                hint={dataSource === "api" ? t("roleHintApi") : t("roleHint")}
                 value={role}
-                onChange={(event) => changeRole(event.target.value as MemberRole)}
+                disabled={savingRole}
+                onChange={(event) => void changeRole(event.target.value as MemberRole)}
               >
                 {ROLE_OPTIONS.map((option) => (
                   <option key={option} value={option}>
                     {t(roleKey(option))}
                   </option>
                 ))}
+                {/* Anzeige-Option: owner kann Bestand sein, ist aber nie zuweisbar. */}
+                <option value="owner" disabled>
+                  {t(roleKey("owner"))}
+                </option>
               </Select>
             </div>
           </Card>

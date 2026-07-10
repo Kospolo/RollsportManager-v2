@@ -6,14 +6,30 @@ import { Button } from "@/components/ui/Button";
 import { Switch } from "@/components/ui/Switch";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatTime } from "@/lib/format";
-import { fullName } from "@/lib/mock";
-import type { AttendanceStatus, Event, Member, Rsvp, RsvpStatus } from "@/lib/types";
+import { fullName } from "@/lib/data";
+import type {
+  Attendance,
+  AttendanceStatus,
+  Event,
+  Member,
+  Rsvp,
+  RsvpStatus,
+  Team,
+} from "@/lib/types";
 import { termineDict } from "../i18n";
 import { checkinIso, teamNameOf, RSVP_LABEL_KEY, RSVP_ORDER, RSVP_TONE } from "../helpers";
 
 /** Gemeinsame Zeile: Avatar + Name + Team — rechts der jeweilige Status. */
-function PersonRow({ member, children }: { member: Member; children: React.ReactNode }) {
-  const team = teamNameOf(member);
+function PersonRow({
+  member,
+  teams,
+  children,
+}: {
+  member: Member;
+  teams: Team[];
+  children: React.ReactNode;
+}) {
+  const team = teamNameOf(member, teams);
   return (
     <li className="flex min-h-14 items-center gap-3 border-b border-line py-2.5 last:border-b-0">
       <Avatar personId={member.id} firstName={member.firstName} lastName={member.lastName} size="s" />
@@ -30,9 +46,11 @@ function PersonRow({ member, children }: { member: Member; children: React.React
 export function ResponsesPanel({
   participants,
   rsvps,
+  teams,
 }: {
   participants: Member[];
   rsvps: Rsvp[];
+  teams: Team[];
 }) {
   const t = useT(termineDict);
   const { locale } = useLocale();
@@ -58,6 +76,7 @@ export function ResponsesPanel({
       {sorted.map((member) => {
         const status = statusOf(member);
         const comment = commentOf(member);
+        const team = teamNameOf(member, teams);
         return (
           <li key={member.id} className="border-b border-line last:border-b-0">
             <div className="flex min-h-14 items-center gap-3 py-2.5">
@@ -69,9 +88,7 @@ export function ResponsesPanel({
               />
               <div className="grid min-w-0 gap-px">
                 <span className="truncate text-[14px] font-bold text-ink">{fullName(member)}</span>
-                {teamNameOf(member) && (
-                  <span className="truncate text-caption text-ink-faint">{teamNameOf(member)}</span>
-                )}
+                {team && <span className="truncate text-caption text-ink-faint">{team}</span>}
               </div>
               <Badge tone={RSVP_TONE[status]} className="ml-auto flex-none">
                 {t(RSVP_LABEL_KEY[status])}
@@ -90,13 +107,18 @@ export function ResponsesPanel({
 }
 
 /**
- * Tab „Anwesenheit“ (Trainer-Aktion): Schalter pro Mitglied (optimistisch),
- * Verspätet/Entschuldigt-Badges, Check-in-Zeit und QR-Check-in-Einstieg.
+ * Tab „Anwesenheit“ (Trainer-Aktion): Schalter pro Mitglied (optimistisch,
+ * Facade-Write im Screen), Verspätet/Entschuldigt-Badges, Check-in-Zeit und
+ * QR-Check-in-Einstieg. Im api-Modus gibt es (noch) keinen Lese-Endpoint —
+ * dann erscheint ein Hinweis, Schreiben funktioniert trotzdem.
  */
 export function AttendancePanel({
   event,
   participants,
   attendanceMap,
+  attendanceRecords,
+  readUnavailable = false,
+  teams,
   editable,
   showQr,
   onShowQr,
@@ -105,6 +127,11 @@ export function AttendancePanel({
   event: Event;
   participants: Member[];
   attendanceMap: Record<string, AttendanceStatus>;
+  /** Roh-Datensätze für Check-in-Zeitstempel; api-Modus: leer */
+  attendanceRecords: Attendance[];
+  /** api-Modus: erfasste Anwesenheit ist (noch) nicht lesbar */
+  readUnavailable?: boolean;
+  teams: Team[];
   editable: boolean;
   showQr: boolean;
   onShowQr: () => void;
@@ -135,6 +162,12 @@ export function AttendancePanel({
         )}
       </div>
 
+      {readUnavailable && (
+        <p className="rounded-md bg-sunken px-3 py-2 text-caption leading-[18px] text-ink-soft">
+          {t("attendanceReadHint")}
+        </p>
+      )}
+
       {editable && (
         <p className="text-[13px] font-bold text-ink-soft">
           {t("attendanceOf", { present, total: participants.length })}
@@ -146,9 +179,9 @@ export function AttendancePanel({
           {sorted.map((member) => {
             const status = attendanceMap[member.id];
             const isPresent = status === "present" || status === "late";
-            const checkin = checkinIso(event.id, member.id);
+            const checkin = checkinIso(event.id, member.id, attendanceRecords);
             return (
-              <PersonRow key={member.id} member={member}>
+              <PersonRow key={member.id} member={member} teams={teams}>
                 {status === "late" && <Badge tone="warn">{t("lateBadge")}</Badge>}
                 {status === "excused" && <Badge tone="info">{t("excusedBadge")}</Badge>}
                 {checkin && isPresent && (

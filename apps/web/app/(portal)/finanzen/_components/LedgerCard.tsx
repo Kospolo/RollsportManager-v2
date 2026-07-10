@@ -1,27 +1,83 @@
 "use client";
 
+import { useMemo } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDateShort } from "@/lib/format";
-import { fullName, ledgerBalanceCents } from "@/lib/mock";
+import { fullName, ledgerBalanceCents, isNotImplemented, errorMessage } from "@/lib/data";
+import type { DataState } from "@/lib/data/useData";
+import type { Invoice, LedgerEntry, Member } from "@/lib/types";
 import { Card, CardHeader, CardFooter } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconTile } from "@/components/ui/IconTile";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { financeDict } from "../i18n";
-import { CATEGORY_KEY, invoiceNumberById, ledgerRows, orgIcon, type LedgerRow } from "../derive";
+import { CATEGORY_KEY, buildLedgerRows, invoiceNumberById, orgIcon, type LedgerRow } from "../derive";
 
 /**
  * Kassenbuch-Auszug (Seriositätszone): Menschen = Avatar, Organisationen =
  * Icon-Kachel (radius-org, nie Monogramme). Beträge Mono mit echtem −,
  * laufender Saldo in ink-faint — neueste Buchung zuerst.
+ *
+ * Lädt separat vom Rest des Screens: im api-Modus gibt es (noch) keinen
+ * Kassenbuch-Endpoint → NotImplemented wird als ruhiger Hinweis gezeigt.
  */
-export function LedgerCard() {
+export function LedgerCard({
+  ledger,
+  members,
+  invoices,
+}: {
+  ledger: DataState<LedgerEntry[]> & { reload: () => void };
+  members: Member[];
+  invoices: Invoice[];
+}) {
+  const t = useT(financeDict);
+
+  if (ledger.status === "loading") return <SkeletonCard lines={6} />;
+
+  if (ledger.status === "error") {
+    return isNotImplemented(ledger.error) ? (
+      <EmptyState
+        icon="sparkle"
+        title={t("notImplementedTitle")}
+        body={t("ledgerNotImplementedBody")}
+      />
+    ) : (
+      <EmptyState
+        icon="zap"
+        title={t("loadErrorTitle")}
+        body={errorMessage(ledger.error)}
+        action={
+          <Button variant="secondary" onClick={ledger.reload}>
+            {t("retry")}
+          </Button>
+        }
+      />
+    );
+  }
+
+  return <LedgerTable ledger={ledger.data} members={members} invoices={invoices} />;
+}
+
+function LedgerTable({
+  ledger,
+  members,
+  invoices,
+}: {
+  ledger: LedgerEntry[];
+  members: Member[];
+  invoices: Invoice[];
+}) {
   const t = useT(financeDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+
+  const rows = useMemo(() => buildLedgerRows(ledger, members), [ledger, members]);
+  const balanceCents = ledgerBalanceCents(ledger);
 
   const categoryLabel = (category: string) => {
     const key = CATEGORY_KEY[category];
@@ -31,7 +87,7 @@ export function LedgerCard() {
   const entryCell = (row: LedgerRow) => {
     const cp = row.entry.counterparty;
     const invoiceNumber = row.entry.invoiceId
-      ? invoiceNumberById(row.entry.invoiceId)
+      ? invoiceNumberById(invoices, row.entry.invoiceId)
       : undefined;
     return (
       <span className="flex min-w-0 items-center gap-3">
@@ -70,7 +126,7 @@ export function LedgerCard() {
           {formatDateShort(row.entry.date, locale)}
         </span>
       ),
-      footer: t("ledgerFootCount", { n: ledgerRows.length }),
+      footer: t("ledgerFootCount", { n: rows.length }),
     },
     { id: "entry", header: t("colEntry"), cell: entryCell },
     {
@@ -89,7 +145,7 @@ export function LedgerCard() {
           {formatEUR(row.entry.amountCents, locale)}
         </span>
       ),
-      footer: formatEUR(ledgerBalanceCents, locale),
+      footer: formatEUR(balanceCents, locale),
     },
     {
       id: "balance",
@@ -110,7 +166,7 @@ export function LedgerCard() {
             <Badge tone="neutral">
               {t("ledgerBalanceLabel")}
               <span className="font-mono text-mono-table font-bold tabular-nums">
-                {formatEUR(ledgerBalanceCents, locale)}
+                {formatEUR(balanceCents, locale)}
               </span>
             </Badge>
             <Button
@@ -126,7 +182,7 @@ export function LedgerCard() {
       />
       <DataTable
         columns={columns}
-        rows={ledgerRows}
+        rows={rows}
         rowKey={(row) => row.entry.id}
         caption={t("ledgerCaption")}
       />

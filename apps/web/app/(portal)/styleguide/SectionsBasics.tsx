@@ -9,7 +9,7 @@ import { Tabs, TabPanel } from "@/components/ui/Tabs";
 import { Avatar } from "@/components/ui/Avatar";
 import { AvatarStack } from "@/components/ui/AvatarStack";
 import { IconTile } from "@/components/ui/IconTile";
-import { members, dunningPipeline, openInvoices } from "@/lib/mock";
+import { members, dunningPipeline, openInvoices } from "@/lib/demo";
 import { Spec, SpecRow } from "./Spec";
 
 const dict = {

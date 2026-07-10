@@ -1,12 +1,39 @@
-import { attendance, events, guardianships, invoices, memberById, teams } from "@/lib/mock";
-import { seededRandom } from "@/lib/mock/util";
+import { isNotImplemented, memberById } from "@/lib/data";
 import type { BadgeTone } from "@/components/ui/Badge";
-import type { DunningLevel, Guardianship, Invoice, Member, MemberRole } from "@/lib/types";
+import type {
+  Attendance,
+  DunningLevel,
+  Event,
+  Guardianship,
+  Invoice,
+  Member,
+  MemberRole,
+  Team,
+} from "@/lib/types";
 
 /**
- * Abgeleitete Sichten auf die Mock-Daten für den Mitglieder-Bereich.
- * Alle Summen/Status werden hier berechnet — nie hart codiert.
+ * Abgeleitete Sichten für den Mitglieder-Bereich — REINE Funktionen über
+ * den per Facade (lib/data) geladenen Arrays. Kein lib/mock-Import mehr;
+ * alle Summen/Status werden hier berechnet, nie hart codiert.
  */
+
+/* ---------- NotImplemented-Weichzeichner ---------- */
+
+/**
+ * Für Nebendaten eines Screens (z. B. Teams-Spalte in der Liste): eine
+ * bekannte Contract-Lücke (NotImplementedError) wird zu `null` — der Screen
+ * rendert dafür einen sichtbaren Hinweis („nicht angebunden"), NIE ein
+ * vorgetäuschtes leeres Array. Alle anderen Fehler laufen normal weiter
+ * (Fehlerzustand mit Retry).
+ */
+export async function softNotImplemented<T>(promise: Promise<T>): Promise<T | null> {
+  try {
+    return await promise;
+  } catch (error) {
+    if (isNotImplemented(error)) return null;
+    throw error;
+  }
+}
 
 /* ---------- Rollen ---------- */
 
@@ -37,7 +64,7 @@ export const ROLE_TONE: Record<MemberRole, BadgeTone> = {
 
 /* ---------- Teams ---------- */
 
-export function teamNames(member: Member): string[] {
+export function teamNames(member: Member, teams: Team[]): string[] {
   return member.teamIds
     .map((id) => teams.find((team) => team.id === id)?.name)
     .filter((name): name is string => Boolean(name));
@@ -54,12 +81,20 @@ export type DuesStatus =
  * Beitragsstatus eines Mitglieds. Kinder haben selbst keine Rechnungen —
  * verantwortlich sind sie selbst PLUS ihre Erziehungsberechtigten
  * (Familienmodell: die Ampel des Kindes spiegelt die Familie).
+ *
+ * `guardianships === null` bedeutet: Familien-Daten sind in der aktiven
+ * Datenquelle nicht angebunden — dann zählen nur eigene Rechnungen
+ * (der Screen zeigt dazu einen Hinweis).
  */
-export function duesStatus(member: Member): DuesStatus {
+export function duesStatus(
+  member: Member,
+  invoices: Invoice[],
+  guardianships: Guardianship[] | null,
+): DuesStatus {
   if (member.role !== "member") return { kind: "exempt" };
   const responsibleIds = [
     member.id,
-    ...guardianships.filter((g) => g.childId === member.id).map((g) => g.guardianId),
+    ...(guardianships ?? []).filter((g) => g.childId === member.id).map((g) => g.guardianId),
   ];
   const open = invoices.filter(
     (invoice) => invoice.status === "open" && responsibleIds.includes(invoice.memberId),
@@ -77,30 +112,38 @@ export function duesStatus(member: Member): DuesStatus {
 
 export type FamilyLink = { member: Member; relation: Guardianship["relation"] };
 
-export function guardiansOf(memberId: string): FamilyLink[] {
+export function guardiansOf(
+  memberId: string,
+  guardianships: Guardianship[],
+  members: Member[],
+): FamilyLink[] {
   return guardianships
     .filter((g) => g.childId === memberId)
-    .map((g) => ({ member: memberById(g.guardianId), relation: g.relation }))
+    .map((g) => ({ member: memberById(members, g.guardianId), relation: g.relation }))
     .filter((link): link is FamilyLink => Boolean(link.member));
 }
 
-export function childrenOf(memberId: string): FamilyLink[] {
+export function childrenOf(
+  memberId: string,
+  guardianships: Guardianship[],
+  members: Member[],
+): FamilyLink[] {
   return guardianships
     .filter((g) => g.guardianId === memberId)
-    .map((g) => ({ member: memberById(g.childId), relation: g.relation }))
+    .map((g) => ({ member: memberById(members, g.childId), relation: g.relation }))
     .filter((link): link is FamilyLink => Boolean(link.member));
 }
 
 /* ---------- Beitrags-Historie ---------- */
 
-export function invoicesOf(memberId: string): Invoice[] {
+export function invoicesOf(memberId: string, invoices: Invoice[]): Invoice[] {
   return invoices
     .filter((invoice) => invoice.memberId === memberId)
     .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
 }
 
-export function openSumCentsOf(memberId: string): number {
-  return invoicesOf(memberId)
+export function openSumCentsOf(memberId: string, invoices: Invoice[]): number {
+  return invoicesOf(memberId, invoices)
     .filter((invoice) => invoice.status === "open")
     .reduce((sum, invoice) => sum + invoice.amountCents, 0);
 }
@@ -122,15 +165,35 @@ function hashSeed(value: string): number {
   return hash;
 }
 
+/**
+ * Deterministischer PRNG (mulberry32-Variante) — lokale Kopie statt Import
+ * aus lib/mock/util, damit der Screen keinerlei lib/mock-Abhängigkeit hat.
+ * Identischer Algorithmus ⇒ identische Demo-Optik wie vor der Migration.
+ */
+function seededRandom(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const ATTENDANCE_WINDOW = 8;
 
 /**
  * Anwesenheits-Quote über die letzten Trainingseinheiten:
- * echte Anwesenheits-Einträge aus lib/mock zählen 1:1; ältere Einheiten
- * werden deterministisch (Seed = personId) aufgefüllt, damit der Verlauf
+ * echte Anwesenheits-Einträge zählen 1:1; ältere Einheiten werden
+ * deterministisch (Seed = personId) aufgefüllt, damit der Verlauf
  * server- und clientseitig identisch bleibt (Demo-Phase ohne Backend).
  */
-export function attendanceStats(member: Member): AttendanceStats | null {
+export function attendanceStats(
+  member: Member,
+  events: Event[],
+  attendance: Attendance[],
+): AttendanceStats | null {
   if (member.teamIds.length === 0) return null;
 
   const now = Date.now();

@@ -6,12 +6,18 @@ import { ResponseBar } from "@/components/ui/ResponseBar";
 import { Sheet } from "@/components/ui/Modal";
 import { Tabs, TabPanel, type TabItem } from "@/components/ui/Tabs";
 import { Textarea } from "@/components/ui/Field";
-import { useToast } from "@/components/ui/Toast";
 import { Icon } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { dayDiff, formatDate, formatTime } from "@/lib/format";
-import { currentUser } from "@/lib/mock";
-import type { AttendanceStatus, Event, Rsvp, RsvpStatus } from "@/lib/types";
+import type {
+  Attendance,
+  AttendanceStatus,
+  Event,
+  Member,
+  Rsvp,
+  RsvpStatus,
+  Team,
+} from "@/lib/types";
 import { termineDict } from "../i18n";
 import {
   attendanceCounts,
@@ -38,34 +44,54 @@ const RSVP_ACTIVE_CLASS: Record<RsvpStatus, string> = {
 const RSVP_OPTIONS: RsvpStatus[] = ["going", "maybe", "declined", "sick"];
 
 /**
- * Termin-Detail als rechtes Sheet: Meta-Block, eigene Antwort (optimistisch),
- * Tabs Antworten/Anwesenheit, QR-Check-in-Modal für Trainer:innen.
+ * Termin-Detail als rechtes Sheet: Meta-Block, eigene Antwort (optimistisch,
+ * Facade-Write inkl. Toast macht der Screen), Tabs Antworten/Anwesenheit,
+ * QR-Check-in-Modal für Trainer:innen. Daten kommen als Props aus der Facade.
  */
 export function EventDetailSheet({
   event,
   rsvps,
   attendanceMap,
+  attendanceRecords,
+  attendanceReadUnavailable = false,
+  members,
+  teams,
+  currentUser,
   past,
   onClose,
   onSetOwnRsvp,
+  onChangeOwnComment,
+  onCommitOwnComment,
   onToggleAttendance,
 }: {
   event: Event;
   rsvps: Rsvp[];
   attendanceMap: Record<string, AttendanceStatus>;
+  /** Roh-Datensätze (für Check-in-Zeiten); api-Modus: leer */
+  attendanceRecords: Attendance[];
+  /** api-Modus: kein Lese-Endpoint für Anwesenheit — Hinweis im Tab */
+  attendanceReadUnavailable?: boolean;
+  members: Member[];
+  teams: Team[];
+  /** Eingeloggte Person aus der Facade (getCurrentUser) */
+  currentUser: Member;
   past: boolean;
   onClose: () => void;
+  /** Antwort-Pille: optimistischer Write + Toast (im Screen) */
   onSetOwnRsvp: (eventId: string, memberId: string, status: RsvpStatus, comment?: string) => void;
+  /** Kommentar-Tippen: nur lokaler Zustand */
+  onChangeOwnComment: (eventId: string, memberId: string, status: RsvpStatus, comment: string) => void;
+  /** Kommentar-Blur: Facade-Write */
+  onCommitOwnComment: (eventId: string, memberId: string, status: RsvpStatus, comment: string) => void;
   onToggleAttendance: (eventId: string, memberId: string, present: boolean) => void;
 }) {
   const t = useT(termineDict);
   const { locale } = useLocale();
-  const { showToast } = useToast();
 
   const [tab, setTab] = useState<SectionTab>(past ? "attendance" : "responses");
   const [qrOpen, setQrOpen] = useState(false);
 
-  const participants = participantsOf(event, rsvps);
+  const participants = participantsOf(event, rsvps, members);
   const counts = rsvpCounts(participants.length, rsvps);
   const att = attendanceCounts(participants, attendanceMap);
   const attendanceEditable = dayDiff(event.startsAt) <= 0;
@@ -74,7 +100,6 @@ export function EventDetailSheet({
   function selectOwnStatus(status: RsvpStatus) {
     if (own?.status === status) return;
     onSetOwnRsvp(event.id, currentUser.id, status, own?.comment);
-    showToast(t("savedToast", { status: t(RSVP_LABEL_KEY[status]) }), { tone: "success" });
   }
 
   const tabs: TabItem<SectionTab>[] = [
@@ -110,7 +135,7 @@ export function EventDetailSheet({
           </span>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <Badge tone={TYPE_TONE[event.type]}>{t(TYPE_LABEL_KEY[event.type])}</Badge>
-            {teamsOf(event).map((team) => (
+            {teamsOf(event, teams).map((team) => (
               <Badge key={team.id} tone="neutral">
                 {team.name}
               </Badge>
@@ -162,7 +187,10 @@ export function EventDetailSheet({
                 rows={2}
                 value={own.comment ?? ""}
                 onChange={(changeEvent) =>
-                  onSetOwnRsvp(event.id, currentUser.id, own.status, changeEvent.target.value)
+                  onChangeOwnComment(event.id, currentUser.id, own.status, changeEvent.target.value)
+                }
+                onBlur={(blurEvent) =>
+                  onCommitOwnComment(event.id, currentUser.id, own.status, blurEvent.target.value)
                 }
               />
             )}
@@ -179,13 +207,16 @@ export function EventDetailSheet({
             idBase="event-detail"
           />
           <TabPanel value="responses" active={tab} idBase="event-detail">
-            <ResponsesPanel participants={participants} rsvps={rsvps} />
+            <ResponsesPanel participants={participants} rsvps={rsvps} teams={teams} />
           </TabPanel>
           <TabPanel value="attendance" active={tab} idBase="event-detail">
             <AttendancePanel
               event={event}
               participants={participants}
               attendanceMap={attendanceMap}
+              attendanceRecords={attendanceRecords}
+              readUnavailable={attendanceReadUnavailable}
+              teams={teams}
               editable={attendanceEditable}
               showQr={!past}
               onShowQr={() => setQrOpen(true)}

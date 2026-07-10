@@ -6,8 +6,7 @@ import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { useT } from "@/lib/i18n";
-import { club, teams } from "@/lib/mock";
-import type { Event, EventType } from "@/lib/types";
+import type { Event, EventType, Team } from "@/lib/types";
 import { termineDict } from "../i18n";
 
 const FORM_ID = "new-event-form";
@@ -15,16 +14,25 @@ const FORM_ID = "new-event-form";
 type FieldErrors = Partial<Record<"title" | "location" | "date" | "end" | "teams", string>>;
 
 /**
- * „Neuer Termin“-Formular als Sheet — rein lokaler State + Toast,
- * kein Backend. Validierung in Klartext unter den Feldern (Field-Set).
+ * „Neuer Termin“-Formular als Sheet — rein lokaler State + Toast, kein
+ * Backend (die Facade hat noch keinen Schreibpfad zum Anlegen von Terminen).
+ * Verein/Teams kommen als Props aus der Facade; sind Teams im api-Modus
+ * nicht lesbar (NotImplemented), entfällt die Team-Pflicht mit Hinweis.
  */
 export function NewEventSheet({
   open,
   onClose,
+  clubId,
+  teams,
+  teamsUnavailable = false,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
+  clubId: string;
+  teams: Team[];
+  /** api-Modus: kein Teams-Endpoint — Hinweis statt Chips, keine Team-Pflicht */
+  teamsUnavailable?: boolean;
   onCreate: (event: Event) => void;
 }) {
   const t = useT(termineDict);
@@ -69,13 +77,14 @@ export function NewEventSheet({
     if (!location.trim()) nextErrors.location = t("errLocation");
     if (!date) nextErrors.date = t("errDate");
     if (start && end && end <= start) nextErrors.end = t("errEnd");
-    if (teamIds.length === 0) nextErrors.teams = t("errTeams");
+    // Team-Pflicht nur, wenn Teams überhaupt wählbar sind (api: NotImplemented)
+    if (teams.length > 0 && teamIds.length === 0) nextErrors.teams = t("errTeams");
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
     const created: Event = {
       id: `e-local-${Date.now()}`,
-      clubId: club.id,
+      clubId,
       type,
       title: title.trim(),
       location: location.trim(),
@@ -176,30 +185,38 @@ export function NewEventSheet({
           <span id={teamsLabelId} className="text-[13px] font-bold text-ink">
             {t("fTeams")}
           </span>
-          <div role="group" aria-labelledby={teamsLabelId} className="flex flex-wrap gap-2">
-            {teams.map((team) => {
-              const active = teamIds.includes(team.id);
-              return (
-                <button
-                  key={team.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => toggleTeam(team.id)}
-                  className={`inline-flex min-h-11 items-center rounded-full border px-4 text-[13px] font-bold transition-colors duration-150 ${
-                    active
-                      ? "border-transparent bg-brand-soft text-brand-ink"
-                      : "border-line-strong bg-surface text-ink-soft hover:bg-sunken"
-                  }`}
-                >
-                  {team.name}
-                </button>
-              );
-            })}
-          </div>
+          {teams.length > 0 ? (
+            <div role="group" aria-labelledby={teamsLabelId} className="flex flex-wrap gap-2">
+              {teams.map((team) => {
+                const active = teamIds.includes(team.id);
+                return (
+                  <button
+                    key={team.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleTeam(team.id)}
+                    className={`inline-flex min-h-11 items-center rounded-full border px-4 text-[13px] font-bold transition-colors duration-150 ${
+                      active
+                        ? "border-transparent bg-brand-soft text-brand-ink"
+                        : "border-line-strong bg-surface text-ink-soft hover:bg-sunken"
+                    }`}
+                  >
+                    {team.name}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            teamsUnavailable && (
+              <p className="rounded-md bg-sunken px-3 py-2 text-caption leading-[18px] text-ink-soft">
+                {t("teamsUnavailableHint")}
+              </p>
+            )
+          )}
           {errors.teams ? (
             <p className="text-caption font-semibold text-danger">{errors.teams}</p>
           ) : (
-            <p className="text-caption text-ink-faint">{t("fTeamsHint")}</p>
+            teams.length > 0 && <p className="text-caption text-ink-faint">{t("fTeamsHint")}</p>
           )}
         </div>
 

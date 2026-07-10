@@ -2,14 +2,13 @@
 
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDateShort } from "@/lib/format";
-import { fullName, currentUser } from "@/lib/mock";
+import { fullName } from "@/lib/data";
 import type { Invoice, Member } from "@/lib/types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { FilterChips, type FilterChipOption } from "@/components/ui/FilterChips";
 import { useToast } from "@/components/ui/Toast";
 import { financeDict } from "../i18n";
-import { treasurer } from "../derive";
 
 export type MailStage = 1 | 2 | 3;
 
@@ -17,6 +16,8 @@ export type MailStage = 1 | 2 | 3;
  * E-Mail-Vorschau der Mahn-Automatik: „Vor jedem Versand siehst du die
  * E-Mail pro Empfänger." Anrede, Beträge und Fristen kommen aus der
  * konkreten Rechnung — die Stufe bestimmt Betreff und Tonlage.
+ * Absenderin (`sender`) und Test-Mail-Adresse kommen aus der Facade
+ * (Kassenwartin bzw. eingeloggte Person) — keine Mock-Imports mehr.
  */
 export function MailPreviewModal({
   open,
@@ -25,6 +26,8 @@ export function MailPreviewModal({
   onStageChange,
   invoice,
   member,
+  sender,
+  currentUserEmail,
 }: {
   open: boolean;
   onClose: () => void;
@@ -32,6 +35,10 @@ export function MailPreviewModal({
   onStageChange: (stage: MailStage) => void;
   invoice: Invoice;
   member: Member;
+  /** Absenderin der Mahn-Mails (Kassenwartin) */
+  sender: Member;
+  /** E-Mail der eingeloggten Person für „Test-E-Mail an mich" */
+  currentUserEmail?: string;
 }) {
   const t = useT(financeDict);
   const { locale } = useLocale();
@@ -44,7 +51,7 @@ export function MailPreviewModal({
     number: invoice.number,
     amount: formatEUR(invoice.amountCents, locale),
     due: formatDateShort(invoice.dueAt, locale),
-    sender: fullName(treasurer),
+    sender: fullName(sender),
   };
 
   const stageOptions: FilterChipOption<"1" | "2" | "3">[] = [
@@ -75,7 +82,7 @@ export function MailPreviewModal({
           <Button
             icon="mail"
             onClick={() =>
-              showToast(t("mailTestToast", { email: currentUser.email ?? "" }), {
+              showToast(t("mailTestToast", { email: currentUserEmail ?? "" }), {
                 tone: "success",
               })
             }
@@ -93,7 +100,7 @@ export function MailPreviewModal({
         className="mb-3"
       />
       <div className="grid">
-        {fieldRow(t("mailFrom"), `${fullName(treasurer)} <${treasurer.email ?? ""}>`)}
+        {fieldRow(t("mailFrom"), `${fullName(sender)} <${sender.email ?? ""}>`)}
         {fieldRow(
           t("mailTo"),
           `${fullName(member)} <${member.email ?? t("mailNoEmail")}>`,

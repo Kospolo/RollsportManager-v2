@@ -29,6 +29,16 @@ export const kuerenDict = {
     listEmptyBody: "Ändere den Filter oder lege eine neue Kür mit Musik an.",
     listEmptyCta: "Alle anzeigen",
 
+    /* Laden & Fehler (Facade) */
+    loadErrorTitle: "Daten konnten nicht geladen werden",
+    notConnectedTitle: "Noch nicht angebunden",
+    notConnectedBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    notFoundTitle: "Kür nicht gefunden",
+    notFoundBody: "Diese Kür existiert nicht oder wurde entfernt.",
+    notFoundBack: "Zurück zu den Küren",
+    competitionFallback: "Wettkampf",
+    competitionNamesPending: "Wettkampf-Namen sind im api-Modus noch nicht angebunden.",
+
     /* Detail-Kopf */
     breadcrumbLabel: "Pfadnavigation",
     editAction: "Bearbeiten",
@@ -123,6 +133,16 @@ export const kuerenDict = {
     listEmptyTitle: "No routines in this view",
     listEmptyBody: "Change the filter or create a new routine with music.",
     listEmptyCta: "Show all",
+
+    /* Loading & errors (facade) */
+    loadErrorTitle: "Could not load data",
+    notConnectedTitle: "Not connected yet",
+    notConnectedBody: "This area has no API endpoint in api mode yet.",
+    notFoundTitle: "Routine not found",
+    notFoundBody: "This routine does not exist or has been removed.",
+    notFoundBack: "Back to routines",
+    competitionFallback: "Competition",
+    competitionNamesPending: "Competition names are not connected in api mode yet.",
 
     /* Detail head */
     breadcrumbLabel: "Breadcrumb",

@@ -32,6 +32,18 @@ export const termineDict = {
       "Mit einem anderen Filter wirst du fündig — oder lege direkt den nächsten Termin an.",
     emptyCta: "Alle Termine zeigen",
 
+    loadErrorTitle: "Termine konnten nicht geladen werden",
+    loadErrorRetry: "Erneut versuchen",
+    niTitle: "Noch nicht angebunden",
+    niBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    noPermission: "Keine Berechtigung für diese Aktion",
+    retry: "Wiederholen",
+    attendanceUnavailable: "Anwesenheit noch nicht angebunden",
+    attendanceReadHint:
+      "Bereits erfasste Anwesenheit kann noch nicht geladen werden — neue Änderungen werden trotzdem gespeichert.",
+    teamsUnavailableHint:
+      "Teams sind noch nicht angebunden — der Termin wird ohne Teamzuordnung angelegt.",
+
     tabsLabel: "Termin-Bereiche",
     tabResponses: "Antworten",
     tabAttendance: "Anwesenheit",
@@ -120,6 +132,18 @@ export const termineDict = {
     emptyTitle: "No upcoming events in this view",
     emptyBody: "Try another filter — or go ahead and create the next event right away.",
     emptyCta: "Show all events",
+
+    loadErrorTitle: "Events could not be loaded",
+    loadErrorRetry: "Try again",
+    niTitle: "Not connected yet",
+    niBody: "This area has no endpoint in api mode yet.",
+    noPermission: "No permission for this action",
+    retry: "Retry",
+    attendanceUnavailable: "Attendance not connected yet",
+    attendanceReadHint:
+      "Previously recorded attendance can't be loaded yet — new changes are still saved.",
+    teamsUnavailableHint:
+      "Teams are not connected yet — the event will be created without team assignment.",
 
     tabsLabel: "Event sections",
     tabResponses: "Responses",

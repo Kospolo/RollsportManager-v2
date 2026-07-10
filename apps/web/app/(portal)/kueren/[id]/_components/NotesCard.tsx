@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useState, useSyncExternalStore } from "react";
-import { currentUser, fullName } from "@/lib/mock";
+import { fullName } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -16,6 +17,9 @@ import { kuerenDict } from "../../i18n";
  * localStorage wird als externer Store gelesen (useSyncExternalStore,
  * wie lib/i18n): SSR rendert leer, der Client übernimmt den Stand ohne
  * setState-im-Effect. Speichern bestätigt per Toast; Fehler nie still.
+ * Nur die Anzeige der speichernden Person kommt aus der Facade
+ * (getCurrentUser) — schlägt das fehl, fehlt lediglich der Name, die
+ * Notizen bleiben voll benutzbar.
  */
 
 type StoredNote = { text: string; savedAt: string };
@@ -44,6 +48,7 @@ export function NotesCard({ routineId }: { routineId: string }) {
   const t = useT(kuerenDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+  const me = useData((repo) => repo.getCurrentUser());
   const storageKey = `rsm.kueren.notes.${routineId}`;
 
   const storedRaw = useSyncExternalStore(
@@ -98,13 +103,17 @@ export function NotesCard({ routineId }: { routineId: string }) {
           </Button>
           {stored?.savedAt && (
             <span className="ml-auto inline-flex items-center gap-2 text-caption text-ink-faint">
-              <Avatar
-                personId={currentUser.id}
-                firstName={currentUser.firstName}
-                lastName={currentUser.lastName}
-                size="s"
-              />
-              {fullName(currentUser)} ·{" "}
+              {me.status === "ready" && (
+                <>
+                  <Avatar
+                    personId={me.data.id}
+                    firstName={me.data.firstName}
+                    lastName={me.data.lastName}
+                    size="s"
+                  />
+                  {fullName(me.data)} ·{" "}
+                </>
+              )}
               {t("lastSaved", { when: formatDateTime(stored.savedAt, locale) })}
             </span>
           )}

@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort, formatEUR, relativeDays } from "@/lib/format";
-import { fullName } from "@/lib/mock";
+import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import type { Guardianship, Invoice, Member } from "@/lib/types";
 import { Card, CardFooter, CardHeader } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
 import { Badge, DunningBadge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { ProgressBar, type ProgressTone } from "@/components/ui/ProgressBar";
 import { Sparkline } from "@/components/ui/Sparkline";
+import { SkeletonText } from "@/components/ui/Skeleton";
 import { mitgliederDict, type MitgliederKey } from "../i18n";
 import {
   attendanceStats,
@@ -18,14 +21,41 @@ import {
   guardiansOf,
   invoicesOf,
   openSumCentsOf,
+  softNotImplemented,
   type FamilyLink,
 } from "../derive";
 
 /**
  * Karten des Mitglieder-Profils: Familie (Guardianships verlinkt),
  * Beitrags-Historie (Mono-Beträge, Summenzeile) und Anwesenheits-Quote
- * (ProgressBar + Sparkline). Alles aus lib/mock abgeleitet.
+ * (ProgressBar + Sparkline). Jede Karte lädt ihre Daten selbst über die
+ * Facade (lib/data) — mit eigenem Skeleton, „noch nicht angebunden"-Hinweis
+ * (NotImplemented im api-Modus) und Retry bei echten Fehlern.
  */
+
+/* ---------- Lade-/Fehler-Zustand innerhalb einer Karte ---------- */
+
+function CardFallback({
+  state,
+  niText,
+}: {
+  state: { status: "loading" | "error" | "ready"; error?: unknown; reload: () => void };
+  niText: string;
+}) {
+  const t = useT(mitgliederDict);
+  if (state.status === "loading") return <SkeletonText lines={3} />;
+  if (isNotImplemented(state.error)) {
+    return <p className="text-body text-ink-soft">{niText}</p>;
+  }
+  return (
+    <div className="grid justify-items-start gap-3">
+      <p className="text-body text-ink-soft">{errorMessage(state.error)}</p>
+      <Button variant="secondary" onClick={state.reload}>
+        {t("retry")}
+      </Button>
+    </div>
+  );
+}
 
 /* ---------- Familie ---------- */
 
@@ -62,8 +92,20 @@ function FamilyRow({
 export function FamilyCard({ memberId }: { memberId: string }) {
   const t = useT(mitgliederDict);
 
-  const guardians = guardiansOf(memberId);
-  const children = childrenOf(memberId);
+  const state = useData((repo) => Promise.all([repo.getGuardianships(), repo.getMembers()] as const));
+
+  if (state.status !== "ready") {
+    return (
+      <Card>
+        <CardHeader eyebrow={t("famEyebrow")} title={t("famTitle")} />
+        <CardFallback state={state} niText={t("famNi")} />
+      </Card>
+    );
+  }
+
+  const [guardianships, members] = state.data;
+  const guardians = guardiansOf(memberId, guardianships, members);
+  const children = childrenOf(memberId, guardianships, members);
   const hasLinks = guardians.length > 0 || children.length > 0;
 
   return (
@@ -122,9 +164,29 @@ export function DuesCard({ member }: { member: Member }) {
   const t = useT(mitgliederDict);
   const { locale } = useLocale();
 
-  const rows = invoicesOf(member.id);
-  const openCents = openSumCentsOf(member.id);
-  const guardians = guardiansOf(member.id);
+  const state = useData((repo) =>
+    Promise.all([
+      repo.getInvoices(),
+      repo.getMembers(),
+      // Familien-Endpoint fehlt im api-Modus — der „läuft über …"-Hinweis
+      // entfällt dann still (die Historie selbst bleibt vollständig).
+      softNotImplemented(repo.getGuardianships()),
+    ] as const),
+  );
+
+  if (state.status !== "ready") {
+    return (
+      <Card>
+        <CardHeader eyebrow={t("duesEyebrow")} title={t("duesTitle")} />
+        <CardFallback state={state} niText={t("niBody")} />
+      </Card>
+    );
+  }
+
+  const [invoices, members, guardianships] = state.data;
+  const rows = invoicesOf(member.id, invoices);
+  const openCents = openSumCentsOf(member.id, invoices);
+  const guardians = guardianships === null ? [] : guardiansOf(member.id, guardianships, members);
 
   const columns: Column<Invoice>[] = [
     {
@@ -218,7 +280,7 @@ export function DuesCard({ member }: { member: Member }) {
 
 /* ---------- Anwesenheit ---------- */
 
-const NARROW_NBSP = " ";
+const NARROW_NBSP = " ";
 
 function rateTone(ratePercent: number): ProgressTone {
   if (ratePercent >= 80) return "success";
@@ -229,7 +291,19 @@ function rateTone(ratePercent: number): ProgressTone {
 export function AttendanceCard({ member }: { member: Member }) {
   const t = useT(mitgliederDict);
 
-  const stats = attendanceStats(member);
+  const state = useData((repo) => Promise.all([repo.getEvents(), repo.getAttendance()] as const));
+
+  if (state.status !== "ready") {
+    return (
+      <Card>
+        <CardHeader eyebrow={t("attEyebrow")} title={t("attTitle")} />
+        <CardFallback state={state} niText={t("attNi")} />
+      </Card>
+    );
+  }
+
+  const [events, attendance] = state.data;
+  const stats = attendanceStats(member, events, attendance);
 
   return (
     <Card>

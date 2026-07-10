@@ -9,6 +9,13 @@ export const wettkampfDict = {
     pageTitle: "Wettkampf",
     pageSub: "Meldungen, Startgelder und der große Tag — alles an einem Ort.",
 
+    loadErrorTitle: "Daten konnten nicht geladen werden",
+    retry: "Erneut versuchen",
+    notConnectedTitle: "Noch nicht angebunden",
+    notConnectedBody:
+      "Wettkämpfe, Aufgaben und Meldungen haben im API-Modus noch keinen Endpunkt. Sobald der Contract sie liefert, erscheint hier alles automatisch.",
+    noPermission: "Dafür fehlt dir die Berechtigung.",
+
     tabsLabel: "Wettkampf-Bereiche",
     tabOverview: "Übersicht",
     tabEntries: "Meldungen",
@@ -143,6 +150,13 @@ export const wettkampfDict = {
   en: {
     pageTitle: "Competition",
     pageSub: "Entries, entry fees and the big day — all in one place.",
+
+    loadErrorTitle: "Data could not be loaded",
+    retry: "Try again",
+    notConnectedTitle: "Not connected yet",
+    notConnectedBody:
+      "Competitions, tasks and entries don't have an API endpoint yet. As soon as the contract provides them, everything shows up here automatically.",
+    noPermission: "You don't have permission to do that.",
 
     tabsLabel: "Competition sections",
     tabOverview: "Overview",

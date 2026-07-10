@@ -11,8 +11,8 @@ import { useToast } from "@/components/ui/Toast";
 import { Icon } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { dayDiff, formatDate, formatTime, relativeDays } from "@/lib/format";
-import { fullName, memberById } from "@/lib/mock";
-import type { Competition, CompetitionStatus, Task } from "@/lib/types";
+import { fullName, memberById } from "@/lib/data";
+import type { Competition, CompetitionStatus, Member, Routine, Task } from "@/lib/types";
 import {
   formatScore,
   formatScoreDelta,
@@ -52,6 +52,8 @@ export function OverviewTab({
   entries,
   tasks,
   taskDone,
+  members,
+  routines,
   onTaskState,
   onSwitchTab,
 }: {
@@ -61,6 +63,9 @@ export function OverviewTab({
   entries: StarterEntry[];
   tasks: Task[];
   taskDone: Record<string, boolean>;
+  /** Geladene Stammdaten für Namens-/Kür-Auflösung (aus der Facade) */
+  members: Member[];
+  routines: Routine[];
   onTaskState: (taskId: string, done: boolean) => void;
   onSwitchTab: (tab: WettkampfTab) => void;
 }) {
@@ -199,7 +204,7 @@ export function OverviewTab({
             <ul className="grid gap-1">
               {tasks.map((task) => {
                 const done = Boolean(taskDone[task.id]);
-                const assignee = task.assigneeId ? memberById(task.assigneeId) : undefined;
+                const assignee = task.assigneeId ? memberById(members, task.assigneeId) : undefined;
                 const dueSoon = task.dueAt !== undefined && dayDiff(task.dueAt) <= 2;
                 return (
                   <li key={task.id} className="flex items-start gap-2.5 border-b border-line py-2.5 last:border-b-0">
@@ -262,7 +267,7 @@ export function OverviewTab({
         <section aria-label={t("pastTitle")} className="grid gap-4">
           <h2 className="font-display text-h2 tracking-[-0.015em] text-ink">{t("pastTitle")}</h2>
           {pastCompetitions.map((past) => {
-            const results = pastResults(past);
+            const results = pastResults(past, routines, members);
             return (
               <Card key={past.id}>
                 <CardHeader

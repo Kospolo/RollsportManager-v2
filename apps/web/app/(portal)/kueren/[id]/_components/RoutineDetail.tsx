@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { RoutineMarker } from "@/lib/types";
-import { routineById, memberById } from "@/lib/mock";
+import type { Member, Routine, RoutineMarker } from "@/lib/types";
+import { errorMessage, isNotImplemented, memberById } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { AvatarStack } from "@/components/ui/AvatarStack";
 import { Icon } from "@/components/shell/icons";
 import { useToast } from "@/components/ui/Toast";
@@ -21,16 +24,88 @@ import { NotesCard } from "./NotesCard";
 /**
  * Kür-Detail (Mockup Screen 2): Kopf mit Läufer:in + Status-Chips,
  * Trainings-Player, darunter Zeitmarken, RollArt-Verlauf und Notizen.
- * Wiedergabe-Zustand lebt hier, damit Waveform, Transport und
- * Marker-Liste denselben Player steuern.
+ * Kür + Mitglieder kommen aus der Daten-Facade (useData); Wiedergabe
+ * bleibt simuliert und lebt im geladenen Teil, damit Waveform, Transport
+ * und Marker-Liste denselben Player steuern.
  */
 
 export function RoutineDetail({ routineId }: { routineId: string }) {
   const t = useT(kuerenDict);
-  const { showToast } = useToast();
+  const state = useData(
+    (repo) => Promise.all([repo.getRoutineById(routineId), repo.getMembers()]),
+    [routineId],
+  );
 
-  /* Die Seite (Server) garantiert die Existenz — Mock ist statisch. */
-  const routine = routineById(routineId)!;
+  if (state.status === "loading") return <DetailSkeleton />;
+
+  if (state.status === "error") {
+    return (
+      <div className="mx-auto grid w-full max-w-6xl gap-6">
+        {isNotImplemented(state.error) ? (
+          <EmptyState
+            icon="sparkle"
+            title={t("notConnectedTitle")}
+            body={t("notConnectedBody")}
+          />
+        ) : (
+          <EmptyState
+            icon="zap"
+            title={t("loadErrorTitle")}
+            body={errorMessage(state.error)}
+            action={<Button onClick={state.reload}>{t("retry")}</Button>}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const [routine, members] = state.data;
+  if (!routine) {
+    return (
+      <div className="mx-auto grid w-full max-w-6xl gap-6">
+        <EmptyState
+          icon="routines"
+          title={t("notFoundTitle")}
+          body={t("notFoundBody")}
+          ctaHref="/kueren"
+          ctaLabel={t("notFoundBack")}
+        />
+      </div>
+    );
+  }
+
+  /* key: bei Kür-Wechsel Player-/Marker-Zustand sauber neu aufsetzen. */
+  return <LoadedDetail key={routine.id} routine={routine} members={members} />;
+}
+
+/** Lade-Gerüst — spiegelt Breadcrumb, Kopf, Player und die 2-Spalten-Karten. */
+function DetailSkeleton() {
+  return (
+    <div aria-hidden="true" className="mx-auto grid w-full max-w-6xl gap-6">
+      <Skeleton className="h-4 w-48" />
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-11 w-11 flex-none rounded-full" />
+        <div className="grid min-w-0 flex-1 gap-2">
+          <Skeleton className="h-7 w-2/5" />
+          <Skeleton className="h-4 w-3/5" />
+        </div>
+      </div>
+      <Skeleton className="h-4 w-4/5" />
+      <SkeletonCard lines={6} />
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <SkeletonCard lines={5} />
+        <div className="grid gap-6">
+          <SkeletonCard lines={4} />
+          <SkeletonCard lines={3} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadedDetail({ routine, members }: { routine: Routine; members: Member[] }) {
+  const t = useT(kuerenDict);
+  const { showToast } = useToast();
   const playback = usePlayback(routine.music.durationMs);
 
   /* Marker lokal editierbar (optimistisch, ohne Backend). */
@@ -39,9 +114,9 @@ export function RoutineDetail({ routineId }: { routineId: string }) {
   const skaters = useMemo(
     () =>
       routine.memberIds
-        .map((id) => memberById(id))
+        .map((id) => memberById(members, id))
         .filter((m): m is NonNullable<typeof m> => Boolean(m)),
-    [routine.memberIds],
+    [routine.memberIds, members],
   );
   const skaterNames = skaters.map((m) => `${m.firstName} ${m.lastName}`).join(" & ");
 

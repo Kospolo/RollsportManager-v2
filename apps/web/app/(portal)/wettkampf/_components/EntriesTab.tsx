@@ -14,7 +14,7 @@ import { Sparkline } from "@/components/ui/Sparkline";
 import { useToast } from "@/components/ui/Toast";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDate, formatDurationMs, formatEUR, relativeDays } from "@/lib/format";
-import { fullName } from "@/lib/mock";
+import { fullName } from "@/lib/data";
 import type { Competition } from "@/lib/types";
 import { formatScore, type FeeStatus, type StarterEntry } from "../derive";
 import { wettkampfDict, type WettkampfKey } from "../i18n";

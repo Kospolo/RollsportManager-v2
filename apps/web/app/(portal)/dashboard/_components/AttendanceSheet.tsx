@@ -8,7 +8,8 @@ import { Sheet } from "@/components/ui/Modal";
 import { Icon } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatTime, relativeDays } from "@/lib/format";
-import { fullName, teams } from "@/lib/mock";
+import { fullName } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import type { Member, RsvpStatus } from "@/lib/types";
 import { dashboardDict, type DashboardKey } from "../i18n";
 import type { SessionInfo } from "../derive";
@@ -16,7 +17,7 @@ import type { SessionInfo } from "../derive";
 /**
  * Anwesenheit erfassen: rechtes Sheet mit abhakbarer Teilnehmerliste.
  * Zusagen sind vorbelegt (Optimistic UI), Status immer Farbe + Wort.
- * Rein lokaler React-State — kein Backend.
+ * Gespeichert wird über die Facade (TodaySessions.handleSave).
  */
 
 const RSVP_TONE: Record<RsvpStatus | "none", BadgeTone> = {
@@ -44,15 +45,6 @@ const RSVP_ORDER: Record<RsvpStatus | "none", number> = {
   declined: 4,
 };
 
-const teamNameById = new Map(teams.map((team) => [team.id, team.name]));
-
-function memberTeams(member: Member): string {
-  return member.teamIds
-    .map((id) => teamNameById.get(id))
-    .filter(Boolean)
-    .join(" · ");
-}
-
 export function AttendanceSheet({
   session,
   initialPresent,
@@ -67,6 +59,25 @@ export function AttendanceSheet({
   const t = useT(dashboardDict);
   const { locale } = useLocale();
   const [present, setPresent] = useState<Set<string>>(() => new Set(initialPresent));
+
+  /* Team-Namen sind reine Zusatz-Info unter dem Namen. Im api-Modus gibt es
+     (noch) keinen Teams-Endpoint UND Member.teamIds ist dort ohnehin leer —
+     ein Fehler lässt die Zeile deshalb einfach leer, das Sheet bleibt voll
+     funktionsfähig (kein eigener Hinweis-Zustand für eine Caption). */
+  const teams = useData((repo) => repo.getTeams());
+  const teamNameById = useMemo(
+    () =>
+      new Map(
+        (teams.status === "ready" ? teams.data : []).map((team) => [team.id, team.name]),
+      ),
+    [teams],
+  );
+
+  const memberTeams = (member: Member): string =>
+    member.teamIds
+      .map((id) => teamNameById.get(id))
+      .filter(Boolean)
+      .join(" · ");
 
   const sorted = useMemo(
     () =>

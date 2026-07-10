@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDateShort } from "@/lib/format";
-import { fullName, dateFromNow } from "@/lib/mock";
+import { fullName } from "@/lib/data";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { IconTile } from "@/components/ui/IconTile";
 import { Sheet } from "@/components/ui/Modal";
 import { financeDict } from "../i18n";
-import { BANK_TOTAL, type BankSuggestion } from "../derive";
+import { BANK_TOTAL, isoDateFromToday, type BankSuggestion } from "../derive";
 
 /**
  * Bankabgleich (DESIGN-SYSTEM §3.7, aus A): „Automatisch zugeordnet:
@@ -54,7 +54,7 @@ export function BankReconCard({
           className="mt-3"
         />
         <p className="mt-2 text-caption text-ink-faint">
-          {t("bankImportMeta", { date: formatDateShort(dateFromNow(-2), locale) })}
+          {t("bankImportMeta", { date: formatDateShort(isoDateFromToday(-2), locale) })}
         </p>
         <div className="mt-4">
           {n > 0 ? (

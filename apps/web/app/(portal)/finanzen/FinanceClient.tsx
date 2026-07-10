@@ -3,11 +3,14 @@
 import { useMemo, useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDate } from "@/lib/format";
-import { ledger, memberById } from "@/lib/mock";
-import type { DunningLevel } from "@/lib/types";
+import { data, memberById, isNotImplemented, errorMessage } from "@/lib/data";
+import { useData, type DataState } from "@/lib/data/useData";
+import type { DunningLevel, Invoice, LedgerEntry, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { KpiTile } from "@/components/ui/KpiTile";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { financeDict } from "./i18n";
 import {
@@ -16,6 +19,7 @@ import {
   deriveOpenItems,
   income30d,
   sumCents,
+  treasurerOf,
   type BankSuggestion,
   type OpenItem,
 } from "./derive";
@@ -24,14 +28,78 @@ import { DunningAutomationCard } from "./_components/DunningAutomationCard";
 import { MailPreviewModal, type MailStage } from "./_components/MailPreviewModal";
 import { BankReconCard } from "./_components/BankReconCard";
 import { LedgerCard } from "./_components/LedgerCard";
+import { DunningRunSheet, type DunningRunState } from "./_components/DunningRunSheet";
 
 /**
- * Admin-Finanzen (Mockup Screen 3, Seriositätszone).
+ * Admin-Finanzen (Mockup Screen 3, Seriositätszone) — Daten aus der Facade.
+ *
+ * Rechnungen + Mitglieder + eingeloggte Person laden gemeinsam (Kern des
+ * Screens); das Kassenbuch lädt SEPARAT, weil es im api-Modus noch keinen
+ * Endpoint hat (NotImplemented) und den Rest nie blockieren darf.
+ *
  * EINE lokale Datenbasis für KPI-Zeile UND Tabellen-Footer: beide rechnen
  * über dieselben abgeleiteten offenen Posten — die Zahlen gehen quer über
- * den Screen auf (Pflicht-Abnahmekriterium). Alles optimistisch, ohne API.
+ * den Screen auf (Pflicht-Abnahmekriterium). Interaktionen optimistisch.
  */
 export function FinanceClient() {
+  const t = useT(financeDict);
+
+  const core = useData(async (repo) => {
+    const [invoices, members, currentUser] = await Promise.all([
+      repo.getInvoices(),
+      repo.getMembers(),
+      repo.getCurrentUser(),
+    ]);
+    return { invoices, members, currentUser };
+  });
+  const ledger = useData((repo) => repo.getLedger());
+
+  if (core.status === "loading") return <FinanceSkeleton />;
+
+  if (core.status === "error") {
+    return isNotImplemented(core.error) ? (
+      <div className="mx-auto grid w-full max-w-6xl gap-5">
+        <EmptyState
+          icon="sparkle"
+          title={t("notImplementedTitle")}
+          body={t("notImplementedBody")}
+        />
+      </div>
+    ) : (
+      <div className="mx-auto grid w-full max-w-6xl gap-5">
+        <EmptyState
+          icon="zap"
+          title={t("loadErrorTitle")}
+          body={errorMessage(core.error)}
+          action={<Button onClick={core.reload}>{t("retry")}</Button>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <FinanceContent
+      invoices={core.data.invoices}
+      members={core.data.members}
+      currentUser={core.data.currentUser}
+      ledger={ledger}
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+function FinanceContent({
+  invoices,
+  members,
+  currentUser,
+  ledger,
+}: {
+  invoices: Invoice[];
+  members: Member[];
+  currentUser: Member;
+  ledger: DataState<LedgerEntry[]> & { reload: () => void };
+}) {
   const t = useT(financeDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
@@ -41,16 +109,31 @@ export function FinanceClient() {
   const [paidIds, setPaidIds] = useState<ReadonlySet<string>>(new Set());
   const [autoMasterOn, setAutoMasterOn] = useState(true);
   const [stagesOn, setStagesOn] = useState<boolean[]>([true, true, true, true]);
-  const [suggestions, setSuggestions] = useState<BankSuggestion[]>(buildSuggestions);
+  const [suggestions, setSuggestions] = useState<BankSuggestion[]>(() =>
+    buildSuggestions(invoices, members),
+  );
   const [matched, setMatched] = useState(BANK_AUTO_MATCHED);
   const [mail, setMail] = useState<{ stage: MailStage; invoiceId: string } | null>(null);
+
+  /* ---------- Mahnlauf (Vorschau) — Sheet-Zustand ---------- */
+  const [dunningSheetOpen, setDunningSheetOpen] = useState(false);
+  const [dunningRun, setDunningRun] = useState<DunningRunState>({ status: "running" });
+
+  const startDunningPreview = () => {
+    setDunningSheetOpen(true);
+    setDunningRun({ status: "running" });
+    data
+      .runDunning({ dryRun: true })
+      .then((outcome) => setDunningRun({ status: "ready", outcome }))
+      .catch((error: unknown) => setDunningRun({ status: "error", error }));
+  };
 
   const nowIso = useMemo(() => new Date().toISOString(), []);
 
   /* ---------- Gemeinsame Datenbasis für KPIs und Tabelle ---------- */
   const items = useMemo(
-    () => deriveOpenItems(levelOverrides, paidIds),
-    [levelOverrides, paidIds],
+    () => deriveOpenItems(invoices, members, levelOverrides, paidIds),
+    [invoices, members, levelOverrides, paidIds],
   );
   const openSumCents = sumCents(items);
   const dunningItems = items.filter((item) => item.level >= 2);
@@ -59,6 +142,17 @@ export function FinanceClient() {
     (max, item) => Math.max(max, item.overdueDays),
     0,
   );
+
+  /* ---------- Einnahmen-KPI aus dem (separat geladenen) Kassenbuch ---------- */
+  const income = ledger.status === "ready" ? income30d(ledger.data) : undefined;
+  const incomeSub =
+    ledger.status === "ready"
+      ? t("kpiIncomeSub", { n: income?.count ?? 0 })
+      : ledger.status === "loading"
+        ? t("kpiIncomeLoading")
+        : isNotImplemented(ledger.error)
+          ? t("kpiIncomeNotImplemented")
+          : t("kpiIncomeError");
 
   /* ---------- Aktionen ---------- */
   const remind = (item: OpenItem) =>
@@ -102,11 +196,14 @@ export function FinanceClient() {
     });
   };
 
-  /* ---------- E-Mail-Vorschau: Rechnung + Mitglied auflösen ---------- */
+  /* ---------- E-Mail-Vorschau: Rechnung, Mitglied & Absenderin auflösen ---------- */
   const mailInvoice = mail
     ? items.find((item) => item.invoice.id === mail.invoiceId) ?? items[0]
     : undefined;
-  const mailMember = mailInvoice ? memberById(mailInvoice.invoice.memberId) : undefined;
+  const mailMember = mailInvoice
+    ? memberById(members, mailInvoice.invoice.memberId)
+    : undefined;
+  const sender = useMemo(() => treasurerOf(members), [members]);
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5">
@@ -119,8 +216,14 @@ export function FinanceClient() {
             <Button
               variant="ghost"
               icon="download"
+              disabled={ledger.status !== "ready"}
               onClick={() =>
-                showToast(t("exportDatevToast", { n: ledger.length }), { tone: "success" })
+                showToast(
+                  t("exportDatevToast", {
+                    n: ledger.status === "ready" ? ledger.data.length : 0,
+                  }),
+                  { tone: "success" },
+                )
               }
             >
               {t("exportDatev")}
@@ -145,8 +248,8 @@ export function FinanceClient() {
         />
         <KpiTile
           label={t("kpiIncome")}
-          value={formatEUR(income30d.sumCents, locale)}
-          sub={t("kpiIncomeSub", { n: income30d.count })}
+          value={income ? formatEUR(income.sumCents, locale) : t("kpiUnavailable")}
+          sub={incomeSub}
           tone="success"
         />
         <KpiTile
@@ -172,6 +275,7 @@ export function FinanceClient() {
           setStagesOn((current) => current.map((v, i) => (i === index ? on : v)))
         }
         onPreview={openMailExample}
+        onDryRun={startDunningPreview}
       />
 
       <OpenItemsCard items={items} onRemind={remind} onViewDunning={openMailForItem} />
@@ -183,10 +287,10 @@ export function FinanceClient() {
           onAccept={acceptSuggestion}
           onDecline={declineSuggestion}
         />
-        <LedgerCard />
+        <LedgerCard ledger={ledger} members={members} invoices={invoices} />
       </div>
 
-      {mail && mailInvoice && mailMember && (
+      {mail && mailInvoice && mailMember && sender && (
         <MailPreviewModal
           open
           onClose={() => setMail(null)}
@@ -194,8 +298,49 @@ export function FinanceClient() {
           onStageChange={(stage) => setMail((current) => current && { ...current, stage })}
           invoice={mailInvoice.invoice}
           member={mailMember}
+          sender={sender}
+          currentUserEmail={currentUser.email}
         />
       )}
+
+      <DunningRunSheet
+        open={dunningSheetOpen}
+        onClose={() => setDunningSheetOpen(false)}
+        state={dunningRun}
+        onRetry={startDunningPreview}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/** Lade-Zustand des gesamten Screens — spiegelt das fertige Layout. */
+function FinanceSkeleton() {
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-5" aria-busy="true">
+      <div className="grid gap-2">
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-4 w-80" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-line bg-surface px-5 py-[18px] shadow-card"
+          >
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="mt-3 h-6 w-32" />
+            <Skeleton className="mt-2 h-3 w-28" />
+          </div>
+        ))}
+      </div>
+      <SkeletonCard lines={3} />
+      <SkeletonCard lines={6} />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.55fr)]">
+        <SkeletonCard lines={4} />
+        <SkeletonCard lines={6} />
+      </div>
     </div>
   );
 }

@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort, formatEUR } from "@/lib/format";
-import { fullName, members } from "@/lib/mock";
-import type { Member } from "@/lib/types";
+import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
+import type { Invoice, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardFooter, CardHeader } from "@/components/ui/Card";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -14,6 +15,7 @@ import { Badge, DunningBadge, StatusPill } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { InviteSheet } from "./InviteSheet";
 import { mitgliederDict, roleKey } from "./i18n";
@@ -22,6 +24,7 @@ import {
   matchesRoleFilter,
   openSumCentsOf,
   ROLE_TONE,
+  softNotImplemented,
   teamNames,
   type RoleFilter,
 } from "./derive";
@@ -30,6 +33,11 @@ import {
  * Mitgliederliste: Suche (Name) + Rollen-Filter-Chips über der Tabelle,
  * Summenzeile aktualisiert sich beim Filtern (DESIGN-SYSTEM §3.3).
  * Der Klick auf die Personen-Zelle öffnet das Profil /mitglieder/[id].
+ *
+ * Daten kommen ausschließlich über die Facade (lib/data): Mitglieder und
+ * Rechnungen sind Pflicht (Fehler ⇒ Retry-Zustand); Teams und Familien sind
+ * im api-Modus noch nicht angebunden (NotImplemented ⇒ sichtbarer Hinweis
+ * in der Fußzeile, betroffene Zellen zeigen „—").
  */
 
 const FILTERS: RoleFilter[] = ["all", "board", "treasurer", "coach", "member", "guest"];
@@ -43,7 +51,10 @@ const FILTER_LABEL_KEY = {
   guest: "fGuest",
 } as const;
 
-function sortedMembers(): Member[] {
+const NO_MEMBERS: Member[] = [];
+const NO_INVOICES: Invoice[] = [];
+
+function sortMembers(members: Member[]): Member[] {
   return [...members].sort(
     (a, b) => a.lastName.localeCompare(b.lastName, "de") || a.firstName.localeCompare(b.firstName, "de"),
   );
@@ -57,7 +68,23 @@ export function MembersClient() {
   const [filter, setFilter] = useState<RoleFilter>("all");
   const [inviteOpen, setInviteOpen] = useState(false);
 
-  const all = useMemo(() => sortedMembers(), []);
+  const state = useData((repo) =>
+    Promise.all([
+      repo.getMembers(),
+      repo.getInvoices(),
+      softNotImplemented(repo.getTeams()),
+      softNotImplemented(repo.getGuardianships()),
+    ] as const),
+  );
+
+  const allMembers = state.data?.[0] ?? NO_MEMBERS;
+  const invoices = state.data?.[1] ?? NO_INVOICES;
+  const teams = state.data?.[2] ?? null;
+  const guardianships = state.data?.[3] ?? null;
+  /** Bekannte Contract-Lücken aktiv? Dann Hinweis in der Fußzeile. */
+  const partialData = state.status === "ready" && (teams === null || guardianships === null);
+
+  const all = useMemo(() => sortMembers(allMembers), [allMembers]);
 
   const searched = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -78,7 +105,7 @@ export function MembersClient() {
   }));
 
   /** Offene Posten der angezeigten Personen (eigene Rechnungen — zählt nie doppelt). */
-  const shownOpenCents = rows.reduce((sum, member) => sum + openSumCentsOf(member.id), 0);
+  const shownOpenCents = rows.reduce((sum, member) => sum + openSumCentsOf(member.id, invoices), 0);
 
   const columns: Column<Member>[] = [
     {
@@ -109,7 +136,9 @@ export function MembersClient() {
       id: "teams",
       header: t("colTeams"),
       cell: (member) => {
-        const names = teamNames(member);
+        // Teams im api-Modus noch nicht angebunden — kein „kein Team" vortäuschen.
+        if (teams === null) return <span className="text-[13px] text-ink-faint">—</span>;
+        const names = teamNames(member, teams);
         if (names.length === 0) return <span className="text-[13px] text-ink-faint">{t("noTeam")}</span>;
         return (
           <span className="flex flex-wrap gap-1.5">
@@ -147,7 +176,7 @@ export function MembersClient() {
         </span>
       ),
       cell: (member) => {
-        const status = duesStatus(member);
+        const status = duesStatus(member, invoices, guardianships);
         if (status.kind === "exempt") return <Badge tone="neutral">{t("duesExempt")}</Badge>;
         if (status.kind === "paid")
           return (
@@ -188,6 +217,80 @@ export function MembersClient() {
     setFilter("all");
   };
 
+  let body: React.ReactNode;
+  if (state.status === "loading") {
+    body = (
+      <>
+        <div className="flex flex-wrap items-center gap-3" aria-hidden="true">
+          <Skeleton className="h-11 w-full rounded-full sm:w-72" />
+          <Skeleton className="h-9 w-72 max-w-full rounded-full" />
+        </div>
+        <SkeletonCard lines={8} />
+      </>
+    );
+  } else if (state.status === "error") {
+    body = isNotImplemented(state.error) ? (
+      <EmptyState icon="sparkle" title={t("niTitle")} body={t("niBody")} />
+    ) : (
+      <EmptyState
+        icon="zap"
+        title={t("loadErrorTitle")}
+        body={errorMessage(state.error)}
+        action={<Button onClick={state.reload}>{t("retry")}</Button>}
+      />
+    );
+  } else {
+    body = (
+      <>
+        <div className="flex flex-wrap items-center gap-3">
+          <label className="relative flex min-h-11 w-full items-center sm:w-72">
+            <span className="sr-only">{t("searchLabel")}</span>
+            <Icon
+              name="search"
+              className="ic pointer-events-none absolute left-4 h-4 w-4 text-ink-faint"
+            />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("searchPlaceholder")}
+              className="min-h-11 w-full rounded-full border border-transparent bg-sunken pl-10 pr-4 text-body text-ink placeholder:text-ink-faint"
+            />
+          </label>
+          <FilterChips options={filterOptions} value={filter} onChange={setFilter} label={t("filterLabel")} />
+        </div>
+
+        <Card>
+          <CardHeader eyebrow={t("listEyebrow")} title={t("listTitle")} />
+          <DataTable
+            columns={columns}
+            rows={rows}
+            rowKey={(member) => member.id}
+            caption={t("tableCaption")}
+            empty={
+              <EmptyState
+                icon="members"
+                title={t("emptyTitle")}
+                body={t("emptyBody")}
+                action={
+                  <Button variant="secondary" onClick={resetFilters}>
+                    {t("emptyReset")}
+                  </Button>
+                }
+              />
+            }
+          />
+          {(rows.length > 0 || partialData) && (
+            <CardFooter>
+              {rows.length > 0 && <span>{t("rowHint")}</span>}
+              {partialData && <span>{t("listNiHint")}</span>}
+            </CardFooter>
+          )}
+        </Card>
+      </>
+    );
+  }
+
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5">
       <SectionHeader
@@ -201,50 +304,7 @@ export function MembersClient() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="relative flex min-h-11 w-full items-center sm:w-72">
-          <span className="sr-only">{t("searchLabel")}</span>
-          <Icon
-            name="search"
-            className="ic pointer-events-none absolute left-4 h-4 w-4 text-ink-faint"
-          />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("searchPlaceholder")}
-            className="min-h-11 w-full rounded-full border border-transparent bg-sunken pl-10 pr-4 text-body text-ink placeholder:text-ink-faint"
-          />
-        </label>
-        <FilterChips options={filterOptions} value={filter} onChange={setFilter} label={t("filterLabel")} />
-      </div>
-
-      <Card>
-        <CardHeader eyebrow={t("listEyebrow")} title={t("listTitle")} />
-        <DataTable
-          columns={columns}
-          rows={rows}
-          rowKey={(member) => member.id}
-          caption={t("tableCaption")}
-          empty={
-            <EmptyState
-              icon="members"
-              title={t("emptyTitle")}
-              body={t("emptyBody")}
-              action={
-                <Button variant="secondary" onClick={resetFilters}>
-                  {t("emptyReset")}
-                </Button>
-              }
-            />
-          }
-        />
-        {rows.length > 0 && (
-          <CardFooter>
-            <span>{t("rowHint")}</span>
-          </CardFooter>
-        )}
-      </Card>
+      {body}
 
       <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />
     </div>

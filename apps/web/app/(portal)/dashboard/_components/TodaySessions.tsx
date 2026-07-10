@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/Toast";
 import { Icon, type IconName } from "@/components/shell/icons";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatTime, relativeDays } from "@/lib/format";
-import { fullName } from "@/lib/mock";
+import { data, errorMessage, fullName, isForbidden } from "@/lib/data";
 import type { EventType } from "@/lib/types";
 import { dashboardDict, type DashboardKey } from "../i18n";
 import type { SessionInfo, SessionNote } from "../derive";
@@ -72,12 +72,45 @@ export function TodaySessions({ sessions }: { sessions: SessionInfo[] }) {
   const active = sessions.find((s) => s.event.id === activeId) ?? null;
   const firstTodayId = sessions.find((s) => s.isToday)?.event.id;
 
+  /* Optimistisch: sofort lokal übernehmen + Sheet schließen, dann über die
+     Facade persistieren (mock: No-op). Fehler → zurückrollen + Toast mit
+     „Erneut versuchen“ — nie stilles Scheitern. */
   const handleSave = (session: SessionInfo, presentIds: string[]) => {
-    setPresenceByEvent((prev) => ({ ...prev, [session.event.id]: presentIds }));
+    const eventId = session.event.id;
+    const previous = presenceByEvent[eventId];
+    setPresenceByEvent((prev) => ({ ...prev, [eventId]: presentIds }));
     setActiveId(null);
-    showToast(t("savedToast", { x: presentIds.length, y: session.roster.length }), {
-      tone: "success",
-    });
+
+    const present = new Set(presentIds);
+    const checkedInAt = new Date().toISOString();
+    void Promise.all(
+      session.roster.map((member) =>
+        data.setAttendance({
+          eventId,
+          memberId: member.id,
+          status: present.has(member.id) ? "present" : "absent",
+          checkedInAt: present.has(member.id) ? checkedInAt : undefined,
+        }),
+      ),
+    )
+      .then(() => {
+        showToast(t("savedToast", { x: presentIds.length, y: session.roster.length }), {
+          tone: "success",
+        });
+      })
+      .catch((error: unknown) => {
+        setPresenceByEvent((prev) => {
+          const next = { ...prev };
+          if (previous) next[eventId] = previous;
+          else delete next[eventId];
+          return next;
+        });
+        showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+          tone: "danger",
+          actionLabel: t("retry"),
+          onAction: () => handleSave(session, presentIds),
+        });
+      });
   };
 
   return (

@@ -1,20 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { KpiTile } from "@/components/ui/KpiTile";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Tabs, TabPanel, type TabItem } from "@/components/ui/Tabs";
+import { useToast } from "@/components/ui/Toast";
 import { useLocale, useT } from "@/lib/i18n";
 import { dayDiff, formatDateShort, relativeDays } from "@/lib/format";
-import { club } from "@/lib/mock";
+import { data, errorMessage, isForbidden, isNotImplemented } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import {
   competitionTasks,
   entryStats,
+  loadWettkampfData,
   nextCompetition,
   pastCompetitions,
   starterEntries,
   startOrder,
   type EnteredScore,
+  type WettkampfData,
 } from "./derive";
 import { wettkampfDict } from "./i18n";
 import { OverviewTab } from "./_components/OverviewTab";
@@ -27,29 +34,121 @@ export type WettkampfTab = "overview" | "entries" | "live" | "export";
 /**
  * Wettkampf-Modul: Übersicht (Karten + Aufgaben), Meldungen (Tabelle),
  * Live-Modus-Vorschau (Startliste, RollArt-Schnelleingabe, Zwischenstand)
- * und Druck-&-Export-Platzhalter. Alles lokal auf Mock-Daten.
+ * und Druck-&-Export-Platzhalter. Daten kommen aus der Facade (lib/data);
+ * der Live-Scoring-Zustand bleibt bewusst lokal auf diesem Gerät.
  */
 export function WettkampfClient() {
   const t = useT(wettkampfDict);
+  const loaded = useData(loadWettkampfData);
+
+  if (loaded.status === "loading") {
+    return (
+      <PageFrame title={t("pageTitle")} sub={t("pageSub")}>
+        <WettkampfSkeleton />
+      </PageFrame>
+    );
+  }
+
+  if (loaded.status === "error") {
+    return (
+      <PageFrame title={t("pageTitle")} sub={t("pageSub")}>
+        {isNotImplemented(loaded.error) ? (
+          <EmptyState
+            icon="sparkle"
+            title={t("notConnectedTitle")}
+            body={t("notConnectedBody")}
+          />
+        ) : (
+          <EmptyState
+            icon="zap"
+            title={t("loadErrorTitle")}
+            body={errorMessage(loaded.error)}
+            action={<Button onClick={loaded.reload}>{t("retry")}</Button>}
+          />
+        )}
+      </PageFrame>
+    );
+  }
+
+  return <WettkampfReady wettkampf={loaded.data} />;
+}
+
+/* ---------- Rahmen: Kopf + Inhalt (identisch in allen drei Zuständen) ---------- */
+
+function PageFrame({
+  eyebrow,
+  title,
+  sub,
+  children,
+}: {
+  eyebrow?: string;
+  title: string;
+  sub: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-6">
+      <SectionHeader level={1} eyebrow={eyebrow} title={title} sub={sub} />
+      {children}
+    </div>
+  );
+}
+
+/** Lade-Platzhalter in Seiten-Optik: KPI-Reihe, Tab-Leiste, zwei Karten. */
+function WettkampfSkeleton() {
+  return (
+    <div aria-hidden="true" className="grid gap-6">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-line bg-surface px-5 py-[18px] shadow-card"
+          >
+            <Skeleton className="h-3 w-3/5" />
+            <Skeleton className="mt-3 h-7 w-2/5" />
+            <Skeleton className="mt-2.5 h-3 w-4/5" />
+          </div>
+        ))}
+      </div>
+      <Skeleton className="h-10 w-full max-w-sm rounded-full" />
+      <div className="grid items-start gap-5 lg:grid-cols-[1.55fr_1fr]">
+        <SkeletonCard lines={6} />
+        <SkeletonCard lines={6} />
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Geladener Zustand: sämtliche Interaktivität ---------- */
+
+function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
+  const t = useT(wettkampfDict);
   const { locale } = useLocale();
+  const { showToast } = useToast();
   const [tab, setTab] = useState<WettkampfTab>("overview");
 
-  const competition = nextCompetition;
+  const competition = useMemo(
+    () => nextCompetition(wettkampf.competitions),
+    [wettkampf],
+  );
+  const past = useMemo(() => pastCompetitions(wettkampf.competitions), [wettkampf]);
   const entries = useMemo(
-    () => (competition ? starterEntries(competition) : []),
-    [competition],
+    () => (competition ? starterEntries(competition, wettkampf) : []),
+    [competition, wettkampf],
   );
   const stats = useMemo(() => entryStats(entries), [entries]);
   const order = useMemo(
-    () => (competition ? startOrder(competition) : []),
-    [competition],
+    () =>
+      competition ? startOrder(competition, wettkampf.routines, wettkampf.members) : [],
+    [competition, wettkampf],
   );
   const tasks = useMemo(
-    () => (competition ? competitionTasks(competition) : []),
-    [competition],
+    () => (competition ? competitionTasks(competition, wettkampf.tasks) : []),
+    [competition, wettkampf],
   );
 
-  /* Aufgaben: optimistischer lokaler Zustand über den Mock-Startwerten. */
+  /* Aufgaben: optimistischer lokaler Zustand über den geladenen Startwerten;
+     Persistenz über die Facade (mock: No-op — api: Fehler → Rollback + Toast). */
   const [taskDone, setTaskDone] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(tasks.map((task) => [task.id, task.done])),
   );
@@ -57,6 +156,14 @@ export function WettkampfClient() {
 
   function setTaskState(taskId: string, done: boolean) {
     setTaskDone((prev) => ({ ...prev, [taskId]: done }));
+    void data.setTaskDone(taskId, done).catch((error: unknown) => {
+      setTaskDone((prev) => ({ ...prev, [taskId]: !done }));
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+        actionLabel: t("retry"),
+        onAction: () => setTaskState(taskId, done),
+      });
+    });
   }
 
   /* Meldeliste senden erledigt zugleich die passende Vorbereitungs-Aufgabe. */
@@ -83,14 +190,7 @@ export function WettkampfClient() {
   const deadlineDiff = deadline ? dayDiff(deadline) : undefined;
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-6">
-      <SectionHeader
-        level={1}
-        eyebrow={club.name}
-        title={t("pageTitle")}
-        sub={t("pageSub")}
-      />
-
+    <PageFrame eyebrow={wettkampf.club.name} title={t("pageTitle")} sub={t("pageSub")}>
       {competition && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiTile
@@ -138,11 +238,13 @@ export function WettkampfClient() {
       <TabPanel value="overview" active={tab} idBase="wettkampf">
         <OverviewTab
           competition={competition}
-          pastCompetitions={pastCompetitions}
+          pastCompetitions={past}
           stats={stats}
           entries={entries}
           tasks={tasks}
           taskDone={taskDone}
+          members={wettkampf.members}
+          routines={wettkampf.routines}
           onTaskState={setTaskState}
           onSwitchTab={setTab}
         />
@@ -165,6 +267,6 @@ export function WettkampfClient() {
       <TabPanel value="export" active={tab} idBase="wettkampf">
         <ExportTab notified={notified} onNotified={setNotified} />
       </TabPanel>
-    </div>
+    </PageFrame>
   );
 }
