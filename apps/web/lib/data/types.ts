@@ -4,6 +4,8 @@ import type {
   AttendanceStatus,
   Club,
   Competition,
+  DutyEntry,
+  DutyRequirement,
   Equipment,
   EquipmentReservation,
   Event,
@@ -24,12 +26,22 @@ import type {
   PlatformClubSummary,
   PlatformStats,
   PlatformUserSummary,
+  ReportsSummary,
   Routine,
   RoutineMarker,
   RsvpStatus,
   Task,
   Team,
+  TrainingSlot,
 } from "@/lib/types";
+import type {
+  CreateExerciseInput,
+  CreateNewsInput,
+  CreateNoteInput,
+  UpdateExerciseInput,
+  UpdateNewsInput,
+  UpdateNoteInput,
+} from "./inputs-batch1";
 import type {
   CreateAchievementInput,
   CreateBookingInput,
@@ -42,6 +54,14 @@ import type {
   UpdateFacilityInput,
   UpdateReservationInput,
 } from "./inputs-batch2";
+import type {
+  CreateDutyEntryInput,
+  CreateDutyRequirementInput,
+  CreateTrainingSlotInput,
+  UpdateDutyEntryInput,
+  UpdateDutyRequirementInput,
+  UpdateTrainingSlotInput,
+} from "./inputs-batch3";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -155,65 +175,6 @@ export interface UpdateClubSettingsInput {
   discipline?: string | null;
   /** Freies Settings-Objekt (Modulschalter etc.) — im View-Modell nicht gespiegelt. */
   settings?: Record<string, unknown>;
-}
-
-/* ---------- Module: Neuigkeiten ---------- */
-
-/** Neuigkeit anlegen (is_club_trainer). Ohne publishedAt = sofort veröffentlicht (api: server-default). */
-export interface CreateNewsInput {
-  title: string;
-  body: string;
-  isPinned?: boolean;
-  /** ISO-Zeitstempel; weglassen = jetzt/Server-Default */
-  publishedAt?: string;
-}
-
-/** Neuigkeit ändern (is_club_trainer). null bei publishedAt = zurück auf Entwurf. */
-export interface UpdateNewsInput {
-  title?: string;
-  body?: string;
-  isPinned?: boolean;
-  publishedAt?: string | null;
-}
-
-/* ---------- Module: Notizen (privat) ---------- */
-
-/** Private Notiz anlegen (owner = auth.uid()). clubId optional/lose. */
-export interface CreateNoteInput {
-  title: string;
-  body: string;
-  clubId?: Id;
-}
-
-/** Private Notiz ändern. null bei clubId löst die Vereinszuordnung. */
-export interface UpdateNoteInput {
-  title?: string;
-  body?: string;
-  clubId?: Id | null;
-}
-
-/* ---------- Module: Übungen ---------- */
-
-/** Übung anlegen (is_club_trainer). difficulty 1..5 Pflicht; durationSeconds > 0. */
-export interface CreateExerciseInput {
-  name: string;
-  category: ExerciseCategory;
-  difficulty: number;
-  description?: string;
-  videoUrl?: string;
-  instructions?: string;
-  durationSeconds?: number;
-}
-
-/** Übung ändern (is_club_trainer). null leert das jeweilige Feld. */
-export interface UpdateExerciseInput {
-  name?: string;
-  category?: ExerciseCategory;
-  difficulty?: number;
-  description?: string | null;
-  videoUrl?: string | null;
-  instructions?: string | null;
-  durationSeconds?: number | null;
 }
 
 export interface DataRepository {
@@ -358,6 +319,47 @@ export interface DataRepository {
   updateAchievement(achievementId: Id, patch: UpdateAchievementInput): Promise<Achievement>;
   /** Erfolg soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
   deleteAchievement(achievementId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Trainingsplan (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
+  /** Trainings-Slots des aktiven Vereins, optional nach Team gefiltert. */
+  listTrainingSlots(teamId?: Id): Promise<TrainingSlot[]>;
+  /** Trainings-Slot anlegen (is_club_trainer) — liefert den erzeugten Slot zurück. */
+  createTrainingSlot(input: CreateTrainingSlotInput): Promise<TrainingSlot>;
+  /** Trainings-Slot ändern (is_club_trainer). */
+  updateTrainingSlot(slotId: Id, patch: UpdateTrainingSlotInput): Promise<TrainingSlot>;
+  /** Trainings-Slot soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteTrainingSlot(slotId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Pflichtstunden-Soll (Lesen=Mitglied, Setzen=Trainer+) ---------- */
+  /** Pflichtstunden-Soll des aktiven Vereins, optional nach Team gefiltert. */
+  listDutyRequirements(teamId?: Id): Promise<DutyRequirement[]>;
+  /** Pflichtstunden-Soll anlegen (is_club_trainer) — liefert die erzeugte Regel zurück. */
+  createDutyRequirement(input: CreateDutyRequirementInput): Promise<DutyRequirement>;
+  /** Pflichtstunden-Soll ändern (is_club_trainer). */
+  updateDutyRequirement(
+    requirementId: Id,
+    patch: UpdateDutyRequirementInput,
+  ): Promise<DutyRequirement>;
+  /** Pflichtstunden-Soll soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteDutyRequirement(requirementId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Pflichtstunden-Ist (Lesen/Erfassen=Selbst ODER Trainer) ---------- */
+  /**
+   * Erfasste Ist-Stunden, optional nach Mitglied gefiltert. RLS liefert einem
+   * einfachen Mitglied ausschließlich die EIGENEN Einträge (member_id-Filter
+   * greift zusätzlich, ändert für Trainer die Sicht).
+   */
+  listDutyEntries(memberId?: Id): Promise<DutyEntry[]>;
+  /** Ist-Stunden erfassen (eigenes Mitglied ODER Trainer). `approved` NUR Trainer (sonst 403). */
+  createDutyEntry(input: CreateDutyEntryInput): Promise<DutyEntry>;
+  /** Ist-Stunden ändern (eigene ODER Trainer). `approved` NUR Trainer. */
+  updateDutyEntry(entryId: Id, patch: UpdateDutyEntryInput): Promise<DutyEntry>;
+  /** Ist-Stunden soft-löschen (eigene ODER Trainer) — liefert die gelöschte ID zurück. */
+  deleteDutyEntry(entryId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Auswertung (NUR Trainer/Admin, reine Lesesicht) ---------- */
+  /** Vereins-Auswertung (Mitglieder, Anwesenheit, Finanzen, Medaillen, Termine). */
+  getReportsSummary(): Promise<ReportsSummary>;
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */

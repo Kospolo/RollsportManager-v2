@@ -22,6 +22,17 @@ export function formatEUR(amountCents: number, locale: Locale): string {
     .replace(/[\s ]€/g, `${NARROW_NBSP}€`);
 }
 
+/** Anteil 0..1 → "84,2 %" (de) / "84.2%" (en) — echtes Minus, lokalisierter Prozent-Stil. */
+export function formatPercent(ratio: number, locale: Locale, fractionDigits = 1): string {
+  return new Intl.NumberFormat(INTL_LOCALE[locale], {
+    style: "percent",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: fractionDigits,
+  })
+    .format(ratio)
+    .replace(/-/g, REAL_MINUS);
+}
+
 /** ISO → "Mi., 15. Juli" (de) / "Wed 15 July" (en) */
 export function formatDate(iso: string, locale: Locale): string {
   return new Intl.DateTimeFormat(INTL_LOCALE[locale], {

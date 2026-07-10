@@ -5,6 +5,7 @@ import type { DataRepository, DunningRunOutcome } from "../types";
 import { activeClubId, apiClient } from "./client";
 import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
+import { moduleApiRepositoryBatch3 } from "./modules-batch3";
 import {
   mapAttendance,
   mapClub,
@@ -298,6 +299,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Hallen, Buchungen, Equipment, Reservierungen, Erfolge (Batch 2) ---------- */
   ...moduleApiRepositoryBatch2,
+
+  /* ---------- Module: Trainingsplan, Pflichtstunden, Auswertung (Batch 3) ---------- */
+  ...moduleApiRepositoryBatch3,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

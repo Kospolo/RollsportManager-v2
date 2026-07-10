@@ -22,9 +22,6 @@ export type {
   AddMarkerInput,
   AssignableRole,
   CreateEventInput,
-  CreateExerciseInput,
-  CreateNewsInput,
-  CreateNoteInput,
   CreateTeamInput,
   DataRepository,
   DunningRunOutcome,
@@ -33,12 +30,17 @@ export type {
   SetRsvpInput,
   SetTeamMembersInput,
   UpdateClubSettingsInput,
-  UpdateExerciseInput,
   UpdateMemberInput,
-  UpdateNewsInput,
-  UpdateNoteInput,
   UpdateTeamInput,
 } from "./types";
+export type {
+  CreateExerciseInput,
+  CreateNewsInput,
+  CreateNoteInput,
+  UpdateExerciseInput,
+  UpdateNewsInput,
+  UpdateNoteInput,
+} from "./inputs-batch1";
 export type {
   CreateAchievementInput,
   CreateBookingInput,
@@ -51,6 +53,14 @@ export type {
   UpdateFacilityInput,
   UpdateReservationInput,
 } from "./inputs-batch2";
+export type {
+  CreateDutyEntryInput,
+  CreateDutyRequirementInput,
+  CreateTrainingSlotInput,
+  UpdateDutyEntryInput,
+  UpdateDutyRequirementInput,
+  UpdateTrainingSlotInput,
+} from "./inputs-batch3";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

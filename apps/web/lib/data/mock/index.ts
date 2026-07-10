@@ -13,6 +13,7 @@ import type { DataRepository, DunningRunOutcome } from "../types";
 import { openInvoices } from "../derive";
 import { moduleRepository } from "./modules";
 import { moduleRepositoryBatch2 } from "./modules-batch2";
+import { moduleRepositoryBatch3 } from "./modules-batch3";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -231,6 +232,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Hallen, Buchungen, Equipment, Reservierungen, Erfolge (Batch 2) ---------- */
   ...moduleRepositoryBatch2,
+
+  /* ---------- Module: Trainingsplan, Pflichtstunden, Auswertung (Batch 3) ---------- */
+  ...moduleRepositoryBatch3,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

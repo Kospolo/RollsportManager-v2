@@ -13,6 +13,12 @@ export type Id = string;
 // "@/lib/types" verfügbar.
 export type * from "./types-batch2";
 
+// Batch-3-Modul-Typen (Trainingsplan, Pflichtstunden, Auswertung) leben
+// ausgelagert in lib/types-batch3.ts. Die Label-Maps (dutyKindLabels/
+// weekdayLabels) sind Werte und werden zusätzlich als Werte re-exportiert.
+export type * from "./types-batch3";
+export { dutyKindLabels, weekdayLabels } from "./types-batch3";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {
