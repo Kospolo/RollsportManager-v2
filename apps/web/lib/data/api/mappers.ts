@@ -1,0 +1,245 @@
+import type * as M from "@/lib/api/generated";
+import type {
+  Attendance,
+  Club,
+  Competition,
+  CompetitionStatus,
+  DunningLevel,
+  Event,
+  Guardianship,
+  Invoice,
+  LedgerEntry,
+  Member,
+  MemberStatus,
+  Routine,
+  RoutineMarker,
+  RollArtScore,
+  Rsvp,
+  Task,
+  Team,
+} from "@/lib/types";
+import { waveformPeaks } from "@/lib/mock/util";
+
+/**
+ * Mapper: API-Wire-Format (snake_case, Blueprint ADR-E7) → View-Typen
+ * (lib/types, camelCase). Seit Contract v0.2.0 liefert die API die vollen
+ * Read-Modelle (Teams, Familien, RSVPs, Anwesenheit, Kassenbuch, Wettkämpfe,
+ * Aufgaben, Läufer:innen). Einzige verbleibende Lücke:
+ *
+ *  - Routine.waveformPeaks: hat eine Kür kein Audio-Asset (waveform_peaks
+ *    null), wird ein deterministischer Anzeige-PLATZHALTER aus der
+ *    Routine-ID erzeugt — klar als solcher markiert.
+ */
+
+export function mapClub(w: M.Club): Club {
+  return {
+    id: w.id,
+    name: w.name,
+    shortName: w.short_name ?? w.name,
+    city: w.city ?? "",
+    discipline: w.discipline ?? "",
+    foundedYear: w.founded_year ?? 0,
+  };
+}
+
+function mapMemberStatus(s: M.MemberStatus): MemberStatus {
+  // View-Modell kennt kein "left" — für die Anzeige zählt das als inaktiv.
+  if (s === "left") return "inactive";
+  return s;
+}
+
+export function mapMember(w: M.ClubMember): Member {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    firstName: w.first_name,
+    lastName: w.last_name,
+    role: w.role,
+    status: mapMemberStatus(w.status),
+    birthDate: w.birth_date ?? undefined,
+    email: w.email ?? undefined,
+    teamIds: w.team_ids,
+    joinedAt: w.joined_on ?? w.created_at.slice(0, 10),
+    guestAccessUntil: w.role === "guest_coach" ? (w.valid_until ?? undefined) : undefined,
+  };
+}
+
+export function mapRsvp(w: M.EventRsvp): Rsvp {
+  return {
+    memberId: w.member_id,
+    status: w.status,
+    comment: w.comment ?? undefined,
+    respondedAt: w.responded_at,
+  };
+}
+
+export function mapEvent(w: M.Event): Event {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    type: w.type,
+    title: w.title,
+    location: w.location ?? "",
+    startsAt: w.starts_at,
+    endsAt: w.ends_at,
+    teamIds: w.team_ids,
+    rsvps: w.rsvps.map(mapRsvp),
+    note: w.note ?? undefined,
+    competitionId: w.competition_id ?? undefined,
+  };
+}
+
+export function mapTeam(w: M.Team): Team {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    name: w.name,
+    ageGroup: w.age_group ?? "",
+    coachIds: w.coach_member_ids,
+  };
+}
+
+export function mapGuardianship(w: M.Guardianship): Guardianship {
+  // DB-Relation ist Freitext (parent | guardian | other) — das View-Modell
+  // kennt parent | grandparent | other; Unbekanntes wird "other".
+  const relation =
+    w.relation === "parent" || w.relation === "grandparent" ? w.relation : "other";
+  return {
+    id: w.id,
+    guardianId: w.guardian_member_id,
+    childId: w.child_member_id,
+    relation,
+  };
+}
+
+export function mapAttendance(w: M.Attendance): Attendance {
+  return {
+    id: w.id,
+    eventId: w.event_id,
+    memberId: w.member_id,
+    status: w.status,
+    checkedInAt: w.checked_in_at ?? undefined,
+  };
+}
+
+export function mapLedgerEntry(w: M.LedgerEntry): LedgerEntry {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    date: w.entry_on,
+    description: w.description,
+    counterparty:
+      w.counterparty_kind === "person" && w.counterparty_member_id
+        ? { kind: "person", memberId: w.counterparty_member_id }
+        : { kind: "org", name: w.counterparty_name ?? "—" },
+    // z.coerce macht das Feld im Spec nullable (wie Invoice.amount_cents) —
+    // die DB-Spalte ist NOT NULL, 0 ist reiner Typ-Fallback.
+    amountCents: w.amount_cents ?? 0,
+    category: w.category ?? "",
+    invoiceId: w.invoice_id ?? undefined,
+  };
+}
+
+export function mapCompetition(w: M.Competition): Competition {
+  // View-Modell kennt kein "cancelled" — für die Anzeige zählt das als done.
+  const status: CompetitionStatus = w.status === "cancelled" ? "done" : w.status;
+  const active = w.entries.filter((e) => e.status !== "withdrawn");
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    name: w.name,
+    location: w.location ?? "",
+    startsAt: w.starts_at,
+    endsAt: w.ends_at,
+    registrationDeadline: w.registration_deadline ?? undefined,
+    status,
+    participantIds: active.map((e) => e.member_id),
+    routineIds: [...new Set(active.flatMap((e) => (e.routine_id ? [e.routine_id] : [])))],
+  };
+}
+
+export function mapTask(w: M.Task): Task {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    title: w.title,
+    done: w.done,
+    dueAt: w.due_on ?? undefined,
+    assigneeId: w.assignee_member_id ?? undefined,
+    competitionId: w.competition_id ?? undefined,
+  };
+}
+
+export function mapMarker(w: M.RoutineMarker): RoutineMarker {
+  return {
+    id: w.id,
+    timeMs: w.time_ms ?? 0,
+    label: w.label,
+    elementCode: w.element_code ?? undefined,
+  };
+}
+
+export function mapScore(w: M.RoutineScore): RollArtScore {
+  return {
+    id: w.id,
+    date: w.scored_on,
+    competitionId: w.competition_id ?? undefined,
+    technical: w.technical_score ?? 0,
+    components: w.components_score ?? 0,
+    total: w.total_score ?? (w.technical_score ?? 0) + (w.components_score ?? 0),
+  };
+}
+
+/** Stabiler numerischer Seed aus einer UUID — für die Platzhalter-Waveform. */
+function hashSeed(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (Math.imul(h, 31) + id.charCodeAt(i)) | 0;
+  return h >>> 0;
+}
+
+export function mapRoutine(
+  w: M.Routine,
+  markers: M.RoutineMarker[],
+  scores: M.RoutineScore[],
+): Routine {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    title: w.title,
+    status: w.status,
+    memberIds: w.skater_member_ids,
+    teamId: w.team_id ?? undefined,
+    music: {
+      title: w.music_title ?? "",
+      artist: w.music_artist ?? "",
+      durationMs: w.music_duration_ms ?? 0,
+      bpm: w.music_bpm ?? undefined,
+    },
+    // Echte Peaks aus dem Audio-Asset; ohne Asset ein deterministischer
+    // Anzeige-PLATZHALTER (seeded aus der Routine-ID), klar als solcher markiert.
+    waveformPeaks: w.waveform_peaks ?? waveformPeaks(hashSeed(w.id)),
+    markers: markers.map(mapMarker).sort((a, b) => a.timeMs - b.timeMs),
+    scores: scores.map(mapScore).sort((a, b) => a.date.localeCompare(b.date)),
+    category: w.category ?? "",
+  };
+}
+
+export function mapInvoice(w: M.Invoice): Invoice | null {
+  // View-Modell kennt keinen "draft"-Status — Entwürfe sind (noch) keine
+  // offenen Posten und werden ausgefiltert statt falsch summiert.
+  if (w.status === "draft") return null;
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    number: w.number,
+    memberId: w.member_id,
+    title: w.title,
+    amountCents: w.amount_cents ?? 0,
+    currency: "EUR",
+    issuedAt: w.issued_on ?? w.created_at.slice(0, 10),
+    dueAt: w.due_on ?? w.issued_on ?? w.created_at.slice(0, 10),
+    status: w.status,
+    dunningLevel: Math.min(3, Math.max(0, w.dunning_level)) as DunningLevel,
+    paidAt: w.paid_at ?? undefined,
+  };
+}

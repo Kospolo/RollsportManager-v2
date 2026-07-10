@@ -24,6 +24,17 @@ export const loginDict = {
     noAccount: "Noch kein Vereinszugang?",
     seePlans: "Pakete ansehen",
     backHome: "Zur Startseite",
+
+    // Dev-Login (api-Modus): Persona-Karten gegen den lokalen Dev-Stack
+    devBanner: "Entwicklungsmodus: Anmeldung mit lokalen Test-Personas.",
+    devTitle: "Wer bist du heute?",
+    devSub: "Wähle eine Persona — echte Seed-Daten, echte Berechtigungen (RLS).",
+    devSigningIn: "Anmeldung läuft …",
+    devErrorTitle: "Der lokale Dev-Stack antwortet nicht",
+    devErrorBody:
+      "Die API unter Port 3022 ist nicht erreichbar. Starte den Stack im Projektordner mit:",
+    devErrorRetry: "Erneut versuchen",
+    devErrorGeneric: "Anmeldung fehlgeschlagen: {message}",
   },
   en: {
     title: "Welcome back",
@@ -47,5 +58,16 @@ export const loginDict = {
     noAccount: "No club account yet?",
     seePlans: "See plans",
     backHome: "Back to homepage",
+
+    // Dev login (api mode): persona cards against the local dev stack
+    devBanner: "Development mode: sign in with local test personas.",
+    devTitle: "Who are you today?",
+    devSub: "Pick a persona — real seed data, real permissions (RLS).",
+    devSigningIn: "Signing in …",
+    devErrorTitle: "The local dev stack is not responding",
+    devErrorBody:
+      "The API on port 3022 is unreachable. Start the stack in the project folder with:",
+    devErrorRetry: "Try again",
+    devErrorGeneric: "Sign-in failed: {message}",
   },
 } satisfies Dict;

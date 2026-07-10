@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuthProvider } from "@/lib/auth";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { themeInitScript } from "@/lib/theme/script";
@@ -27,7 +28,10 @@ export default function RootLayout({
         {/* Läuft synchron vor dem ersten Paint — kein Theme-Flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
-          <I18nProvider>{children}</I18nProvider>
+          <I18nProvider>
+            {/* Dev-Auth-Session (rsm.dev.auth) — im mock-Modus wirkungslos. */}
+            <AuthProvider>{children}</AuthProvider>
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
