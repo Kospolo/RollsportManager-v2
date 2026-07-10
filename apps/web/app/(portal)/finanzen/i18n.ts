@@ -14,6 +14,18 @@ export const financeDict = {
     invoiceRun: "Rechnungslauf starten",
     invoiceRunToast: "Rechnungslauf als Entwurf angelegt — noch nichts versendet.",
 
+    // Finanz-Hub (Navigationsleiste zu den Unterbereichen)
+    hubNavLabel: "Finanzbereiche",
+    hubOpen: "{title} öffnen",
+    hubLedgerTitle: "Kassenbuch",
+    hubLedgerDesc: "Buchungen & Belege",
+    hubInvoicesTitle: "Rechnungen",
+    hubInvoicesDesc: "Beiträge & Zahlungen",
+    hubDunningTitle: "Mahnungen",
+    hubDunningDesc: "Erinnerungen & Stufen",
+    hubReportsTitle: "Auswertung",
+    hubReportsDesc: "Zahlen & Berichte",
+
     // Laden & Fehler (Facade)
     retry: "Erneut versuchen",
     loadErrorTitle: "Daten konnten nicht geladen werden",
@@ -187,6 +199,18 @@ export const financeDict = {
     invoiceRun: "Start invoice run",
     invoiceRunToast: "Invoice run saved as draft — nothing sent yet.",
 
+    // Finance hub (navigation bar to the sub-areas)
+    hubNavLabel: "Finance areas",
+    hubOpen: "Open {title}",
+    hubLedgerTitle: "Cash book",
+    hubLedgerDesc: "Entries & receipts",
+    hubInvoicesTitle: "Invoices",
+    hubInvoicesDesc: "Fees & payments",
+    hubDunningTitle: "Dunning",
+    hubDunningDesc: "Reminders & stages",
+    hubReportsTitle: "Reports",
+    hubReportsDesc: "Figures & reports",
+
     // Loading & errors (facade)
     retry: "Try again",
     loadErrorTitle: "Data could not be loaded",
@@ -351,3 +375,5 @@ export const financeDict = {
     catEquipment: "Equipment",
   },
 } satisfies Dict;
+
+export type FinanceKey = keyof (typeof financeDict)["de"];

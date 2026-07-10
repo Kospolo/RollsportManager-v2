@@ -177,7 +177,11 @@ export function mapLedgerEntry(w: M.LedgerEntry): LedgerEntry {
     // die DB-Spalte ist NOT NULL, 0 ist reiner Typ-Fallback.
     amountCents: w.amount_cents ?? 0,
     category: w.category ?? "",
+    categoryId: w.category_id ?? undefined,
+    categoryName: w.category_name ?? undefined,
+    categoryKind: w.category_kind,
     invoiceId: w.invoice_id ?? undefined,
+    reversesEntryId: w.reverses_entry_id ?? undefined,
   };
 }
 

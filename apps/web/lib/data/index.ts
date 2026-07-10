@@ -73,6 +73,17 @@ export type {
   DocumentUploadMeta,
   GalleryUploadMeta,
 } from "./inputs-batch5";
+export type {
+  ApplyDunningInput,
+  CreateInvoiceInput,
+  CreateLedgerCategoryInput,
+  CreateLedgerEntryInput,
+  FinanceRepository,
+  ListDunningLogFilter,
+  ListInvoicesFilter,
+  ReverseLedgerInput,
+  SettleInvoiceInput,
+} from "./inputs-finance";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

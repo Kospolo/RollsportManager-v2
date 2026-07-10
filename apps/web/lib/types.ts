@@ -31,6 +31,12 @@ export { chatChannelTypeLabels, checkinMethodLabels } from "./types-batch4";
 export type * from "./types-batch5";
 export { galleryKindLabels } from "./types-batch5";
 
+// Finanz-A-Modul-Typen (Rechnungs-Detail, Kassenbuch-Kategorien, Mahnprotokoll)
+// leben ausgelagert in lib/types-finance.ts, sind aber weiterhin unter
+// "@/lib/types" verfügbar. InvoiceStatus/LedgerCategoryKind sowie die um Kategorie
+// + reversesEntryId erweiterte LedgerEntry bleiben unten in dieser Datei.
+export type * from "./types-finance";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {
@@ -177,7 +183,15 @@ export interface Routine {
 
 /* ---------- Finanzen (Seriositätszone) ---------- */
 
-export type InvoiceStatus = "open" | "paid" | "cancelled";
+/**
+ * Rechnungs-Status. `draft` erscheint NUR in den Verwaltungssichten
+ * (getInvoice/listInvoices); die aggregierende getInvoices()-Liste filtert
+ * Entwürfe weiterhin heraus. paid/cancelled sind terminal (GoBD, kein Re-Open).
+ */
+export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
+
+/** Kassenbuch-Kategorie-Art: Einnahme (> 0) oder Ausgabe (< 0). */
+export type LedgerCategoryKind = "income" | "expense";
 
 /**
  * Mahnstufen-Treppe (vierstufig, DESIGN-SYSTEM §3.6):
@@ -215,8 +229,17 @@ export interface LedgerEntry {
   counterparty: LedgerCounterparty;
   /** Vorzeichenbehaftet: Einnahmen positiv, Ausgaben negativ */
   amountCents: number;
+  /** Freitext-Kategorie (Fallback). Die strukturierte Kategorie ist categoryId. */
   category: string;
+  /** Strukturierte Kategorie (aus listLedgerCategories); fehlt = nur Freitext. */
+  categoryId?: Id;
+  /** Anzeigename der verknüpften Kategorie (aus dem Join). */
+  categoryName?: string;
+  /** Einnahme/Ausgabe der verknüpften Kategorie (aus dem Join). */
+  categoryKind?: LedgerCategoryKind;
   invoiceId?: Id;
+  /** Gesetzt = diese Zeile ist die Storno-Gegenbuchung zu reversesEntryId. */
+  reversesEntryId?: Id;
 }
 
 /* ---------- Wettkampf & Aufgaben ---------- */

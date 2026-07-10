@@ -64,6 +64,7 @@ import type {
 } from "./inputs-batch3";
 import type { Batch4Repository } from "./inputs-batch4";
 import type { Batch5Repository } from "./inputs-batch5";
+import type { FinanceRepository } from "./inputs-finance";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -179,7 +180,7 @@ export interface UpdateClubSettingsInput {
   settings?: Record<string, unknown>;
 }
 
-export interface DataRepository extends Batch4Repository, Batch5Repository {
+export interface DataRepository extends Batch4Repository, Batch5Repository, FinanceRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
   getMembers(): Promise<Member[]>;
@@ -198,9 +199,11 @@ export interface DataRepository extends Batch4Repository, Batch5Repository {
   getRoutines(): Promise<Routine[]>;
   getRoutineById(id: Id): Promise<Routine | undefined>;
 
-  /* ---------- Finanzen ---------- */
+  /* ---------- Finanzen (Aggregat-Lesesichten; Draft-Rechnungen gefiltert) ---------- */
   getInvoices(): Promise<Invoice[]>;
   getLedger(): Promise<LedgerEntry[]>;
+  // Kassenbuch-Kategorien, Rechnungs-Detail/Settle, Mahnwesen:
+  // Signaturen in ./inputs-finance (FinanceRepository) — DataRepository erbt sie.
 
   /* ---------- Wettkampf & Aufgaben ---------- */
   getCompetitions(): Promise<Competition[]>;

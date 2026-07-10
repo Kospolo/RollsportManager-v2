@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDate } from "@/lib/format";
-import { data, memberById, isNotImplemented, errorMessage } from "@/lib/data";
+import {
+  data,
+  dataSource,
+  memberById,
+  permissions,
+  isNotImplemented,
+  errorMessage,
+} from "@/lib/data";
 import { useData, type DataState } from "@/lib/data/useData";
 import type { DunningLevel, Invoice, LedgerEntry, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -23,6 +30,7 @@ import {
   type BankSuggestion,
   type OpenItem,
 } from "./derive";
+import { FinanceHubNav } from "./_components/FinanceHubNav";
 import { OpenItemsCard } from "./_components/OpenItemsCard";
 import { DunningAutomationCard } from "./_components/DunningAutomationCard";
 import { MailPreviewModal, type MailStage } from "./_components/MailPreviewModal";
@@ -103,6 +111,9 @@ function FinanceContent({
   const t = useT(financeDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+
+  /* ---------- Sichtbarkeit der Finanz-Unterbereiche (nur can_manage_finance) ---------- */
+  const canManageFinance = permissions(currentUser).canManageFinance || dataSource === "mock";
 
   /* ---------- Lokaler, optimistischer Zustand ---------- */
   const [levelOverrides, setLevelOverrides] = useState<Record<string, DunningLevel>>({});
@@ -237,6 +248,9 @@ function FinanceContent({
           </>
         }
       />
+
+      {/* Navigationsleiste zu den Finanz-Unterbereichen (nur can_manage_finance) */}
+      <FinanceHubNav canManageFinance={canManageFinance} />
 
       {/* KPI-Zeile — Offene Posten identisch mit dem Tabellen-Footer */}
       <div className="grid gap-4 sm:grid-cols-3">
