@@ -1,0 +1,11 @@
+{
+  "name": "@rsm/tokens",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Token-Pipeline „Heimspiel“ — design/tokens.json → CSS (Web) und Theme.swift (iOS)",
+  "scripts": {
+    "build": "node build.mjs",
+    "gen:swift": "node gen-swift.mjs"
+  }
+}

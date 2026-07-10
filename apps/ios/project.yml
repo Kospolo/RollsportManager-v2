@@ -1,0 +1,65 @@
+# xcodegen-Projektdefinition — RollsportManager v2 (iOS)
+# Projekt neu generieren:  xcodegen generate   (in apps/ios)
+#
+# Quellen:
+#   App/                                  — SwiftUI-App (Feature-Module, DesignSystem, Networking)
+#   App/Generated/Theme.swift             — NUR Codegen: npm run gen:swift (packages/tokens)
+#   packages/contracts/generated/swift/   — NUR Codegen: npm run generate (packages/contracts)
+name: RollsportManager
+options:
+  minimumXcodeGenVersion: "2.40.0"
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  RollsportManager:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      # Generierte API-Contracts (Swift-Structs aus der OpenAPI-Spec) werden
+      # direkt aus packages/contracts eingebunden — nie kopieren, nie editieren.
+      - path: ../../packages/contracts/generated/swift
+        name: GeneratedContracts
+    info:
+      path: Support/Info.plist
+      properties:
+        CFBundleDisplayName: RollsportManager
+        CFBundleShortVersionString: "2.0.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Dev-Stack spricht http://127.0.0.1:3022 — Loopback ist von ATS
+        # ausgenommen, NSAllowsLocalNetworking macht das explizit.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.rollsportmanager.v2
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        SWIFT_EMIT_LOC_STRINGS: YES
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.sports
+
+schemes:
+  RollsportManager:
+    build:
+      targets:
+        RollsportManager: all
+    run:
+      config: Debug
+    archive:
+      config: Release

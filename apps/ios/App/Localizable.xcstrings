@@ -1,0 +1,1944 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "common.logout" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign out" } }
+      }
+    },
+    "dashboard.a11y.profileMenu" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Profil und Abmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile and sign out" } }
+      }
+    },
+    "dashboard.countdown.entrants %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld gemeldet" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld registered" } }
+      }
+    },
+    "dashboard.countdown.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampf-Countdown" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition countdown" } }
+      }
+    },
+    "dashboard.countdown.today" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute ist Wettkampftag!" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition day is today!" } }
+      }
+    },
+    "dashboard.countdown.unit.one" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tag bis zum Start" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "day to go" } }
+      }
+    },
+    "dashboard.countdown.unit.other" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tage bis zum Start" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "days to go" } }
+      }
+    },
+    "dashboard.date.today" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } }
+      }
+    },
+    "dashboard.date.tomorrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Morgen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tomorrow" } }
+      }
+    },
+    "dashboard.error.refresh" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktualisieren hat nicht geklappt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh didn't work" } }
+      }
+    },
+    "dashboard.error.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } }
+      }
+    },
+    "dashboard.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Da ist etwas schiefgelaufen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } }
+      }
+    },
+    "dashboard.events.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In den nächsten zwei Wochen ist nichts geplant." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing is scheduled for the next two weeks." } }
+      }
+    },
+    "dashboard.events.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Termine anstehend" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No events coming up" } }
+      }
+    },
+    "dashboard.events.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Schedule" } }
+      }
+    },
+    "dashboard.events.more %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+%lld weitere in den nächsten 14 Tagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+%lld more in the next 14 days" } }
+      }
+    },
+    "dashboard.events.responses %lld %lld %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld zugesagt · %2$lld abgesagt · %3$lld offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld going · %2$lld declined · %3$lld open" } }
+      }
+    },
+    "dashboard.events.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute & demnächst" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today & soon" } }
+      }
+    },
+    "dashboard.events.type.competition" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition" } }
+      }
+    },
+    "dashboard.greeting.day %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hallo, %@!" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hello, %@!" } }
+      }
+    },
+    "dashboard.greeting.evening %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Guten Abend, %@!" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Good evening, %@!" } }
+      }
+    },
+    "dashboard.greeting.morning %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Guten Morgen, %@!" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Good morning, %@!" } }
+      }
+    },
+    "dashboard.kpi.dues.caption.empty" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "keine offenen Posten sichtbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "no open items visible" } }
+      }
+    },
+    "dashboard.kpi.dues.caption.one" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "1 offener Posten · aus deiner Sicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1 open item · from your view" } }
+      }
+    },
+    "dashboard.kpi.dues.caption.other %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld offene Posten · aus deiner Sicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld open items · from your view" } }
+      }
+    },
+    "dashboard.kpi.dues.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offene Beiträge" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open dues" } }
+      }
+    },
+    "dashboard.kpi.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Überblick" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Overview" } }
+      }
+    },
+    "dashboard.kpi.members.caption" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "im Verein" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "in the club" } }
+      }
+    },
+    "dashboard.kpi.members.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktive Mitglieder" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active members" } }
+      }
+    },
+    "dashboard.kpi.next.caption.none" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "nichts geplant in den nächsten 14 Tagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "nothing scheduled in the next 14 days" } }
+      }
+    },
+    "dashboard.kpi.next.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nächster Termin" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next event" } }
+      }
+    },
+    "dashboard.kpi.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "So steht der Verein da" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Where the club stands" } }
+      }
+    },
+    "dashboard.loading" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vereinsdaten werden geladen …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading club data …" } }
+      }
+    },
+    "dashboard.tasks.a11y.done" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "erledigt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "done" } }
+      }
+    },
+    "dashboard.tasks.a11y.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ändert den Erledigt-Status." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Changes the done status." } }
+      }
+    },
+    "dashboard.tasks.a11y.open" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "open" } }
+      }
+    },
+    "dashboard.tasks.a11y.toggle %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aufgabe: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Task: %@" } }
+      }
+    },
+    "dashboard.tasks.due %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "fällig %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "due %@" } }
+      }
+    },
+    "dashboard.tasks.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gerade liegt nichts auf der Liste." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing on the list right now." } }
+      }
+    },
+    "dashboard.tasks.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alles erledigt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All done" } }
+      }
+    },
+    "dashboard.tasks.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abhaken hat nicht geklappt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking off didn't work" } }
+      }
+    },
+    "dashboard.tasks.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aufgaben" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tasks" } }
+      }
+    },
+    "dashboard.tasks.overdue %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "überfällig seit %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "overdue since %@" } }
+      }
+    },
+    "dashboard.tasks.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Was zu erledigen ist" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What needs doing" } }
+      }
+    },
+    "dashboard.welcome.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Angemeldet als" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Signed in as" } }
+      }
+    },
+    "dashboard.welcome.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Willkommen im Vereinsheim" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome to the clubhouse" } }
+      }
+    },
+    "events.attendance.absent" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fehlt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Absent" } }
+      }
+    },
+    "events.attendance.excused" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Entschuldigt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Excused" } }
+      }
+    },
+    "events.attendance.late" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verspätet" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Late" } }
+      }
+    },
+    "events.attendance.menu.a11y %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anwesenheit für %@ ändern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change attendance for %@" } }
+      }
+    },
+    "events.attendance.none" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erfassen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Record" } }
+      }
+    },
+    "events.attendance.present" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anwesend" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Present" } }
+      }
+    },
+    "events.counts.declined %lld" : {
+      "localizations" : {
+        "de" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld Absage" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld Absagen" } }
+        } } },
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld declined" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld declined" } }
+        } } }
+      }
+    },
+    "events.counts.going %lld" : {
+      "localizations" : {
+        "de" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld Zusage" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld Zusagen" } }
+        } } },
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld accepted" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld accepted" } }
+        } } }
+      }
+    },
+    "events.counts.maybe %lld" : {
+      "localizations" : {
+        "de" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld Vielleicht" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld Vielleicht" } }
+        } } },
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld maybe" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld maybe" } }
+        } } }
+      }
+    },
+    "events.counts.open %lld" : {
+      "localizations" : {
+        "de" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld offen" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld offen" } }
+        } } },
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld open" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld open" } }
+        } } }
+      }
+    },
+    "events.detail.a11y.close" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termindetails schließen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close event details" } }
+      }
+    },
+    "events.detail.close" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fertig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } }
+      }
+    },
+    "events.detail.note.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hinweis" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note" } }
+      }
+    },
+    "events.detail.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termindetails" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Event details" } }
+      }
+    },
+    "events.empty.filtered.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kein Termin passt zu diesem Filter." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No event matches this filter." } }
+      }
+    },
+    "events.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diesen Zeitraum stehen keine Termine an." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "There are no events for this period." } }
+      }
+    },
+    "events.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Termine" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No events" } }
+      }
+    },
+    "events.error.ok" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "events.error.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } }
+      }
+    },
+    "events.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Da ist etwas schiefgelaufen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Something went wrong" } }
+      }
+    },
+    "events.filter.a11y" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine filtern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Filter events" } }
+      }
+    },
+    "events.filter.all" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } }
+      }
+    },
+    "events.filter.competition" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition" } }
+      }
+    },
+    "events.filter.other" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sonstiges" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } }
+      }
+    },
+    "events.filter.training" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Training" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training" } }
+      }
+    },
+    "events.loading" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine werden geladen …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading events…" } }
+      }
+    },
+    "events.participant.unknown" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Unbekanntes Mitglied" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unknown member" } }
+      }
+    },
+    "events.participants.empty" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Rückmeldungen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No responses yet." } }
+      }
+    },
+    "events.participants.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Teilnehmer" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Participants" } }
+      }
+    },
+    "events.participants.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wer kommt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Who's coming" } }
+      }
+    },
+    "events.row.a11y.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Öffnet die Termindetails" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opens the event details" } }
+      }
+    },
+    "events.rsvp.a11y.declined" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diesen Termin absagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decline this event" } }
+      }
+    },
+    "events.rsvp.a11y.going" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diesen Termin zusagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accept this event" } }
+      }
+    },
+    "events.rsvp.a11y.maybe" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mit Vielleicht antworten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Respond with maybe" } }
+      }
+    },
+    "events.rsvp.comment.a11y" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Grund der Absage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reason for declining" } }
+      }
+    },
+    "events.rsvp.comment.placeholder" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Grund der Absage (optional)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reason for declining (optional)" } }
+      }
+    },
+    "events.rsvp.comment.send" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Absage senden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Send decline" } }
+      }
+    },
+    "events.rsvp.declined" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Absagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Decline" } }
+      }
+    },
+    "events.rsvp.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Deine Rückmeldung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your response" } }
+      }
+    },
+    "events.rsvp.going" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zusagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accept" } }
+      }
+    },
+    "events.rsvp.maybe" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vielleicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maybe" } }
+      }
+    },
+    "events.rsvp.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bist du dabei?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you in?" } }
+      }
+    },
+    "events.section.today" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Heute" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Today" } }
+      }
+    },
+    "events.section.tomorrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Morgen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tomorrow" } }
+      }
+    },
+    "events.status.declined" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Absage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Declined" } }
+      }
+    },
+    "events.status.going" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zusage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Accepted" } }
+      }
+    },
+    "events.status.maybe" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vielleicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Maybe" } }
+      }
+    },
+    "events.status.open" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } }
+      }
+    },
+    "events.status.sick" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Krank" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sick" } }
+      }
+    },
+    "events.teams.more %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+%lld" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+%lld" } }
+      }
+    },
+    "events.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events" } }
+      }
+    },
+    "events.type.competition" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition" } }
+      }
+    },
+    "events.type.other" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sonstiges" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Other" } }
+      }
+    },
+    "events.type.training" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Training" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training" } }
+      }
+    },
+    "finance.a11y.dunningRun" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mahnlauf als Vorschau starten — es wird nichts versendet" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a dunning run as a preview — nothing will be sent" } }
+      }
+    },
+    "finance.a11y.invoiceRow %@ %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechnung %1$@ von %2$@ über %3$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invoice %1$@ from %2$@ for %3$@" } }
+      }
+    },
+    "finance.a11y.invoiceRow.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Öffnet die Rechnungsdetails" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Opens the invoice details" } }
+      }
+    },
+    "finance.detail.due" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fällig am" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Due on" } }
+      }
+    },
+    "finance.detail.issued" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gestellt am" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Issued on" } }
+      }
+    },
+    "finance.detail.member" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglied" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Member" } }
+      }
+    },
+    "finance.detail.paid" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bezahlt am" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paid on" } }
+      }
+    },
+    "finance.detail.qr.badge" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bald verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coming soon" } }
+      }
+    },
+    "finance.detail.qr.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bezahlung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Payment" } }
+      }
+    },
+    "finance.detail.qr.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier erscheint der EPC-QR-Code: mit der Banking-App scannen, Betrag und Verwendungszweck sind vorausgefüllt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The EPC QR code will appear here: scan it with your banking app and the amount and reference come prefilled." } }
+      }
+    },
+    "finance.detail.qr.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Giro-Code zum Scannen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Giro code to scan" } }
+      }
+    },
+    "finance.detail.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invoice" } }
+      }
+    },
+    "finance.dunning.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mahnlauf-Vorschau nicht möglich" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dunning preview failed" } }
+      }
+    },
+    "finance.dunning.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mahn-Automatik" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dunning automation" } }
+      }
+    },
+    "finance.dunning.forbidden.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Den Mahnlauf können nur Kassenwart und Vorstand starten — deine Rolle hat hier Leserechte." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Only the treasurer and the board can start a dunning run — your role has read access here." } }
+      }
+    },
+    "finance.dunning.forbidden.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur für die Kasse" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Treasurer only" } }
+      }
+    },
+    "finance.dunning.note1" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stufe 2+ wird nie automatisch versendet — Freigabe durch den Vorstand." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Level 2+ is never sent automatically — the board approves first." } }
+      }
+    },
+    "finance.dunning.note2" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vor jedem Versand siehst du die E-Mail pro Empfänger." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Before anything goes out you see the e-mail for every recipient." } }
+      }
+    },
+    "finance.dunning.preview" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mahnlauf (Vorschau)" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dunning run (preview)" } }
+      }
+    },
+    "finance.dunning.stage1.day" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+7 Tage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+7 days" } }
+      }
+    },
+    "finance.dunning.stage1.mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "automatisch" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "automatic" } }
+      }
+    },
+    "finance.dunning.stage1.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Freundliche Erinnerung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Friendly reminder" } }
+      }
+    },
+    "finance.dunning.stage2.day" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+21 Tage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+21 days" } }
+      }
+    },
+    "finance.dunning.stage2.mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "automatisch, mit Vorschau" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "automatic, with preview" } }
+      }
+    },
+    "finance.dunning.stage2.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "1. Mahnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1st dunning notice" } }
+      }
+    },
+    "finance.dunning.stage3.day" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+35 Tage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+35 days" } }
+      }
+    },
+    "finance.dunning.stage3.mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "nur mit manueller Freigabe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "manual approval required" } }
+      }
+    },
+    "finance.dunning.stage3.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "2. Mahnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "2nd dunning notice" } }
+      }
+    },
+    "finance.dunning.stage4.day" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "+49 Tage" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "+49 days" } }
+      }
+    },
+    "finance.dunning.stage4.mode" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "nur manuell" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "manual only" } }
+      }
+    },
+    "finance.dunning.stage4.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Übergabe an den Vorstand" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Handover to the board" } }
+      }
+    },
+    "finance.dunning.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "So wird erinnert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "How reminders go out" } }
+      }
+    },
+    "finance.error.forbidden" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für die Finanzen fehlen deiner Rolle die Rechte." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your role doesn't have access to finances." } }
+      }
+    },
+    "finance.error.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } }
+      }
+    },
+    "finance.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Finanzen konnten nicht geladen werden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn't load finances" } }
+      }
+    },
+    "finance.filter.all" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } }
+      }
+    },
+    "finance.filter.dunned" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gemahnt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dunned" } }
+      }
+    },
+    "finance.filter.open" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } }
+      }
+    },
+    "finance.filter.reminded" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erinnert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminded" } }
+      }
+    },
+    "finance.kpi.count.caption" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechnungen ohne Zahlungseingang" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invoices awaiting payment" } }
+      }
+    },
+    "finance.kpi.count.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offene Posten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open items" } }
+      }
+    },
+    "finance.kpi.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beiträge & Finanzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fees & finances" } }
+      }
+    },
+    "finance.kpi.sum.caption" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Summe aller offenen Rechnungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sum of all open invoices" } }
+      }
+    },
+    "finance.kpi.sum.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offen gesamt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Total open" } }
+      }
+    },
+    "finance.kpi.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Auf einen Blick" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "At a glance" } }
+      }
+    },
+    "finance.list.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "In dieser Ansicht ist keine Rechnung offen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No open invoices in this view." } }
+      }
+    },
+    "finance.list.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nichts offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing open" } }
+      }
+    },
+    "finance.list.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offene Posten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open items" } }
+      }
+    },
+    "finance.list.footer.count %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld Posten angezeigt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld items shown" } }
+      }
+    },
+    "finance.list.footer.total %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gesamt offen: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Total open: %@" } }
+      }
+    },
+    "finance.list.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wer noch offen ist" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Who still owes" } }
+      }
+    },
+    "finance.loading" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Finanzen werden geladen …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading finances…" } }
+      }
+    },
+    "finance.member.unknown" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglied" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Member" } }
+      }
+    },
+    "finance.preview.asOf %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stand: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "As of %@" } }
+      }
+    },
+    "finance.preview.banner" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nur Vorschau — es wurde nichts versendet." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Preview only — nothing has been sent." } }
+      }
+    },
+    "finance.preview.close" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fertig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Done" } }
+      }
+    },
+    "finance.preview.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für diesen Lauf gibt es keine offenen Posten." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "There are no open items for this run." } }
+      }
+    },
+    "finance.preview.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nichts zu mahnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing to dun" } }
+      }
+    },
+    "finance.preview.group.auto" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Automatisch" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Automatic" } }
+      }
+    },
+    "finance.preview.group.none" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Aktion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No action" } }
+      }
+    },
+    "finance.preview.group.pending" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wartet auf Freigabe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Awaiting approval" } }
+      }
+    },
+    "finance.preview.level %lld %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stufe %1$lld → %2$lld" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Level %1$lld → %2$lld" } }
+      }
+    },
+    "finance.preview.overdue %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld Tage überfällig" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld days overdue" } }
+      }
+    },
+    "finance.preview.summary %lld %lld %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld automatisch · %2$lld mit Freigabe · %3$lld ohne Aktion" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$lld automatic · %2$lld need approval · %3$lld no action" } }
+      }
+    },
+    "finance.preview.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mahnlauf-Vorschau" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dunning preview" } }
+      }
+    },
+    "finance.status.cancelled" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Storniert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancelled" } }
+      }
+    },
+    "finance.status.draft" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Entwurf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Draft" } }
+      }
+    },
+    "finance.status.paid" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bezahlt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paid" } }
+      }
+    },
+    "login.a11y.persona %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Als %@ anmelden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign in as %@" } }
+      }
+    },
+    "login.devBanner.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Diese Anmeldung nutzt den lokalen Dev-Stack (http://127.0.0.1:3022) mit Seed-Daten — nichts hiervon ist Produktion." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This sign-in uses the local dev stack (http://127.0.0.1:3022) with seeded data — none of this is production." } }
+      }
+    },
+    "login.devBanner.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dev-Modus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dev mode" } }
+      }
+    },
+    "login.error.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Läuft der Dev-Stack? scripts/dev-stack.sh up" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Is the dev stack running? scripts/dev-stack.sh up" } }
+      }
+    },
+    "login.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Anmeldung fehlgeschlagen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sign-in failed" } }
+      }
+    },
+    "login.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "RSV Neckarsulm" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "RSV Neckarsulm" } }
+      }
+    },
+    "login.subtitle" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wähle eine Persona für den Blick in den Verein." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pick a persona to step into the club." } }
+      }
+    },
+    "login.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wer meldet sich an?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Who's signing in?" } }
+      }
+    },
+    "members.alert.ok" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "members.detail.birthDate" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Geburtsdatum" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Date of birth" } }
+      }
+    },
+    "members.detail.email" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "E-Mail" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Email" } }
+      }
+    },
+    "members.detail.family.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Familie" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Family" } }
+      }
+    },
+    "members.detail.family.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wer zusammengehört" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Who belongs together" } }
+      }
+    },
+    "members.detail.joinedOn" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Im Verein seit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Member since" } }
+      }
+    },
+    "members.detail.master.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Stammdaten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Profile" } }
+      }
+    },
+    "members.detail.master.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rund um die Person" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About this person" } }
+      }
+    },
+    "members.detail.none" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nicht hinterlegt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Not on file" } }
+      }
+    },
+    "members.detail.role.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Permissions" } }
+      }
+    },
+    "members.detail.role.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rolle im Verein" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Role in the club" } }
+      }
+    },
+    "members.detail.teams" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Teams" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Teams" } }
+      }
+    },
+    "members.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zu Suche und Filter passt gerade niemand." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nobody matches your search and filter right now." } }
+      }
+    },
+    "members.empty.reset" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Filter zurücksetzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset filters" } }
+      }
+    },
+    "members.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Treffer" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No matches" } }
+      }
+    },
+    "members.error.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } }
+      }
+    },
+    "members.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglieder konnten nicht geladen werden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn't load the members" } }
+      }
+    },
+    "members.family.childPill" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kind" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Child" } }
+      }
+    },
+    "members.family.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Familie sichtbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No family visible" } }
+      }
+    },
+    "members.family.emptyAdmin.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Für dieses Mitglied sind keine Familienverknüpfungen hinterlegt." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No family links are on file for this member." } }
+      }
+    },
+    "members.family.emptyOwn.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus Datenschutzgründen siehst du hier nur die eigene Familie." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "For privacy you only see your own family here." } }
+      }
+    },
+    "members.family.guardianPill" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erziehungsberechtigt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Guardian" } }
+      }
+    },
+    "members.family.relation.parent" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Elternteil" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Parent" } }
+      }
+    },
+    "members.fee.paid" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Beitrag bezahlt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fees paid" } }
+      }
+    },
+    "members.filter.all" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Alle" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All" } }
+      }
+    },
+    "members.list.count %lld" : {
+      "localizations" : {
+        "de" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld Mitglied" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld Mitglieder" } }
+        } } },
+        "en" : { "variations" : { "plural" : {
+          "one" : { "stringUnit" : { "state" : "translated", "value" : "%lld member" } },
+          "other" : { "stringUnit" : { "state" : "translated", "value" : "%lld members" } }
+        } } }
+      }
+    },
+    "members.list.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verein" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Club" } }
+      }
+    },
+    "members.loading" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglieder werden geladen …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loading members…" } }
+      }
+    },
+    "members.roleChange.a11y" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rolle dieses Mitglieds ändern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change this member's role" } }
+      }
+    },
+    "members.roleChange.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rolle konnte nicht geändert werden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn't change the role" } }
+      }
+    },
+    "members.roleChange.forbidden.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Du darfst die Rolle dieses Mitglieds nicht ändern. Die Änderung wurde zurückgenommen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You're not allowed to change this member's role. The change has been rolled back." } }
+      }
+    },
+    "members.roleChange.forbidden.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Keine Berechtigung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No permission" } }
+      }
+    },
+    "members.roleChange.menu" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rolle ändern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Change role" } }
+      }
+    },
+    "members.roleChange.ownerHint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Der letzte Vorstand ist geschützt und kann nicht herabgestuft werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The last owner is protected and can't be demoted." } }
+      }
+    },
+    "members.roleChange.self" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die eigene Rolle kann nicht geändert werden." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "You can't change your own role." } }
+      }
+    },
+    "members.row.a11y %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglied %@ öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open member %@" } }
+      }
+    },
+    "members.row.noTeam" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kein Team" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No team" } }
+      }
+    },
+    "members.search.prompt" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nach Name oder E-Mail suchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search by name or email" } }
+      }
+    },
+    "members.status.active" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aktiv" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Active" } }
+      }
+    },
+    "members.status.inactive" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pausiert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Inactive" } }
+      }
+    },
+    "members.status.left" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ausgetreten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Left" } }
+      }
+    },
+    "members.status.pending" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Angefragt" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending" } }
+      }
+    },
+    "persona.coach.description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine, Mitglieder und Küren — kein Kassenbuch." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events, members and routines — no ledger access." } }
+      }
+    },
+    "persona.coach.role" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainerin" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coach" } }
+      }
+    },
+    "persona.guest.description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Befristeter Zugang (30 Tage) für Küren und Anwesenheit." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Time-boxed access (30 days) for routines and attendance." } }
+      }
+    },
+    "persona.guest.role" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gasttrainerin" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Guest coach" } }
+      }
+    },
+    "persona.member.description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Elternteil von Lina — sieht nur die eigene Familie." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lina's parent — sees only her own family." } }
+      }
+    },
+    "persona.member.role" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglied" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Member" } }
+      }
+    },
+    "persona.owner.description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sieht und darf alles — einziger Owner im Verein." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sees and manages everything — the club's only owner." } }
+      }
+    },
+    "persona.owner.role" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorstand" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Owner" } }
+      }
+    },
+    "persona.treasurer.description" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Rechnungen, Mahnwesen und Finanzen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invoices, dunning and finances." } }
+      }
+    },
+    "persona.treasurer.role" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kassenwartin" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Treasurer" } }
+      }
+    },
+    "placeholder.dashboard.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier entstehen KPI-Kacheln, Aufgaben und der Wettkampf-Countdown." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "KPI tiles, tasks and the competition countdown will live here." } }
+      }
+    },
+    "placeholder.events.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier entsteht der Termin-Workspace mit Zu- und Absagen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The events workspace with RSVPs will live here." } }
+      }
+    },
+    "placeholder.finance.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier entsteht die Seriositätszone: Rechnungen, Mahnwesen und Kassenbuch." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The serious zone will live here: invoices, dunning and the ledger." } }
+      }
+    },
+    "placeholder.members.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier entsteht die Mitgliederliste mit Familien und Rollen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The member list with families and roles will live here." } }
+      }
+    },
+    "placeholder.routines.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Hier entsteht der Kür-Player mit Waveform, Tempo und A–B-Loop." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The routine player with waveform, tempo and A–B loop will live here." } }
+      }
+    },
+    "placeholder.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bald verfügbar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coming soon" } }
+      }
+    },
+    "role.admin" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verwaltung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Admin" } }
+      }
+    },
+    "role.coach" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainer:in" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coach" } }
+      }
+    },
+    "role.guestCoach" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gasttrainer:in" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Guest coach" } }
+      }
+    },
+    "role.member" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglied" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Member" } }
+      }
+    },
+    "role.owner" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Vorstand" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Owner" } }
+      }
+    },
+    "role.treasurer" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kassenwart:in" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Treasurer" } }
+      }
+    },
+    "routines.common.retry" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erneut versuchen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Try again" } }
+      }
+    },
+    "routines.detail.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Details konnten nicht geladen werden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not load details" } }
+      }
+    },
+    "routines.detail.meta.bpm %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld BPM" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld BPM" } }
+      }
+    },
+    "routines.detail.meta.length %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Länge %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Length %@" } }
+      }
+    },
+    "routines.detail.noMusic.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dieser Kür ist keine Audiodatei zugeordnet — der Trainings-Player erscheint, sobald Musik hinterlegt ist." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This routine has no audio file yet — the training player appears once music is attached." } }
+      }
+    },
+    "routines.detail.noMusic.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Musik" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No music yet" } }
+      }
+    },
+    "routines.discipline.pair" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Paarlauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pairs" } }
+      }
+    },
+    "routines.discipline.single" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einzellauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Singles" } }
+      }
+    },
+    "routines.list.a11y.card %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Kür %1$@, %2$@ — Details öffnen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Routine %1$@, %2$@ — open details" } }
+      }
+    },
+    "routines.list.empty.message" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Sobald eine Kür mit Musik angelegt ist, erscheint sie hier." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Once a routine with music is created, it will appear here." } }
+      }
+    },
+    "routines.list.empty.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Küren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No routines yet" } }
+      }
+    },
+    "routines.list.error.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Daten konnten nicht geladen werden" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not load data" } }
+      }
+    },
+    "routines.list.lastScore" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Letzte RollArt-Wertung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last RollArt score" } }
+      }
+    },
+    "routines.list.noScore" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Wertung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No score yet" } }
+      }
+    },
+    "routines.list.subtitle" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Musik, Marker und RollArt-Wertungen deiner Kürgruppe" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Music, markers and RollArt scores for your skaters" } }
+      }
+    },
+    "routines.list.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Küren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Routines" } }
+      }
+    },
+    "routines.markers.a11y.playFrom %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ab %1$@ abspielen — %2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Play from %1$@ — %2$@" } }
+      }
+    },
+    "routines.markers.empty" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Zeitmarken für diese Kür." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No markers for this routine yet." } }
+      }
+    },
+    "routines.markers.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Markierungen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Markers" } }
+      }
+    },
+    "routines.markers.inLoop" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "im Loop" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "in loop" } }
+      }
+    },
+    "routines.markers.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Elemente in der Kür" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Elements in the routine" } }
+      }
+    },
+    "routines.notes.a11y.editor" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Notiz zur Kür" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Note for this routine" } }
+      }
+    },
+    "routines.notes.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Notizen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Notes" } }
+      }
+    },
+    "routines.notes.hint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wird nur lokal auf diesem Gerät gespeichert." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stored locally on this device only." } }
+      }
+    },
+    "routines.notes.placeholder" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Was lief gut? Was üben wir im Loop weiter? …" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What went well? What do we keep looping? …" } }
+      }
+    },
+    "routines.notes.save" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Notiz speichern" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save note" } }
+      }
+    },
+    "routines.notes.saved %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Zuletzt gespeichert: %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Last saved: %@" } }
+      }
+    },
+    "routines.notes.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainingsnotizen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training notes" } }
+      }
+    },
+    "routines.player.a11y.countdown %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Countdown %lld Sekunden vor dem Start" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Countdown %lld seconds before start" } }
+      }
+    },
+    "routines.player.a11y.countdownOff" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Countdown aus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Countdown off" } }
+      }
+    },
+    "routines.player.a11y.loopToggle" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "A–B-Loop" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A–B loop" } }
+      }
+    },
+    "routines.player.a11y.pause" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pause" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pause" } }
+      }
+    },
+    "routines.player.a11y.play" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Abspielen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Play" } }
+      }
+    },
+    "routines.player.a11y.setLoopA %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Loop-Punkt A auf aktuelle Position setzen, aktuell %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set loop point A to the current position, currently %@" } }
+      }
+    },
+    "routines.player.a11y.setLoopB %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Loop-Punkt B auf aktuelle Position setzen, aktuell %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Set loop point B to the current position, currently %@" } }
+      }
+    },
+    "routines.player.a11y.skipBack" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "5 Sekunden zurück" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Back 5 seconds" } }
+      }
+    },
+    "routines.player.a11y.skipForward" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "5 Sekunden vor" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Forward 5 seconds" } }
+      }
+    },
+    "routines.player.a11y.tempoPreset %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tempo %lld Prozent" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tempo %lld percent" } }
+      }
+    },
+    "routines.player.a11y.tempoSlider" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tempo-Feinregler, 50 bis 200 Prozent" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Fine tempo control, 50 to 200 percent" } }
+      }
+    },
+    "routines.player.a11y.wave" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wellenform der Kürmusik — wischen oder anpassen zum Springen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Waveform of the routine music — swipe or adjust to seek" } }
+      }
+    },
+    "routines.player.countdown.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Countdown" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Countdown" } }
+      }
+    },
+    "routines.player.countdown.off" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } }
+      }
+    },
+    "routines.player.countdown.seconds %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld s" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld s" } }
+      }
+    },
+    "routines.player.demoHint" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Demo ohne Audiodatei — Wiedergabe wird simuliert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Demo without audio file — playback is simulated" } }
+      }
+    },
+    "routines.player.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainings-Player" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training player" } }
+      }
+    },
+    "routines.player.loop.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "A–B-Loop" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A–B loop" } }
+      }
+    },
+    "routines.player.loop.off" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "aus" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "off" } }
+      }
+    },
+    "routines.player.loop.on" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "aktiv" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "on" } }
+      }
+    },
+    "routines.player.loopChip %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Loop %1$@–%2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Loop %1$@–%2$@" } }
+      }
+    },
+    "routines.player.startingIn %lld" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Start in %lld s" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Starting in %lld s" } }
+      }
+    },
+    "routines.player.tempo.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tempo" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tempo" } }
+      }
+    },
+    "routines.player.tempo.note %lld %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "bei %1$lld %% läuft die Kür %2$@ statt %3$@ · Tonhöhe bleibt erhalten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "at %1$lld %% the routine runs %2$@ instead of %3$@ · pitch is preserved" } }
+      }
+    },
+    "routines.player.tempo.noteOriginal %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Originaltempo — die Kür läuft %1$@ · Tonhöhe bleibt erhalten" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Original tempo — the routine runs %1$@ · pitch is preserved" } }
+      }
+    },
+    "routines.player.wave.value %@ %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ von %2$@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%1$@ of %2$@" } }
+      }
+    },
+    "routines.scores.a11y.chart %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wertungsverlauf: %@ Punkte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Score trend: %@ points" } }
+      }
+    },
+    "routines.scores.best %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestwert %@ Punkte" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Best score %@ points" } }
+      }
+    },
+    "routines.scores.competitionFallback" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition" } }
+      }
+    },
+    "routines.scores.components %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Komponenten %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Components %@" } }
+      }
+    },
+    "routines.scores.empty" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Noch keine Wertung — nach dem ersten Wettkampf entsteht hier der Verlauf." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No scores yet — the trend will appear here after the first competition." } }
+      }
+    },
+    "routines.scores.eyebrow" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "RollArt-Verlauf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "RollArt history" } }
+      }
+    },
+    "routines.scores.first" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erster Wert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "First score" } }
+      }
+    },
+    "routines.scores.sinceFirst" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Punkte seit der ersten Wertung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "points since the first score" } }
+      }
+    },
+    "routines.scores.technical %@" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Technik %@" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Technical %@" } }
+      }
+    },
+    "routines.scores.title" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wertung über die Saison" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Scores across the season" } }
+      }
+    },
+    "routines.scores.training" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Trainingsmessung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Training run" } }
+      }
+    },
+    "routines.status.archived" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Archiviert" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Archived" } }
+      }
+    },
+    "routines.status.competition" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Im Wettkampf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competing" } }
+      }
+    },
+    "routines.status.draft" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Entwurf" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Draft" } }
+      }
+    },
+    "routines.status.ready" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wettkampfbereit" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Competition-ready" } }
+      }
+    },
+    "status.dunning.0" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Offen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open" } }
+      }
+    },
+    "status.dunning.1" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Erinnerung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reminder" } }
+      }
+    },
+    "status.dunning.2" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "1. Mahnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1st dunning notice" } }
+      }
+    },
+    "status.dunning.3" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "2. Mahnung" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "2nd dunning notice" } }
+      }
+    },
+    "tab.dashboard" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Übersicht" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dashboard" } }
+      }
+    },
+    "tab.events" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Termine" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Events" } }
+      }
+    },
+    "tab.finance" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Finanzen" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Finances" } }
+      }
+    },
+    "tab.members" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Mitglieder" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Members" } }
+      }
+    },
+    "tab.routines" : {
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Küren" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Routines" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

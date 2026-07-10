@@ -49,3 +49,6 @@ dist/
 
 # Lokaler Dev-Stack (scripts/dev-stack.sh): pgdata-Bind-Mount, Dev-Secrets, PID/Logs
 .dev/
+
+# iOS-Build (xcodebuild -derivedDataPath build/DerivedData)
+/build/
