@@ -11,8 +11,8 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 - [ ] Jahresabschluss
 - [ ] Bankabgleich (echt, mit Zuordnung) — bisher Demo
 - [ ] Finance-Export / DATEV / Berichte-Export
-- [ ] Beitragsverwaltung: mitglieder-beitraege, membership, membership-categories, familien-rabatte
-- [ ] Zahlungen: payments, payment-methods, payment-detail, ratenzahlung, sepa (Lastschrift/Mandate)
+- [x] Beitragsverwaltung: Beitragskategorien (Tarife/Perioden, Anlegen/Bearbeiten/Löschen) + Mitgliedsbeiträge (Zuordnen/Ändern/Entfernen, effektiver Betrag, SEPA-Status, Jahresvolumen 1.176,00 €) + Familien-/Geschwisterrabatte (Stammdaten) — Finanz-Tiefe B, gegen Dev-API als Kassenwart verifiziert, RLS-gegatete Mitglied-Sicht (nur eigene Zuordnung, Management-Seiten 403 für Mitglied); member-facing „Meine Mitgliedschaft"-Selfview + automatische Rabatt-Anwendung auf Rechnungen noch offen
+- [~] Zahlungen: SEPA-Lastschrift/Mandate — erfassen + widerrufen (Bestätigungs-Dialog), nur iban_last4 + Mandatsreferenz gespeichert (keine volle IBAN im Klartext), Finanz-Tiefe B verifiziert; payments, payment-methods, payment-detail, ratenzahlung, CAMT/XML-Lastschrift-Export noch offen
 - [ ] Spendenbescheinigungen (spenden), Budget, Ausgaben
 
 ## 2. Organisation

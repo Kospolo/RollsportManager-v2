@@ -84,6 +84,19 @@ export type {
   ReverseLedgerInput,
   SettleInvoiceInput,
 } from "./inputs-finance";
+export type {
+  AssignMemberFeeInput,
+  CreateFamilyDiscountInput,
+  CreateMembershipCategoryInput,
+  CreateSepaMandateInput,
+  FinanceBRepository,
+  ListMemberFeesFilter,
+  ListSepaMandatesFilter,
+  UpdateFamilyDiscountInput,
+  UpdateMemberFeeInput,
+  UpdateMembershipCategoryInput,
+  UpdateSepaMandateInput,
+} from "./inputs-financeb";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

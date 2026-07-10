@@ -17,6 +17,7 @@ import { moduleRepositoryBatch3 } from "./modules-batch3";
 import { moduleRepositoryBatch4 } from "./modules-batch4";
 import { moduleRepositoryBatch5 } from "./modules-batch5";
 import { moduleRepositoryFinance } from "./modules-finance";
+import { moduleRepositoryFinanceB } from "./modules-financeb";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -247,6 +248,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Kassenbuch-Kategorien, Rechnungs-Detail, Mahnwesen (Finanz A) ---------- */
   ...moduleRepositoryFinance,
+
+  /* ---------- Module: Beitragskategorien, -zuordnungen, Familienrabatte, SEPA (Finanz B) ---------- */
+  ...moduleRepositoryFinanceB,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

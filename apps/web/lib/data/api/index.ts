@@ -9,6 +9,7 @@ import { moduleApiRepositoryBatch3 } from "./modules-batch3";
 import { moduleApiRepositoryBatch4 } from "./modules-batch4";
 import { moduleApiRepositoryBatch5 } from "./modules-batch5";
 import { moduleApiRepositoryFinance } from "./modules-finance";
+import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import {
   mapAttendance,
   mapClub,
@@ -314,6 +315,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Kassenbuch-Kategorien, Rechnungs-Detail, Mahnwesen (Finanz A) ---------- */
   ...moduleApiRepositoryFinance,
+
+  /* ---------- Module: Beitragskategorien, -zuordnungen, Familienrabatte, SEPA (Finanz B) ---------- */
+  ...moduleApiRepositoryFinanceB,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

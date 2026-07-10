@@ -37,6 +37,13 @@ export { galleryKindLabels } from "./types-batch5";
 // + reversesEntryId erweiterte LedgerEntry bleiben unten in dieser Datei.
 export type * from "./types-finance";
 
+// Finanz-B-Modul-Typen (Beitragskategorien, Beitragszuordnungen inkl. Summary,
+// Familienrabatte, SEPA-Mandate) leben ausgelagert in lib/types-financeb.ts,
+// sind aber weiterhin unter "@/lib/types" verfügbar. Enums (MembershipPeriod,
+// FamilyDiscountKind, SepaMandateStatus) sind reine String-Unions (snake_case
+// auf dem Draht) und werden als Typen re-exportiert.
+export type * from "./types-financeb";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

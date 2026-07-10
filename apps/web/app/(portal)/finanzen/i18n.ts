@@ -25,6 +25,12 @@ export const financeDict = {
     hubDunningDesc: "Erinnerungen & Stufen",
     hubReportsTitle: "Auswertung",
     hubReportsDesc: "Zahlen & Berichte",
+    hubCategoriesTitle: "Beitragskategorien",
+    hubCategoriesDesc: "Tarife & Perioden",
+    hubFeesTitle: "Beiträge",
+    hubFeesDesc: "Zuordnung & Jahressumme",
+    hubSepaTitle: "SEPA-Mandate",
+    hubSepaDesc: "Lastschrift-Mandate",
 
     // Laden & Fehler (Facade)
     retry: "Erneut versuchen",
@@ -210,6 +216,12 @@ export const financeDict = {
     hubDunningDesc: "Reminders & stages",
     hubReportsTitle: "Reports",
     hubReportsDesc: "Figures & reports",
+    hubCategoriesTitle: "Fee categories",
+    hubCategoriesDesc: "Rates & periods",
+    hubFeesTitle: "Member fees",
+    hubFeesDesc: "Assignments & annual total",
+    hubSepaTitle: "SEPA mandates",
+    hubSepaDesc: "Direct-debit mandates",
 
     // Loading & errors (facade)
     retry: "Try again",

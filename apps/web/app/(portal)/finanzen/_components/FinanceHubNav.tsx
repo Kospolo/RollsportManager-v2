@@ -9,8 +9,9 @@ import { financeDict, type FinanceKey } from "../i18n";
 
 /**
  * Finanz-Hub: Navigationsleiste zu den Finanz-Unterbereichen (Kassenbuch,
- * Rechnungen, Mahnungen, Auswertung). Sitzt oben im Finanzen-Screen; die
- * bestehende Übersicht (KPIs, offene Posten) bleibt darunter erhalten.
+ * Rechnungen, Mahnungen, Auswertung, Beitragskategorien, Beiträge, SEPA).
+ * Sitzt oben im Finanzen-Screen; die bestehende Übersicht (KPIs, offene
+ * Posten) bleibt darunter erhalten.
  *
  * Sichtbar NUR mit can_manage_finance (treasurer/moderator/admin/owner) —
  * die Rechte-Ableitung passiert im Parent (FinanceClient). Der echte Schutz
@@ -67,6 +68,27 @@ const TILES: HubTile[] = [
     tone: "success",
     titleKey: "hubReportsTitle",
     descKey: "hubReportsDesc",
+  },
+  {
+    href: "/finanzen/beitragskategorien",
+    icon: { shell: "settings" },
+    tone: "brand",
+    titleKey: "hubCategoriesTitle",
+    descKey: "hubCategoriesDesc",
+  },
+  {
+    href: "/finanzen/beitraege",
+    icon: { shell: "members" },
+    tone: "info",
+    titleKey: "hubFeesTitle",
+    descKey: "hubFeesDesc",
+  },
+  {
+    href: "/finanzen/sepa",
+    icon: { shell: "shield" },
+    tone: "success",
+    titleKey: "hubSepaTitle",
+    descKey: "hubSepaDesc",
   },
 ];
 
