@@ -22,6 +22,9 @@ export type {
   AddMarkerInput,
   AssignableRole,
   CreateEventInput,
+  CreateExerciseInput,
+  CreateNewsInput,
+  CreateNoteInput,
   CreateTeamInput,
   DataRepository,
   DunningRunOutcome,
@@ -30,7 +33,10 @@ export type {
   SetRsvpInput,
   SetTeamMembersInput,
   UpdateClubSettingsInput,
+  UpdateExerciseInput,
   UpdateMemberInput,
+  UpdateNewsInput,
+  UpdateNoteInput,
   UpdateTeamInput,
 } from "./types";
 export type { DataSourceName } from "./config";

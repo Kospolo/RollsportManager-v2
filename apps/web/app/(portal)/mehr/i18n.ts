@@ -1,0 +1,128 @@
+import type { Dict } from "@/lib/i18n";
+
+/**
+ * Strings des „Mehr"-Hubs — kolokalisiert, immer DE + EN mit echten Umlauten.
+ * Der Hub ist das Feature-Raster der Original-App (Referenz 3.1): jede Funktion
+ * des Vereins an einem Ort. Verfügbare Bereiche verlinken, noch nicht gebaute
+ * Module erscheinen dezent mit „Bald"-Badge (nicht klickbar).
+ */
+export const mehrDict = {
+  de: {
+    eyebrow: "Alle Bereiche",
+    title: "Mehr",
+    sub: "Jede Funktion deines Vereins an einem Ort.",
+
+    sectionAvailable: "Verfügbar",
+    sectionSoon: "Bald verfügbar",
+    soonSub: "Diese Bereiche bauen wir als Nächstes.",
+
+    badgeNew: "Neu",
+    badgeSoon: "Bald",
+
+    openTile: "{title} öffnen",
+    soonAria: "{title} — bald verfügbar",
+
+    news: "News",
+    newsDesc: "Vereins-Neuigkeiten und Ankündigungen.",
+    notes: "Notizen",
+    notesDesc: "Deine privaten Notizen.",
+    exercises: "Übungen",
+    exercisesDesc: "Übungs-Bibliothek mit Videos und Anleitungen.",
+    family: "Familie",
+    familyDesc: "Deine Kinder im Verein im Blick.",
+
+    events: "Termine",
+    eventsDesc: "Training, Wettkämpfe und alles dazwischen.",
+    members: "Mitglieder",
+    membersDesc: "Alle Menschen im Verein.",
+    routines: "Küren",
+    routinesDesc: "Musik, Marker und Wertungen.",
+    competition: "Wettkampf",
+    competitionDesc: "Vorbereitung, Meldung und Ergebnisse.",
+    finance: "Finanzen",
+    financeDesc: "Beiträge, offene Posten und Kasse.",
+    manage: "Verwaltung",
+    manageDesc: "Verein, Rollen und Teams.",
+
+    chat: "Chat",
+    chatDesc: "Team-Chat und Direktnachrichten.",
+    trainingplan: "Trainingsplan",
+    trainingplanDesc: "Trainingspläne und Einheiten.",
+    facility: "Belegungsplan",
+    facilityDesc: "Hallen und Räume belegen.",
+    equipment: "Ausrüstung",
+    equipmentDesc: "Ausrüstung und Reservierungen.",
+    medal: "Medaillen",
+    medalDesc: "Medaillen und Erfolge.",
+    hours: "Pflichtstunden",
+    hoursDesc: "Geleistete Pflichtstunden im Blick.",
+    checkin: "Check-in",
+    checkinDesc: "Anwesenheit per QR-Code.",
+    gallery: "Galerie",
+    galleryDesc: "Fotos und Momente des Vereins.",
+    document: "Dokumente",
+    documentDesc: "Dokumente und Downloads.",
+    chart: "Auswertung",
+    chartDesc: "Auswertungen, Berichte und Listen.",
+  },
+  en: {
+    eyebrow: "All areas",
+    title: "More",
+    sub: "Every feature of your club in one place.",
+
+    sectionAvailable: "Available",
+    sectionSoon: "Coming soon",
+    soonSub: "These areas are what we are building next.",
+
+    badgeNew: "New",
+    badgeSoon: "Soon",
+
+    openTile: "Open {title}",
+    soonAria: "{title} — coming soon",
+
+    news: "News",
+    newsDesc: "Club news and announcements.",
+    notes: "Notes",
+    notesDesc: "Your private notes.",
+    exercises: "Exercises",
+    exercisesDesc: "Exercise library with videos and instructions.",
+    family: "Family",
+    familyDesc: "Keep track of your children in the club.",
+
+    events: "Events",
+    eventsDesc: "Training, competitions and everything between.",
+    members: "Members",
+    membersDesc: "All the people in your club.",
+    routines: "Routines",
+    routinesDesc: "Music, markers and scores.",
+    competition: "Competition",
+    competitionDesc: "Preparation, entries and results.",
+    finance: "Finances",
+    financeDesc: "Fees, open items and the ledger.",
+    manage: "Management",
+    manageDesc: "Club, roles and teams.",
+
+    chat: "Chat",
+    chatDesc: "Team chat and direct messages.",
+    trainingplan: "Training plan",
+    trainingplanDesc: "Training plans and sessions.",
+    facility: "Facilities",
+    facilityDesc: "Book halls and rooms.",
+    equipment: "Equipment",
+    equipmentDesc: "Equipment and reservations.",
+    medal: "Medals",
+    medalDesc: "Medals and achievements.",
+    hours: "Mandatory hours",
+    hoursDesc: "Keep an eye on completed mandatory hours.",
+    checkin: "Check-in",
+    checkinDesc: "Attendance via QR code.",
+    gallery: "Gallery",
+    galleryDesc: "Photos and moments from the club.",
+    document: "Documents",
+    documentDesc: "Documents and downloads.",
+    chart: "Analytics",
+    chartDesc: "Analytics, reports and lists.",
+  },
+} satisfies Dict;
+
+export type MehrKey = keyof (typeof mehrDict)["de"];

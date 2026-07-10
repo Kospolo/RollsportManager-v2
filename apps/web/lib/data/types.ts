@@ -5,6 +5,8 @@ import type {
   Competition,
   Event,
   EventType,
+  Exercise,
+  ExerciseCategory,
   Guardianship,
   Id,
   Invoice,
@@ -12,6 +14,8 @@ import type {
   Member,
   MemberRole,
   MemberStatus,
+  News,
+  Note,
   PlatformClubSummary,
   PlatformStats,
   PlatformUserSummary,
@@ -136,6 +140,65 @@ export interface UpdateClubSettingsInput {
   settings?: Record<string, unknown>;
 }
 
+/* ---------- Module: Neuigkeiten ---------- */
+
+/** Neuigkeit anlegen (is_club_trainer). Ohne publishedAt = sofort veröffentlicht (api: server-default). */
+export interface CreateNewsInput {
+  title: string;
+  body: string;
+  isPinned?: boolean;
+  /** ISO-Zeitstempel; weglassen = jetzt/Server-Default */
+  publishedAt?: string;
+}
+
+/** Neuigkeit ändern (is_club_trainer). null bei publishedAt = zurück auf Entwurf. */
+export interface UpdateNewsInput {
+  title?: string;
+  body?: string;
+  isPinned?: boolean;
+  publishedAt?: string | null;
+}
+
+/* ---------- Module: Notizen (privat) ---------- */
+
+/** Private Notiz anlegen (owner = auth.uid()). clubId optional/lose. */
+export interface CreateNoteInput {
+  title: string;
+  body: string;
+  clubId?: Id;
+}
+
+/** Private Notiz ändern. null bei clubId löst die Vereinszuordnung. */
+export interface UpdateNoteInput {
+  title?: string;
+  body?: string;
+  clubId?: Id | null;
+}
+
+/* ---------- Module: Übungen ---------- */
+
+/** Übung anlegen (is_club_trainer). difficulty 1..5 Pflicht; durationSeconds > 0. */
+export interface CreateExerciseInput {
+  name: string;
+  category: ExerciseCategory;
+  difficulty: number;
+  description?: string;
+  videoUrl?: string;
+  instructions?: string;
+  durationSeconds?: number;
+}
+
+/** Übung ändern (is_club_trainer). null leert das jeweilige Feld. */
+export interface UpdateExerciseInput {
+  name?: string;
+  category?: ExerciseCategory;
+  difficulty?: number;
+  description?: string | null;
+  videoUrl?: string | null;
+  instructions?: string | null;
+  durationSeconds?: number | null;
+}
+
 export interface DataRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
@@ -198,6 +261,36 @@ export interface DataRepository {
   /* ---------- Verwaltung: Vereins-Einstellungen ---------- */
   /** Vereins-Stammdaten/-Einstellungen ändern (owner/admin). */
   updateClubSettings(patch: UpdateClubSettingsInput): Promise<Club>;
+
+  /* ---------- Module: Neuigkeiten (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
+  /** Vereins-Neuigkeiten des aktiven Vereins (gepinnt zuerst). */
+  listNews(): Promise<News[]>;
+  /** Neuigkeit anlegen (is_club_trainer) — liefert die erzeugte Neuigkeit zurück. */
+  createNews(input: CreateNewsInput): Promise<News>;
+  /** Neuigkeit ändern (is_club_trainer). */
+  updateNews(newsId: Id, patch: UpdateNewsInput): Promise<News>;
+  /** Neuigkeit soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteNews(newsId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Notizen (STRIKT privat pro Nutzer) ---------- */
+  /** Eigene Notizen (owner = auth.uid(); kein Vereins-Lesepfad). */
+  listNotes(): Promise<Note[]>;
+  /** Notiz anlegen — liefert die erzeugte Notiz zurück. */
+  createNote(input: CreateNoteInput): Promise<Note>;
+  /** Notiz ändern. */
+  updateNote(noteId: Id, patch: UpdateNoteInput): Promise<Note>;
+  /** Notiz soft-löschen — liefert die gelöschte ID zurück. */
+  deleteNote(noteId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Übungen (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
+  /** Übungs-Katalog des aktiven Vereins, optional nach Kategorie gefiltert. */
+  listExercises(category?: ExerciseCategory): Promise<Exercise[]>;
+  /** Übung anlegen (is_club_trainer) — liefert die erzeugte Übung zurück. */
+  createExercise(input: CreateExerciseInput): Promise<Exercise>;
+  /** Übung ändern (is_club_trainer). */
+  updateExercise(exerciseId: Id, patch: UpdateExerciseInput): Promise<Exercise>;
+  /** Übung soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteExercise(exerciseId: Id): Promise<{ id: Id }>;
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */

@@ -6,11 +6,14 @@ import type {
   CompetitionStatus,
   DunningLevel,
   Event,
+  Exercise,
   Guardianship,
   Invoice,
   LedgerEntry,
   Member,
   MemberStatus,
+  News,
+  Note,
   PlatformClubSummary,
   PlatformStats,
   PlatformUserSummary,
@@ -259,6 +262,49 @@ export function mapRoutine(
     markers: markers.map(mapMarker).sort((a, b) => a.timeMs - b.timeMs),
     scores: scores.map(mapScore).sort((a, b) => a.date.localeCompare(b.date)),
     category: w.category ?? "",
+  };
+}
+
+export function mapNews(w: M.News): News {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    authorMemberId: w.author_member_id,
+    title: w.title,
+    body: w.body,
+    isPinned: w.is_pinned,
+    publishedAt: w.published_at ?? undefined,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
+  };
+}
+
+export function mapNote(w: M.Note): Note {
+  return {
+    id: w.id,
+    ownerProfileId: w.owner_profile_id,
+    clubId: w.club_id ?? undefined,
+    title: w.title,
+    body: w.body,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
+  };
+}
+
+export function mapExercise(w: M.Exercise): Exercise {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    createdByMemberId: w.created_by_member_id,
+    name: w.name,
+    description: w.description ?? undefined,
+    category: w.category,
+    difficulty: w.difficulty ?? undefined,
+    videoUrl: w.video_url ?? undefined,
+    instructions: w.instructions ?? undefined,
+    durationSeconds: w.duration_seconds ?? undefined,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
   };
 }
 

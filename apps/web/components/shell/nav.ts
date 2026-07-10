@@ -24,6 +24,13 @@ export const NAV_ITEMS: NavItem[] = [
  */
 export const MANAGE_NAV_ITEM: NavItem = { key: "navManage", href: "/verwaltung", icon: "shield" };
 
+/**
+ * Nav-Ziel „Mehr" (Feature-Hub, Referenz 3.1): Übersichts-Raster aller
+ * Bereiche. Für ALLE Rollen sichtbar und immer das letzte Nav-Ziel —
+ * siehe useVisibleNavItems(). „dots" (•••) ist das klassische „Mehr"-Glyph.
+ */
+export const MORE_NAV_ITEM: NavItem = { key: "navMore", href: "/mehr", icon: "dots" };
+
 export function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }

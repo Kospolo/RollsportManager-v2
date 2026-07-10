@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { openInvoices } from "../derive";
+import { moduleRepository } from "./modules";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -223,6 +224,9 @@ export const mockRepository: DataRepository = {
     };
     return clubStore;
   },
+
+  /* ---------- Module: Neuigkeiten, Notizen, Übungen (Batch 1) ---------- */
+  ...moduleRepository,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

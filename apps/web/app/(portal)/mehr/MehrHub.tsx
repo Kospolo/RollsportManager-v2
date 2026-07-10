@@ -1,0 +1,180 @@
+"use client";
+
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { useT } from "@/lib/i18n";
+import { permissions } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Badge } from "@/components/ui/Badge";
+import { Icon, type IconName } from "@/components/shell/icons";
+import { MehrIcon, type MehrIconName } from "./MehrIcon";
+import { mehrDict, type MehrKey } from "./i18n";
+
+/**
+ * „Mehr"-Hub: Übersichts-Raster aller Vereins-Bereiche (Referenz 3.1).
+ *
+ * Zwei Abschnitte: „Verfügbar" verlinkt die gebauten (Termine, Mitglieder,
+ * Küren, Wettkampf, Finanzen, Verwaltung) und die neuen Module (News, Notizen,
+ * Übungen, Familie — mit „Neu"-Badge). „Bald verfügbar" listet die noch nicht
+ * gebauten Module als dezente, nicht klickbare Kacheln mit „Bald"-Badge.
+ *
+ * Die Verwaltungs-Kachel erscheint nur für Vereins-Admins (analog zur Nav);
+ * der echte Schutz bleibt serverseitig (RLS + API). Alle Lese-Bereiche sind
+ * für Mitglieder sichtbar — Schreibrechte gaten die Fach-Screens selbst.
+ */
+
+type Tone = "neutral" | "brand" | "info" | "success" | "warn";
+
+const TONE_CLASS: Record<Tone, string> = {
+  neutral: "bg-sunken text-ink-soft",
+  brand: "bg-brand-soft text-brand-ink",
+  info: "bg-info-soft text-info",
+  success: "bg-success-soft text-success",
+  warn: "bg-warn-soft text-warn",
+};
+
+/** Icon-Quelle: geteiltes Shell-Icon (gebaute Bereiche) oder lokales Glyph. */
+type TileIcon = { shell: IconName } | { mehr: MehrIconName };
+
+interface AvailableTile {
+  key: string;
+  href: string;
+  icon: TileIcon;
+  tone: Tone;
+  titleKey: MehrKey;
+  descKey: MehrKey;
+  /** neue Module bekommen den „Neu"-Badge */
+  isNew?: boolean;
+  /** nur für Vereins-Admins (owner/admin/moderator) sichtbar */
+  adminOnly?: boolean;
+}
+
+interface SoonTile {
+  key: string;
+  icon: TileIcon;
+  titleKey: MehrKey;
+  descKey: MehrKey;
+}
+
+/** Neue Module zuerst (mit Badge), danach die bereits gebauten Bereiche. */
+const AVAILABLE: AvailableTile[] = [
+  { key: "news", href: "/news", icon: { mehr: "news" }, tone: "brand", titleKey: "news", descKey: "newsDesc", isNew: true },
+  { key: "notes", href: "/notizen", icon: { mehr: "note" }, tone: "info", titleKey: "notes", descKey: "notesDesc", isNew: true },
+  { key: "exercises", href: "/uebungen", icon: { mehr: "exercise" }, tone: "success", titleKey: "exercises", descKey: "exercisesDesc", isNew: true },
+  { key: "family", href: "/familie", icon: { mehr: "family" }, tone: "warn", titleKey: "family", descKey: "familyDesc", isNew: true },
+  { key: "events", href: "/termine", icon: { shell: "events" }, tone: "brand", titleKey: "events", descKey: "eventsDesc" },
+  { key: "members", href: "/mitglieder", icon: { shell: "members" }, tone: "info", titleKey: "members", descKey: "membersDesc" },
+  { key: "routines", href: "/kueren", icon: { shell: "routines" }, tone: "neutral", titleKey: "routines", descKey: "routinesDesc" },
+  { key: "competition", href: "/wettkampf", icon: { shell: "competition" }, tone: "warn", titleKey: "competition", descKey: "competitionDesc" },
+  { key: "finance", href: "/finanzen", icon: { shell: "finance" }, tone: "success", titleKey: "finance", descKey: "financeDesc" },
+  { key: "manage", href: "/verwaltung", icon: { shell: "shield" }, tone: "neutral", titleKey: "manage", descKey: "manageDesc", adminOnly: true },
+];
+
+/** Noch nicht gebaute Module — Reihenfolge grob nach Referenz 3.1. */
+const SOON: SoonTile[] = [
+  { key: "chat", icon: { mehr: "chat" }, titleKey: "chat", descKey: "chatDesc" },
+  { key: "trainingplan", icon: { mehr: "trainingplan" }, titleKey: "trainingplan", descKey: "trainingplanDesc" },
+  { key: "facility", icon: { mehr: "facility" }, titleKey: "facility", descKey: "facilityDesc" },
+  { key: "equipment", icon: { mehr: "equipment" }, titleKey: "equipment", descKey: "equipmentDesc" },
+  { key: "medal", icon: { mehr: "medal" }, titleKey: "medal", descKey: "medalDesc" },
+  { key: "hours", icon: { mehr: "hours" }, titleKey: "hours", descKey: "hoursDesc" },
+  { key: "checkin", icon: { mehr: "checkin" }, titleKey: "checkin", descKey: "checkinDesc" },
+  { key: "gallery", icon: { mehr: "gallery" }, titleKey: "gallery", descKey: "galleryDesc" },
+  { key: "document", icon: { mehr: "document" }, titleKey: "document", descKey: "documentDesc" },
+  { key: "chart", icon: { mehr: "chart" }, titleKey: "chart", descKey: "chartDesc" },
+];
+
+function renderIcon(icon: TileIcon): ReactNode {
+  return "shell" in icon ? (
+    <Icon name={icon.shell} className="ic h-5 w-5" />
+  ) : (
+    <MehrIcon name={icon.mehr} className="ic h-5 w-5" />
+  );
+}
+
+/** Tinted Icon-Kachel im „m"-Format der IconTile (38 px, radius-md). */
+function TileGlyph({ tone, children }: { tone: Tone; children: ReactNode }) {
+  return (
+    <span
+      className={`grid h-[38px] w-[38px] flex-none place-items-center rounded-md ${TONE_CLASS[tone]}`}
+      aria-hidden="true"
+    >
+      {children}
+    </span>
+  );
+}
+
+export function MehrHub() {
+  const t = useT(mehrDict);
+  const me = useData((repo) => repo.getCurrentUser());
+  const isClubAdmin = permissions(me.data ?? null).isClubAdmin;
+
+  const available = AVAILABLE.filter((tile) => !tile.adminOnly || isClubAdmin);
+
+  return (
+    <div className="mx-auto grid w-full max-w-5xl gap-7">
+      <SectionHeader level={1} eyebrow={t("eyebrow")} title={t("title")} sub={t("sub")} />
+
+      <section className="grid gap-3">
+        <SectionHeader level={2} title={t("sectionAvailable")} />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {available.map((tile) => {
+            const title = t(tile.titleKey);
+            return (
+              <Link
+                key={tile.key}
+                href={tile.href}
+                aria-label={t("openTile", { title })}
+                className="group flex items-center gap-4 rounded-xl border border-line bg-surface p-5 shadow-card no-underline transition-colors duration-150 hover:border-line-strong hover:bg-sunken"
+              >
+                <TileGlyph tone={tile.tone}>{renderIcon(tile.icon)}</TileGlyph>
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <b className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink">
+                      {title}
+                    </b>
+                    {tile.isNew && <Badge tone="brand">{t("badgeNew")}</Badge>}
+                  </span>
+                  <span className="text-[13px] leading-snug text-ink-soft">{t(tile.descKey)}</span>
+                </span>
+                <Icon
+                  name="chevronRight"
+                  className="ic ml-auto h-4 w-4 flex-none text-ink-faint transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-ink"
+                />
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="grid gap-3">
+        <SectionHeader level={2} title={t("sectionSoon")} sub={t("soonSub")} />
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SOON.map((tile) => {
+            const title = t(tile.titleKey);
+            return (
+              <div
+                key={tile.key}
+                aria-disabled="true"
+                aria-label={t("soonAria", { title })}
+                className="flex cursor-default items-center gap-4 rounded-xl border border-dashed border-line bg-surface p-5 opacity-70"
+              >
+                <TileGlyph tone="neutral">{renderIcon(tile.icon)}</TileGlyph>
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <b className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink-soft">
+                      {title}
+                    </b>
+                    <Badge tone="neutral">{t("badgeSoon")}</Badge>
+                  </span>
+                  <span className="text-[13px] leading-snug text-ink-faint">{t(tile.descKey)}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}

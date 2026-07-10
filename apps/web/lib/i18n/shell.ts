@@ -19,6 +19,7 @@ export const shellDict = {
     navCompetition: "Wettkampf",
     navFinance: "Finanzen",
     navManage: "Verwaltung",
+    navMore: "Mehr",
 
     searchPlaceholder: "Suchen … (Mitglieder, Termine, Küren)",
     searchLabel: "Suche",
@@ -60,6 +61,7 @@ export const shellDict = {
     navCompetition: "Competition",
     navFinance: "Finances",
     navManage: "Management",
+    navMore: "More",
 
     searchPlaceholder: "Search … (members, events, routines)",
     searchLabel: "Search",

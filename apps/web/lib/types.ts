@@ -223,6 +223,77 @@ export interface Task {
   competitionId?: Id;
 }
 
+/* ---------- Module: Neuigkeiten, Notizen, Übungen (Batch 1) ---------- */
+
+/**
+ * Vereins-Neuigkeit (Schwarzes Brett). Anlegen/Ändern nur Trainerstab+
+ * (is_club_trainer), Lesen jedes Mitglied. author_member_id ist eine
+ * club_members.id — für die Anzeige über die Member-Liste auflösen.
+ */
+export interface News {
+  id: Id;
+  clubId: Id;
+  authorMemberId: Id;
+  title: string;
+  body: string;
+  /** Angepinnt = oben einsortieren */
+  isPinned: boolean;
+  /** ISO-Zeitstempel; undefined = Entwurf (noch nicht veröffentlicht) */
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Private Notiz — STRIKT nutzergebunden (owner_profile_id = auth.uid()).
+ * Kein Vereins-Lesepfad: selbst Plattform-Admins sehen fremde Notizen nie.
+ */
+export interface Note {
+  id: Id;
+  ownerProfileId: Id;
+  /** Optionale, lose Vereinszuordnung; undefined = ohne Vereinsbezug */
+  clubId?: Id;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Übungs-Kategorie (Referenz §4): aufwärmen/dehnung/kraft/sprung/
+ * pirouette/schritt/kombination.
+ */
+export type ExerciseCategory =
+  | "warmup"
+  | "stretching"
+  | "strength"
+  | "jump"
+  | "spin"
+  | "steps"
+  | "combination";
+
+/**
+ * Übung aus dem Trainings-Katalog. Anlegen/Ändern nur Trainerstab+
+ * (is_club_trainer), Lesen jedes Mitglied. created_by_member_id ist eine
+ * club_members.id — für die Anzeige über die Member-Liste auflösen.
+ */
+export interface Exercise {
+  id: Id;
+  clubId: Id;
+  createdByMemberId: Id;
+  name: string;
+  description?: string;
+  category: ExerciseCategory;
+  /** Schwierigkeit 1..5 */
+  difficulty?: number;
+  videoUrl?: string;
+  instructions?: string;
+  /** Dauer in Sekunden (> 0) */
+  durationSeconds?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /* ---------- Plattform-Ebene (Super-Admin-Konsole, reine Lesesicht) ---------- */
 
 /** Vereins-Übersichtszeile der Plattform-Konsole (GET /platform/clubs). */
