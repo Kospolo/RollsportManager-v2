@@ -85,6 +85,7 @@ export const kuerenDict = {
     addMarker: "Markierung",
     newMarkerLabel: "Neue Markierung",
     markerAdded: "Markierung bei {time} gesetzt.",
+    noPermission: "Keine Berechtigung — die Markierung wurde nicht gespeichert.",
     jumpToMarker: "Zu {time} springen: {label}",
     playFrom: "Ab {time} abspielen",
 
@@ -190,6 +191,7 @@ export const kuerenDict = {
     addMarker: "Marker",
     newMarkerLabel: "New marker",
     markerAdded: "Marker set at {time}.",
+    noPermission: "No permission — the marker was not saved.",
     jumpToMarker: "Jump to {time}: {label}",
     playFrom: "Play from {time}",
 

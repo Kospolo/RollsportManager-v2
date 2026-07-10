@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Member, Routine, RoutineMarker } from "@/lib/types";
-import { errorMessage, isNotImplemented, memberById } from "@/lib/data";
+import { data, errorMessage, isForbidden, isNotImplemented, memberById } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
@@ -108,8 +108,10 @@ function LoadedDetail({ routine, members }: { routine: Routine; members: Member[
   const { showToast } = useToast();
   const playback = usePlayback(routine.music.durationMs);
 
-  /* Marker lokal editierbar (optimistisch, ohne Backend). */
+  /* Marker optimistisch: sofort lokal, dann Facade-Write (api: POST). */
   const [markers, setMarkers] = useState<RoutineMarker[]>(routine.markers);
+  const sortByTime = (list: RoutineMarker[]) =>
+    [...list].sort((a, b) => a.timeMs - b.timeMs);
 
   const skaters = useMemo(
     () =>
@@ -120,15 +122,25 @@ function LoadedDetail({ routine, members }: { routine: Routine; members: Member[
   );
   const skaterNames = skaters.map((m) => `${m.firstName} ${m.lastName}`).join(" & ");
 
-  const addMarkerAtPlayhead = () => {
+  const addMarkerAtPlayhead = async () => {
     const timeMs = Math.round(playback.posMs);
-    const marker: RoutineMarker = {
-      id: `local-${Date.now()}`,
-      timeMs,
-      label: t("newMarkerLabel"),
-    };
-    setMarkers((current) => [...current, marker].sort((a, b) => a.timeMs - b.timeMs));
+    const tempId = `local-${Date.now()}`;
+    const optimistic: RoutineMarker = { id: tempId, timeMs, label: t("newMarkerLabel") };
+    setMarkers((current) => sortByTime([...current, optimistic]));
     showToast(t("markerAdded", { time: formatDurationMs(timeMs) }), { tone: "success" });
+    try {
+      const saved = await data.addRoutineMarker(routine.id, {
+        timeMs,
+        label: optimistic.label,
+      });
+      setMarkers((current) => sortByTime(current.map((m) => (m.id === tempId ? saved : m))));
+    } catch (error) {
+      // Rollback des optimistischen Markers + Fehlerhinweis.
+      setMarkers((current) => current.filter((m) => m.id !== tempId));
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+      });
+    }
   };
 
   return (

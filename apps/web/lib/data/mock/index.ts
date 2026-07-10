@@ -1,6 +1,14 @@
 import * as mock from "@/lib/mock";
+import type { Event, RoutineMarker } from "@/lib/types";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { openInvoices } from "../derive";
+
+/**
+ * In-Memory-Ablage für im Mock-Modus angelegte Objekte. Lebt für die Dauer
+ * der Session (bis Reload) und macht die Anlegen-Flows auch ohne Dev-Stack
+ * erfahrbar — Termine erscheinen in der Liste, Marker im Player.
+ */
+const createdEvents: Event[] = [];
 
 /**
  * Mock-Implementierung der Repository-Facade — DEFAULT-Datenquelle.
@@ -34,7 +42,7 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Termine, RSVP & Anwesenheit ---------- */
   async getEvents() {
-    return mock.events;
+    return [...mock.events, ...createdEvents];
   },
   async getUpcomingEvents(withinDays = 7) {
     return mock.upcomingEvents(withinDays);
@@ -95,5 +103,32 @@ export const mockRepository: DataRepository = {
   },
   async setTaskDone() {
     return true;
+  },
+  async createEvent(input): Promise<Event> {
+    const created: Event = {
+      id: `e-local-${Date.now()}`,
+      clubId: mock.club.id,
+      type: input.type,
+      title: input.title,
+      location: input.location ?? "",
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      teamIds: input.teamIds ?? [],
+      rsvps: [],
+      note: input.note,
+    };
+    createdEvents.push(created);
+    return created;
+  },
+  async inviteMember(input) {
+    return { email: input.email };
+  },
+  async addRoutineMarker(_routineId, input): Promise<RoutineMarker> {
+    return {
+      id: `m-local-${Date.now()}`,
+      timeMs: input.timeMs,
+      label: input.label,
+      elementCode: input.elementCode,
+    };
   },
 };

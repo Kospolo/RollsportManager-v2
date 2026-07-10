@@ -4,6 +4,7 @@ import type {
   Club,
   Competition,
   Event,
+  EventType,
   Guardianship,
   Id,
   Invoice,
@@ -11,6 +12,7 @@ import type {
   Member,
   MemberRole,
   Routine,
+  RoutineMarker,
   RsvpStatus,
   Task,
   Team,
@@ -58,6 +60,31 @@ export interface SetAttendanceInput {
   checkedInAt?: string;
 }
 
+/** Eingabe zum Anlegen eines Termins (owner/admin/coach). */
+export interface CreateEventInput {
+  type: EventType;
+  title: string;
+  location?: string;
+  /** ISO-Zeitstempel */
+  startsAt: string;
+  endsAt: string;
+  teamIds?: Id[];
+  note?: string;
+}
+
+/** Eingabe für eine Vereins-Einladung per E-Mail (owner/admin). */
+export interface InviteMemberInput {
+  email: string;
+  role?: AssignableRole;
+}
+
+/** Eingabe für einen neuen Kür-Marker (Trainerstab inkl. Gasttrainer). */
+export interface AddMarkerInput {
+  timeMs: number;
+  label: string;
+  elementCode?: string;
+}
+
 export interface DataRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
@@ -96,4 +123,10 @@ export interface DataRepository {
   runDunning(options?: { dryRun?: boolean }): Promise<DunningRunOutcome>;
   /** Aufgabe abhaken/reaktivieren. */
   setTaskDone(taskId: Id, done: boolean): Promise<boolean>;
+  /** Termin anlegen — liefert den erzeugten Termin (mit echter ID im api-Modus) zurück. */
+  createEvent(input: CreateEventInput): Promise<Event>;
+  /** Person per E-Mail in den Verein einladen. */
+  inviteMember(input: InviteMemberInput): Promise<{ email: string }>;
+  /** Kür-Marker hinzufügen — liefert den erzeugten Marker zurück. */
+  addRoutineMarker(routineId: Id, input: AddMarkerInput): Promise<RoutineMarker>;
 }

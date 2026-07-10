@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Sheet } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { data, errorMessage, isForbidden } from "@/lib/data";
 import { useT } from "@/lib/i18n";
 import type { Event, EventType, Team } from "@/lib/types";
 import { termineDict } from "../i18n";
@@ -14,22 +15,21 @@ const FORM_ID = "new-event-form";
 type FieldErrors = Partial<Record<"title" | "location" | "date" | "end" | "teams", string>>;
 
 /**
- * „Neuer Termin“-Formular als Sheet — rein lokaler State + Toast, kein
- * Backend (die Facade hat noch keinen Schreibpfad zum Anlegen von Terminen).
+ * „Neuer Termin“-Formular als Sheet — legt den Termin über die Facade an
+ * (api-Modus: echter POST /events, mock-Modus: In-Memory). Der erzeugte
+ * Termin (mit echter ID) fließt via onCreate zurück in die Liste.
  * Verein/Teams kommen als Props aus der Facade; sind Teams im api-Modus
  * nicht lesbar (NotImplemented), entfällt die Team-Pflicht mit Hinweis.
  */
 export function NewEventSheet({
   open,
   onClose,
-  clubId,
   teams,
   teamsUnavailable = false,
   onCreate,
 }: {
   open: boolean;
   onClose: () => void;
-  clubId: string;
   teams: Team[];
   /** api-Modus: kein Teams-Endpoint — Hinweis statt Chips, keine Team-Pflicht */
   teamsUnavailable?: boolean;
@@ -38,6 +38,7 @@ export function NewEventSheet({
   const t = useT(termineDict);
   const { showToast } = useToast();
   const teamsLabelId = useId();
+  const [submitting, setSubmitting] = useState(false);
 
   const [title, setTitle] = useState("");
   const [type, setType] = useState<EventType>("training");
@@ -70,8 +71,9 @@ export function NewEventSheet({
     setErrors((previous) => ({ ...previous, teams: undefined }));
   }
 
-  function handleSubmit(formEvent: React.FormEvent) {
+  async function handleSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
+    if (submitting) return;
     const nextErrors: FieldErrors = {};
     if (!title.trim()) nextErrors.title = t("errTitle");
     if (!location.trim()) nextErrors.location = t("errLocation");
@@ -82,22 +84,28 @@ export function NewEventSheet({
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
-    const created: Event = {
-      id: `e-local-${Date.now()}`,
-      clubId,
-      type,
-      title: title.trim(),
-      location: location.trim(),
-      startsAt: new Date(`${date}T${start}`).toISOString(),
-      endsAt: new Date(`${date}T${end}`).toISOString(),
-      teamIds,
-      rsvps: [],
-      note: note.trim() || undefined,
-    };
-    onCreate(created);
-    showToast(t("createdToast", { title: created.title }), { tone: "success" });
-    reset();
-    onClose();
+    setSubmitting(true);
+    try {
+      const created = await data.createEvent({
+        type,
+        title: title.trim(),
+        location: location.trim(),
+        startsAt: new Date(`${date}T${start}`).toISOString(),
+        endsAt: new Date(`${date}T${end}`).toISOString(),
+        teamIds,
+        note: note.trim() || undefined,
+      });
+      onCreate(created);
+      showToast(t("createdToast", { title: created.title }), { tone: "success" });
+      reset();
+      onClose();
+    } catch (error) {
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -108,10 +116,10 @@ export function NewEventSheet({
       title={t("formTitle")}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={submitting}>
             {t("cancel")}
           </Button>
-          <Button type="submit" form={FORM_ID} icon="plus">
+          <Button type="submit" form={FORM_ID} icon="plus" disabled={submitting}>
             {t("submit")}
           </Button>
         </>

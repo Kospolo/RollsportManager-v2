@@ -11,6 +11,7 @@ import {
   mapGuardianship,
   mapInvoice,
   mapLedgerEntry,
+  mapMarker,
   mapMember,
   mapRoutine,
   mapTask,
@@ -195,5 +196,33 @@ export const apiRepository: DataRepository = {
   async setTaskDone(taskId, done) {
     await apiClient.patchTasksByTaskId(taskId, { done });
     return true;
+  },
+  async createEvent(input) {
+    const created = await apiClient.postEvents({
+      club_id: activeClubId(),
+      type: input.type,
+      title: input.title,
+      location: input.location,
+      starts_at: input.startsAt,
+      ends_at: input.endsAt,
+      team_ids: input.teamIds,
+      note: input.note,
+    });
+    return mapEvent(created);
+  },
+  async inviteMember(input) {
+    const queued = await apiClient.postClubsByClubIdMembersInvite(activeClubId(), {
+      email: input.email,
+      role: input.role,
+    });
+    return { email: queued.email };
+  },
+  async addRoutineMarker(routineId, input) {
+    const created = await apiClient.postRoutinesByRoutineIdMarkers(routineId, {
+      time_ms: input.timeMs,
+      label: input.label,
+      element_code: input.elementCode,
+    });
+    return mapMarker(created);
   },
 };

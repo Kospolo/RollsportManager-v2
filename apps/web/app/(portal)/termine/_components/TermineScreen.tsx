@@ -268,7 +268,7 @@ export function TermineScreen() {
     );
   }
 
-  const { club, members, currentUser } = core.data;
+  const { members, currentUser } = core.data;
 
   const filterOptions: FilterChipOption<TypeFilter>[] = [
     { value: "all", label: t("filterAll"), count: counts.all },
@@ -390,7 +390,6 @@ export function TermineScreen() {
       <NewEventSheet
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        clubId={club.id}
         teams={teams}
         teamsUnavailable={teamsUnavailable}
         onCreate={(event) => setCreated((previous) => [...previous, event])}

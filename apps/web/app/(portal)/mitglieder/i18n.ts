@@ -74,7 +74,8 @@ export const mitgliederDict = {
     invHint: "Die Einladung enthält einen Link zum Vereinsportal und ist 14 Tage gültig.",
     invCancel: "Abbrechen",
     invSend: "Einladung senden",
-    invToast: "Einladung an {email} versendet — Demo",
+    invToast: "Einladung an {email} vorgemerkt",
+    invForbidden: "Keine Berechtigung — nur Vorstand/Admin dürfen einladen.",
 
     breadcrumb: "Brotkrumen-Navigation",
     backCrumb: "Mitglieder",
@@ -203,7 +204,8 @@ export const mitgliederDict = {
     invHint: "The invitation contains a link to the club portal and is valid for 14 days.",
     invCancel: "Cancel",
     invSend: "Send invitation",
-    invToast: "Invitation sent to {email} — demo",
+    invToast: "Invitation queued for {email}",
+    invForbidden: "No permission — only board/admin may invite.",
 
     breadcrumb: "Breadcrumb navigation",
     backCrumb: "Members",
