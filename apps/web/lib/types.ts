@@ -8,6 +8,11 @@
 
 export type Id = string;
 
+// Batch-2-Modul-Typen (Hallen, Buchungen, Equipment, Reservierungen, Erfolge)
+// leben ausgelagert in lib/types-batch2.ts, sind aber weiterhin unter
+// "@/lib/types" verfügbar.
+export type * from "./types-batch2";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

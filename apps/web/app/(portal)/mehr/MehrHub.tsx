@@ -16,8 +16,9 @@ import { mehrDict, type MehrKey } from "./i18n";
  *
  * Zwei Abschnitte: „Verfügbar" verlinkt die gebauten (Termine, Mitglieder,
  * Küren, Wettkampf, Finanzen, Verwaltung) und die neuen Module (News, Notizen,
- * Übungen, Familie — mit „Neu"-Badge). „Bald verfügbar" listet die noch nicht
- * gebauten Module als dezente, nicht klickbare Kacheln mit „Bald"-Badge.
+ * Übungen, Familie, Belegungsplan, Ausrüstung, Medaillen — mit „Neu"-Badge).
+ * „Bald verfügbar" listet die noch nicht gebauten Module als dezente, nicht
+ * klickbare Kacheln mit „Bald"-Badge.
  *
  * Die Verwaltungs-Kachel erscheint nur für Vereins-Admins (analog zur Nav);
  * der echte Schutz bleibt serverseitig (RLS + API). Alle Lese-Bereiche sind
@@ -63,6 +64,9 @@ const AVAILABLE: AvailableTile[] = [
   { key: "notes", href: "/notizen", icon: { mehr: "note" }, tone: "info", titleKey: "notes", descKey: "notesDesc", isNew: true },
   { key: "exercises", href: "/uebungen", icon: { mehr: "exercise" }, tone: "success", titleKey: "exercises", descKey: "exercisesDesc", isNew: true },
   { key: "family", href: "/familie", icon: { mehr: "family" }, tone: "warn", titleKey: "family", descKey: "familyDesc", isNew: true },
+  { key: "facility", href: "/belegungsplan", icon: { mehr: "facility" }, tone: "info", titleKey: "facility", descKey: "facilityDesc", isNew: true },
+  { key: "equipment", href: "/ausruestung", icon: { mehr: "equipment" }, tone: "success", titleKey: "equipment", descKey: "equipmentDesc", isNew: true },
+  { key: "medal", href: "/medaillen", icon: { mehr: "medal" }, tone: "warn", titleKey: "medal", descKey: "medalDesc", isNew: true },
   { key: "events", href: "/termine", icon: { shell: "events" }, tone: "brand", titleKey: "events", descKey: "eventsDesc" },
   { key: "members", href: "/mitglieder", icon: { shell: "members" }, tone: "info", titleKey: "members", descKey: "membersDesc" },
   { key: "routines", href: "/kueren", icon: { shell: "routines" }, tone: "neutral", titleKey: "routines", descKey: "routinesDesc" },
@@ -75,9 +79,6 @@ const AVAILABLE: AvailableTile[] = [
 const SOON: SoonTile[] = [
   { key: "chat", icon: { mehr: "chat" }, titleKey: "chat", descKey: "chatDesc" },
   { key: "trainingplan", icon: { mehr: "trainingplan" }, titleKey: "trainingplan", descKey: "trainingplanDesc" },
-  { key: "facility", icon: { mehr: "facility" }, titleKey: "facility", descKey: "facilityDesc" },
-  { key: "equipment", icon: { mehr: "equipment" }, titleKey: "equipment", descKey: "equipmentDesc" },
-  { key: "medal", icon: { mehr: "medal" }, titleKey: "medal", descKey: "medalDesc" },
   { key: "hours", icon: { mehr: "hours" }, titleKey: "hours", descKey: "hoursDesc" },
   { key: "checkin", icon: { mehr: "checkin" }, titleKey: "checkin", descKey: "checkinDesc" },
   { key: "gallery", icon: { mehr: "gallery" }, titleKey: "gallery", descKey: "galleryDesc" },

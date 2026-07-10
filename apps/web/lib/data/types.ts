@@ -1,12 +1,17 @@
 import type {
+  Achievement,
   Attendance,
   AttendanceStatus,
   Club,
   Competition,
+  Equipment,
+  EquipmentReservation,
   Event,
   EventType,
   Exercise,
   ExerciseCategory,
+  Facility,
+  FacilityBooking,
   Guardianship,
   Id,
   Invoice,
@@ -25,6 +30,18 @@ import type {
   Task,
   Team,
 } from "@/lib/types";
+import type {
+  CreateAchievementInput,
+  CreateBookingInput,
+  CreateEquipmentInput,
+  CreateFacilityInput,
+  CreateReservationInput,
+  UpdateAchievementInput,
+  UpdateBookingInput,
+  UpdateEquipmentInput,
+  UpdateFacilityInput,
+  UpdateReservationInput,
+} from "./inputs-batch2";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -291,6 +308,56 @@ export interface DataRepository {
   updateExercise(exerciseId: Id, patch: UpdateExerciseInput): Promise<Exercise>;
   /** Übung soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
   deleteExercise(exerciseId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Hallen (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
+  /** Hallen/Trainingsstätten des aktiven Vereins. */
+  listFacilities(): Promise<Facility[]>;
+  /** Halle anlegen (is_club_trainer) — liefert die erzeugte Halle zurück. */
+  createFacility(input: CreateFacilityInput): Promise<Facility>;
+  /** Halle ändern (is_club_trainer). */
+  updateFacility(facilityId: Id, patch: UpdateFacilityInput): Promise<Facility>;
+  /** Halle soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteFacility(facilityId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Hallenbuchungen (Lesen=Mitglied, Anlegen=Selbst/Trainer) ---------- */
+  /** Hallenbuchungen des aktiven Vereins, optional nach Halle gefiltert. */
+  listFacilityBookings(facilityId?: Id): Promise<FacilityBooking[]>;
+  /** Buchung anlegen (Selbst ODER Trainer fürs Team) — liefert die Buchung zurück. */
+  createBooking(input: CreateBookingInput): Promise<FacilityBooking>;
+  /** Buchung ändern (Ersteller ODER Trainer). */
+  updateBooking(bookingId: Id, patch: UpdateBookingInput): Promise<FacilityBooking>;
+  /** Buchung soft-löschen (Ersteller ODER Trainer) — liefert die gelöschte ID zurück. */
+  deleteBooking(bookingId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Equipment (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
+  /** Ausrüstungsbestand des aktiven Vereins. */
+  listEquipment(): Promise<Equipment[]>;
+  /** Ausrüstung anlegen (is_club_trainer) — liefert den erzeugten Gegenstand zurück. */
+  createEquipment(input: CreateEquipmentInput): Promise<Equipment>;
+  /** Ausrüstung ändern (is_club_trainer). */
+  updateEquipment(equipmentId: Id, patch: UpdateEquipmentInput): Promise<Equipment>;
+  /** Ausrüstung soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteEquipment(equipmentId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Equipment-Reservierungen (Lesen=Mitglied, Anlegen=Selbst/Trainer) ---------- */
+  /** Reservierungen des aktiven Vereins, optional nach Gegenstand gefiltert. */
+  listReservations(equipmentId?: Id): Promise<EquipmentReservation[]>;
+  /** Reservierung anlegen (Selbst ODER Trainer) — liefert die Reservierung zurück. */
+  createReservation(input: CreateReservationInput): Promise<EquipmentReservation>;
+  /** Reservierung ändern (Ersteller ODER Trainer). */
+  updateReservation(reservationId: Id, patch: UpdateReservationInput): Promise<EquipmentReservation>;
+  /** Reservierung soft-löschen (Ersteller ODER Trainer) — liefert die gelöschte ID zurück. */
+  deleteReservation(reservationId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Module: Erfolge/Medaillen (Lesen=Mitglied, Vergeben=Trainer+) ---------- */
+  /** Erfolge des aktiven Vereins, optional nach Mitglied gefiltert. */
+  listAchievements(memberId?: Id): Promise<Achievement[]>;
+  /** Erfolg vergeben (is_club_trainer) — liefert den erzeugten Erfolg zurück. */
+  createAchievement(input: CreateAchievementInput): Promise<Achievement>;
+  /** Erfolg ändern (is_club_trainer). */
+  updateAchievement(achievementId: Id, patch: UpdateAchievementInput): Promise<Achievement>;
+  /** Erfolg soft-löschen (is_club_trainer) — liefert die gelöschte ID zurück. */
+  deleteAchievement(achievementId: Id): Promise<{ id: Id }>;
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */

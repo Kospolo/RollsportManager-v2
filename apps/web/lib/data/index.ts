@@ -39,6 +39,18 @@ export type {
   UpdateNoteInput,
   UpdateTeamInput,
 } from "./types";
+export type {
+  CreateAchievementInput,
+  CreateBookingInput,
+  CreateEquipmentInput,
+  CreateFacilityInput,
+  CreateReservationInput,
+  UpdateAchievementInput,
+  UpdateBookingInput,
+  UpdateEquipmentInput,
+  UpdateFacilityInput,
+  UpdateReservationInput,
+} from "./inputs-batch2";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {
