@@ -685,6 +685,123 @@ export class ApiClient {
   }
 
   /**
+   * List the weekly training slots of a club (optionally by team)
+   * 
+   * `GET /training-slots`
+   */
+  async getTrainingSlots(query: { "club_id": string; "team_id"?: string }, options?: RequestOptions): Promise<M.TrainingSlot[]> {
+    return this.request<M.TrainingSlot[]>("GET", "/training-slots", { query, auth: true, options });
+  }
+
+  /**
+   * Create a training slot (coaching staff, is_club_trainer)
+   * 
+   * `POST /training-slots`
+   */
+  async postTrainingSlots(body: M.TrainingSlotCreate, options?: RequestOptions): Promise<M.TrainingSlot> {
+    return this.request<M.TrainingSlot>("POST", "/training-slots", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a training slot (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /training-slots/{slotId}`
+   */
+  async patchTrainingSlotsBySlotId(slotId: string, body: M.TrainingSlotUpdate, options?: RequestOptions): Promise<M.TrainingSlot> {
+    return this.request<M.TrainingSlot>("PATCH", `/training-slots/${encodeURIComponent(slotId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a training slot (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /training-slots/{slotId}`
+   */
+  async deleteTrainingSlotsBySlotId(slotId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/training-slots/${encodeURIComponent(slotId)}`, { auth: true, options });
+  }
+
+  /**
+   * List the duty-hour requirements of a club (optionally by team)
+   * 
+   * `GET /duty-requirements`
+   */
+  async getDutyRequirements(query: { "club_id": string; "team_id"?: string }, options?: RequestOptions): Promise<M.DutyRequirement[]> {
+    return this.request<M.DutyRequirement[]>("GET", "/duty-requirements", { query, auth: true, options });
+  }
+
+  /**
+   * Set a duty-hour target (coaching staff, is_club_trainer)
+   * 
+   * `POST /duty-requirements`
+   */
+  async postDutyRequirements(body: M.DutyRequirementCreate, options?: RequestOptions): Promise<M.DutyRequirement> {
+    return this.request<M.DutyRequirement>("POST", "/duty-requirements", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a duty-hour target (coaching staff, is_club_trainer)
+   * 
+   * `PATCH /duty-requirements/{requirementId}`
+   */
+  async patchDutyRequirementsByRequirementId(requirementId: string, body: M.DutyRequirementUpdate, options?: RequestOptions): Promise<M.DutyRequirement> {
+    return this.request<M.DutyRequirement>("PATCH", `/duty-requirements/${encodeURIComponent(requirementId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a duty-hour target (coaching staff, is_club_trainer)
+   * 
+   * `DELETE /duty-requirements/{requirementId}`
+   */
+  async deleteDutyRequirementsByRequirementId(requirementId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/duty-requirements/${encodeURIComponent(requirementId)}`, { auth: true, options });
+  }
+
+  /**
+   * List duty entries (own entries, or all for coaching staff)
+   * 
+   * `GET /duty-entries`
+   */
+  async getDutyEntries(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.DutyEntry[]> {
+    return this.request<M.DutyEntry[]>("GET", "/duty-entries", { query, auth: true, options });
+  }
+
+  /**
+   * Record hours (a member for themselves, or staff for anyone)
+   * 
+   * `POST /duty-entries`
+   */
+  async postDutyEntries(body: M.DutyEntryCreate, options?: RequestOptions): Promise<M.DutyEntry> {
+    return this.request<M.DutyEntry>("POST", "/duty-entries", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a duty entry (its member, or coaching staff)
+   * 
+   * `PATCH /duty-entries/{entryId}`
+   */
+  async patchDutyEntriesByEntryId(entryId: string, body: M.DutyEntryUpdate, options?: RequestOptions): Promise<M.DutyEntry> {
+    return this.request<M.DutyEntry>("PATCH", `/duty-entries/${encodeURIComponent(entryId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a duty entry (its member, or coaching staff)
+   * 
+   * `DELETE /duty-entries/{entryId}`
+   */
+  async deleteDutyEntriesByEntryId(entryId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/duty-entries/${encodeURIComponent(entryId)}`, { auth: true, options });
+  }
+
+  /**
+   * Club evaluation summary (is_club_trainer / is_club_admin only)
+   * 
+   * `GET /reports/summary`
+   */
+  async getReportsSummary(query: { "club_id": string }, options?: RequestOptions): Promise<M.ReportSummary> {
+    return this.request<M.ReportSummary>("GET", "/reports/summary", { query, auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * 
    * `GET /invoices`

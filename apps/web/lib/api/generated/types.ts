@@ -615,6 +615,150 @@ export interface AchievementUpdate {
   "note"?: string | null;
 }
 
+export type Weekday = number;
+
+export interface TrainingSlot {
+  "id": string;
+  "club_id": string;
+  "team_id": string | null;
+  "weekday": Weekday;
+  "starts_time": string;
+  "ends_time": string;
+  "facility_id": string | null;
+  "location": string | null;
+  "coach_member_id": string | null;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface TrainingSlotCreate {
+  "club_id": string;
+  "weekday": Weekday;
+  "starts_time": string;
+  "ends_time": string;
+  "team_id"?: string;
+  "facility_id"?: string;
+  "location"?: string;
+  "coach_member_id"?: string;
+  "note"?: string;
+}
+
+export interface TrainingSlotUpdate {
+  "weekday"?: Weekday;
+  "starts_time"?: string;
+  "ends_time"?: string;
+  "team_id"?: string | null;
+  "facility_id"?: string | null;
+  "location"?: string | null;
+  "coach_member_id"?: string | null;
+  "note"?: string | null;
+}
+
+export interface DutyRequirement {
+  "id": string;
+  "club_id": string;
+  "team_id": string | null;
+  "member_id": string | null;
+  "season_label": string;
+  "required_hours": number | null;
+  "period_start": string;
+  "period_end": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface DutyRequirementCreate {
+  "club_id": string;
+  "season_label": string;
+  "required_hours": number;
+  "period_start": string;
+  "period_end": string;
+  "team_id"?: string;
+  "member_id"?: string;
+}
+
+export interface DutyRequirementUpdate {
+  "season_label"?: string;
+  "required_hours"?: number;
+  "period_start"?: string;
+  "period_end"?: string;
+  "team_id"?: string | null;
+  "member_id"?: string | null;
+}
+
+export type DutyKind = "training" | "helper" | "competition" | "other";
+export const DutyKindValues: readonly DutyKind[] = ["training", "helper", "competition", "other"] as const;
+
+export interface DutyEntry {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "hours": number | null;
+  "activity_date": string;
+  "kind": DutyKind;
+  "note": string | null;
+  "approved": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface DutyEntryCreate {
+  "club_id": string;
+  "member_id": string;
+  "hours": number;
+  "activity_date": string;
+  "kind"?: DutyKind;
+  "note"?: string;
+  "approved"?: boolean;
+}
+
+export interface DutyEntryUpdate {
+  "hours"?: number;
+  "activity_date"?: string;
+  "kind"?: DutyKind;
+  "note"?: string | null;
+  "approved"?: boolean;
+}
+
+export interface ReportRoleCount {
+  "role": ClubRole;
+  "count": number | null;
+}
+
+export interface ReportTeamCount {
+  "team_id": string;
+  "team_name": string;
+  "member_count": number | null;
+}
+
+export interface ReportMedalCounts {
+  "gold": number | null;
+  "silver": number | null;
+  "bronze": number | null;
+}
+
+export interface ReportUpcomingEvent {
+  "id": string;
+  "title": string;
+  "type": EventType;
+  "starts_at": string;
+}
+
+export interface ReportSummary {
+  "club_id": string;
+  "members_total": number | null;
+  "members_active": number | null;
+  "members_by_role": ReportRoleCount[];
+  "members_by_team": ReportTeamCount[];
+  "attendance_rate": number | null;
+  "open_invoices_total_cents": number | null;
+  "open_invoices_count": number | null;
+  "medals": ReportMedalCounts;
+  "upcoming_events_count": number | null;
+  "upcoming_events": ReportUpcomingEvent[];
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 

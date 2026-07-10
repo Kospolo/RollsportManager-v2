@@ -3,11 +3,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   attendanceUpsertSchema,
+  dutyEntryCreateSchema,
+  dutyRequirementCreateSchema,
   eventCreateSchema,
   invoiceCreateSchema,
   memberCreateSchema,
   roleChangeSchema,
   rsvpUpsertSchema,
+  trainingSlotCreateSchema,
 } from '../src/lib/validation.js';
 
 const CLUB = '11111111-1111-4111-8111-111111111111';
@@ -79,6 +82,60 @@ describe('eventCreateSchema', () => {
     expect(
       eventCreateSchema.safeParse({ ...base, ends_at: '2026-07-15T16:00:00+02:00' }).success,
     ).toBe(false);
+  });
+});
+
+describe('trainingSlotCreateSchema (modules batch 3)', () => {
+  const base = { club_id: CLUB, weekday: 0, starts_time: '17:00', ends_time: '18:30' };
+
+  it('accepts a valid weekly slot (0=Monday..6=Sunday)', () => {
+    const parsed = trainingSlotCreateSchema.parse(base);
+    expect(parsed.weekday).toBe(0);
+    expect(parsed.starts_time).toBe('17:00');
+  });
+
+  it('rejects a weekday outside 0..6', () => {
+    expect(trainingSlotCreateSchema.safeParse({ ...base, weekday: 7 }).success).toBe(false);
+    expect(trainingSlotCreateSchema.safeParse({ ...base, weekday: -1 }).success).toBe(false);
+  });
+
+  it('rejects a malformed time and ends_time before starts_time', () => {
+    expect(trainingSlotCreateSchema.safeParse({ ...base, starts_time: '25:00' }).success).toBe(false);
+    expect(trainingSlotCreateSchema.safeParse({ ...base, ends_time: '16:00' }).success).toBe(false);
+  });
+});
+
+describe('dutyRequirementCreateSchema (modules batch 3)', () => {
+  const base = {
+    club_id: CLUB,
+    season_label: 'Saison 2025/2026',
+    required_hours: 20,
+    period_start: '2026-01-01',
+    period_end: '2026-12-31',
+  };
+
+  it('accepts a season target', () => {
+    expect(dutyRequirementCreateSchema.parse(base).required_hours).toBe(20);
+  });
+
+  it('rejects a period_end before period_start and negative hours', () => {
+    expect(dutyRequirementCreateSchema.safeParse({ ...base, period_end: '2025-12-31' }).success).toBe(false);
+    expect(dutyRequirementCreateSchema.safeParse({ ...base, required_hours: -1 }).success).toBe(false);
+  });
+});
+
+describe('dutyEntryCreateSchema (modules batch 3)', () => {
+  const base = { club_id: CLUB, member_id: MEMBER, hours: 3, activity_date: '2026-07-01' };
+
+  it('defaults kind=training and approved=false', () => {
+    const parsed = dutyEntryCreateSchema.parse(base);
+    expect(parsed.kind).toBe('training');
+    expect(parsed.approved).toBe(false);
+  });
+
+  it('rejects non-positive hours and unknown kind', () => {
+    expect(dutyEntryCreateSchema.safeParse({ ...base, hours: 0 }).success).toBe(false);
+    expect(dutyEntryCreateSchema.safeParse({ ...base, kind: 'party' }).success).toBe(false);
   });
 });
 

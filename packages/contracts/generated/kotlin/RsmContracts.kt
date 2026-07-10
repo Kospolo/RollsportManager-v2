@@ -138,6 +138,14 @@ enum class Medal {
 }
 
 @Serializable
+enum class DutyKind {
+    @SerialName("training") TRAINING,
+    @SerialName("helper") HELPER,
+    @SerialName("competition") COMPETITION,
+    @SerialName("other") OTHER;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -831,6 +839,159 @@ data class AchievementUpdate(
     val medal: Medal? = null,
     @SerialName("achieved_on") val achievedOn: String? = null,
     val note: String? = null
+)
+
+@Serializable
+data class TrainingSlot(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("team_id") val teamId: String?,
+    val weekday: Weekday,
+    @SerialName("starts_time") val startsTime: String,
+    @SerialName("ends_time") val endsTime: String,
+    @SerialName("facility_id") val facilityId: String?,
+    val location: String?,
+    @SerialName("coach_member_id") val coachMemberId: String?,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class TrainingSlotCreate(
+    @SerialName("club_id") val clubId: String,
+    val weekday: Weekday,
+    @SerialName("starts_time") val startsTime: String,
+    @SerialName("ends_time") val endsTime: String,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("facility_id") val facilityId: String? = null,
+    val location: String? = null,
+    @SerialName("coach_member_id") val coachMemberId: String? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class TrainingSlotUpdate(
+    val weekday: Weekday? = null,
+    @SerialName("starts_time") val startsTime: String? = null,
+    @SerialName("ends_time") val endsTime: String? = null,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("facility_id") val facilityId: String? = null,
+    val location: String? = null,
+    @SerialName("coach_member_id") val coachMemberId: String? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class DutyRequirement(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("team_id") val teamId: String?,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("season_label") val seasonLabel: String,
+    @SerialName("required_hours") val requiredHours: Double?,
+    @SerialName("period_start") val periodStart: String,
+    @SerialName("period_end") val periodEnd: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class DutyRequirementCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("season_label") val seasonLabel: String,
+    @SerialName("required_hours") val requiredHours: Double,
+    @SerialName("period_start") val periodStart: String,
+    @SerialName("period_end") val periodEnd: String,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("member_id") val memberId: String? = null
+)
+
+@Serializable
+data class DutyRequirementUpdate(
+    @SerialName("season_label") val seasonLabel: String? = null,
+    @SerialName("required_hours") val requiredHours: Double? = null,
+    @SerialName("period_start") val periodStart: String? = null,
+    @SerialName("period_end") val periodEnd: String? = null,
+    @SerialName("team_id") val teamId: String? = null,
+    @SerialName("member_id") val memberId: String? = null
+)
+
+@Serializable
+data class DutyEntry(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val hours: Double?,
+    @SerialName("activity_date") val activityDate: String,
+    val kind: DutyKind,
+    val note: String?,
+    val approved: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class DutyEntryCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val hours: Double,
+    @SerialName("activity_date") val activityDate: String,
+    val kind: DutyKind? = DutyKind.TRAINING,
+    val note: String? = null,
+    val approved: Boolean? = false
+)
+
+@Serializable
+data class DutyEntryUpdate(
+    val hours: Double? = null,
+    @SerialName("activity_date") val activityDate: String? = null,
+    val kind: DutyKind? = null,
+    val note: String? = null,
+    val approved: Boolean? = null
+)
+
+@Serializable
+data class ReportRoleCount(
+    val role: ClubRole,
+    val count: Long?
+)
+
+@Serializable
+data class ReportTeamCount(
+    @SerialName("team_id") val teamId: String,
+    @SerialName("team_name") val teamName: String,
+    @SerialName("member_count") val memberCount: Long?
+)
+
+@Serializable
+data class ReportMedalCounts(
+    val gold: Long?,
+    val silver: Long?,
+    val bronze: Long?
+)
+
+@Serializable
+data class ReportUpcomingEvent(
+    val id: String,
+    val title: String,
+    val type: EventType,
+    @SerialName("starts_at") val startsAt: String
+)
+
+@Serializable
+data class ReportSummary(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("members_total") val membersTotal: Long?,
+    @SerialName("members_active") val membersActive: Long?,
+    @SerialName("members_by_role") val membersByRole: List<ReportRoleCount>,
+    @SerialName("members_by_team") val membersByTeam: List<ReportTeamCount>,
+    @SerialName("attendance_rate") val attendanceRate: Double?,
+    @SerialName("open_invoices_total_cents") val openInvoicesTotalCents: Long?,
+    @SerialName("open_invoices_count") val openInvoicesCount: Long?,
+    val medals: ReportMedalCounts,
+    @SerialName("upcoming_events_count") val upcomingEventsCount: Long?,
+    @SerialName("upcoming_events") val upcomingEvents: List<ReportUpcomingEvent>
 )
 
 @Serializable

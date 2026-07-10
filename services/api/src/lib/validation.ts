@@ -801,6 +801,192 @@ export const achievementUpdateSchema = z
   .openapi('AchievementUpdate');
 
 // ---------------------------------------------------------------------------
+// Modules batch 3 (migration 0010): training_slots, duty_requirements,
+// duty_entries + the reports/summary aggregate ("Auswertung"). weekday is
+// 0=Monday..6=Sunday; time columns come back as 'HH:MM:SS' strings.
+// ---------------------------------------------------------------------------
+
+/** 0 = Monday … 6 = Sunday (Referenz Trainingsplan-Wochenraster). */
+export const weekdaySchema = z.number().int().min(0).max(6).openapi('Weekday');
+/** 'HH:MM' or 'HH:MM:SS' — a plain wall-clock time (no offset). */
+const timeString = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, 'expected HH:MM[:SS]');
+export const dutyKindSchema = z.enum(['training', 'helper', 'competition', 'other']).openapi('DutyKind');
+
+// training_slots -------------------------------------------------------------
+export const trainingSlotSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    team_id: uuid.nullable(),
+    weekday: weekdaySchema,
+    starts_time: z.string(),
+    ends_time: z.string(),
+    facility_id: uuid.nullable(),
+    location: z.string().nullable(),
+    coach_member_id: uuid.nullable(),
+    note: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('TrainingSlot');
+
+export const trainingSlotCreateSchema = z
+  .object({
+    club_id: uuid,
+    weekday: weekdaySchema,
+    starts_time: timeString,
+    ends_time: timeString,
+    team_id: uuid.optional(),
+    facility_id: uuid.optional(),
+    location: z.string().optional(),
+    coach_member_id: uuid.optional(),
+    note: z.string().optional(),
+  })
+  .refine((v) => v.ends_time > v.starts_time, { message: 'ends_time must be after starts_time' })
+  .openapi('TrainingSlotCreate');
+
+export const trainingSlotUpdateSchema = z
+  .object({
+    weekday: weekdaySchema.optional(),
+    starts_time: timeString.optional(),
+    ends_time: timeString.optional(),
+    team_id: uuid.nullable().optional(),
+    facility_id: uuid.nullable().optional(),
+    location: z.string().nullable().optional(),
+    coach_member_id: uuid.nullable().optional(),
+    note: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('TrainingSlotUpdate');
+
+// duty_requirements ----------------------------------------------------------
+export const dutyRequirementSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    team_id: uuid.nullable(),
+    member_id: uuid.nullable(),
+    season_label: z.string(),
+    required_hours: z.coerce.number(),
+    period_start: isoDate,
+    period_end: isoDate,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('DutyRequirement');
+
+export const dutyRequirementCreateSchema = z
+  .object({
+    club_id: uuid,
+    season_label: z.string().min(1),
+    required_hours: z.number().nonnegative(),
+    period_start: z.string().date(),
+    period_end: z.string().date(),
+    team_id: uuid.optional(),
+    member_id: uuid.optional(),
+  })
+  .refine((v) => v.period_end >= v.period_start, { message: 'period_end must not be before period_start' })
+  .openapi('DutyRequirementCreate');
+
+export const dutyRequirementUpdateSchema = z
+  .object({
+    season_label: z.string().min(1).optional(),
+    required_hours: z.number().nonnegative().optional(),
+    period_start: z.string().date().optional(),
+    period_end: z.string().date().optional(),
+    team_id: uuid.nullable().optional(),
+    member_id: uuid.nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('DutyRequirementUpdate');
+
+// duty_entries ---------------------------------------------------------------
+export const dutyEntrySchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    hours: z.coerce.number(),
+    activity_date: isoDate,
+    kind: dutyKindSchema,
+    note: z.string().nullable(),
+    approved: z.boolean(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('DutyEntry');
+
+export const dutyEntryCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** Own membership (self-service) or, for staff, any member of the club. */
+    member_id: uuid,
+    hours: z.number().positive(),
+    activity_date: z.string().date(),
+    kind: dutyKindSchema.default('training'),
+    note: z.string().optional(),
+    /** Trainer-only; a member's own entry is always created unapproved (DB guard). */
+    approved: z.boolean().default(false),
+  })
+  .openapi('DutyEntryCreate');
+
+export const dutyEntryUpdateSchema = z
+  .object({
+    hours: z.number().positive().optional(),
+    activity_date: z.string().date().optional(),
+    kind: dutyKindSchema.optional(),
+    note: z.string().nullable().optional(),
+    /** Trainer-only (DB guard rejects a member flipping this on their own row). */
+    approved: z.boolean().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('DutyEntryUpdate');
+
+// reports/summary ("Auswertung") — server-computed aggregate, trainer/admin only
+export const reportRoleCountSchema = z
+  .object({ role: clubRoleSchema, count: z.coerce.number().int() })
+  .openapi('ReportRoleCount');
+
+export const reportTeamCountSchema = z
+  .object({ team_id: uuid, team_name: z.string(), member_count: z.coerce.number().int() })
+  .openapi('ReportTeamCount');
+
+export const reportUpcomingEventSchema = z
+  .object({ id: uuid, title: z.string(), type: eventTypeSchema, starts_at: timestamp })
+  .openapi('ReportUpcomingEvent');
+
+export const reportSummarySchema = z
+  .object({
+    club_id: uuid,
+    /** Non-deleted membership rows (any status). */
+    members_total: z.coerce.number().int(),
+    /** status = 'active'. */
+    members_active: z.coerce.number().int(),
+    /** Active members grouped by their club role. */
+    members_by_role: z.array(reportRoleCountSchema),
+    /** Skaters per team (app.team_members role='skater'). */
+    members_by_team: z.array(reportTeamCountSchema),
+    /** present+late over all recorded attendance rows (0..1); 0 when none. */
+    attendance_rate: z.coerce.number(),
+    /** Sum of amount_cents of status='open' invoices (integer cents). */
+    open_invoices_total_cents: z.coerce.number().int(),
+    open_invoices_count: z.coerce.number().int(),
+    /** Medal wall tally (app.achievements). */
+    medals: z
+      .object({
+        gold: z.coerce.number().int(),
+        silver: z.coerce.number().int(),
+        bronze: z.coerce.number().int(),
+      })
+      .openapi('ReportMedalCounts'),
+    /** Count of events with starts_at >= now(). */
+    upcoming_events_count: z.coerce.number().int(),
+    /** The next up-to-5 events (soonest first). */
+    upcoming_events: z.array(reportUpcomingEventSchema),
+  })
+  .openapi('ReportSummary');
+
+// ---------------------------------------------------------------------------
 // Platform (super_admin) read models - cross-club, only for platform admins.
 // ---------------------------------------------------------------------------
 

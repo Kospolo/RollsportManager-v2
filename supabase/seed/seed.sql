@@ -641,4 +641,74 @@ values
    'a0000000-0000-4000-8000-000000000007', 'Teilnahmeurkunde Pflicht',
    'Nachwuchssichtung Stuttgart', 5, null, current_date - 90, 'Erste Wettkampferfahrung, ohne Medaille.');
 
+-- ----------------------------------------------------------------------------
+-- Training slots (modules batch 3) — the weekly plan ("Trainingsplan").
+-- weekday 0=Mo … 6=So. 5 slots across the week, teams, halls and one coach each.
+--   t-01 Minis (coach a-05), t-02 Nachwuchs (coach a-01), t-03 Leistung
+--   (coach a-01 / guest a-06). Facilities fac..01 Ballei, fac..02 Pichterich,
+--   fac..03 Außenbahn.
+-- ----------------------------------------------------------------------------
+insert into app.training_slots
+  (id, club_id, team_id, weekday, starts_time, ends_time, facility_id, location, coach_member_id, note)
+values
+  ('7501a000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000001', 1, '16:00', '17:00',
+   'fac00000-0000-4000-8000-000000000002', null, 'a0000000-0000-4000-8000-000000000005',
+   'Minis & Anfänger — Grundlagen'),
+  ('7501a000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000002', 1, '17:00', '18:30',
+   'fac00000-0000-4000-8000-000000000001', null, 'a0000000-0000-4000-8000-000000000001',
+   'Nachwuchs Pflicht'),
+  ('7501a000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000003', 2, '18:30', '20:30',
+   'fac00000-0000-4000-8000-000000000001', null, 'a0000000-0000-4000-8000-000000000001',
+   'Kürgruppe Leistung — Küren & Sprünge'),
+  ('7501a000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000002', 4, '17:00', '18:30',
+   'fac00000-0000-4000-8000-000000000001', null, 'a0000000-0000-4000-8000-000000000005',
+   null),
+  ('7501a000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   'b0000000-0000-4000-8000-000000000003', 5, '18:00', '20:00',
+   'fac00000-0000-4000-8000-000000000003', 'Außenbahn (nur bei trockenem Wetter)',
+   'a0000000-0000-4000-8000-000000000006', 'Zusatztraining Wettkampfgruppe');
+
+-- ----------------------------------------------------------------------------
+-- Duty requirement (modules batch 3) — one season target for the whole club:
+-- 20 Pflichtstunden je Mitglied in der laufenden Saison.
+-- ----------------------------------------------------------------------------
+insert into app.duty_requirements
+  (id, club_id, team_id, member_id, season_label, required_hours, period_start, period_end)
+values
+  ('d0100000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   null, null, 'Saison 2025/2026', 20.00,
+   date_trunc('year', current_date)::date, (date_trunc('year', current_date) + interval '1 year - 1 day')::date);
+
+-- ----------------------------------------------------------------------------
+-- Duty entries (modules batch 3) — 6 recorded actual hours across members.
+-- Mix of kinds and approval state; some approved by staff, some still open.
+--   a-09 Katrin (member, self-recorded), a-12 Stefanie (member), a-16/a-17/
+--   a-23 skaters, a-05 Anna-Lena (coach helper hours).
+-- ----------------------------------------------------------------------------
+insert into app.duty_entries
+  (id, club_id, member_id, hours, activity_date, kind, note, approved)
+values
+  ('d0e00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000009', 3.00, current_date - 20, 'helper',
+   'Kuchenverkauf beim Kreispokal', true),
+  ('d0e00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000012', 2.50, current_date - 20, 'helper',
+   'Auf- und Abbau Kreispokal', true),
+  ('d0e00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000016', 4.00, current_date - 14, 'competition',
+   'Wettkampfbetreuung / Meldetisch', true),
+  ('d0e00000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000017', 2.00, current_date - 7, 'helper',
+   'Hallendienst Freitagstraining', false),
+  ('d0e00000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000023', 1.50, current_date - 3, 'other',
+   'Flyer verteilen fürs Sommerfest', false),
+  ('d0e00000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000005', 5.00, current_date - 10, 'training',
+   'Zusatztraining Wettkampfvorbereitung', true);
+
 commit;

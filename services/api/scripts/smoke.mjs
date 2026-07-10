@@ -335,6 +335,79 @@ console.log('[smoke] teams CRUD (is_club_admin) + roster');
   assertEq('...status deleted', del.json?.status, 'deleted');
 }
 
+console.log('[smoke] modules batch 3 (Trainingsplan / Pflichtstunden / Auswertung)');
+{
+  const KATRIN = 'a0000000-0000-4000-8000-000000000009'; // member a-09 (= SUB.parent)
+  const ANNALENA = 'a0000000-0000-4000-8000-000000000005'; // coach member a-05
+
+  // training_slots: read = member, write = trainer
+  const slots = await call('GET', `/training-slots?club_id=${CLUB}`, { as: t.parent });
+  assertEq('member reads the training plan -> 200', slots.status, 200);
+  if (Array.isArray(slots.json) && slots.json.length === 5) ok('training plan has the 5 seeded slots');
+  else fail('training plan length', `got ${slots.json?.length}`);
+
+  const memberSlot = await call('POST', '/training-slots', {
+    as: t.parent,
+    body: { club_id: CLUB, weekday: 3, starts_time: '17:00', ends_time: '18:00' },
+  });
+  assertEq('plain member CANNOT create a training slot -> 403', memberSlot.status, 403);
+
+  const coachSlot = await call('POST', '/training-slots', {
+    as: t.coach,
+    body: { club_id: CLUB, weekday: 3, starts_time: '17:00', ends_time: '18:30', note: 'Smoke-Slot' },
+  });
+  assertEq('coach creates a training slot -> 201', coachSlot.status, 201);
+
+  // duty_entries: self-service, approved trainer-only
+  const own = await call('POST', '/duty-entries', {
+    as: t.parent,
+    body: { club_id: CLUB, member_id: KATRIN, hours: 2, activity_date: '2026-07-01', kind: 'helper' },
+  });
+  assertEq('member records her OWN hours -> 201', own.status, 201);
+  assertEq('...created unapproved', own.json?.approved, false);
+
+  const forOther = await call('POST', '/duty-entries', {
+    as: t.parent,
+    body: { club_id: CLUB, member_id: ANNALENA, hours: 2, activity_date: '2026-07-01' },
+  });
+  assertEq('member records for ANOTHER member -> 403', forOther.status, 403);
+
+  const selfApprove = await call('POST', '/duty-entries', {
+    as: t.parent,
+    body: { club_id: CLUB, member_id: KATRIN, hours: 2, activity_date: '2026-07-01', approved: true },
+  });
+  assertEq('member self-APPROVING her hours -> 403', selfApprove.status, 403);
+
+  const coachSees = await call('GET', `/duty-entries?club_id=${CLUB}`, { as: t.coach });
+  assertEq('coach lists ALL duty entries -> 200', coachSees.status, 200);
+  if ((coachSees.json?.length ?? 0) >= 6) ok(`coach sees all duty entries (${coachSees.json.length})`);
+  else fail('coach duty-entries count', `got ${coachSees.json?.length}`);
+
+  const memberSees = await call('GET', `/duty-entries?club_id=${CLUB}`, { as: t.parent });
+  assertEq('member lists ONLY her own duty entries -> 200', memberSees.status, 200);
+  const foreign = (memberSees.json ?? []).filter((e) => e.member_id !== KATRIN);
+  assertEq('...no foreign entries leak to the member', foreign.length, 0);
+
+  // reports/summary: trainer/admin only
+  // NOTE: earlier smoke steps mutate this shared DB (create a member, issue an
+  // invoice), so assert the SHAPE and sane lower bounds, not exact seed totals.
+  const summary = await call('GET', `/reports/summary?club_id=${CLUB}`, { as: t.coach });
+  assertEq('coach reads the evaluation summary -> 200', summary.status, 200);
+  if ((summary.json?.members_total ?? 0) >= 24) ok(`summary.members_total >= 24 (${summary.json.members_total})`);
+  else fail('summary.members_total', `got ${summary.json?.members_total}`);
+  if ((summary.json?.open_invoices_total_cents ?? 0) >= 38100) ok(`summary.open_invoices_total_cents >= 38100 (${summary.json.open_invoices_total_cents})`);
+  else fail('summary.open_invoices_total_cents', `got ${summary.json?.open_invoices_total_cents}`);
+  if (Array.isArray(summary.json?.members_by_team) && summary.json.members_by_team.length === 3) ok('summary.members_by_team lists the 3 teams');
+  else fail('summary.members_by_team', `got ${JSON.stringify(summary.json?.members_by_team)}`);
+  if (summary.json?.medals && typeof summary.json.medals.gold === 'number') ok(`summary.medals tally present (gold=${summary.json.medals.gold})`);
+  else fail('summary.medals', `got ${JSON.stringify(summary.json?.medals)}`);
+  if (typeof summary.json?.attendance_rate === 'number') ok(`summary.attendance_rate present (${summary.json.attendance_rate})`);
+  else fail('summary.attendance_rate', `got ${summary.json?.attendance_rate}`);
+
+  const denied = await call('GET', `/reports/summary?club_id=${CLUB}`, { as: t.parent });
+  assertEq('plain member CANNOT read the evaluation summary -> 403', denied.status, 403);
+}
+
 console.log('[smoke] platform console (is_platform_admin ONLY)');
 {
   const stats = await call('GET', '/platform/stats', { as: t.platform });
