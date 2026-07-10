@@ -32,7 +32,10 @@ entitlementsRouter.openapi(
     const { clubId } = c.req.valid('param');
     requireClubMember(c.get('claims'), clubId);
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.entitlements
+      tx`select id, subject_type, subject_id, entitlement, source, product_id, valid_until,
+                metadata ->> 'tier'   as tier,
+                metadata ->> 'status' as status
+         from app.entitlements
          where subject_type = 'club' and subject_id = ${clubId}
          order by created_at desc`,
     );

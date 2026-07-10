@@ -4253,6 +4253,14 @@
                 "nullable": true
               }
             ]
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
           }
         },
         "required": [
@@ -4262,7 +4270,9 @@
           "entitlement",
           "source",
           "product_id",
-          "valid_until"
+          "valid_until",
+          "tier",
+          "status"
         ]
       },
       "Product": {

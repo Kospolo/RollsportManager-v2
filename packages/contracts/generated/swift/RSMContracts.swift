@@ -3819,6 +3819,8 @@ public struct Entitlement: Codable, Equatable, Sendable {
     /// Format: uuid
     public var productId: String?
     public var validUntil: String?
+    public var tier: String?
+    public var status: String?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -3828,6 +3830,8 @@ public struct Entitlement: Codable, Equatable, Sendable {
         case source
         case productId = "product_id"
         case validUntil = "valid_until"
+        case tier
+        case status
     }
 
     public init(
@@ -3837,7 +3841,9 @@ public struct Entitlement: Codable, Equatable, Sendable {
         entitlement: String,
         source: EntitlementSource,
         productId: String? = nil,
-        validUntil: String? = nil
+        validUntil: String? = nil,
+        tier: String? = nil,
+        status: String? = nil
     ) {
         self.id = id
         self.subjectType = subjectType
@@ -3846,6 +3852,8 @@ public struct Entitlement: Codable, Equatable, Sendable {
         self.source = source
         self.productId = productId
         self.validUntil = validUntil
+        self.tier = tier
+        self.status = status
     }
 }
 

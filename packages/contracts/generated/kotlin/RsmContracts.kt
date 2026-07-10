@@ -1214,7 +1214,9 @@ data class Entitlement(
     val entitlement: String,
     val source: EntitlementSource,
     @SerialName("product_id") val productId: String?,
-    @SerialName("valid_until") val validUntil: String?
+    @SerialName("valid_until") val validUntil: String?,
+    val tier: String?,
+    val status: String?
 )
 
 @Serializable

@@ -1,0 +1,173 @@
+import type { Dict } from "@/lib/i18n";
+
+/**
+ * Kolokalisiertes Dictionary des Dokumente-Screens (Dateien & Downloads, PRO).
+ * Regel: JEDE Ergänzung in beiden Sprachen, deutsche Strings mit echten
+ * Umlauten (ä/ö/ü/ß) — nie ae/oe/ue/ss.
+ */
+export const documentsDict = {
+  de: {
+    pageEyebrow: "Vereinsablage",
+    pageTitle: "Dokumente",
+    pageSub: "Dateien und Downloads für den ganzen Verein",
+    proBadge: "PRO",
+    upload: "Dokument hochladen",
+
+    filterLabel: "Nach Kategorie filtern",
+    filterAll: "Alle",
+
+    tableCaption: "Dokumente des Vereins",
+    colTitle: "Titel",
+    colCategory: "Kategorie",
+    colType: "Typ",
+    colSize: "Größe",
+    colUploaded: "Hochgeladen",
+    colActions: "Aktionen",
+    download: "Herunterladen",
+    downloadAria: "Dokument herunterladen: {title}",
+    delete: "Löschen",
+    deleteAria: "Dokument löschen: {title}",
+    uploadedBy: "von {name}",
+    unknownUploader: "Unbekannt",
+    footerCount: "{count} Dokumente",
+    footerCountOne: "1 Dokument",
+
+    emptyTitle: "Noch keine Dokumente",
+    emptyBodyTrainer:
+      "Lade das erste Dokument hoch — Satzung, Ordnungen oder Formulare stehen dann allen Mitgliedern zum Download bereit.",
+    emptyBodyMember:
+      "Sobald der Trainerstab Dateien hochlädt, erscheinen sie hier zum Download.",
+    emptyCta: "Erstes Dokument hochladen",
+    filteredEmptyTitle: "Keine Treffer",
+    filteredEmptyBody: "In dieser Kategorie liegt noch kein Dokument.",
+
+    loadErrorTitle: "Dokumente konnten nicht geladen werden",
+    loadErrorRetry: "Erneut versuchen",
+    niTitle: "Noch nicht angebunden",
+    niBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
+    noPermission: "Keine Berechtigung für diese Aktion",
+    downloadError: "Download fehlgeschlagen",
+
+    uploadEyebrow: "Neues Dokument",
+    uploadTitle: "Dokument hochladen",
+    fFile: "Datei",
+    fFileHint: "PDF, Office-Dokumente oder Bilder — bis 25 MB.",
+    fFileChoose: "Datei auswählen",
+    fFileChange: "Andere Datei wählen",
+    fFileEmpty: "Keine Datei ausgewählt",
+    fTitle: "Titel",
+    fTitlePh: "z. B. Vereinssatzung 2024",
+    fCategory: "Kategorie",
+    fCategoryPh: "z. B. Satzung, Finanzen, Organisation",
+    fCategoryHint: "Optional — gruppiert die Ablage. Standard: „Allgemein“.",
+    errFile: "Bitte wähle eine Datei aus.",
+    errTitle: "Bitte gib einen Titel an.",
+    errTooLarge: "Die Datei ist größer als 25 MB.",
+    errType: "Dieser Dateityp wird nicht unterstützt.",
+    submit: "Hochladen",
+    cancel: "Abbrechen",
+    uploadedToast: "Dokument „{title}“ ist hochgeladen",
+
+    deleteEyebrow: "Löschen bestätigen",
+    deleteTitle: "„{title}“ löschen?",
+    deleteBody:
+      "Das Dokument wird für alle Mitglieder aus der Ablage entfernt. Das lässt sich nicht rückgängig machen.",
+    deleteConfirm: "Endgültig löschen",
+    deletedToast: "Dokument gelöscht",
+
+    proEyebrow: "PRO-Funktion",
+    proTitle: "Dokumente sind eine PRO-Funktion",
+    proBody:
+      "Mit einem PRO- oder Premium-Paket stellt ihr Satzung, Ordnungen und Formulare zentral zum Download bereit — sicher und nur für angemeldete Mitglieder.",
+    proBullet1: "Zentrale Ablage für Satzung, Protokolle und Formulare",
+    proBullet2: "Download nur für angemeldete Mitglieder",
+    proBullet3: "Kategorien für eine aufgeräumte Struktur",
+    proCurrentTier: "Aktuelles Paket: {tier}",
+    proHint:
+      "Vereins-Administratoren können das Paket in der Verwaltung freischalten.",
+    tierFree: "Kostenlos",
+    tierPro: "PRO",
+    tierPremium: "Premium",
+  },
+  en: {
+    pageEyebrow: "Club storage",
+    pageTitle: "Documents",
+    pageSub: "Files and downloads for the whole club",
+    proBadge: "PRO",
+    upload: "Upload document",
+
+    filterLabel: "Filter by category",
+    filterAll: "All",
+
+    tableCaption: "Club documents",
+    colTitle: "Title",
+    colCategory: "Category",
+    colType: "Type",
+    colSize: "Size",
+    colUploaded: "Uploaded",
+    colActions: "Actions",
+    download: "Download",
+    downloadAria: "Download document: {title}",
+    delete: "Delete",
+    deleteAria: "Delete document: {title}",
+    uploadedBy: "by {name}",
+    unknownUploader: "Unknown",
+    footerCount: "{count} documents",
+    footerCountOne: "1 document",
+
+    emptyTitle: "No documents yet",
+    emptyBodyTrainer:
+      "Upload the first document — bylaws, rules or forms then become available to every member for download.",
+    emptyBodyMember: "As soon as a coach uploads files, they show up here to download.",
+    emptyCta: "Upload the first document",
+    filteredEmptyTitle: "No matches",
+    filteredEmptyBody: "There is no document in this category yet.",
+
+    loadErrorTitle: "Documents could not be loaded",
+    loadErrorRetry: "Try again",
+    niTitle: "Not connected yet",
+    niBody: "This area has no endpoint in api mode yet.",
+    noPermission: "No permission for this action",
+    downloadError: "Download failed",
+
+    uploadEyebrow: "New document",
+    uploadTitle: "Upload document",
+    fFile: "File",
+    fFileHint: "PDF, Office documents or images — up to 25 MB.",
+    fFileChoose: "Choose file",
+    fFileChange: "Choose another file",
+    fFileEmpty: "No file selected",
+    fTitle: "Title",
+    fTitlePh: "e.g. Club bylaws 2024",
+    fCategory: "Category",
+    fCategoryPh: "e.g. Bylaws, Finance, Organisation",
+    fCategoryHint: "Optional — groups the storage. Default: “General”.",
+    errFile: "Please choose a file.",
+    errTitle: "Please enter a title.",
+    errTooLarge: "The file is larger than 25 MB.",
+    errType: "This file type is not supported.",
+    submit: "Upload",
+    cancel: "Cancel",
+    uploadedToast: "Document “{title}” uploaded",
+
+    deleteEyebrow: "Confirm deletion",
+    deleteTitle: "Delete “{title}”?",
+    deleteBody:
+      "The document will be removed from storage for every member. This cannot be undone.",
+    deleteConfirm: "Delete permanently",
+    deletedToast: "Document deleted",
+
+    proEyebrow: "PRO feature",
+    proTitle: "Documents are a PRO feature",
+    proBody:
+      "With a PRO or Premium plan you provide bylaws, rules and forms centrally for download — secure and only for signed-in members.",
+    proBullet1: "Central storage for bylaws, minutes and forms",
+    proBullet2: "Download only for signed-in members",
+    proBullet3: "Categories for a tidy structure",
+    proCurrentTier: "Current plan: {tier}",
+    proHint: "Club administrators can unlock the plan in the administration area.",
+    tierFree: "Free",
+    tierPro: "PRO",
+    tierPremium: "Premium",
+  },
+} satisfies Dict;

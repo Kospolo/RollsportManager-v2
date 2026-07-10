@@ -15,9 +15,11 @@ export const mehrDict = {
     sectionAvailable: "Verfügbar",
     sectionSoon: "Bald verfügbar",
     soonSub: "Diese Bereiche bauen wir als Nächstes.",
+    soonEmpty: "Weitere Module folgen.",
 
     badgeNew: "Neu",
     badgeSoon: "Bald",
+    badgePro: "PRO",
 
     openTile: "{title} öffnen",
     soonAria: "{title} — bald verfügbar",
@@ -75,9 +77,11 @@ export const mehrDict = {
     sectionAvailable: "Available",
     sectionSoon: "Coming soon",
     soonSub: "These areas are what we are building next.",
+    soonEmpty: "More modules to follow.",
 
     badgeNew: "New",
     badgeSoon: "Soon",
+    badgePro: "PRO",
 
     openTile: "Open {title}",
     soonAria: "{title} — coming soon",

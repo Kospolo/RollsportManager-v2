@@ -7,6 +7,7 @@ import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
 import { moduleApiRepositoryBatch4 } from "./modules-batch4";
+import { moduleApiRepositoryBatch5 } from "./modules-batch5";
 import {
   mapAttendance,
   mapClub,
@@ -306,6 +307,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Chat, Check-in, überregionale Events (Batch 4) ---------- */
   ...moduleApiRepositoryBatch4,
+
+  /* ---------- Module: Galerie, Dokumente, Entitlement (Batch 5) ---------- */
+  ...moduleApiRepositoryBatch5,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

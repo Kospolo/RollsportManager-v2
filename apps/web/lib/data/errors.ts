@@ -28,6 +28,34 @@ export function isNotImplemented(error: unknown): error is NotImplementedError {
   return error instanceof NotImplementedError;
 }
 
+/**
+ * PRO-Gate: der Verein hat kein aktives Entitlement (Tier pro/premium). Die API
+ * antwortet auf Galerie/Dokumente/Upload mit HTTP 402 (detail-Prefix
+ * 'club_pro_required'); die Facade übersetzt das in diesen Fehlertyp, damit die
+ * Screens den Upgrade-Hinweis / das PRO-Badge zeigen statt eines generischen
+ * Fehlers. `feature` ist der betroffene Modulname (z. B. "Galerie").
+ */
+export class ClubProRequiredError extends Error {
+  readonly code = "club_pro_required" as const;
+  readonly feature: string;
+
+  constructor(feature: string) {
+    super(`PRO-Funktion nicht freigeschaltet: ${feature}`);
+    this.name = "ClubProRequiredError";
+    this.feature = feature;
+  }
+}
+
+/** 402 club_pro_required? — akzeptiert den eigenen Fehlertyp UND rohe ApiError. */
+export function isClubProRequired(error: unknown): boolean {
+  if (error instanceof ClubProRequiredError) return true;
+  return (
+    error instanceof ApiError &&
+    error.status === 402 &&
+    (error.problem?.detail ?? "").startsWith("club_pro_required")
+  );
+}
+
 /** 403? — für „Keine Berechtigung"-Toasts der Schreibpfade. */
 export function isForbidden(error: unknown): boolean {
   return error instanceof ApiError && error.status === 403;

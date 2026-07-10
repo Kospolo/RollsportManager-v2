@@ -25,6 +25,12 @@ export { dutyKindLabels, weekdayLabels } from "./types-batch3";
 export type * from "./types-batch4";
 export { chatChannelTypeLabels, checkinMethodLabels } from "./types-batch4";
 
+// Batch-5-Modul-Typen (Galerie, Dokumente, Entitlement/PRO-Gate) leben
+// ausgelagert in lib/types-batch5.ts. Die Label-Map galleryKindLabels ist ein
+// Wert und wird zusätzlich als Wert re-exportiert.
+export type * from "./types-batch5";
+export { galleryKindLabels } from "./types-batch5";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

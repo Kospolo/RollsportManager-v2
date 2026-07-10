@@ -68,12 +68,19 @@ export type {
   SendChatMessageInput,
   UpdateRegionalEventInput,
 } from "./inputs-batch4";
+export type {
+  Batch5Repository,
+  DocumentUploadMeta,
+  GalleryUploadMeta,
+} from "./inputs-batch5";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {
   ApiError,
+  ClubProRequiredError,
   NotImplementedError,
   errorMessage,
+  isClubProRequired,
   isForbidden,
   isNotImplemented,
 } from "./errors";

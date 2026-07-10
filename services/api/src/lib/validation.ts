@@ -448,6 +448,14 @@ export const entitlementSchema = z
     source: z.enum(['stripe', 'revenuecat', 'manual']),
     product_id: uuid.nullable(),
     valid_until: timestamp.nullable(),
+    /**
+     * License tier from metadata.tier ('basic'|'pro'|'premium'|…). The PRO
+     * gate (app.is_club_pro) keys off this; surfaced so the client can mirror
+     * the gate for the UI upgrade hint (the real gate stays server-side).
+     */
+    tier: z.string().nullable(),
+    /** Lifecycle from metadata.status ('active'|'trial'|'past_due'|…). */
+    status: z.string().nullable(),
   })
   .openapi('Entitlement');
 

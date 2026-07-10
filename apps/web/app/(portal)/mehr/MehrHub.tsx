@@ -17,9 +17,11 @@ import { mehrDict, type MehrKey } from "./i18n";
  * Zwei Abschnitte: „Verfügbar" verlinkt die gebauten (Termine, Mitglieder,
  * Küren, Wettkampf, Finanzen, Verwaltung) und die neuen Module (News, Notizen,
  * Übungen, Familie, Belegungsplan, Ausrüstung, Medaillen, Trainingsplan,
- * Pflichtstunden, Auswertung, Chat, Check-in, Überregionale Events — mit
- * „Neu"-Badge). „Bald verfügbar" listet die noch nicht gebauten Module
- * (Galerie, Dokumente) als dezente, nicht klickbare Kacheln mit „Bald"-Badge.
+ * Pflichtstunden, Auswertung, Chat, Check-in, Überregionale Events, Galerie und
+ * Dokumente — mit „Neu"-Badge). Galerie und Dokumente sind PRO-Funktionen und
+ * tragen zusätzlich ein „PRO"-Badge; das echte Entitlement-Gate bleibt
+ * serverseitig (402 club_pro_required). „Bald verfügbar" hält nur noch eine
+ * dezente „Weitere Module folgen"-Zeile, solange kein Modul mehr aussteht.
  *
  * Die Verwaltungs-Kachel erscheint nur für Vereins-Admins (analog zur Nav);
  * der echte Schutz bleibt serverseitig (RLS + API). Alle Lese-Bereiche sind
@@ -48,6 +50,8 @@ interface AvailableTile {
   descKey: MehrKey;
   /** neue Module bekommen den „Neu"-Badge */
   isNew?: boolean;
+  /** PRO-Funktion — trägt zusätzlich ein „PRO"-Badge (Gate bleibt serverseitig) */
+  isPro?: boolean;
   /** nur für Vereins-Admins (owner/admin/moderator) sichtbar */
   adminOnly?: boolean;
 }
@@ -74,6 +78,8 @@ const AVAILABLE: AvailableTile[] = [
   { key: "chat", href: "/chat", icon: { mehr: "chat" }, tone: "brand", titleKey: "chat", descKey: "chatDesc", isNew: true },
   { key: "checkin", href: "/checkin", icon: { mehr: "checkin" }, tone: "success", titleKey: "checkin", descKey: "checkinDesc", isNew: true },
   { key: "regevents", href: "/events", icon: { mehr: "regevents" }, tone: "warn", titleKey: "regevents", descKey: "regeventsDesc", isNew: true },
+  { key: "gallery", href: "/galerie", icon: { mehr: "gallery" }, tone: "info", titleKey: "gallery", descKey: "galleryDesc", isNew: true, isPro: true },
+  { key: "document", href: "/dokumente", icon: { mehr: "document" }, tone: "success", titleKey: "document", descKey: "documentDesc", isNew: true, isPro: true },
   { key: "events", href: "/termine", icon: { shell: "events" }, tone: "brand", titleKey: "events", descKey: "eventsDesc" },
   { key: "members", href: "/mitglieder", icon: { shell: "members" }, tone: "info", titleKey: "members", descKey: "membersDesc" },
   { key: "routines", href: "/kueren", icon: { shell: "routines" }, tone: "neutral", titleKey: "routines", descKey: "routinesDesc" },
@@ -82,11 +88,13 @@ const AVAILABLE: AvailableTile[] = [
   { key: "manage", href: "/verwaltung", icon: { shell: "shield" }, tone: "neutral", titleKey: "manage", descKey: "manageDesc", adminOnly: true },
 ];
 
-/** Noch nicht gebaute Module — Reihenfolge grob nach Referenz 3.1. */
-const SOON: SoonTile[] = [
-  { key: "gallery", icon: { mehr: "gallery" }, titleKey: "gallery", descKey: "galleryDesc" },
-  { key: "document", icon: { mehr: "document" }, titleKey: "document", descKey: "documentDesc" },
-];
+/**
+ * Noch nicht gebaute Module. Aktuell leer — Galerie und Dokumente sind live
+ * (siehe AVAILABLE). Kommen weitere Module hinzu, erscheinen sie hier wieder als
+ * dezente, nicht klickbare Kacheln mit „Bald"-Badge; solange leer, zeigt der
+ * Abschnitt nur eine „Weitere Module folgen"-Zeile.
+ */
+const SOON: SoonTile[] = [];
 
 function renderIcon(icon: TileIcon): ReactNode {
   return "shell" in icon ? (
@@ -138,6 +146,7 @@ export function MehrHub() {
                       {title}
                     </b>
                     {tile.isNew && <Badge tone="brand">{t("badgeNew")}</Badge>}
+                    {tile.isPro && <Badge tone="warn">{t("badgePro")}</Badge>}
                   </span>
                   <span className="text-[13px] leading-snug text-ink-soft">{t(tile.descKey)}</span>
                 </span>
@@ -152,31 +161,41 @@ export function MehrHub() {
       </section>
 
       <section className="grid gap-3">
-        <SectionHeader level={2} title={t("sectionSoon")} sub={t("soonSub")} />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {SOON.map((tile) => {
-            const title = t(tile.titleKey);
-            return (
-              <div
-                key={tile.key}
-                aria-disabled="true"
-                aria-label={t("soonAria", { title })}
-                className="flex cursor-default items-center gap-4 rounded-xl border border-dashed border-line bg-surface p-5 opacity-70"
-              >
-                <TileGlyph tone="neutral">{renderIcon(tile.icon)}</TileGlyph>
-                <span className="grid min-w-0 gap-0.5">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <b className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink-soft">
-                      {title}
-                    </b>
-                    <Badge tone="neutral">{t("badgeSoon")}</Badge>
+        <SectionHeader
+          level={2}
+          title={t("sectionSoon")}
+          sub={SOON.length > 0 ? t("soonSub") : undefined}
+        />
+        {SOON.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {SOON.map((tile) => {
+              const title = t(tile.titleKey);
+              return (
+                <div
+                  key={tile.key}
+                  aria-disabled="true"
+                  aria-label={t("soonAria", { title })}
+                  className="flex cursor-default items-center gap-4 rounded-xl border border-dashed border-line bg-surface p-5 opacity-70"
+                >
+                  <TileGlyph tone="neutral">{renderIcon(tile.icon)}</TileGlyph>
+                  <span className="grid min-w-0 gap-0.5">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <b className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink-soft">
+                        {title}
+                      </b>
+                      <Badge tone="neutral">{t("badgeSoon")}</Badge>
+                    </span>
+                    <span className="text-[13px] leading-snug text-ink-faint">{t(tile.descKey)}</span>
                   </span>
-                  <span className="text-[13px] leading-snug text-ink-faint">{t(tile.descKey)}</span>
-                </span>
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="rounded-xl border border-dashed border-line bg-surface px-5 py-4 text-[13px] text-ink-faint">
+            {t("soonEmpty")}
+          </p>
+        )}
       </section>
     </div>
   );

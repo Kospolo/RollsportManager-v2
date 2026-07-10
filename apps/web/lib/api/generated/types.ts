@@ -961,6 +961,8 @@ export interface Entitlement {
   "source": "stripe" | "revenuecat" | "manual";
   "product_id": string | null;
   "valid_until": string | null;
+  "tier": string | null;
+  "status": string | null;
 }
 
 export interface Product {

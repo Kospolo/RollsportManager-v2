@@ -63,6 +63,7 @@ import type {
   UpdateTrainingSlotInput,
 } from "./inputs-batch3";
 import type { Batch4Repository } from "./inputs-batch4";
+import type { Batch5Repository } from "./inputs-batch5";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -178,7 +179,7 @@ export interface UpdateClubSettingsInput {
   settings?: Record<string, unknown>;
 }
 
-export interface DataRepository extends Batch4Repository {
+export interface DataRepository extends Batch4Repository, Batch5Repository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
   getMembers(): Promise<Member[]>;
@@ -364,6 +365,9 @@ export interface DataRepository extends Batch4Repository {
 
   /* ---------- Module: Chat, Check-in, überregionale Events (Batch 4) ---------- */
   // Signaturen in ./inputs-batch4 (Batch4Repository) — DataRepository erbt sie.
+
+  /* ---------- Module: Galerie, Dokumente, Entitlement/PRO-Gate (Batch 5) ---------- */
+  // Signaturen in ./inputs-batch5 (Batch5Repository) — DataRepository erbt sie.
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */
