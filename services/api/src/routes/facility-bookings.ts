@@ -2,12 +2,13 @@
 // routes/facility-bookings.ts - facility reservations ("Belegungsplan",
 // v1 bookings.html).
 //
-// Read:   every club member (is_club_member).
-// Insert: coaching staff for anyone, OR a plain member FOR THEMSELVES
-//         (booked_by_member_id = the caller's own club_members row).
+// Read:   every club member (is_club_member) — the plan stays visible to all.
+// Insert: coaching staff ONLY (is_club_trainer). Privacy-Härtung (0021): plain
+//         members may no longer create bookings (they previously could book for
+//         themselves).
 // Edit/Delete (soft): the creator OR coaching staff.
-// The API guard mirrors the RLS policy (app.is_own_member / is_club_trainer,
-// migration 0009) - RLS stays the second line of defense (Blueprint risk #16).
+// The API guard mirrors the RLS policy (is_club_trainer, migration 0021) - RLS
+// stays the second line of defense (Blueprint risk #16).
 // No DB overlap constraint: the App surfaces conflicts (task spec).
 // ============================================================================
 
@@ -23,7 +24,7 @@ import {
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
-import { COACH_ROLES, hasClubRole, requireClubMember } from '../lib/guards.js';
+import { COACH_ROLES, hasClubRole, requireClubMember, requireClubRole } from '../lib/guards.js';
 import { isOwnMember } from '../lib/ownership.js';
 
 export const facilityBookingsRouter = createRouter();
@@ -77,7 +78,7 @@ facilityBookingsRouter.openapi(
     method: 'post',
     path: '/facility-bookings',
     tags: ['facilities'],
-    summary: 'Create a booking (staff for anyone, or a member for themselves)',
+    summary: 'Create a booking (coaching staff only, is_club_trainer)',
     security: [{ bearerAuth: [] }],
     request: {
       body: { content: { 'application/json': { schema: facilityBookingCreateSchema } }, required: true },
@@ -90,13 +91,12 @@ facilityBookingsRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    requireClubMember(claims, body.club_id);
-    const isTrainer = hasClubRole(claims, body.club_id, COACH_ROLES);
+    // Privacy-Härtung (0021): only coaching staff (is_club_trainer) may create a
+    // booking. Plain members can no longer book (not even for themselves) — the
+    // RLS INSERT policy (migration 0021) enforces the same as second line.
+    requireClubRole(claims, body.club_id, COACH_ROLES);
 
     const created = await withUser(claims, async (tx) => {
-      if (!isTrainer && !(await isOwnMember(tx, claims, body.booked_by_member_id))) {
-        throw problem(403, 'Forbidden', 'Members may only book for themselves; booking for others needs a coaching role');
-      }
       const rows = await tx`
         insert into app.facility_bookings
           (facility_id, club_id, booked_by_member_id, team_id, title, starts_at, ends_at, status)

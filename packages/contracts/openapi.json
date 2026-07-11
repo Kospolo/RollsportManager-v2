@@ -8173,7 +8173,8 @@
         "tags": [
           "members"
         ],
-        "summary": "List the club roster",
+        "summary": "List the club roster (sensitive columns redacted for non-managers)",
+        "description": "Every club member sees the name list. For viewers WITHOUT can_manage_members (plain member / guest_coach) the sensitive columns are nulled: birth_date, email, valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) and platform admins get the full rows.",
         "security": [
           {
             "bearerAuth": []
@@ -14134,7 +14135,7 @@
         "tags": [
           "facilities"
         ],
-        "summary": "Create a booking (staff for anyone, or a member for themselves)",
+        "summary": "Create a booking (coaching staff only, is_club_trainer)",
         "security": [
           {
             "bearerAuth": []
@@ -18385,7 +18386,7 @@
         "tags": [
           "lockers"
         ],
-        "summary": "Create a locker (is_club_admin)",
+        "summary": "Create a locker (owner/admin/treasurer)",
         "security": [
           {
             "bearerAuth": []
@@ -18460,7 +18461,7 @@
         "tags": [
           "lockers"
         ],
-        "summary": "Edit a locker's master data (is_club_admin)",
+        "summary": "Edit a locker master data (owner/admin/treasurer)",
         "security": [
           {
             "bearerAuth": []
@@ -18544,7 +18545,7 @@
         "tags": [
           "lockers"
         ],
-        "summary": "Soft-delete a locker (is_club_admin)",
+        "summary": "Soft-delete a locker (owner/admin/treasurer)",
         "security": [
           {
             "bearerAuth": []
@@ -18620,7 +18621,7 @@
         "tags": [
           "lockers"
         ],
-        "summary": "Assign a locker to a member (is_club_trainer)",
+        "summary": "Assign a locker to a member (owner/admin/treasurer)",
         "security": [
           {
             "bearerAuth": []
@@ -18706,7 +18707,7 @@
         "tags": [
           "lockers"
         ],
-        "summary": "Release a locker (is_club_trainer) - status back to free",
+        "summary": "Release a locker (owner/admin/treasurer)",
         "security": [
           {
             "bearerAuth": []

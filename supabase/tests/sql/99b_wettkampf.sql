@@ -44,16 +44,23 @@ begin
   perform testkit.is_eq('routine_shares: member sees all 4',
     (select count(*) from app.routine_shares), 4);
 
-  -- standings source: the Kreispokal scores are member-visible (read = member)
-  perform testkit.is_eq('standings: member sees the 3 Kreispokal scores',
+  -- Privacy-Härtung (0021): routine_scores follow the Kür-visibility. Katrin
+  -- (a-09) skatet nur d-02 -> sie sieht NUR ihren eigenen Kreispokal-Score,
+  -- nicht die der fremden Küren d-01 / d-03.
+  perform testkit.is_eq('standings: member sees ONLY her own Kreispokal score (1)',
     (select count(*) from app.routine_scores
-      where competition_id = 'c0000000-0000-4000-8000-000000000002'), 3);
+      where competition_id = 'c0000000-0000-4000-8000-000000000002'), 1);
+  perform testkit.is_eq('standings: member does NOT see a foreign Kür score (d-01)',
+    (select count(*) from app.routine_scores
+      where competition_id = 'c0000000-0000-4000-8000-000000000002'
+        and routine_id = 'd0000000-0000-4000-8000-000000000001'), 0);
+  -- competition_entries stay member-visible (not restricted by 0021)
   perform testkit.is_eq('standings: member sees the 3 Kreispokal entries',
     (select count(*) from app.competition_entries
       where competition_id = 'c0000000-0000-4000-8000-000000000002'), 3);
 
-  -- placement is now readable (migration 0018 column)
-  perform testkit.is_eq('placement: member reads the winning placement (1)',
+  -- her own placement is readable (migration 0018 column; d-02 is her Kür)
+  perform testkit.is_eq('placement: member reads her own winning placement (1)',
     (select placement from app.routine_scores
       where competition_id = 'c0000000-0000-4000-8000-000000000002'
         and routine_id = 'd0000000-0000-4000-8000-000000000002'), 1);

@@ -3,10 +3,12 @@
 --
 --   * facilities / equipment / achievements — read = every club member;
 --       write = is_club_trainer only (coach yes, treasurer/plain member no).
---   * facility_bookings / equipment_reservations — read = member; a plain
---       member may INSERT/EDIT only FOR THEMSELVES (booked_by/reserved_by =
---       own club_members row), never for another member; coaching staff may
---       act for anyone and edit foreign rows.
+--   * facility_bookings — read = member; INSERT = is_club_trainer ONLY
+--       (Privacy-Härtung 0021: plain members / treasurer may no longer book,
+--       not even for themselves). Edit/delete = creator OR trainer.
+--   * equipment_reservations — read = member; a plain member may INSERT/EDIT
+--       only FOR THEMSELVES (reserved_by = own club_members row); coaching
+--       staff may act for anyone and edit foreign rows. (Unchanged.)
 --
 -- Seed baseline for club A: 3 facilities, 4 equipment, 4 bookings, 2
 -- reservations, 6 achievements. Member Katrin = profile 90..09 / member a-09;
@@ -43,15 +45,16 @@ begin
        values ('c1ab0000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000009', 'Selbst-Medaille', current_date)$q$, '42501');
 
-  -- self-service booking: member MAY book for her OWN membership (a-09)
-  perform testkit.succeeds('bookings: member MAY book for herself',
+  -- Privacy-Härtung (0021): a plain member may NO LONGER book — not even for
+  -- herself (insert = is_club_trainer). Booking stays a coaching task.
+  perform testkit.throws('bookings: member MAY NOT book (not a trainer, 0021)',
     $q$insert into app.facility_bookings
          (facility_id, club_id, booked_by_member_id, title, starts_at, ends_at)
        values ('fac00000-0000-4000-8000-000000000001',
                'c1ab0000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000009', 'Eigenbuchung',
-               now() + interval '1 day', now() + interval '1 day 1 hour')$q$);
-  -- but NOT for someone else (booked_by = coach a-01) — with-check denies it
+               now() + interval '1 day', now() + interval '1 day 1 hour')$q$, '42501');
+  -- ... and of course NOT for someone else either (booked_by = coach a-01)
   perform testkit.throws('bookings: member MAY NOT book for another member',
     $q$insert into app.facility_bookings
          (facility_id, club_id, booked_by_member_id, title, starts_at, ends_at)
@@ -159,14 +162,15 @@ begin
        values ('c1ab0000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000016', 'Kasse', current_date)$q$, '42501');
 
-  -- but a treasurer is still a member -> self-service booking works (a-03)
-  perform testkit.succeeds('bookings: treasurer MAY book for herself (is a member)',
+  -- Privacy-Härtung (0021): a treasurer is a member but NOT a trainer -> may no
+  -- longer create a booking (booking = coaching task, insert = is_club_trainer).
+  perform testkit.throws('bookings: treasurer MAY NOT book (not a trainer, 0021)',
     $q$insert into app.facility_bookings
          (facility_id, club_id, booked_by_member_id, title, starts_at, ends_at)
        values ('fac00000-0000-4000-8000-000000000002',
                'c1ab0000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000003', 'Kassensitzung',
-               now() + interval '5 day', now() + interval '5 day 2 hour')$q$);
+               now() + interval '5 day', now() + interval '5 day 2 hour')$q$, '42501');
 end;
 $$;
 rollback;

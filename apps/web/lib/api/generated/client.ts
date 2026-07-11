@@ -130,7 +130,8 @@ export class ApiClient {
   }
 
   /**
-   * List the club roster
+   * List the club roster (sensitive columns redacted for non-managers)
+   * Every club member sees the name list. For viewers WITHOUT can_manage_members (plain member / guest_coach) the sensitive columns are nulled: birth_date, email, valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) and platform admins get the full rows.
    * 
    * `GET /clubs/{clubId}/members`
    */
@@ -809,7 +810,7 @@ export class ApiClient {
   }
 
   /**
-   * Create a booking (staff for anyone, or a member for themselves)
+   * Create a booking (coaching staff only, is_club_trainer)
    * 
    * `POST /facility-bookings`
    */
@@ -1287,7 +1288,7 @@ export class ApiClient {
   }
 
   /**
-   * Create a locker (is_club_admin)
+   * Create a locker (owner/admin/treasurer)
    * 
    * `POST /lockers`
    */
@@ -1296,7 +1297,7 @@ export class ApiClient {
   }
 
   /**
-   * Edit a locker's master data (is_club_admin)
+   * Edit a locker master data (owner/admin/treasurer)
    * 
    * `PATCH /lockers/{lockerId}`
    */
@@ -1305,7 +1306,7 @@ export class ApiClient {
   }
 
   /**
-   * Soft-delete a locker (is_club_admin)
+   * Soft-delete a locker (owner/admin/treasurer)
    * 
    * `DELETE /lockers/{lockerId}`
    */
@@ -1314,7 +1315,7 @@ export class ApiClient {
   }
 
   /**
-   * Assign a locker to a member (is_club_trainer)
+   * Assign a locker to a member (owner/admin/treasurer)
    * 
    * `PATCH /lockers/{lockerId}/assign`
    */
@@ -1323,7 +1324,7 @@ export class ApiClient {
   }
 
   /**
-   * Release a locker (is_club_trainer) - status back to free
+   * Release a locker (owner/admin/treasurer)
    * 
    * `PATCH /lockers/{lockerId}/release`
    */

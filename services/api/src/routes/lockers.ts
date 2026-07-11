@@ -1,15 +1,15 @@
 // ============================================================================
 // routes/lockers.ts - "Schließfächer" (v1 schliessfaecher.html).
 //
-// Read: every club member (is_club_member). Master data (create/edit/delete a
-// locker): is_club_admin. Assigning + releasing (PATCH .../assign, .../release)
-// is also is_club_trainer - a coach may hand a box to a skater without being a
-// club admin (Referenz 1.3). The DB backs this: the lockers UPDATE policy
-// admits is_club_trainer, and the protect_locker trigger (migration 0017) caps
-// a non-admin trainer to status + assigned_member_id only.
+// Privacy-Härtung (0021): a member SEES only their OWN locker (RLS), and only
+// owner/admin/treasurer may see the whole wall or MANAGE lockers. Moderator and
+// coach can neither see nor manage lockers. Managing = create/edit/delete AND
+// assign/release, all gated to LOCKER_MANAGE_ROLES (owner/admin/treasurer) at
+// the API layer; the DB backs this with the lockers RLS policies + the
+// protect_locker trigger (migration 0021).
 //
 // status enum: free / assigned / broken. assign -> status='assigned' + member,
-// release -> status='free' + null. Deletes are SOFT (deleted_at, admin-only).
+// release -> status='free' + null. Deletes are SOFT (deleted_at).
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
@@ -25,7 +25,7 @@ import {
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
-import { ADMIN_ROLES, COACH_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { LOCKER_MANAGE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
 
 export const lockersRouter = createRouter();
 
@@ -81,7 +81,7 @@ lockersRouter.openapi(
     method: 'post',
     path: '/lockers',
     tags: ['lockers'],
-    summary: 'Create a locker (is_club_admin)',
+    summary: 'Create a locker (owner/admin/treasurer)',
     security: [{ bearerAuth: [] }],
     request: {
       body: { content: { 'application/json': { schema: lockerCreateSchema } }, required: true },
@@ -94,7 +94,7 @@ lockersRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    requireClubRole(claims, body.club_id, ADMIN_ROLES);
+    requireClubRole(claims, body.club_id, LOCKER_MANAGE_ROLES);
 
     const created = await withUser(claims, async (tx) => {
       if (body.assigned_member_id) await assertClubMemberId(tx, body.club_id, body.assigned_member_id);
@@ -114,7 +114,7 @@ lockersRouter.openapi(
     method: 'patch',
     path: '/lockers/{lockerId}',
     tags: ['lockers'],
-    summary: 'Edit a locker\'s master data (is_club_admin)',
+    summary: 'Edit a locker master data (owner/admin/treasurer)',
     security: [{ bearerAuth: [] }],
     request: {
       params: lockerIdParam,
@@ -132,7 +132,7 @@ lockersRouter.openapi(
 
     const updated = await withUser(claims, async (tx) => {
       const locker = await loadLocker(tx, lockerId);
-      requireClubRole(claims, locker.club_id, ADMIN_ROLES);
+      requireClubRole(claims, locker.club_id, LOCKER_MANAGE_ROLES);
       if (body.assigned_member_id) await assertClubMemberId(tx, locker.club_id, body.assigned_member_id);
       const rows = await tx`
         update app.lockers set ${tx(body)}
@@ -150,7 +150,7 @@ lockersRouter.openapi(
     method: 'delete',
     path: '/lockers/{lockerId}',
     tags: ['lockers'],
-    summary: 'Soft-delete a locker (is_club_admin)',
+    summary: 'Soft-delete a locker (owner/admin/treasurer)',
     security: [{ bearerAuth: [] }],
     request: { params: lockerIdParam },
     responses: {
@@ -164,7 +164,7 @@ lockersRouter.openapi(
 
     await withUser(claims, async (tx) => {
       const locker = await loadLocker(tx, lockerId);
-      requireClubRole(claims, locker.club_id, ADMIN_ROLES);
+      requireClubRole(claims, locker.club_id, LOCKER_MANAGE_ROLES);
       const rows = await tx`
         update app.lockers set deleted_at = now()
         where id = ${lockerId} and deleted_at is null
@@ -180,7 +180,7 @@ lockersRouter.openapi(
     method: 'patch',
     path: '/lockers/{lockerId}/assign',
     tags: ['lockers'],
-    summary: 'Assign a locker to a member (is_club_trainer)',
+    summary: 'Assign a locker to a member (owner/admin/treasurer)',
     security: [{ bearerAuth: [] }],
     request: {
       params: lockerIdParam,
@@ -198,7 +198,7 @@ lockersRouter.openapi(
 
     const updated = await withUser(claims, async (tx) => {
       const locker = await loadLocker(tx, lockerId);
-      requireClubRole(claims, locker.club_id, COACH_ROLES);
+      requireClubRole(claims, locker.club_id, LOCKER_MANAGE_ROLES);
       await assertClubMemberId(tx, locker.club_id, member_id);
       const rows = await tx`
         update app.lockers
@@ -217,7 +217,7 @@ lockersRouter.openapi(
     method: 'patch',
     path: '/lockers/{lockerId}/release',
     tags: ['lockers'],
-    summary: 'Release a locker (is_club_trainer) - status back to free',
+    summary: 'Release a locker (owner/admin/treasurer)',
     security: [{ bearerAuth: [] }],
     request: { params: lockerIdParam },
     responses: {
@@ -231,7 +231,7 @@ lockersRouter.openapi(
 
     const updated = await withUser(claims, async (tx) => {
       const locker = await loadLocker(tx, lockerId);
-      requireClubRole(claims, locker.club_id, COACH_ROLES);
+      requireClubRole(claims, locker.club_id, LOCKER_MANAGE_ROLES);
       const rows = await tx`
         update app.lockers
         set status = 'free', assigned_member_id = null

@@ -29,10 +29,12 @@ import {
   MANAGE_MEMBER_ROLES,
   canAssignRole,
   checkRoleChange,
+  hasClubRole,
+  isPlatformAdmin,
   requireClubMember,
   requireClubRole,
 } from '../lib/guards.js';
-import type { ClubRole } from '../middleware/auth.js';
+import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 
 export const membersRouter = createRouter();
 
@@ -45,6 +47,38 @@ const memberParams = z.object({
 /** Add the derived avatar_url (from avatar_key) to a club_members row. */
 function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url: string | null } {
   return { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) };
+}
+
+/**
+ * Roster columns only visible to privileged viewers (can_manage_members or a
+ * platform admin). Non-privileged viewers (plain member / guest_coach) get the
+ * unkritischen Felder only: id/first_name/last_name/team_ids/role/status.
+ * NO birth_date, email, valid_until, profile_id or joined_on — and never any
+ * payment/Beitrags-Ampel (which is not part of this row at all).
+ */
+const SENSITIVE_MEMBER_FIELDS = [
+  'birth_date',
+  'email',
+  'valid_until',
+  'profile_id',
+  'joined_on',
+] as const;
+
+/** True when the viewer may see the full roster (finance/PII columns included). */
+export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
+  return isPlatformAdmin(claims) || hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
+}
+
+/**
+ * Null out the sensitive columns of a roster row for a non-privileged viewer.
+ * The keys stay present (memberSchema requires them, nullable) so the response
+ * shape is unchanged — no contract break, just redacted values.
+ */
+export function redactMemberForViewer<T extends Record<string, unknown>>(row: T, privileged: boolean): T {
+  if (privileged) return row;
+  const out: Record<string, unknown> = { ...row };
+  for (const field of SENSITIVE_MEMBER_FIELDS) out[field] = null;
+  return out as T;
 }
 
 /** team_ids of one member (app.team_members, soft-deleted excluded). */
@@ -61,7 +95,12 @@ membersRouter.openapi(
     method: 'get',
     path: '/clubs/{clubId}/members',
     tags: ['members'],
-    summary: 'List the club roster',
+    summary: 'List the club roster (sensitive columns redacted for non-managers)',
+    description:
+      'Every club member sees the name list. For viewers WITHOUT can_manage_members ' +
+      '(plain member / guest_coach) the sensitive columns are nulled: birth_date, email, ' +
+      'valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) ' +
+      'and platform admins get the full rows.',
     security: [{ bearerAuth: [] }],
     request: { params: clubIdParam },
     responses: {
@@ -71,8 +110,10 @@ membersRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    requireClubMember(c.get('claims'), clubId);
-    const rows = await withUser(c.get('claims'), (tx) =>
+    const claims = c.get('claims');
+    requireClubMember(claims, clubId);
+    const privileged = maySeeFullRoster(claims, clubId);
+    const rows = await withUser(claims, (tx) =>
       tx`select m.*,
            coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
                      from app.team_members tm
@@ -82,7 +123,8 @@ membersRouter.openapi(
          where m.club_id = ${clubId} and m.deleted_at is null
          order by m.last_name, m.first_name`,
     );
-    return c.json(z.array(memberSchema).parse(rows.map(withAvatar)), 200);
+    const mapped = rows.map((row) => redactMemberForViewer(withAvatar(row), privileged));
+    return c.json(z.array(memberSchema).parse(mapped), 200);
   },
 );
 

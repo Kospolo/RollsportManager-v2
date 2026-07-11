@@ -6,12 +6,12 @@
 --                          treasurer reads but cannot manage.
 --   * department_members — read = member; assign/detach = is_club_trainer
 --                          (coach yes; treasurer & plain member no).
---   * lockers            — read = member; master data (create/edit/delete) =
---                          is_club_admin; assign/release (status +
---                          assigned_member_id) also is_club_trainer. A non-admin
---                          coach is capped to assign/release by protect_locker
---                          (42501 on label/note/delete); a plain member cannot
---                          write at all (RLS filters the UPDATE to 0 rows).
+--   * lockers            — Privacy-Härtung (0021): SELECT = owner/admin/
+--                          treasurer OR platform-admin OR the caller's OWN box
+--                          (assigned_member_id = own club_member). A plain
+--                          member sees ONLY her own locker; moderator/coach see
+--                          NONE. Managing (create/edit/delete/assign/release) =
+--                          owner/admin/treasurer only.
 --   * anniversaries source — the derived /reports/anniversaries reads only the
 --                          club roster (joined_on/birth_date); a member may read
 --                          it, a foreign-club user sees 0.
@@ -34,7 +34,17 @@ begin
   perform testkit.is_eq('departments: member sees all 3', (select count(*) from app.departments), 3);
   perform testkit.is_eq('department_members: member sees all 15',
     (select count(*) from app.department_members), 15);
-  perform testkit.is_eq('lockers: member sees all 8', (select count(*) from app.lockers), 8);
+  -- Privacy-Härtung (0021): a plain member sees ONLY her own locker (Katrin a-09
+  -- holds Fach 01), never any of the other 7.
+  perform testkit.is_eq('lockers: member sees ONLY her own locker (1)',
+    (select count(*) from app.lockers), 1);
+  perform testkit.is_eq('lockers: member sees exactly her assigned Fach 01',
+    (select count(*) from app.lockers
+      where id = 'e0c00000-0000-4000-8000-000000000001'
+        and assigned_member_id = 'a0000000-0000-4000-8000-000000000009'), 1);
+  perform testkit.is_eq('lockers: member does NOT see a foreign locker (Fach 02)',
+    (select count(*) from app.lockers
+      where id = 'e0c00000-0000-4000-8000-000000000002'), 0);
 
   -- member cannot create a department (not is_club_admin)
   perform testkit.throws('departments: member MAY NOT create (not admin)',
@@ -46,13 +56,14 @@ begin
        values ('c1ab0000-0000-4000-8000-000000000001',
                'd0000000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000019')$q$, '42501');
-  -- member cannot create a locker (not admin)
-  perform testkit.throws('lockers: member MAY NOT create (not admin)',
+  -- member cannot create a locker (not owner/admin/treasurer)
+  perform testkit.throws('lockers: member MAY NOT create (not owner/admin/treasurer)',
     $q$insert into app.lockers (club_id, label) values ('c1ab0000-0000-4000-8000-000000000001', 'X')$q$, '42501');
-  -- member update is silently filtered by RLS (not is_club_trainer -> 0 rows)
-  perform testkit.affects('lockers: member update filtered by RLS (0 rows)',
+  -- member may not even update her OWN locker (manage = owner/admin/treasurer;
+  -- RLS filters the UPDATE to 0 rows)
+  perform testkit.affects('lockers: member cannot update her own locker (0 rows)',
     $q$update app.lockers set status = 'broken'
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, 0);
+       where id = 'e0c00000-0000-4000-8000-000000000001'$q$, 0);
 end;
 $$;
 rollback;
@@ -81,10 +92,16 @@ begin
        values ('c1ab0000-0000-4000-8000-000000000001',
                'd0000000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000019')$q$, '42501');
-  -- treasurer is not trainer -> locker assign filtered by RLS (0 rows)
-  perform testkit.affects('lockers: treasurer assign filtered by RLS (0 rows)',
+  -- Privacy-Härtung (0021): the treasurer now MANAGES lockers (owner/admin/
+  -- treasurer) -> may assign a free locker, and may edit master data.
+  perform testkit.succeeds('lockers: treasurer MAY assign a free locker (0021)',
     $q$update app.lockers set status = 'assigned', assigned_member_id = 'a0000000-0000-4000-8000-000000000009'
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, 0);
+       where id = 'e0c00000-0000-4000-8000-000000000003'$q$);
+  perform testkit.succeeds('lockers: treasurer MAY create a locker (0021)',
+    $q$insert into app.lockers (club_id, label) values ('c1ab0000-0000-4000-8000-000000000001', 'Kassenfach')$q$);
+  perform testkit.succeeds('lockers: treasurer MAY rename a locker (master data, 0021)',
+    $q$update app.lockers set label = 'Fach 03b'
+       where id = 'e0c00000-0000-4000-8000-000000000003'$q$);
 end;
 $$;
 rollback;
@@ -113,28 +130,16 @@ begin
                'd0000000-0000-4000-8000-000000000001',
                'a0000000-0000-4000-8000-000000000019')$q$);
 
-  -- locker master data stays admin-only
-  perform testkit.throws('lockers: coach MAY NOT create (not admin)',
+  -- Privacy-Härtung (0021): a coach neither SEES nor MANAGES lockers at all.
+  -- Sandra (a-01) holds no locker herself -> the whole wall is invisible to her.
+  perform testkit.is_eq('lockers: coach sees 0 lockers (0021)',
+    (select count(*) from app.lockers), 0);
+  perform testkit.throws('lockers: coach MAY NOT create (0021)',
     $q$insert into app.lockers (club_id, label) values ('c1ab0000-0000-4000-8000-000000000001', 'Neu')$q$, '42501');
-
-  -- ... but a coach MAY assign + release (status + assigned_member_id only)
-  perform testkit.succeeds('lockers: coach MAY assign a free locker',
+  -- coach assign is filtered by RLS (not owner/admin/treasurer -> 0 rows)
+  perform testkit.affects('lockers: coach assign filtered by RLS (0 rows, 0021)',
     $q$update app.lockers set status = 'assigned', assigned_member_id = 'a0000000-0000-4000-8000-000000000019'
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$);
-  perform testkit.succeeds('lockers: coach MAY release a locker',
-    $q$update app.lockers set status = 'free', assigned_member_id = null
-       where id = 'e0c00000-0000-4000-8000-000000000001'$q$);
-
-  -- protect_locker: a non-admin trainer may NOT touch label/note or soft-delete
-  perform testkit.throws('lockers: coach MAY NOT rename a locker (protect_locker)',
-    $q$update app.lockers set label = 'Umbenannt'
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, '42501');
-  perform testkit.throws('lockers: coach MAY NOT edit the note (protect_locker)',
-    $q$update app.lockers set note = 'x'
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, '42501');
-  perform testkit.throws('lockers: coach MAY NOT soft-delete a locker (protect_locker)',
-    $q$update app.lockers set deleted_at = now()
-       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, '42501');
+       where id = 'e0c00000-0000-4000-8000-000000000003'$q$, 0);
 end;
 $$;
 rollback;
@@ -190,8 +195,12 @@ begin
   perform testkit.succeeds('departments: moderator MAY create (counts as admin)',
     $q$insert into app.departments (club_id, name)
        values ('c1ab0000-0000-4000-8000-000000000001', 'Moderation')$q$);
-  perform testkit.succeeds('lockers: moderator MAY create (counts as admin)',
-    $q$insert into app.lockers (club_id, label) values ('c1ab0000-0000-4000-8000-000000000001', 'Fach 10')$q$);
+  -- Privacy-Härtung (0021): lockers are owner/admin/treasurer only — a moderator
+  -- neither sees nor manages them.
+  perform testkit.is_eq('lockers: moderator sees 0 lockers (0021)',
+    (select count(*) from app.lockers), 0);
+  perform testkit.throws('lockers: moderator MAY NOT create (0021)',
+    $q$insert into app.lockers (club_id, label) values ('c1ab0000-0000-4000-8000-000000000001', 'Fach 10')$q$, '42501');
 end;
 $$;
 rollback;

@@ -25,6 +25,13 @@ export const COACH_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 
 export const FINANCE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'treasurer'];
 /** can_manage_members - roster create/edit/status (owner/admin/moderator/treasurer). */
 export const MANAGE_MEMBER_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'treasurer'];
+/**
+ * Locker management (create/edit/delete/assign/release) - owner/admin/treasurer
+ * ONLY (Privacy-Härtung 0021). Moderator and coach are deliberately excluded:
+ * they cannot even SEE lockers (RLS), let alone manage them. Mirrors the
+ * lockers RLS policies in migration 0021.
+ */
+export const LOCKER_MANAGE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'treasurer'];
 
 /** Roles that may change other members' roles at all (can_change_member_role > none). */
 const ROLE_CHANGERS: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
