@@ -9,14 +9,16 @@ import { financeDict, type FinanceKey } from "../i18n";
 
 /**
  * Finanz-Hub: Navigationsleiste zu den Finanz-Unterbereichen (Kassenbuch,
- * Rechnungen, Mahnungen, Auswertung, Beitragskategorien, Beiträge, SEPA).
- * Sitzt oben im Finanzen-Screen; die bestehende Übersicht (KPIs, offene
- * Posten) bleibt darunter erhalten.
+ * Rechnungen, Mahnungen, Bankabgleich, Auswertung, Jahresabschluss, Spenden,
+ * Beitragskategorien, Beiträge, SEPA). Sitzt oben im Finanzen-Screen; die
+ * bestehende Übersicht (KPIs, offene Posten) bleibt darunter erhalten.
  *
  * Sichtbar NUR mit can_manage_finance (treasurer/moderator/admin/owner) —
  * die Rechte-Ableitung passiert im Parent (FinanceClient). Der echte Schutz
  * bleibt serverseitig (RLS + API-DB-Check); hier geht es allein um eine
  * ehrliche Menüführung. Ohne Recht rendert die Leiste nichts (null).
+ *
+ * Bei vielen Kacheln bleibt das Raster ruhig: 1-spaltig (mobil) → 2 → 3 → 4.
  */
 
 type Tone = "brand" | "info" | "warn" | "success";
@@ -63,11 +65,32 @@ const TILES: HubTile[] = [
     descKey: "hubDunningDesc",
   },
   {
+    href: "/finanzen/bankabgleich",
+    icon: { shell: "zap" },
+    tone: "brand",
+    titleKey: "hubBankTitle",
+    descKey: "hubBankDesc",
+  },
+  {
     href: "/auswertung",
     icon: { mehr: "chart" },
     tone: "success",
     titleKey: "hubReportsTitle",
     descKey: "hubReportsDesc",
+  },
+  {
+    href: "/finanzen/jahresabschluss",
+    icon: { shell: "finance" },
+    tone: "info",
+    titleKey: "hubAnnualTitle",
+    descKey: "hubAnnualDesc",
+  },
+  {
+    href: "/finanzen/spenden",
+    icon: { shell: "sparkle" },
+    tone: "warn",
+    titleKey: "hubDonationsTitle",
+    descKey: "hubDonationsDesc",
   },
   {
     href: "/finanzen/beitragskategorien",
@@ -119,7 +142,7 @@ export function FinanceHubNav({ canManageFinance }: { canManageFinance: boolean 
   return (
     <nav
       aria-label={t("hubNavLabel")}
-      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
     >
       {TILES.map((tile) => {
         const title = t(tile.titleKey);

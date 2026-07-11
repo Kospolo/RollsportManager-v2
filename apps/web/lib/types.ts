@@ -44,6 +44,12 @@ export type * from "./types-finance";
 // auf dem Draht) und werden als Typen re-exportiert.
 export type * from "./types-financeb";
 
+// Finanz-C-Modul-Typen (Bankabgleich, Spenden/Bescheinigungen, Jahresabschluss,
+// Datei-Export) leben ausgelagert in lib/types-financec.ts, sind aber weiterhin
+// unter "@/lib/types" verfügbar. BankTransactionStatus ist eine reine
+// String-Union (snake_case-frei) und wird als Typ re-exportiert.
+export type * from "./types-financec";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

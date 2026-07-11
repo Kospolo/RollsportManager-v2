@@ -66,6 +66,7 @@ import type { Batch4Repository } from "./inputs-batch4";
 import type { Batch5Repository } from "./inputs-batch5";
 import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
+import type { FinanceCRepository } from "./inputs-financec";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -185,7 +186,8 @@ export interface DataRepository
   extends Batch4Repository,
     Batch5Repository,
     FinanceRepository,
-    FinanceBRepository {
+    FinanceBRepository,
+    FinanceCRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
   getMembers(): Promise<Member[]>;
@@ -211,6 +213,8 @@ export interface DataRepository
   // Signaturen in ./inputs-finance (FinanceRepository) — DataRepository erbt sie.
   // Beitragskategorien, Beitragszuordnungen inkl. Summary, Familienrabatte,
   // SEPA-Mandate: Signaturen in ./inputs-financeb (FinanceBRepository).
+  // Bankabgleich, Spenden/Bescheinigungen, Jahresabschluss + Datei-Export:
+  // Signaturen in ./inputs-financec (FinanceCRepository) — DataRepository erbt sie.
 
   /* ---------- Wettkampf & Aufgaben ---------- */
   getCompetitions(): Promise<Competition[]>;

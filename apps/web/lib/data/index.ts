@@ -97,6 +97,17 @@ export type {
   UpdateMembershipCategoryInput,
   UpdateSepaMandateInput,
 } from "./inputs-financeb";
+export type {
+  BankTransactionImportRowInput,
+  CreateBankTransactionInput,
+  CreateDonationInput,
+  FinanceCRepository,
+  IgnoreBankTransactionInput,
+  ImportBankTransactionsInput,
+  LedgerExportRange,
+  MatchBankTransactionInput,
+  UpdateDonationInput,
+} from "./inputs-financec";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

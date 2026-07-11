@@ -11,8 +11,8 @@ import {
   isNotImplemented,
   errorMessage,
 } from "@/lib/data";
-import { useData, type DataState } from "@/lib/data/useData";
-import type { DunningLevel, Invoice, LedgerEntry, Member } from "@/lib/types";
+import { useData } from "@/lib/data/useData";
+import type { DunningLevel, Invoice, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { KpiTile } from "@/components/ui/KpiTile";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +31,7 @@ import {
   type OpenItem,
 } from "./derive";
 import { FinanceHubNav } from "./_components/FinanceHubNav";
+import { MemberFinanceView } from "./_components/MemberFinanceView";
 import { OpenItemsCard } from "./_components/OpenItemsCard";
 import { DunningAutomationCard } from "./_components/DunningAutomationCard";
 import { MailPreviewModal, type MailStage } from "./_components/MailPreviewModal";
@@ -60,7 +61,6 @@ export function FinanceClient() {
     ]);
     return { invoices, members, currentUser };
   });
-  const ledger = useData((repo) => repo.getLedger());
 
   if (core.status === "loading") return <FinanceSkeleton />;
 
@@ -85,12 +85,27 @@ export function FinanceClient() {
     );
   }
 
+  /* ---------- Rechte-Weiche (Bugfix) ----------
+   * Nur can_manage_finance (treasurer/moderator/admin/owner) sieht die
+   * Verwaltungs-Übersicht. Nicht-Finanz-Rollen bekommen die schlanke
+   * „Meine Rechnungen"-Ansicht — keine Verwaltungs-Karten, keine Vereinssummen.
+   * Der echte Schutz bleibt serverseitig (RLS + API-DB-Check). Im mock-Modus
+   * gilt (wie in allen Finanz-Screens) die Verwaltungssicht, um die Demo zu
+   * zeigen; die Mitglieder-Sicht greift real im api-Modus. */
+  const canManageFinance =
+    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+
+  if (!canManageFinance) {
+    return (
+      <MemberFinanceView invoices={core.data.invoices} currentUser={core.data.currentUser} />
+    );
+  }
+
   return (
     <FinanceContent
       invoices={core.data.invoices}
       members={core.data.members}
       currentUser={core.data.currentUser}
-      ledger={ledger}
     />
   );
 }
@@ -101,19 +116,18 @@ function FinanceContent({
   invoices,
   members,
   currentUser,
-  ledger,
 }: {
   invoices: Invoice[];
   members: Member[];
   currentUser: Member;
-  ledger: DataState<LedgerEntry[]> & { reload: () => void };
 }) {
   const t = useT(financeDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
 
-  /* ---------- Sichtbarkeit der Finanz-Unterbereiche (nur can_manage_finance) ---------- */
-  const canManageFinance = permissions(currentUser).canManageFinance || dataSource === "mock";
+  /* ---------- Kassenbuch separat: im api-Modus evtl. noch NotImplemented,
+       darf den Rest des Screens nie blockieren. ---------- */
+  const ledger = useData((repo) => repo.getLedger());
 
   /* ---------- Lokaler, optimistischer Zustand ---------- */
   const [levelOverrides, setLevelOverrides] = useState<Record<string, DunningLevel>>({});
@@ -249,8 +263,9 @@ function FinanceContent({
         }
       />
 
-      {/* Navigationsleiste zu den Finanz-Unterbereichen (nur can_manage_finance) */}
-      <FinanceHubNav canManageFinance={canManageFinance} />
+      {/* Navigationsleiste zu den Finanz-Unterbereichen — FinanceContent
+          rendert ausschließlich für can_manage_finance, also immer sichtbar. */}
+      <FinanceHubNav canManageFinance />
 
       {/* KPI-Zeile — Offene Posten identisch mit dem Tabellen-Footer */}
       <div className="grid gap-4 sm:grid-cols-3">
