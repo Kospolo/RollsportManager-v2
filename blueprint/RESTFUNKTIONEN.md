@@ -4,6 +4,21 @@ Abgleich v1 (~75 Portal-Seiten + 21 Admin-Seiten) gegen v2. Das Top-Level-„Meh
 gebaut, aber viele **Tiefen-Funktionen und ganze Unterbereiche** fehlen noch. Diese Liste wird
 abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = fertig.
 
+> **WEB-KERN ABGESCHLOSSEN (Stand 2026-07-11).** Cluster 1–6 gebaut und selbst verifiziert; der
+> Web-Schliff (echte QR-Codes für Check-in/„Mein QR-Code"/Kür-Share, Chat-Live-Polling + Bildnachricht
+> mit RLS-gegatetem Media-Serving, Profilfoto-Chip-Live-Sync + Foto-Entfernen, Server-Boot-Hydration
+> von Theme/Sprache) ist umgesetzt. Alle Gates grün: `apps/web next build`, `services/api` typecheck +
+> vitest (163), `packages/contracts` check (177 Ops), `supabase/tests` (485 Security-Tests), QR-Encoder
+> gegen ISO-Vektor. **Damit ist die Web-Plattform bereit für die Plattform-Parität (Abschnitt 7,
+> iPhone/iPad zuerst).**
+>
+> Bewusst als **v2.1/später** offen (kein Web-Kern-Blocker): Mehrvereins-Onboarding (verein-create/
+> -join/-Wechsler), echter SMTP-Mahn-Mailversand, automatische Familien-/Geschwisterrabatt-Anwendung
+> auf Rechnungen, Betreiber-invoice-management + Beta-Programm + Demo-Data-Generator, sowie kleinere
+> Restpunkte (Chat-Voice-to-Text, Check-out, Favoriten, Registrierung/Onboarding, diverse Sub-Feature-
+> Feinschliffe in Abschnitt 6). Abschnitt 8 (echte Zahlungen, Deployment/ETL, v1-Phase-0-Security)
+> bleibt wie geplant nach der Plattform-Parität.
+
 ## 1. Finanz-Tiefe (GRÖSSTER Block — v1-Stärke)
 - [x] Rechnungen: Liste + Detail-Sheet (Empfänger, Positionen, EPC-QR, Verlauf) + Erstellen + Stornieren + Als-bezahlt-markieren (Finanz-Tiefe A, gegen Dev-API verifiziert)
 - [x] Kassenbuch: vollwertiges Kassenbuch — Buchen (Einnahme/Ausgabe), Kategorien, laufender Saldo, Storno/Gegenbuchung, Filter, GoBD-Hinweis (Finanz-Tiefe A)
@@ -32,8 +47,8 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 - [ ] training-hub, trainingsplanung
 
 ## 4. App-Shell & UX (fällt beim Klicken sofort auf)
-- [x] Profil-Seite (profil) — eigenes Profil ansehen/bearbeiten (Vorname/Nachname/E-Mail/Geburtsdatum) über die Facade (`data.updateMyProfile` → `PATCH /me`), self-scoped serverseitig (WHERE profile_id = auth.uid(), Rolle/Status nicht änderbar). Konto-Karte (Anmelde-E-Mail, Passwort-Hinweis). Verlinkt im Topbar-Benutzermenü. Gegen Dev-API als coach + member verifiziert (Screenshots), member kann NUR eigenes Profil ändern (Role-Escalation vom Update-Schema verworfen → 400), fremdes nicht. Profilfoto-Upload (POST /me/photo, multipart, nur eigenes Profil, Bild ≤25 MB) mit lokaler Vorschau + Verwerfen + Datenschutz-Hinweis; nach echtem Upload zeigt der Avatar das Foto (auth-gated Media wird clientseitig mit Bearer über die Facade nachgeladen). Gegen Dev-API als member mit ECHTEM Upload einer Bilddatei verifiziert (Screenshot: Avatar zeigt das Foto).
-- [x] Einstellungen (einstellungen) — Sprache (DE/EN), Erscheinungsbild (Hell/Auto/Dunkel), Benachrichtigungs-Schalter (Termine/Rechnungen/Neuigkeiten/Chat) über die Facade (`getMyPreferences`/`updateMyPreferences` → `GET/PATCH /me/preferences`, user_preferences nur eigener Nutzer). Gegen Dev-API verifiziert (Screenshot). email-settings/dashboard-settings/backup noch offen; App-Boot-Hydration der Server-Präferenz (localStorage-first) offen.
+- [x] Profil-Seite (profil) — eigenes Profil ansehen/bearbeiten (Vorname/Nachname/E-Mail/Geburtsdatum) über die Facade (`data.updateMyProfile` → `PATCH /me`), self-scoped serverseitig (WHERE profile_id = auth.uid(), Rolle/Status nicht änderbar). Konto-Karte (Anmelde-E-Mail, Passwort-Hinweis). Verlinkt im Topbar-Benutzermenü. Gegen Dev-API als coach + member verifiziert (Screenshots), member kann NUR eigenes Profil ändern (Role-Escalation vom Update-Schema verworfen → 400), fremdes nicht. Profilfoto-Upload (POST /me/photo, multipart, nur eigenes Profil, Bild ≤25 MB) mit lokaler Vorschau + Verwerfen + Datenschutz-Hinweis; nach echtem Upload zeigt der Avatar das Foto (auth-gated Media wird clientseitig mit Bearer über die Facade nachgeladen). Gegen Dev-API als member mit ECHTEM Upload einer Bilddatei verifiziert (Screenshot: Avatar zeigt das Foto). Foto-Entfernen (DELETE /me/photo) mit Danger-Bestätigungs-Modal (nie auto-bestätigt) + Live-Sync des Topbar-Benutzer-Chips über einen window-CustomEvent (AVATAR_CHANGED_EVENT → getMyProfile-Reload im api-Modus): nach Upload/Entfernen zeigt der Chip sofort das neue Foto bzw. die Initialen. Gegen Dev-API als member verifiziert (Screenshots: Chip mit Foto + „Foto entfernen"-Karte + Entfernen-Bestätigungsdialog).
+- [x] Einstellungen (einstellungen) — Sprache (DE/EN), Erscheinungsbild (Hell/Auto/Dunkel), Benachrichtigungs-Schalter (Termine/Rechnungen/Neuigkeiten/Chat) über die Facade (`getMyPreferences`/`updateMyPreferences` → `GET/PATCH /me/preferences`, user_preferences nur eigener Nutzer). Gegen Dev-API verifiziert (Screenshot). email-settings/dashboard-settings/backup noch offen. App-Boot-Hydration der Server-Präferenz jetzt umgesetzt (`PreferencesBoot` im Root-Layout liest nach Login EINMAL `GET /me/preferences` und initialisiert Theme+Locale — localStorage-first/ohne Flash: eine bewusste lokale Wahl wird nie überschrieben). Gegen Dev-API verifiziert: Server-Präferenz auf EN/Dunkel gesetzt, lokale Wahl geleert (frisches Gerät), Reload → App startet in EN/Dunkel (`data-theme=dark`, `lang=en`, Screenshot).
 - [x] Benachrichtigungen (Glocke oben rechts) — funktionaler Feed mit Ungelesen-Zähler + „Alle gelesen", rollen-gescopt über die Facade-Reads (`deriveNotifications`), Leerzustand/Skeletons, DE+EN. Gelesen-Zustand clientseitig (localStorage). Gegen Dev-API als coach + member verifiziert (Screenshots, unterschiedliche Feeds). Live-Push/Polling + Chat-Quelle noch offen.
 - [x] Suche (Suchleiste oben / ⌘K) — funktionale Befehls-/Suchpalette (Overlay), live-gruppierte Treffer (Mitglieder/Termine/Küren/Neuigkeiten) über `searchAll()`, Tastatur-Navigation (Pfeile/Enter/Esc), respektiert RLS über die Facade-Reads. Gegen Dev-API als coach + member verifiziert (Screenshot „Grün" → Mitglieder; member sieht RLS-gescopt nur eigene Familie).
 - [ ] Favoriten (favoriten)
@@ -52,8 +67,8 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 ## 6. Sub-Features in bereits gebauten Modulen (aus den Bau-„offene Punkte")
 - [ ] Belegungsplan: Buchung bearbeiten, mehrtägige Buchungen, stornierte ausblenden
 - [ ] Ausrüstung: serverseitige Bestandsverrechnung, Reservierungs-Konflikte
-- [ ] Chat: Live-Aktualisierung (Realtime/Polling), Bild-Upload, Voice-to-Text (v1-Feature)
-- [ ] Check-in: echter QR-Scan (Kamera), Check-out
+- [x] Chat: Live-Aktualisierung (Polling mit Stick-to-Bottom) + Bild-Nachricht — Bild-Ablauf zweistufig über den bestehenden Media-Upload (POST /media/upload → storage_key, dann sendChatMessage mit image_url); Anzeige über die Facade (`data.loadMediaUrl`, Bearer-auth-gated, Skeleton/Fehler-Platzhalter). GET /media/{key} löst Chat-Bilder jetzt RLS-gegatet auf (Kanal-Sichtbarkeit erzwungen: Team-/Direkt-Scope), sodass ein Vereinsfremder/Nicht-Kanal-Mitglied 404 erhält. Gegen Dev-API verifiziert (Screenshot: gerenderte Bildnachricht; curl: Coach-im-Team 200/Mitglied-nicht-im-Team 404). Voice-to-Text bleibt v2.1/später.
+- [x] Check-in: echter QR-Scan (Kamera) — self-contained QR-Encoder (lib/qr, gegen ISO/IEC-18004-Vektor „01234567" geprüft) für „Mein QR-Code" (eigene Route /mein-qr + Check-in-Karte) und geteilter Vertrag lib/member-qr (Encode/Decode driftet nicht). Scan über Browser-BarcodeDetector (useQrScanner-Hook, Dauerscan + Teardown), Safari/Firefox/SSR fallen sauber auf manuelle Code-/ID-Eingabe zurück (qrScanSupported-Guard). ScanCheckinCard trainer-gated → Mitglied gegen Roster auflösen → `createCheckin({method:'qr'})`, Rechte serverseitig. Kür-Teilen-Dialog zeigt zusätzlich einen scanbaren QR zur öffentlichen URL. Gegen Dev-API als coach verifiziert (Screenshots: Mein-QR echt gerendert, Kür-Share-QR). Live-Kamera-Scan an echtem Gerät + Check-out bleiben v2.1/später.
 - [x] Familie: Kind verknüpfen/anlegen — Eltern-Selfservice (Kind anlegen via POST /clubs/{id}/children ODER bestehendes vereinsverwaltetes Mitglied als Kind verknüpfen via POST guardianship; Kind entfernen mit Bestätigungs-Dialog, nie auto-bestätigt), über die Facade (mock+api), optimistisches Overlay. Migration 0020, Routen family.ts, Rechte serverseitig: eigene Kinder (guardianship self-service) ODER is_club_admin. Gegen Dev-API als Elternteil (Katrin Grünewald) verifiziert (Screenshots: Familie + Verknüpf-Sheet + Anlegen-Dialog).
 - [ ] Notizen: Inline-Bearbeiten; Galerie: Video-Poster-Upload
 - [ ] Mitglied-Self-Service (eigenes Profil bearbeiten für Nicht-Trainer)

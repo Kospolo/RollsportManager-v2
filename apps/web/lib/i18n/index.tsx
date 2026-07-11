@@ -13,7 +13,8 @@ import {
 export type Locale = "de" | "en";
 
 export const LOCALES: Locale[] = ["de", "en"];
-const STORAGE_KEY = "rsm.locale";
+/** localStorage-Schlüssel der UI-Sprache — auch vom Preferences-Boot gelesen. */
+export const LOCALE_STORAGE_KEY = "rsm.locale";
 
 /* Externer Store über localStorage — SSR rendert Deutsch (Server-Snapshot),
    der Client übernimmt die gespeicherte Sprache ohne setState-im-Effect. */
@@ -29,7 +30,7 @@ function subscribe(listener: () => void): () => void {
 }
 
 function getSnapshot(): Locale {
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
   return stored === "de" || stored === "en" ? stored : "de";
 }
 
@@ -38,7 +39,7 @@ function getServerSnapshot(): Locale {
 }
 
 function persist(next: Locale) {
-  window.localStorage.setItem(STORAGE_KEY, next);
+  window.localStorage.setItem(LOCALE_STORAGE_KEY, next);
   document.documentElement.lang = next;
   emit();
 }

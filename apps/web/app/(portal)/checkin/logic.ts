@@ -1,88 +1,16 @@
-import type { Checkin, Event, Member } from "@/lib/types";
+import type { Checkin, Event } from "@/lib/types";
 
 /**
- * Fachlogik des Check-in-Moduls (QR-Ersatz im Web) — reine Funktionen ohne
- * React, damit sie testbar bleiben und i18n.ts/Screens schlank bleiben.
+ * Fachlogik des Check-in-Moduls — reine Funktionen ohne React, damit sie
+ * testbar bleiben und i18n.ts/Screens schlank bleiben.
  *
- * Rechte sind SERVERSEITIG (RLS, Referenz 1.3): eigenen Check-in legt jedes
- * Mitglied an, andere einchecken + Vereins-Historie darf nur der Trainerstab,
- * (soft-)löschen NUR Trainer:innen. Diese Datei rechnet nur Anzeigezustände.
+ * Der QR-Vertrag „Mein QR-Code" (memberQrPayload/parseMemberQr) liegt geteilt
+ * in lib/member-qr.ts; kodiert/dekodiert wird über die self-contained Utility
+ * lib/qr. Rechte sind SERVERSEITIG (RLS, Referenz 1.3): eigenen Check-in legt
+ * jedes Mitglied an, andere einchecken (auch per Scan) + Vereins-Historie darf
+ * nur der Trainerstab, (soft-)löschen NUR Trainer:innen. Diese Datei rechnet nur
+ * Anzeigezustände.
  */
-
-/* ---------- „Mein QR-Code" (deterministisches Muster) ---------- */
-
-/**
- * Kompakter QR-Payload einer Mitglieds-Identität — Format angelehnt an v1
- * (rsm_member): `RSM|member|<clubId>|<memberId>`. Deterministisch, damit der
- * angezeigte Code für ein Mitglied stabil bleibt.
- */
-export function memberQrPayload(member: Pick<Member, "id" | "clubId">): string {
-  return `RSM|member|${member.clubId}|${member.id}`;
-}
-
-const QR_GRID = 25;
-
-/** 32-Bit-FNV-1a-Hash → Seed für den PRNG. */
-function fnv1a(input: string): number {
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
-/** Deterministischer PRNG (mulberry32) — gleicher Seed ⇒ gleiches Muster. */
-function mulberry32(seed: number): () => number {
-  let state = seed;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let h = Math.imul(state ^ (state >>> 15), 1 | state);
-    h = (h + Math.imul(h ^ (h >>> 7), 61 | h)) ^ h;
-    return ((h ^ (h >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** 7×7-Finder-Muster (Rahmen + 3×3-Kern) an einer Ecke. */
-function inFinder(x: number, y: number, ox: number, oy: number): boolean | undefined {
-  const dx = x - ox;
-  const dy = y - oy;
-  if (dx < 0 || dx > 6 || dy < 0 || dy > 6) return undefined;
-  const ring = dx === 0 || dx === 6 || dy === 0 || dy === 6;
-  const core = dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4;
-  return ring || core;
-}
-
-/**
- * SVG-Pfad eines QR-ähnlichen Musters (25×25) aus einem Seed-Schlüssel. Mit
- * Finder-Ecken und Timing-Linien wie bei einem echten QR — es wird bewusst
- * NICHT dekodiert, der Klartext (Payload/ID) steht daneben.
- */
-export function buildQrPath(seedKey: string): string {
-  const random = mulberry32(fnv1a(seedKey));
-  let path = "";
-  for (let y = 0; y < QR_GRID; y += 1) {
-    for (let x = 0; x < QR_GRID; x += 1) {
-      const finder =
-        inFinder(x, y, 0, 0) ??
-        inFinder(x, y, QR_GRID - 7, 0) ??
-        inFinder(x, y, 0, QR_GRID - 7);
-      let filled: boolean;
-      if (finder !== undefined) {
-        filled = finder;
-      } else if (y === 6 || x === 6) {
-        filled = (x + y) % 2 === 0; // Timing-Linien
-      } else {
-        filled = random() < 0.46;
-      }
-      if (filled) path += `M${x} ${y}h1v1h-1z`;
-    }
-  }
-  return path;
-}
-
-/** Viewbox-Kantenlänge des QR-Musters (für das <svg viewBox>). */
-export const QR_VIEWBOX = QR_GRID;
 
 /* ---------- Termin-Auswahl für das Einchecken ---------- */
 

@@ -47,10 +47,19 @@ export const chatDict = {
     sendHint: "Enter sendet · Umschalt+Enter für eine neue Zeile",
     sendError: "Nachricht konnte nicht gesendet werden — bitte erneut versuchen.",
 
+    // Bild-Anhang
+    attach: "Bild anhängen",
+    attachedImage: "Angehängtes Bild",
+    removeImage: "Bild entfernen",
+    imageUploadError: "Bild konnte nicht hochgeladen werden — bitte erneut versuchen.",
+    imageTypeError: "Bitte eine Bilddatei auswählen.",
+    imageTooLargeError: "Das Bild ist zu groß (max. 10 MB).",
+
     // Blase
     you: "Du",
     delete: "Löschen",
     imageAlt: "Bild in der Nachricht",
+    imageFailed: "Bild nicht verfügbar",
 
     // Löschen (Bestätigung)
     deleteEyebrow: "Nachricht löschen",
@@ -96,9 +105,18 @@ export const chatDict = {
     sendHint: "Enter to send · Shift+Enter for a new line",
     sendError: "The message could not be sent — please try again.",
 
+    // Image attachment
+    attach: "Attach image",
+    attachedImage: "Attached image",
+    removeImage: "Remove image",
+    imageUploadError: "The image could not be uploaded — please try again.",
+    imageTypeError: "Please choose an image file.",
+    imageTooLargeError: "The image is too large (max. 10 MB).",
+
     you: "You",
     delete: "Delete",
     imageAlt: "Image in message",
+    imageFailed: "Image unavailable",
 
     deleteEyebrow: "Delete message",
     deleteTitle: "Delete message?",

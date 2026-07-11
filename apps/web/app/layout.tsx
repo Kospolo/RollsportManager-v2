@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/lib/auth";
+import { PreferencesBoot } from "@/lib/boot/PreferencesBoot";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { themeInitScript } from "@/lib/theme/script";
@@ -30,7 +31,11 @@ export default function RootLayout({
         <ThemeProvider>
           <I18nProvider>
             {/* Dev-Auth-Session (rsm.dev.auth) — im mock-Modus wirkungslos. */}
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>
+              {/* Zieht nach dem Login Theme/Locale aus /me/preferences (api). */}
+              <PreferencesBoot />
+              {children}
+            </AuthProvider>
           </I18nProvider>
         </ThemeProvider>
       </body>

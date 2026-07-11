@@ -6,6 +6,7 @@ import {
   mapCheckin,
   mapRegionalEvent,
 } from "./mappers-batch4";
+import { mediaKeyUrl, uploadMedia } from "./media-fetch";
 
 /**
  * API-Implementierung der Batch-4-Module (Chat, Check-in, überregionale
@@ -25,6 +26,7 @@ type ModuleMethods = Pick<
   | "listChatChannels"
   | "listChatMessages"
   | "sendChatMessage"
+  | "uploadChatImage"
   | "deleteChatMessage"
   | "listCheckins"
   | "createCheckin"
@@ -61,6 +63,12 @@ export const moduleApiRepositoryBatch4: ModuleMethods = {
       image_url: input.imageUrl,
     });
     return mapChatMessage(created);
+  },
+  async uploadChatImage(file) {
+    // Stufe 1: Datei hochladen; das storage_key wird als absolute, Bearer-
+    // auflösbare Media-URL zurückgegeben (Schema verlangt eine gültige URL).
+    const up = await uploadMedia(activeClubId(), file, "Chat-Bild");
+    return mediaKeyUrl(up.storageKey);
   },
   async deleteChatMessage(messageId) {
     const deleted = await apiClient.deleteChatMessagesByMessageId(messageId);

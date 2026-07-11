@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
 import { Icon } from "@/components/shell/icons";
+import { notifyAvatarChanged } from "@/components/shell/avatar-events";
 import { useToast } from "@/components/ui/Toast";
 import { ApiError, data, errorMessage, isForbidden } from "@/lib/data";
 import { useT } from "@/lib/i18n";
@@ -32,19 +34,23 @@ function photoErrorText(error: unknown, t: (k: ProfilKey) => string): string {
  * /me-Reload aus). Die erweiterte Avatar-Komponente rendert das Foto statt der
  * Initialen; ohne Foto bleibt der Initialen-Fallback.
  *
- * „Auswahl entfernen“ verwirft die noch nicht gespeicherte Vorschau (die Route
- * kennt kein serverseitiges Löschen — es gibt bewusst keinen DELETE-Endpoint und
- * keine Facade-Methode dafür). Vor dem Upload prüfen wir clientseitig Typ (Bild)
- * und Größe (25 MB); die verbindliche Allowlist bleibt serverseitig.
+ * „Auswahl entfernen“ verwirft die noch nicht gespeicherte Vorschau. Ein bereits
+ * gespeichertes Foto lässt sich über „Foto entfernen“ serverseitig löschen
+ * (data.removeMyPhoto → DELETE /me/photo, nur eigene Mitgliedschaften, RLS-scoped)
+ * — nach einer Bestätigung, danach greift der Initialen-Fallback (onRemoved). Vor
+ * dem Upload prüfen wir clientseitig Typ (Bild) und Größe (25 MB); die verbindliche
+ * Allowlist bleibt serverseitig.
  */
 export function ProfilePhotoCard({
   membership,
   currentUrl,
   onUploaded,
+  onRemoved,
 }: {
   membership: MyProfileMembership;
   currentUrl: string | null;
   onUploaded: (avatarUrl: string) => void;
+  onRemoved: () => void;
 }) {
   const t = useT(profilDict);
   const { showToast } = useToast();
@@ -54,6 +60,8 @@ export function ProfilePhotoCard({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   // Lokale Vorschau-URL beim Unmount / Wechsel freigeben (kein Memory-Leak).
   useEffect(
@@ -107,6 +115,8 @@ export function ProfilePhotoCard({
       clearSelection();
       // Optimistisch anzeigen + /me im Screen neu laden (getMyProfile).
       onUploaded(result.avatarUrl);
+      // Topbar-Benutzermenü (api-Modus) das neue Foto nachladen lassen.
+      notifyAvatarChanged();
     } catch (uploadError) {
       showToast(photoErrorText(uploadError, t), {
         tone: "danger",
@@ -115,6 +125,28 @@ export function ProfilePhotoCard({
       });
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  /** Gespeichertes Foto serverseitig entfernen (nach Bestätigung). */
+  async function handleRemove() {
+    if (removing) return;
+    setRemoving(true);
+    try {
+      await data.removeMyPhoto();
+      setConfirmRemove(false);
+      showToast(t("photoRemovedToast"), { tone: "success" });
+      // Sofort Initialen zeigen + /me neu laden; Topbar-Chip nachziehen.
+      onRemoved();
+      notifyAvatarChanged();
+    } catch (removeError) {
+      showToast(photoErrorText(removeError, t), {
+        tone: "danger",
+        actionLabel: t("loadErrorRetry"),
+        onAction: () => void handleRemove(),
+      });
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -165,14 +197,26 @@ export function ProfilePhotoCard({
             </Button>
           </>
         ) : (
-          <Button
-            variant="secondary"
-            icon="edit"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={submitting}
-          >
-            {hasPhoto ? t("photoChange") : t("photoChoose")}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              icon="edit"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={submitting || removing}
+            >
+              {hasPhoto ? t("photoChange") : t("photoChoose")}
+            </Button>
+            {hasPhoto && (
+              <Button
+                variant="ghost"
+                icon="trash"
+                onClick={() => setConfirmRemove(true)}
+                disabled={submitting || removing}
+              >
+                {t("photoRemove")}
+              </Button>
+            )}
+          </>
         )}
       </div>
 
@@ -180,6 +224,28 @@ export function ProfilePhotoCard({
         <Icon name="shield" className="ic mt-0.5 h-4 w-4 flex-none text-ink-faint" />
         <p className="text-caption text-ink-soft">{t("photoPrivacy")}</p>
       </div>
+
+      {confirmRemove && (
+        <Modal
+          open
+          onClose={removing ? () => {} : () => setConfirmRemove(false)}
+          eyebrow={t("photoRemoveEyebrow")}
+          title={t("photoRemoveTitle")}
+          maxWidthClass="max-w-md"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmRemove(false)} disabled={removing}>
+                {t("photoRemoveCancel")}
+              </Button>
+              <Button variant="danger" icon="trash" onClick={handleRemove} disabled={removing}>
+                {removing ? t("photoRemoving") : t("photoRemoveConfirm")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-body text-ink-soft">{t("photoRemoveBody")}</p>
+        </Modal>
+      )}
     </Card>
   );
 }

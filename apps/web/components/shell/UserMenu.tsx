@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useT } from "@/lib/i18n";
 import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
-import { dataSource } from "@/lib/data";
+import { data, dataSource } from "@/lib/data";
 import { currentUser } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
+import { AVATAR_CHANGED_EVENT } from "./avatar-events";
 import { Icon, type IconName } from "./icons";
 
 /**
@@ -40,6 +41,45 @@ export function UserMenu() {
   const nameParts = displayName.trim().split(/\s+/);
   const firstName = apiSession ? nameParts.slice(0, -1).join(" ") || displayName : currentUser.firstName;
   const lastName = apiSession ? (nameParts.length > 1 ? nameParts[nameParts.length - 1] : "") : currentUser.lastName;
+
+  // Profilfoto: mock = Demo-Persona; api = eigenes Foto aus /me (Mitgliedschaft
+  // des aktiven Vereins). Der Avatar löst auth-gated Media-URLs selbst auf.
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    dataSource === "api" ? null : (currentUser.avatarUrl ?? null),
+  );
+  // Auf der Profilseite geändertes Foto (Upload/Entfernen) → Chip neu laden.
+  const [avatarTick, setAvatarTick] = useState(0);
+  const activeClubId = apiSession?.profile.club_id;
+  useEffect(() => {
+    if (dataSource !== "api") return;
+    if (!apiSession) {
+      setAvatarUrl(null);
+      return;
+    }
+    let active = true;
+    data
+      .getMyProfile()
+      .then((profile) => {
+        if (!active) return;
+        const membership =
+          profile.memberships.find((m) => m.clubId === activeClubId) ?? profile.memberships[0];
+        setAvatarUrl(membership?.avatarUrl ?? null);
+      })
+      .catch(() => {
+        if (active) setAvatarUrl(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [apiSession, activeClubId, avatarTick]);
+
+  // Live-Sync: nach Upload/Entfernen auf /profil neu laden (nur api-Modus relevant,
+  // im mock-Modus bleibt die Demo-Persona statisch).
+  useEffect(() => {
+    const onChanged = () => setAvatarTick((n) => n + 1);
+    window.addEventListener(AVATAR_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(AVATAR_CHANGED_EVENT, onChanged);
+  }, []);
 
   function handleSignOut() {
     setOpen(false);
@@ -76,7 +116,13 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         className="flex min-h-11 items-center gap-2.5 rounded-full border border-line bg-surface py-1 pl-1 pr-2.5 transition-colors duration-150 hover:bg-sunken"
       >
-        <Avatar personId={avatarId} firstName={firstName} lastName={lastName} size="m" />
+        <Avatar
+          personId={avatarId}
+          firstName={firstName}
+          lastName={lastName}
+          size="m"
+          avatarUrl={avatarUrl}
+        />
         <span className="hidden min-w-0 text-left xl:block">
           <b className="block truncate text-[13px] font-bold leading-tight text-ink">
             {displayName}

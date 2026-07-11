@@ -1,6 +1,8 @@
+import { API_BASE_URL } from "../config";
 import type { MeRepository } from "../inputs-me";
 import { apiClient } from "./client";
 import { mapMyProfile, mapUserPreferences } from "./mappers";
+import { authHeaders, mediaError } from "./media-fetch";
 
 /**
  * API-Implementierung der App-Shell-Selbstsicht (eigenes Profil + Präferenzen).
@@ -36,5 +38,17 @@ export const moduleApiRepositoryMe: MeRepository = {
       notifications: patch.notifications,
     });
     return mapUserPreferences(updated);
+  },
+  async removeMyPhoto() {
+    // DELETE /me/photo ist NICHT im Contract → roher fetch mit Bearer. 404
+    // (keine Mitgliedschaft) ist ein harmloses no-op im eingeloggten Zustand.
+    const res = await fetch(`${API_BASE_URL}/me/photo`, {
+      method: "DELETE",
+      headers: { ...authHeaders() },
+    });
+    if (res.status === 404) return { updatedMembers: 0, removedBlobs: 0 };
+    if (!res.ok) throw await mediaError(res, "Profilfoto entfernen");
+    const j = (await res.json()) as { updated_members?: number; removed_blobs?: number };
+    return { updatedMembers: j.updated_members ?? 0, removedBlobs: j.removed_blobs ?? 0 };
   },
 };

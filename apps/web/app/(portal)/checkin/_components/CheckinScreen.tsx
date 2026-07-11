@@ -13,6 +13,7 @@ import { checkinDict } from "../i18n";
 import { MyQrCard } from "./MyQrCard";
 import { SelfCheckinCard } from "./SelfCheckinCard";
 import { CheckinList } from "./CheckinList";
+import { ScanCheckinCard } from "./ScanCheckinCard";
 import { TrainerCheckinCard } from "./TrainerCheckinCard";
 import { ClubCheckins } from "./ClubCheckins";
 import { DeleteCheckinDialog } from "./DeleteCheckinDialog";
@@ -120,6 +121,12 @@ export function CheckinScreen() {
 
         {isTrainer && (
           <>
+            <ScanCheckinCard
+              members={members}
+              events={events}
+              now={now}
+              onCheckedIn={state.reload}
+            />
             <TrainerCheckinCard
               members={members}
               events={events}

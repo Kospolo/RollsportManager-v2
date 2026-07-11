@@ -22,6 +22,8 @@ const profileStore = {
   lastName: self.lastName,
   email: self.email as string | undefined,
   birthDate: self.birthDate as string | undefined,
+  // Profilfoto der eingeloggten Persona — removeMyPhoto leert es (→ Initialen).
+  avatarUrl: self.avatarUrl as string | undefined,
 };
 
 /** Präferenz-Store der eingeloggten Persona (Default: DE, System-Theme, alles an). */
@@ -53,6 +55,7 @@ function buildProfile(): MyProfile {
         status: self.status,
         joinedOn: self.joinedAt || undefined,
         validUntil: self.guestAccessUntil,
+        avatarUrl: profileStore.avatarUrl,
         createdAt: `${self.joinedAt || "2015-01-01"}T00:00:00.000Z`,
         updatedAt: preferencesStore.updatedAt,
       },
@@ -94,5 +97,13 @@ export const moduleRepositoryMe: MeRepository = {
       ...preferencesStore,
       notifications: { ...preferencesStore.notifications },
     };
+  },
+  async removeMyPhoto() {
+    // Mock: Foto der Persona leeren → buildProfile liefert avatarUrl undefined,
+    // der Avatar fällt auf die Initialen zurück. Kein echter Blob → 0 entfernt.
+    const had = profileStore.avatarUrl !== undefined;
+    profileStore.avatarUrl = undefined;
+    preferencesStore.updatedAt = nowIso();
+    return { updatedMembers: had ? 1 : 0, removedBlobs: 0 };
   },
 };

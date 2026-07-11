@@ -235,6 +235,9 @@ export function createMediaRouter(): Hono<AuthEnv> {
       union all
       select null::text as content_type from app.club_members
         where avatar_key = ${key} and deleted_at is null
+      union all
+      select null::text as content_type from app.chat_messages
+        where image_url like ${'%/media/' + key} and deleted_at is null
       limit 1`);
     if (rows.length === 0) {
       throw problem(404, 'Not Found', 'No accessible media for this key');

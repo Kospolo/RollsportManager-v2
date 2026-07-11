@@ -96,10 +96,11 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
   const primary = profile.memberships[0] as MyProfileMembership | undefined;
   const others = profile.memberships.slice(1);
 
-  // Optimistischer Foto-Zustand nach dem Upload: zeigt das neue Foto sofort in
-  // Kopf und Karte, bevor der /me-Reload den Serverstand nachzieht.
-  const [photoOverride, setPhotoOverride] = useState<string | null>(null);
-  const shownAvatarUrl = photoOverride ?? primary?.avatarUrl ?? null;
+  // Optimistischer Foto-Zustand nach Upload/Entfernen: { url } überschreibt den
+  // Serverstand sofort in Kopf und Karte (url=null → Initialen), bis der
+  // /me-Reload nachzieht. Der äußere null-Wert bedeutet „keine Überschreibung".
+  const [photoOverride, setPhotoOverride] = useState<{ url: string | null } | null>(null);
+  const shownAvatarUrl = photoOverride ? photoOverride.url : (primary?.avatarUrl ?? null);
 
   const name =
     profile.displayName ??
@@ -157,7 +158,11 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
               membership={primary}
               currentUrl={shownAvatarUrl}
               onUploaded={(url) => {
-                setPhotoOverride(url);
+                setPhotoOverride({ url });
+                onSaved();
+              }}
+              onRemoved={() => {
+                setPhotoOverride({ url: null });
                 onSaved();
               }}
             />

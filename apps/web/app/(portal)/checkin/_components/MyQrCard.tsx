@@ -1,24 +1,27 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import type { Member } from "@/lib/types";
 import { fullName } from "@/lib/data";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Icon } from "@/components/shell/icons";
+import { QrCode } from "@/lib/qr";
+import { memberQrPayload } from "@/lib/member-qr";
 import { checkinDict } from "../i18n";
-import { buildQrPath, memberQrPayload, QR_VIEWBOX } from "../logic";
 
 /**
- * „Mein QR-Code": ein deterministisch aus der Mitglieds-Identität erzeugtes
- * QR-ähnliches Inline-SVG zum Vorzeigen beim Training, plus die Mitglieds-ID im
- * Klartext. Reiner Anzeige-Code — es wird nichts gescannt oder übertragen (der
- * echte Check-in läuft serverseitig über die Facade).
+ * „Mein QR-Code": der echte, scanbare Check-in-Code des eingeloggten Mitglieds
+ * (lib/qr, self-contained) zum Vorzeigen an der Station — dazu die Mitglieds-ID
+ * im Klartext als Fallback für die manuelle Eingabe. Der QR muss dunkel-auf-hell
+ * bleiben; die Komponente rendert daher ihren eigenen weißen Grund. Für die
+ * Großansicht gibt es die eigene Seite /mein-qr.
  */
 export function MyQrCard({ member }: { member: Member }) {
   const t = useT(checkinDict);
 
   const payload = useMemo(() => memberQrPayload(member), [member]);
-  const path = useMemo(() => buildQrPath(payload), [payload]);
   const name = fullName(member);
 
   return (
@@ -26,17 +29,12 @@ export function MyQrCard({ member }: { member: Member }) {
       <SectionHeader level={2} title={t("qrTitle")} sub={t("qrSub")} />
 
       <div className="grid justify-items-center gap-4 rounded-xl border border-line bg-surface p-6 text-center shadow-card">
-        <div className="rounded-lg border border-line bg-canvas p-4 text-ink shadow-card">
-          <svg
-            viewBox={`0 0 ${QR_VIEWBOX} ${QR_VIEWBOX}`}
-            role="img"
-            aria-label={t("qrCodeLabel", { name })}
-            shapeRendering="crispEdges"
-            className="block h-48 w-48"
-          >
-            <path d={path} fill="currentColor" />
-          </svg>
-        </div>
+        <QrCode
+          value={payload}
+          size={192}
+          title={t("qrCodeLabel", { name })}
+          className="rounded-lg border border-line shadow-card"
+        />
 
         <div className="grid gap-1">
           <span className="font-display text-[15px] font-bold tracking-[-0.01em] text-ink">
@@ -51,6 +49,14 @@ export function MyQrCard({ member }: { member: Member }) {
         </div>
 
         <p className="max-w-xs text-caption leading-[18px] text-ink-faint">{t("qrHint")}</p>
+
+        <Link
+          href="/mein-qr"
+          className="inline-flex items-center gap-1.5 text-caption font-semibold text-ink-soft underline underline-offset-4 hover:text-ink"
+        >
+          <Icon name="search" className="ic h-4 w-4" />
+          {t("qrFullscreen")}
+        </Link>
       </div>
     </section>
   );

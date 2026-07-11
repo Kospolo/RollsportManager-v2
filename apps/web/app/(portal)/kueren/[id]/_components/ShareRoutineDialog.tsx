@@ -9,6 +9,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/shell/icons";
 import { useToast } from "@/components/ui/Toast";
+import { QrCode } from "@/lib/qr";
 import { kuerenDict } from "../../i18n";
 
 /**
@@ -193,6 +194,7 @@ export function ShareRoutineDialog({
                 }
                 labels={{
                   linkLabel: t("shareLinkLabel"),
+                  qrLabel: t("shareQrLabel"),
                   copy: t("shareCopy"),
                   whatsApp: t("shareWhatsApp"),
                   email: t("shareEmail"),
@@ -229,6 +231,7 @@ function ShareRow({
   expiresLabel: string;
   labels: {
     linkLabel: string;
+    qrLabel: string;
     copy: string;
     whatsApp: string;
     email: string;
@@ -242,35 +245,45 @@ function ShareRow({
   onRevoke: () => void;
 }) {
   return (
-    <li className="grid gap-3 rounded-lg border border-line bg-sunken p-3.5">
-      <div className="flex items-center gap-2 rounded-md border border-line-strong bg-surface px-3 py-2">
-        <Icon name="link" className="ic h-4 w-4 flex-none text-ink-faint" />
-        <input
-          readOnly
-          aria-label={labels.linkLabel}
-          value={url}
-          onFocus={(event) => event.target.select()}
-          className="min-w-0 flex-1 truncate bg-transparent font-mono text-[13px] text-ink outline-none"
-        />
+    <li className="flex flex-wrap gap-3.5 rounded-lg border border-line bg-sunken p-3.5">
+      {/* QR des öffentlichen Links — zum Abscannen mit dem Handy. */}
+      <QrCode
+        value={url}
+        size={104}
+        title={labels.qrLabel}
+        className="h-[104px] w-[104px] flex-none rounded-md border border-line"
+      />
+
+      <div className="grid min-w-0 flex-1 basis-56 content-start gap-3">
+        <div className="flex items-center gap-2 rounded-md border border-line-strong bg-surface px-3 py-2">
+          <Icon name="link" className="ic h-4 w-4 flex-none text-ink-faint" />
+          <input
+            readOnly
+            aria-label={labels.linkLabel}
+            value={url}
+            onFocus={(event) => event.target.select()}
+            className="min-w-0 flex-1 truncate bg-transparent font-mono text-[13px] text-ink outline-none"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" icon="copy" onClick={onCopy}>
+            {labels.copy}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onWhatsApp}>
+            {labels.whatsApp}
+          </Button>
+          <Button size="sm" variant="ghost" icon="mail" onClick={onEmail}>
+            {labels.email}
+          </Button>
+          <Button size="sm" variant="ghost" icon="globe" onClick={onOpen}>
+            {labels.openLink}
+          </Button>
+          <Button size="sm" variant="danger" icon="trash" className="ml-auto" onClick={onRevoke}>
+            {labels.revoke}
+          </Button>
+        </div>
+        <p className="text-caption text-ink-faint">{expiresLabel}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" icon="copy" onClick={onCopy}>
-          {labels.copy}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onWhatsApp}>
-          {labels.whatsApp}
-        </Button>
-        <Button size="sm" variant="ghost" icon="mail" onClick={onEmail}>
-          {labels.email}
-        </Button>
-        <Button size="sm" variant="ghost" icon="globe" onClick={onOpen}>
-          {labels.openLink}
-        </Button>
-        <Button size="sm" variant="danger" icon="trash" className="ml-auto" onClick={onRevoke}>
-          {labels.revoke}
-        </Button>
-      </div>
-      <p className="text-caption text-ink-faint">{expiresLabel}</p>
     </li>
   );
 }

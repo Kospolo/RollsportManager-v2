@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/i18n";
 import { formatTime } from "@/lib/format";
 import type { ChatMessage } from "@/lib/types";
 import { chatDict } from "./i18n";
+import { ChatImage } from "./ChatImage";
 
 /**
  * Eine Chat-Blase: eigene Nachrichten rechts (Beere-soft), fremde links
@@ -40,11 +41,10 @@ export function MessageBubble({
         }`}
       >
         {message.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element -- beliebige Remote-URL, next/image ungeeignet
-          <img
-            src={message.imageUrl}
+          <ChatImage
+            imageUrl={message.imageUrl}
             alt={t("imageAlt")}
-            className="mb-1.5 max-h-64 w-full max-w-full rounded-lg object-cover"
+            failedLabel={t("imageFailed")}
           />
         )}
         {message.body && (

@@ -31,8 +31,29 @@ export const checkinDict = {
     qrTitle: "Mein QR-Code",
     qrSub: "Zeig diesen Code beim Training zum Einchecken vor",
     qrCodeLabel: "Check-in-Code von {name}",
-    qrHint: "Nur ein Vorzeig-Muster — es wird nichts übertragen oder gescannt.",
+    qrHint: "Der Trainerstab scannt diesen Code, um dich einzuchecken.",
     qrIdLabel: "Mitglieds-ID",
+    qrFullscreen: "Großansicht öffnen",
+
+    /* Scan-Station (nur Trainer) */
+    scanTitle: "Mitglieder scannen",
+    scanSub: "Kamera-Check-in an der Station — QR-Code scannen oder Code eingeben",
+    scanStart: "Kamera starten",
+    scanStop: "Kamera stoppen",
+    scanIdleHint: "Starte die Kamera, um QR-Codes zu scannen.",
+    scanActiveHint: "Halte den QR-Code des Mitglieds vor die Kamera.",
+    scanCameraLabel: "Kamerabild zum Scannen",
+    scanUnsupported:
+      "Dein Browser kann keine QR-Codes über die Kamera scannen. Gib den Code unten manuell ein.",
+    scanPermission:
+      "Kein Kamerazugriff — bitte erlaube die Kamera oder nutze die manuelle Eingabe.",
+    scanCameraError: "Kamera nicht verfügbar — bitte nutze die manuelle Eingabe.",
+    scanManualLabel: "Code oder Mitglieds-ID",
+    scanManualHint: "Aus dem QR-Code ausgelesen oder von der „Mein QR-Code“-Seite.",
+    scanManualPlaceholder: "RSM|member|… oder Mitglieds-ID",
+    scanManualCta: "Einchecken",
+    scanUnknown: "Unbekannter Code — dieses Mitglied gehört nicht zu deinem Verein.",
+    scanCheckedIn: "{name} eingecheckt.",
 
     /* Selbst einchecken */
     selfTitle: "Selbst einchecken",
@@ -101,8 +122,28 @@ export const checkinDict = {
     qrTitle: "My QR code",
     qrSub: "Show this code at training to check in",
     qrCodeLabel: "Check-in code for {name}",
-    qrHint: "Just a display pattern — nothing is transmitted or scanned.",
+    qrHint: "The coaching staff scans this code to check you in.",
     qrIdLabel: "Member ID",
+    qrFullscreen: "Open full screen",
+
+    /* Scan station (coaches only) */
+    scanTitle: "Scan members",
+    scanSub: "Camera check-in at the station — scan a QR code or enter a code",
+    scanStart: "Start camera",
+    scanStop: "Stop camera",
+    scanIdleHint: "Start the camera to scan QR codes.",
+    scanActiveHint: "Hold the member's QR code in front of the camera.",
+    scanCameraLabel: "Camera preview for scanning",
+    scanUnsupported:
+      "Your browser can't scan QR codes with the camera. Enter the code manually below.",
+    scanPermission: "No camera access — allow the camera or use manual entry.",
+    scanCameraError: "Camera unavailable — please use manual entry.",
+    scanManualLabel: "Code or member ID",
+    scanManualHint: "Read from the QR code or from the “My QR code” page.",
+    scanManualPlaceholder: "RSM|member|… or member ID",
+    scanManualCta: "Check in",
+    scanUnknown: "Unknown code — this member isn't part of your club.",
+    scanCheckedIn: "{name} checked in.",
 
     /* Selbst einchecken */
     selfTitle: "Check yourself in",

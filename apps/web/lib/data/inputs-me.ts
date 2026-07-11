@@ -47,4 +47,22 @@ export interface MeRepository {
   getMyPreferences(): Promise<UserPreferences>;
   /** Eigene Präferenzen ändern (PATCH /me/preferences; notifications wird gemergt). */
   updateMyPreferences(patch: UpdateMyPreferencesInput): Promise<UserPreferences>;
+
+  /* ---------- App-Shell: eigenes Profilfoto entfernen ---------- */
+  /**
+   * Eigenes Profilfoto auf ALLEN eigenen Mitgliedschaften entfernen (DELETE
+   * /me/photo — bewusst nicht Teil des OpenAPI-Contracts, roher Media-Fetch mit
+   * Bearer). Idempotent; der Blob wird serverseitig best-effort gelöscht, wenn
+   * kein Roster ihn mehr referenziert. 404 (keine Mitgliedschaft) wird als
+   * no-op (updatedMembers 0) behandelt. Nach Erfolg gilt avatarUrl = null.
+   */
+  removeMyPhoto(): Promise<RemoveMyPhotoResult>;
+}
+
+/** Ergebnis von removeMyPhoto — avatarUrl ist danach immer null. */
+export interface RemoveMyPhotoResult {
+  /** Anzahl der eigenen Mitgliedschaften, deren Foto geleert wurde. */
+  updatedMembers: number;
+  /** Anzahl serverseitig gelöschter Blobs (0 im Mock/no-op). */
+  removedBlobs: number;
 }

@@ -29,6 +29,7 @@ type ModuleMethods = Pick<
   | "listChatChannels"
   | "listChatMessages"
   | "sendChatMessage"
+  | "uploadChatImage"
   | "deleteChatMessage"
   | "listCheckins"
   | "createCheckin"
@@ -38,6 +39,16 @@ type ModuleMethods = Pick<
   | "updateRegionalEvent"
   | "deleteRegionalEvent"
 >;
+
+/** Datei als data:-URL lesen — im Mock sofort anzeigbar, kein Server nötig. */
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("FileReader-Fehler"));
+    reader.readAsDataURL(file);
+  });
+}
 
 /** Anzeigename eines Mitglieds (Fallback = ID). */
 function memberName(id: string): string {
@@ -133,6 +144,10 @@ export const moduleRepositoryBatch4: ModuleMethods = {
     };
     messageStore.push(created);
     return created;
+  },
+  async uploadChatImage(file): Promise<string> {
+    // Mock: data:-URL statt echter Media-Route — direkt als imageUrl nutzbar.
+    return fileToDataUrl(file);
   },
   async deleteChatMessage(messageId): Promise<{ id: string }> {
     const idx = messageStore.findIndex((m) => m.id === messageId);

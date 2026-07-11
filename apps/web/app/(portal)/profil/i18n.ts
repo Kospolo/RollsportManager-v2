@@ -69,6 +69,15 @@ export const profilDict = {
     photoUpload: "Foto hochladen",
     photoUploading: "Wird hochgeladen …",
     photoDiscard: "Auswahl entfernen",
+    photoRemove: "Foto entfernen",
+    photoRemoving: "Wird entfernt …",
+    photoRemovedToast: "Dein Profilfoto wurde entfernt",
+    photoRemoveEyebrow: "Profilfoto",
+    photoRemoveTitle: "Profilfoto entfernen?",
+    photoRemoveBody:
+      "Dein Profilfoto wird von deinem Profil entfernt und deine Initialen erscheinen wieder. Du kannst jederzeit ein neues Foto hochladen.",
+    photoRemoveConfirm: "Foto entfernen",
+    photoRemoveCancel: "Abbrechen",
     photoSavedToast: "Dein Profilfoto ist aktualisiert",
     photoPrivacy:
       "Dein Foto ist für die Vereinsleitung und andere Mitglieder deines Vereins sichtbar und wird auf dem Vereinsserver gespeichert. Du bearbeitest ausschließlich dein eigenes Profil.",
@@ -161,6 +170,15 @@ export const profilDict = {
     photoUpload: "Upload photo",
     photoUploading: "Uploading …",
     photoDiscard: "Remove selection",
+    photoRemove: "Remove photo",
+    photoRemoving: "Removing …",
+    photoRemovedToast: "Your profile photo has been removed",
+    photoRemoveEyebrow: "Profile photo",
+    photoRemoveTitle: "Remove profile photo?",
+    photoRemoveBody:
+      "Your profile photo will be removed and your initials will show again. You can upload a new photo anytime.",
+    photoRemoveConfirm: "Remove photo",
+    photoRemoveCancel: "Cancel",
     photoSavedToast: "Your profile photo has been updated",
     photoPrivacy:
       "Your photo is visible to your club's administration and other club members and is stored on the club server. You are only editing your own profile.",

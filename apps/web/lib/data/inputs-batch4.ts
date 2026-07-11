@@ -111,6 +111,14 @@ export interface Batch4Repository {
   listChatMessages(query: ChatMessageQuery): Promise<ChatMessage[]>;
   /** Nachricht senden (Team-Kanal posten = NUR Team-Mitglied; Sender wird serverseitig abgeleitet, kein senderMemberId). */
   sendChatMessage(input: SendChatMessageInput): Promise<ChatMessage>;
+  /**
+   * Chat-Bild hochladen (Stufe 1, POST /media/upload) und die als imageUrl
+   * verwendbare, absolute Media-URL zurückgeben. Der Aufrufer reicht sie danach
+   * als `imageUrl` an sendChatMessage weiter (Schema verlangt eine gültige URL).
+   * Anzeige wieder über data.loadMediaUrl (auth-/RLS-gated). Im Mock-Modus wird
+   * eine sofort nutzbare data:-URL des Bildes geliefert (kein Server nötig).
+   */
+  uploadChatImage(file: File): Promise<string>;
   /** Nachricht soft-löschen — liefert die gelöschte ID zurück. */
   deleteChatMessage(messageId: Id): Promise<{ id: Id }>;
 

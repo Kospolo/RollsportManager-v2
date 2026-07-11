@@ -30,6 +30,7 @@ export type IconName =
   | "lock"
   | "bank"
   | "mail"
+  | "image"
   | "download"
   | "edit"
   | "pin"
@@ -166,6 +167,13 @@ const PATHS: Record<IconName, React.ReactNode> = {
     <>
       <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
       <path d="m3.5 7.5 8.5 6 8.5-6" />
+    </>
+  ),
+  image: (
+    <>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+      <circle cx="8.75" cy="9.5" r="1.6" />
+      <path d="m4.5 17 4.5-4.5 3 3 3.5-3.5 4 4" />
     </>
   ),
   download: <path d="M12 4v10.5M7.5 10.5 12 15l4.5-4.5M4.5 19.5h15" />,

@@ -119,6 +119,7 @@ export type {
 } from "./inputs-financec";
 export type {
   MeRepository,
+  RemoveMyPhotoResult,
   UpdateMyPreferencesInput,
   UpdateMyProfileInput,
 } from "./inputs-me";
