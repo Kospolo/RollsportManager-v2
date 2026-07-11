@@ -12,6 +12,7 @@ import { moduleApiRepositoryFinance } from "./modules-finance";
 import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
 import { moduleApiRepositoryMe } from "./modules-me";
+import { moduleApiRepositoryOrg } from "./modules-org";
 import {
   mapAttendance,
   mapClub,
@@ -326,6 +327,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
   ...moduleApiRepositoryMe,
+
+  /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
+  ...moduleApiRepositoryOrg,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

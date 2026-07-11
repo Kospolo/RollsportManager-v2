@@ -25,7 +25,10 @@ export type MehrIconName =
   | "regevents"
   | "gallery"
   | "document"
-  | "chart";
+  | "chart"
+  | "department"
+  | "locker"
+  | "anniversary";
 
 const PATHS: Record<MehrIconName, ReactNode> = {
   news: (
@@ -132,6 +135,30 @@ const PATHS: Record<MehrIconName, ReactNode> = {
     <>
       <path d="M4.5 4v15.5H20" />
       <path d="M8.5 16.5v-3.5M12.5 16.5v-7M16.5 16.5v-5" />
+    </>
+  ),
+  department: (
+    <>
+      <rect x="9" y="3.5" width="6" height="4.5" rx="1" />
+      <rect x="3.5" y="15" width="6" height="4.5" rx="1" />
+      <rect x="14.5" y="15" width="6" height="4.5" rx="1" />
+      <path d="M12 8v3M6.5 15v-2a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v2" />
+    </>
+  ),
+  locker: (
+    <>
+      <rect x="5" y="3.5" width="14" height="17" rx="1.5" />
+      <path d="M12 3.5v17" />
+      <path d="M8 6.5h2M14 6.5h2" />
+      <path d="M9 10v2M15 10v2" />
+    </>
+  ),
+  anniversary: (
+    <>
+      <rect x="4.5" y="9.5" width="15" height="10.5" rx="1.5" />
+      <path d="M4.5 13.5h15M12 9.5V20" />
+      <path d="M12 9.5C10.1 9.5 8.5 8.4 8.5 6.9c0-1 .7-1.9 1.7-1.9 1.6 0 2.3 2.3 1.8 4.5z" />
+      <path d="M12 9.5c1.9 0 3.5-1.1 3.5-2.6 0-1-.7-1.9-1.7-1.9-1.6 0-2.3 2.3-1.8 4.5z" />
     </>
   ),
 };

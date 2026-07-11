@@ -1,0 +1,120 @@
+"use client";
+
+import { useT } from "@/lib/i18n";
+import { fullName } from "@/lib/data";
+import type { Member, Team } from "@/lib/types";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Avatar } from "@/components/ui/Avatar";
+import { AvatarStack, type AvatarStackPerson } from "@/components/ui/AvatarStack";
+import { Icon } from "@/components/shell/icons";
+import { teamsViewDict } from "./i18n";
+import { rosterOf } from "./derive";
+
+/**
+ * Eine Team-Kachel der Mitgliederansicht (REIN LESEND): Name + Altersklasse,
+ * Trainerstab (Avatar + Klartext), Sportler:innen als Avatar-Stapel mit Zahl
+ * und ersten Namen. Keine Aktionen — die Verwaltung läuft über
+ * /verwaltung/teams. „Mein Team"-Badge, wenn `mine`.
+ */
+
+const MAX_NAMES = 4;
+
+function toStackPeople(members: Member[]): AvatarStackPerson[] {
+  return members.map((m) => ({ personId: m.id, firstName: m.firstName, lastName: m.lastName }));
+}
+
+export function TeamMemberCard({
+  team,
+  members,
+  mine = false,
+}: {
+  team: Team;
+  members: Member[];
+  mine?: boolean;
+}) {
+  const t = useT(teamsViewDict);
+  const { coaches, skaters } = rosterOf(team, members);
+
+  const memberLabel =
+    skaters.length === 1
+      ? t("membersCountOne")
+      : t("membersCountMany", { n: skaters.length });
+
+  const shownNames = skaters.slice(0, MAX_NAMES).map(fullName);
+  const restNames = skaters.length - shownNames.length;
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-brand-soft text-brand-ink">
+          <Icon name="teams" className="ic h-5 w-5" />
+        </span>
+        <div className="grid min-w-0 gap-1">
+          <h3 className="truncate font-display text-h3 tracking-[-0.01em] text-ink">{team.name}</h3>
+          <span className="flex flex-wrap items-center gap-2">
+            {team.ageGroup ? (
+              <Badge tone="neutral">{team.ageGroup}</Badge>
+            ) : (
+              <span className="text-caption text-ink-faint">{t("noAgeGroup")}</span>
+            )}
+            {mine && <Badge tone="brand">{t("badgeMine")}</Badge>}
+          </span>
+        </div>
+      </div>
+
+      {/* Trainerstab */}
+      <div className="grid gap-2">
+        <span className="eyebrow">{t("coachesLabel")}</span>
+        {coaches.length > 0 ? (
+          <ul className="grid gap-2">
+            {coaches.map((coach) => (
+              <li key={coach.id} className="flex items-center gap-2.5">
+                <Avatar
+                  personId={coach.id}
+                  firstName={coach.firstName}
+                  lastName={coach.lastName}
+                  size="s"
+                />
+                <span className="min-w-0 truncate text-[13px] font-semibold text-ink">
+                  {fullName(coach)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="flex items-center gap-2.5 text-[13px] text-ink-faint">
+            <span className="grid h-7 w-7 flex-none place-items-center rounded-full bg-sunken text-ink-faint">
+              <Icon name="user" className="ic h-3.5 w-3.5" />
+            </span>
+            {t("noCoaches")}
+          </span>
+        )}
+      </div>
+
+      {/* Sportler:innen */}
+      <div className="mt-auto grid gap-2 border-t border-line pt-3">
+        <div className="flex items-center justify-between gap-2">
+          <span className="eyebrow">{t("membersLabel")}</span>
+          <span className="text-[13px] font-semibold text-ink-soft">
+            {skaters.length > 0 ? memberLabel : t("emptyRoster")}
+          </span>
+        </div>
+        {skaters.length > 0 && (
+          <div className="grid gap-2">
+            <AvatarStack
+              people={toStackPeople(skaters)}
+              size="s"
+              max={6}
+              label={t("teamRoster", { team: team.name })}
+            />
+            <p className="text-caption leading-snug text-ink-faint">
+              {shownNames.join(" · ")}
+              {restNames > 0 && <> · {t("moreNames", { n: restNames })}</>}
+            </p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}

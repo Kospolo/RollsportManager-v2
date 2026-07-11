@@ -113,6 +113,15 @@ export type {
   UpdateMyPreferencesInput,
   UpdateMyProfileInput,
 } from "./inputs-me";
+export type {
+  AssignLockerInput,
+  CreateDepartmentInput,
+  CreateLockerInput,
+  OrgRepository,
+  SetDepartmentMembersInput,
+  UpdateDepartmentInput,
+  UpdateLockerInput,
+} from "./inputs-org";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {

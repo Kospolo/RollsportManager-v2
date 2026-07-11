@@ -20,6 +20,7 @@ import { moduleRepositoryFinance } from "./modules-finance";
 import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
 import { moduleRepositoryMe } from "./modules-me";
+import { moduleRepositoryOrg } from "./modules-org";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -259,6 +260,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
   ...moduleRepositoryMe,
+
+  /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
+  ...moduleRepositoryOrg,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

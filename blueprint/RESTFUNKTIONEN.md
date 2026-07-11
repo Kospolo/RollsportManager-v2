@@ -17,11 +17,11 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 - [x] Finanz-Hub-Gating: Hub zeigt Nicht-Finanz-Rollen NUR die schlanke „Meine Rechnungen"-Sicht (eigene Rechnungen via memberId, Entwürfe ausgeblendet, Offen-Summe) — alle Verwaltungs-Karten (Bankabgleich/Jahresabschluss/Spenden/…) für sie ausgeblendet; Hub-Kacheln + Routen only can_manage_finance, Durchsetzung serverseitig (RLS/403). Als Mitglied verifiziert (Screenshots). Offen bleibt nur die beitragsspezifische „Meine Mitgliedschaft"-Selfview + automatische Rabatt-Anwendung (siehe Beitragsverwaltung)
 
 ## 2. Organisation
-- [~] Teams: eigener Verwaltungs-Bereich da, aber kein Mitglieder-Team-Screen „Meine Teams" wie v1
-- [ ] Abteilungen (abteilungen)
-- [ ] Schließfächer (schliessfaecher)
+- [x] Teams-Mitgliedersicht (teams): lesende „Meine Teams"-/„Alle Teams im Verein"-Ansicht wie v1 — Trainerstab + Mitglieder-Avatare + Kaderzahl je Team, Nur-Lese-Hinweis (Anlegen/Kader = Vereinsleitung unter „Verwaltung"), über die Facade (getTeams/getMembers/getCurrentUser), is_club_member lesend. Gegen Dev-API verifiziert (Screenshot), Mehr-Hub-Kachel „Neu". (Der bestehende Verwaltungs-Bereich /verwaltung/teams bleibt für Anlegen/Kader.)
+- [x] Abteilungen (abteilungen): Liste + Anlegen/Bearbeiten/Löschen (is_club_admin) + Mitglieder-Zuordnung per Sheet mit Suche/Auswahl (is_club_trainer), Leitung/Beschreibung/Sortierung, über die Facade (mock+api). Migration 0017, Routen /departments (+/members), RLS + protect-Trigger. Gegen Dev-API als Vorstand (owner) verifiziert (Screenshot Liste + Mitglieder-Sheet); Mitglied liest, Verwaltungs-/Zuordnungs-Aktionen serverseitig 403 (curl belegt: member/coach POST→403, admin→201, coach PUT members→200).
+- [x] Schließfächer (schliessfaecher): Liste mit Status-Filter (Alle/Frei/Belegt/Defekt) + Stammdaten Anlegen/Bearbeiten/Löschen + Defekt-/Repariert-Meldung (is_club_admin) + Zuordnen/Umbuchen/Freigeben per Sheet mit Mitglieder-Suche (is_club_trainer), über die Facade (mock+api). Migration 0017, Routen /lockers (+/assign,/release), RLS + protect_locker-Trigger. Gegen Dev-API als owner verifiziert (Screenshot Liste + Zuordnen-Sheet); Mitglied liest nur (0 Verwaltungs-Buttons), Schreibpfade serverseitig 403 (curl: assign coach→200/member→403).
 - [ ] Wartelisten (warteliste) — Tabelle existiert, kein UI
-- [ ] Jubiläen (jubilaeen)
+- [x] Jubiläen (jubilaeen): chronologische „Jubiläen & Meilensteine"-Ansicht der nächsten 12 Monate — Vereinsjubiläen (runde Mitgliedsjahre) + runde Geburtstage, „Als nächstes"-Banner, Filter (Alle/Vereinsjubiläen/Geburtstage), Monatsgruppierung + Countdown, rein lesend über die Facade (getAnniversaries → GET /reports/anniversaries), is_club_member. Gegen Dev-API verifiziert (Screenshot), Mehr-Hub-Kachel „Neu".
 - [ ] Mehrvereins-Onboarding: verein-create, verein-join, Verein-Wechsler „Verwaltest: X"
 
 ## 3. Wettkampf-Tiefe

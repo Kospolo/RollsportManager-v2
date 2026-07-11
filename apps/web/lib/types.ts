@@ -54,6 +54,12 @@ export type * from "./types-financeb";
 // String-Union (snake_case-frei) und wird als Typ re-exportiert.
 export type * from "./types-financec";
 
+// Organisations-Modul-Typen (Abteilungen, Schließfächer, Jubiläen) leben
+// ausgelagert in lib/types-org.ts, sind aber weiterhin unter "@/lib/types"
+// verfügbar. LockerStatus/AnniversaryKind sind reine String-Unions und werden
+// als Typen re-exportiert.
+export type * from "./types-org";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {
