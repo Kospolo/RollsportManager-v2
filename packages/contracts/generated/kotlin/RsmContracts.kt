@@ -67,7 +67,7 @@ enum class LedgerCategoryKind {
 }
 
 @Serializable
-enum class Theme {
+enum class ThemePreference {
     @SerialName("light") LIGHT,
     @SerialName("dark") DARK,
     @SerialName("auto") AUTO;
@@ -665,7 +665,7 @@ data class NotificationPrefs(
 data class UserPreferences(
     @SerialName("profile_id") val profileId: String,
     val locale: String,
-    val theme: Theme,
+    val theme: ThemePreference,
     val notifications: NotificationPrefs,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -673,7 +673,7 @@ data class UserPreferences(
 @Serializable
 data class UserPreferencesUpdate(
     val locale: String? = null,
-    val theme: Theme? = null,
+    val theme: ThemePreference? = null,
     val notifications: NotificationPrefs? = null
 )
 

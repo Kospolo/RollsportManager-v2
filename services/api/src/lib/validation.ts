@@ -198,7 +198,9 @@ export const notificationPrefsSchema = z
   })
   .openapi('NotificationPrefs');
 
-export const themeSchema = z.enum(['light', 'dark', 'auto']).openapi('Theme');
+// Schema-Name bewusst 'ThemePreference' (nicht 'Theme'): der generierte Swift-Typ
+// 'Theme' kollidierte sonst mit dem Design-System-Enum Theme der iOS-App.
+export const themeSchema = z.enum(['light', 'dark', 'auto']).openapi('ThemePreference');
 
 export const userPreferencesSchema = z
   .object({

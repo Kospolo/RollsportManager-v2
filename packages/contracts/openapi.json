@@ -1125,7 +1125,7 @@
           }
         }
       },
-      "Theme": {
+      "ThemePreference": {
         "type": "string",
         "enum": [
           "light",
@@ -1161,7 +1161,7 @@
             "type": "string"
           },
           "theme": {
-            "$ref": "#/components/schemas/Theme"
+            "$ref": "#/components/schemas/ThemePreference"
           },
           "notifications": {
             "$ref": "#/components/schemas/NotificationPrefs"
@@ -1194,7 +1194,7 @@
             "maxLength": 10
           },
           "theme": {
-            "$ref": "#/components/schemas/Theme"
+            "$ref": "#/components/schemas/ThemePreference"
           },
           "notifications": {
             "$ref": "#/components/schemas/NotificationPrefs"

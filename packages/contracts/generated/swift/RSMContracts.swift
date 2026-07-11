@@ -96,7 +96,7 @@ public enum LedgerCategoryKind: String, Codable, CaseIterable, Sendable, Equatab
     case expense = "expense"
 }
 
-public enum Theme: String, Codable, CaseIterable, Sendable, Equatable {
+public enum ThemePreference: String, Codable, CaseIterable, Sendable, Equatable {
     case light = "light"
     case dark = "dark"
     case auto = "auto"
@@ -1344,7 +1344,7 @@ public struct UserPreferences: Codable, Equatable, Sendable {
     /// Format: uuid
     public var profileId: String
     public var locale: String
-    public var theme: Theme
+    public var theme: ThemePreference
     public var notifications: NotificationPrefs
     public var updatedAt: String
 
@@ -1359,7 +1359,7 @@ public struct UserPreferences: Codable, Equatable, Sendable {
     public init(
         profileId: String,
         locale: String,
-        theme: Theme,
+        theme: ThemePreference,
         notifications: NotificationPrefs,
         updatedAt: String
     ) {
@@ -1373,7 +1373,7 @@ public struct UserPreferences: Codable, Equatable, Sendable {
 
 public struct UserPreferencesUpdate: Codable, Equatable, Sendable {
     public var locale: String?
-    public var theme: Theme?
+    public var theme: ThemePreference?
     public var notifications: NotificationPrefs?
 
     enum CodingKeys: String, CodingKey {
@@ -1384,7 +1384,7 @@ public struct UserPreferencesUpdate: Codable, Equatable, Sendable {
 
     public init(
         locale: String? = nil,
-        theme: Theme? = nil,
+        theme: ThemePreference? = nil,
         notifications: NotificationPrefs? = nil
     ) {
         self.locale = locale

@@ -248,8 +248,8 @@ export interface MeUpdate {
   "birth_date"?: string | null;
 }
 
-export type Theme = "light" | "dark" | "auto";
-export const ThemeValues: readonly Theme[] = ["light", "dark", "auto"] as const;
+export type ThemePreference = "light" | "dark" | "auto";
+export const ThemePreferenceValues: readonly ThemePreference[] = ["light", "dark", "auto"] as const;
 
 export interface NotificationPrefs {
   "events"?: boolean;
@@ -261,14 +261,14 @@ export interface NotificationPrefs {
 export interface UserPreferences {
   "profile_id": string;
   "locale": string;
-  "theme": Theme;
+  "theme": ThemePreference;
   "notifications": NotificationPrefs;
   "updated_at": string;
 }
 
 export interface UserPreferencesUpdate {
   "locale"?: string;
-  "theme"?: Theme;
+  "theme"?: ThemePreference;
   "notifications"?: NotificationPrefs;
 }
 
