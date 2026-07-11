@@ -3,7 +3,10 @@
 --
 -- The v1 disaster class: a member promoted himself to super_admin via a
 -- writable role column. v2 must block ALL of these paths structurally:
---   * member UPDATEs own role            -> silently filtered (0 rows)
+--   * member UPDATEs own role            -> rejected by trigger (P0001; the
+--       self-service master-data policy from 0016 lets a member reach their own
+--       row, so the protect_club_membership trigger now fires instead of RLS
+--       silently filtering — same block, one line earlier)
 --   * member INSERTs roster rows         -> rejected (own AND foreign club)
 --   * admin UPDATEs own role             -> rejected by trigger
 --   * admin touches owner rows           -> rejected by trigger
@@ -24,9 +27,9 @@ set local role authenticated;
 
 do $$
 begin
-  perform testkit.affects('escalation (v1 gap): member UPDATE of own role is a silent no-op',
+  perform testkit.throws('escalation (v1 gap): member UPDATE of own role is rejected by the trigger',
     $q$update app.club_members set role = 'admin'
-        where id = 'a0000000-0000-4000-8000-000000000009'$q$, 0);
+        where id = 'a0000000-0000-4000-8000-000000000009'$q$, 'P0001');
   perform testkit.affects('escalation: member cannot touch other roster rows (0 rows)',
     $q$update app.club_members set role = 'member'
         where id = 'a0000000-0000-4000-8000-000000000004'$q$, 0);

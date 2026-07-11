@@ -45,6 +45,13 @@ enum class AssignableClubRole {
 }
 
 @Serializable
+enum class Theme {
+    @SerialName("light") LIGHT,
+    @SerialName("dark") DARK,
+    @SerialName("auto") AUTO;
+}
+
+@Serializable
 enum class EventType {
     @SerialName("training") TRAINING,
     @SerialName("competition") COMPETITION,
@@ -391,6 +398,64 @@ data class ClubMemberUpdate(
 @Serializable
 data class ClubMemberRoleChange(
     val role: AssignableClubRole
+)
+
+@Serializable
+data class MeMembership(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("club_short_name") val clubShortName: String?,
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
+    val email: String?,
+    @SerialName("birth_date") val birthDate: String?,
+    val role: ClubRole,
+    val status: MemberStatus,
+    @SerialName("joined_on") val joinedOn: String?,
+    @SerialName("valid_until") val validUntil: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class Me(
+    @SerialName("profile_id") val profileId: String,
+    @SerialName("display_name") val displayName: String?,
+    val locale: String,
+    val memberships: List<MeMembership>
+)
+
+@Serializable
+data class MeUpdate(
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
+    val email: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null
+)
+
+@Serializable
+data class NotificationPrefs(
+    val events: Boolean? = null,
+    val invoices: Boolean? = null,
+    val news: Boolean? = null,
+    val chat: Boolean? = null
+)
+
+@Serializable
+data class UserPreferences(
+    @SerialName("profile_id") val profileId: String,
+    val locale: String,
+    val theme: Theme,
+    val notifications: NotificationPrefs,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class UserPreferencesUpdate(
+    val locale: String? = null,
+    val theme: Theme? = null,
+    val notifications: NotificationPrefs? = null
 )
 
 @Serializable

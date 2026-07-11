@@ -77,6 +77,12 @@ public enum AssignableClubRole: String, Codable, CaseIterable, Sendable, Equatab
     case guestCoach = "guest_coach"
 }
 
+public enum Theme: String, Codable, CaseIterable, Sendable, Equatable {
+    case light = "light"
+    case dark = "dark"
+    case auto = "auto"
+}
+
 public enum EventType: String, Codable, CaseIterable, Sendable, Equatable {
     case training = "training"
     case competition = "competition"
@@ -674,6 +680,208 @@ public struct ClubMemberRoleChange: Codable, Equatable, Sendable {
         role: AssignableClubRole
     ) {
         self.role = role
+    }
+}
+
+public struct MeMembership: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String
+    public var clubShortName: String?
+    public var firstName: String
+    public var lastName: String
+    public var email: String?
+    public var birthDate: String?
+    public var role: ClubRole
+    public var status: MemberStatus
+    public var joinedOn: String?
+    public var validUntil: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case clubShortName = "club_short_name"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+        case birthDate = "birth_date"
+        case role
+        case status
+        case joinedOn = "joined_on"
+        case validUntil = "valid_until"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        clubName: String,
+        clubShortName: String? = nil,
+        firstName: String,
+        lastName: String,
+        email: String? = nil,
+        birthDate: String? = nil,
+        role: ClubRole,
+        status: MemberStatus,
+        joinedOn: String? = nil,
+        validUntil: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.clubName = clubName
+        self.clubShortName = clubShortName
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+        self.birthDate = birthDate
+        self.role = role
+        self.status = status
+        self.joinedOn = joinedOn
+        self.validUntil = validUntil
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct Me: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var profileId: String
+    public var displayName: String?
+    public var locale: String
+    public var memberships: [MeMembership]
+
+    enum CodingKeys: String, CodingKey {
+        case profileId = "profile_id"
+        case displayName = "display_name"
+        case locale
+        case memberships
+    }
+
+    public init(
+        profileId: String,
+        displayName: String? = nil,
+        locale: String,
+        memberships: [MeMembership]
+    ) {
+        self.profileId = profileId
+        self.displayName = displayName
+        self.locale = locale
+        self.memberships = memberships
+    }
+}
+
+public struct MeUpdate: Codable, Equatable, Sendable {
+    public var firstName: String?
+    public var lastName: String?
+    /// Format: email
+    public var email: String?
+    /// Format: date
+    public var birthDate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case email
+        case birthDate = "birth_date"
+    }
+
+    public init(
+        firstName: String? = nil,
+        lastName: String? = nil,
+        email: String? = nil,
+        birthDate: String? = nil
+    ) {
+        self.firstName = firstName
+        self.lastName = lastName
+        self.email = email
+        self.birthDate = birthDate
+    }
+}
+
+public struct NotificationPrefs: Codable, Equatable, Sendable {
+    public var events: Bool?
+    public var invoices: Bool?
+    public var news: Bool?
+    public var chat: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case events
+        case invoices
+        case news
+        case chat
+    }
+
+    public init(
+        events: Bool? = nil,
+        invoices: Bool? = nil,
+        news: Bool? = nil,
+        chat: Bool? = nil
+    ) {
+        self.events = events
+        self.invoices = invoices
+        self.news = news
+        self.chat = chat
+    }
+}
+
+public struct UserPreferences: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var profileId: String
+    public var locale: String
+    public var theme: Theme
+    public var notifications: NotificationPrefs
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case profileId = "profile_id"
+        case locale
+        case theme
+        case notifications
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        profileId: String,
+        locale: String,
+        theme: Theme,
+        notifications: NotificationPrefs,
+        updatedAt: String
+    ) {
+        self.profileId = profileId
+        self.locale = locale
+        self.theme = theme
+        self.notifications = notifications
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct UserPreferencesUpdate: Codable, Equatable, Sendable {
+    public var locale: String?
+    public var theme: Theme?
+    public var notifications: NotificationPrefs?
+
+    enum CodingKeys: String, CodingKey {
+        case locale
+        case theme
+        case notifications
+    }
+
+    public init(
+        locale: String? = nil,
+        theme: Theme? = nil,
+        notifications: NotificationPrefs? = nil
+    ) {
+        self.locale = locale
+        self.theme = theme
+        self.notifications = notifications
     }
 }
 

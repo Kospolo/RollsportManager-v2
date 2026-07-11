@@ -114,6 +114,61 @@ export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
 }
 
+export interface MeMembership {
+  "id": string;
+  "club_id": string;
+  "club_name": string;
+  "club_short_name": string | null;
+  "first_name": string;
+  "last_name": string;
+  "email": string | null;
+  "birth_date": string | null;
+  "role": ClubRole;
+  "status": MemberStatus;
+  "joined_on": string | null;
+  "valid_until": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface Me {
+  "profile_id": string;
+  "display_name": string | null;
+  "locale": string;
+  "memberships": MeMembership[];
+}
+
+export interface MeUpdate {
+  "first_name"?: string;
+  "last_name"?: string;
+  "email"?: string | null;
+  "birth_date"?: string | null;
+}
+
+export type Theme = "light" | "dark" | "auto";
+export const ThemeValues: readonly Theme[] = ["light", "dark", "auto"] as const;
+
+export interface NotificationPrefs {
+  "events"?: boolean;
+  "invoices"?: boolean;
+  "news"?: boolean;
+  "chat"?: boolean;
+}
+
+export interface UserPreferences {
+  "profile_id": string;
+  "locale": string;
+  "theme": Theme;
+  "notifications": NotificationPrefs;
+  "updated_at": string;
+}
+
+export interface UserPreferencesUpdate {
+  "locale"?: string;
+  "theme"?: Theme;
+  "notifications"?: NotificationPrefs;
+}
+
 export interface Team {
   "id": string;
   "club_id": string;

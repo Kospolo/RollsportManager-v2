@@ -134,6 +134,88 @@ export const inviteSchema = z
   })
   .openapi('ClubMemberInvite');
 
+// ---------------------------------------------------------------------------
+// App-shell "/me" (migration 0016). The caller's own identity: the profile
+// plus every membership row that belongs to them (profile_id = auth.uid()),
+// each enriched with its club name/role. PATCH /me edits master data on the
+// caller's OWN membership rows only — never role/status (that stays with the
+// dedicated members endpoints + the protect_club_membership trigger).
+// ---------------------------------------------------------------------------
+
+export const meMembershipSchema = z
+  .object({
+    /** club_members.id of this membership. */
+    id: uuid,
+    club_id: uuid,
+    club_name: z.string(),
+    club_short_name: z.string().nullable(),
+    first_name: z.string(),
+    last_name: z.string(),
+    email: z.string().nullable(),
+    birth_date: isoDate.nullable(),
+    role: clubRoleSchema,
+    status: memberStatusSchema,
+    joined_on: isoDate.nullable(),
+    valid_until: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('MeMembership');
+
+export const meSchema = z
+  .object({
+    /** auth.users id (= app.profiles.id) of the logged-in user. */
+    profile_id: uuid,
+    display_name: z.string().nullable(),
+    locale: z.string(),
+    /** Every club the user is a member of, with their per-club role. */
+    memberships: z.array(meMembershipSchema),
+  })
+  .openapi('Me');
+
+/** Edit the caller's OWN master data (never role/status — server-enforced). */
+export const meUpdateSchema = z
+  .object({
+    first_name: z.string().min(1).optional(),
+    last_name: z.string().min(1).optional(),
+    email: z.string().email().nullable().optional(),
+    birth_date: z.string().date().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('MeUpdate');
+
+// app-shell notification toggle-flags (v1 notification-settings.html) --------
+export const notificationPrefsSchema = z
+  .object({
+    events: z.boolean().optional(),
+    invoices: z.boolean().optional(),
+    news: z.boolean().optional(),
+    chat: z.boolean().optional(),
+  })
+  .openapi('NotificationPrefs');
+
+export const themeSchema = z.enum(['light', 'dark', 'auto']).openapi('Theme');
+
+export const userPreferencesSchema = z
+  .object({
+    profile_id: uuid,
+    locale: z.string(),
+    theme: themeSchema,
+    notifications: notificationPrefsSchema,
+    updated_at: timestamp,
+  })
+  .openapi('UserPreferences');
+
+/** PATCH preferences: partial; notifications is deep-merged server-side. */
+export const userPreferencesUpdateSchema = z
+  .object({
+    locale: z.string().min(2).max(10).optional(),
+    theme: themeSchema.optional(),
+    notifications: notificationPrefsSchema.optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('UserPreferencesUpdate');
+
 export const rsvpSchema = z
   .object({
     id: uuid,

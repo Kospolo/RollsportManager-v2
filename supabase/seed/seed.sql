@@ -1001,4 +1001,15 @@ values
    'seed-doc-elterninfo-sommerfest.pdf', 'application/pdf', 405,
    'a0000000-0000-4000-8000-000000000001', now() - interval '8 days');
 
+-- ----------------------------------------------------------------------------
+-- User preferences (app-shell, migration 0016) — one row per login identity.
+-- Every dev persona (incl. the platform admin) gets locale de + theme auto and
+-- all notification toggles on, so the shell (Einstellungen, Glocke) has data.
+-- ----------------------------------------------------------------------------
+insert into app.user_preferences (profile_id, locale, theme, notifications)
+select p.id, 'de', 'auto',
+       '{"events": true, "invoices": true, "news": true, "chat": true}'::jsonb
+from app.profiles p
+on conflict (profile_id) do nothing;
+
 commit;

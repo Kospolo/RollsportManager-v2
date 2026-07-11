@@ -188,6 +188,43 @@ export class ApiClient {
   }
 
   /**
+   * The logged-in user: profile + their own club memberships
+   * 
+   * `GET /me`
+   */
+  async getMe(options?: RequestOptions): Promise<M.Me> {
+    return this.request<M.Me>("GET", "/me", { auth: true, options });
+  }
+
+  /**
+   * Edit the caller's OWN master data (never role/status)
+   * Updates first/last name, e-mail and birth date on the caller's own membership row(s). member_id = self is enforced server-side (WHERE profile_id = auth.uid()); a member may do this without can_manage_members. Role, status and validity are deliberately NOT editable here - the protect_club_membership trigger rejects any self-change to them.
+   * 
+   * `PATCH /me`
+   */
+  async patchMe(body: M.MeUpdate, options?: RequestOptions): Promise<M.Me> {
+    return this.request<M.Me>("PATCH", "/me", { body, auth: true, options });
+  }
+
+  /**
+   * The caller's app-shell preferences (locale/theme/notifications)
+   * 
+   * `GET /me/preferences`
+   */
+  async getMePreferences(options?: RequestOptions): Promise<M.UserPreferences> {
+    return this.request<M.UserPreferences>("GET", "/me/preferences", { auth: true, options });
+  }
+
+  /**
+   * Upsert the caller's preferences (notifications deep-merged)
+   * 
+   * `PATCH /me/preferences`
+   */
+  async patchMePreferences(body: M.UserPreferencesUpdate, options?: RequestOptions): Promise<M.UserPreferences> {
+    return this.request<M.UserPreferences>("PATCH", "/me/preferences", { body, auth: true, options });
+  }
+
+  /**
    * List teams of a club incl. skater/coach member ids
    * 
    * `GET /clubs/{clubId}/teams`
