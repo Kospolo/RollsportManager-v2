@@ -38,6 +38,8 @@ import { documentsRouter } from './routes/documents.js';
 import { reportsRouter } from './routes/reports.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { ledgerRouter } from './routes/ledger.js';
+import { bankTransactionsRouter } from './routes/bank-transactions.js';
+import { donationsRouter } from './routes/donations.js';
 import { membershipCategoriesRouter } from './routes/membership-categories.js';
 import { memberFeesRouter } from './routes/member-fees.js';
 import { familyDiscountsRouter } from './routes/family-discounts.js';
@@ -46,6 +48,7 @@ import { entitlementsRouter } from './routes/entitlements.js';
 import { productsRouter } from './modules/billing/products.js';
 import { createWebhooksRouter } from './modules/billing/webhooks.js';
 import { createMediaRouter } from './modules/media/routes.js';
+import { createExportRouter } from './modules/export/routes.js';
 import { dunningRouter } from './modules/dunning/routes.js';
 
 /**
@@ -121,6 +124,8 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', reportsRouter);
   app.route('/', invoicesRouter);
   app.route('/', ledgerRouter);
+  app.route('/', bankTransactionsRouter);
+  app.route('/', donationsRouter);
   app.route('/', membershipCategoriesRouter);
   app.route('/', memberFeesRouter);
   app.route('/', familyDiscountsRouter);
@@ -134,6 +139,10 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   // raw bytes, so deliberately NOT in the OpenAPI contract (like the webhooks).
   // Requires auth (not in PUBLIC_PATHS): POST /media/upload, GET /media/{key}.
   app.route('/', createMediaRouter());
+  // plain Hono router - GoBD/DATEV CSV export; streams text/csv, so deliberately
+  // NOT in the OpenAPI contract (like media/webhooks). Requires auth (not in
+  // PUBLIC_PATHS): GET /export/ledger.csv, GET /export/datev.
+  app.route('/', createExportRouter());
   // plain Hono router - dev-only persona login, 404 unless AUTH_MODE=dev,
   // deliberately NOT in the OpenAPI contract (see routes/dev-login.ts)
   app.route('/', createDevLoginRouter());
@@ -181,6 +190,8 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'gallery', description: 'Galerie (PRO): photos & video clips — read = member+PRO, curate = staff+PRO' },
     { name: 'documents', description: 'Dokumente (PRO): club files — read = member+PRO, curate = staff+PRO' },
     { name: 'invoices', description: 'Money ops (invoice numbers are service-mode only)' },
+    { name: 'bank-transactions', description: 'Bankabgleich: reconcile bank movements against invoices (finance only)' },
+    { name: 'donations', description: 'Spenden + Spendenbescheinigung (finance writes; donor reads own)' },
     { name: 'entitlements', description: 'License state - read-only for clients' },
     { name: 'products', description: 'Product catalog (single source of truth for pricing)' },
     { name: 'dunning', description: 'Server-side dunning runs (dry-run first, stage >= 2 needs approval)' },

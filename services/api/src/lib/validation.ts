@@ -735,6 +735,194 @@ export const sepaMandateUpdateSchema = z
   })
   .openapi('SepaMandateUpdate');
 
+// ---------------------------------------------------------------------------
+// Finance depth C (migration 0015): bank reconciliation (bank_transactions),
+// donations (Spenden + Spendenbescheinigung) and the annual report aggregate.
+// ---------------------------------------------------------------------------
+
+export const bankTransactionStatusSchema = z
+  .enum(['unmatched', 'matched', 'ignored'])
+  .openapi('BankTransactionStatus');
+
+export const bankTransactionSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    booked_on: isoDate,
+    /** Signed integer cents: + Eingang / - Ausgang (Blueprint §4). */
+    amount_cents: z.coerce.number().int(),
+    purpose: z.string().nullable(),
+    counterparty: z.string().nullable(),
+    matched_invoice_id: uuid.nullable(),
+    matched_ledger_entry_id: uuid.nullable(),
+    status: bankTransactionStatusSchema,
+    imported_at: timestamp,
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('BankTransaction');
+
+/** One imported/manual bank movement. amount_cents is SIGNED (+ in / - out). */
+export const bankTransactionCreateSchema = z
+  .object({
+    club_id: uuid,
+    booked_on: z.string().date(),
+    amount_cents: z.number().int(),
+    purpose: z.string().min(1).optional(),
+    counterparty: z.string().min(1).optional(),
+  })
+  .openapi('BankTransactionCreate');
+
+/** A single row of a CSV/JSON bank statement import (club_id comes from the envelope). */
+export const bankTransactionImportRowSchema = z
+  .object({
+    booked_on: z.string().date(),
+    amount_cents: z.number().int(),
+    purpose: z.string().min(1).optional(),
+    counterparty: z.string().min(1).optional(),
+  })
+  .openapi('BankTransactionImportRow');
+
+export const bankTransactionImportSchema = z
+  .object({
+    club_id: uuid,
+    rows: z.array(bankTransactionImportRowSchema).min(1).max(1000),
+  })
+  .openapi('BankTransactionImport');
+
+/**
+ * Match a bank transaction to an open invoice. post_to_ledger (default true)
+ * also marks the invoice paid (open → paid) and appends a Kassenbuch income row
+ * under ledger_category_id — the reconciliation booking.
+ */
+export const bankTransactionMatchSchema = z
+  .object({
+    invoice_id: uuid,
+    /** Also settle the invoice + post a matching Kassenbuch income row (default true). */
+    post_to_ledger: z.boolean().default(true),
+    ledger_category_id: uuid.optional(),
+  })
+  .openapi('BankTransactionMatch');
+
+/** Ignore a bank transaction (irrelevant/private). Optional note is logged only. */
+export const bankTransactionIgnoreSchema = z
+  .object({ note: z.string().max(500).optional() })
+  .openapi('BankTransactionIgnore');
+
+// donations ------------------------------------------------------------------
+export const donationSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** Optional link to the donor's membership (null = external donor). */
+    member_id: uuid.nullable(),
+    donor_name: z.string(),
+    donor_address: z.string().nullable(),
+    amount_cents: z.coerce.number().int(),
+    donation_date: isoDate,
+    receipt_number: z.string(),
+    purpose: z.string().nullable(),
+    /** Set when the Spendenbescheinigung was actually issued (null = draft). */
+    issued_at: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+    deleted_at: timestamp.nullable(),
+  })
+  .openapi('Donation');
+
+/** Create a donation. receipt_number is generated race-free server-side. */
+export const donationCreateSchema = z
+  .object({
+    club_id: uuid,
+    member_id: uuid.optional(),
+    donor_name: z.string().min(1),
+    donor_address: z.string().min(1).optional(),
+    amount_cents: z.number().int().nonnegative(),
+    donation_date: z.string().date(),
+    purpose: z.string().min(1).optional(),
+  })
+  .openapi('DonationCreate');
+
+/**
+ * PATCH a donation: edit the (still unissued) master data and/or issue the
+ * receipt (issue=true → issued_at=now). Once issued, master data is frozen
+ * (GoBD) — only edits before issuing are accepted.
+ */
+export const donationUpdateSchema = z
+  .object({
+    donor_name: z.string().min(1).optional(),
+    donor_address: z.string().min(1).optional(),
+    amount_cents: z.number().int().nonnegative().optional(),
+    donation_date: z.string().date().optional(),
+    purpose: z.string().min(1).optional(),
+    /** true = issue the Spendenbescheinigung now (sets issued_at). */
+    issue: z.boolean().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('DonationUpdate');
+
+/** Printable Spendenbescheinigung: the donation fields plus a rendered text block. */
+export const donationReceiptSchema = z
+  .object({
+    donation_id: uuid,
+    receipt_number: z.string(),
+    club_name: z.string(),
+    donor_name: z.string(),
+    donor_address: z.string().nullable(),
+    amount_cents: z.coerce.number().int(),
+    amount_eur: z.string(),
+    donation_date: isoDate,
+    purpose: z.string().nullable(),
+    issued: z.boolean(),
+    /** Ready-to-print Bescheinigungstext (DE). */
+    text: z.string(),
+  })
+  .openapi('DonationReceipt');
+
+// annual report ("Jahresabschluss") -----------------------------------------
+export const annualCategoryRowSchema = z
+  .object({
+    category_id: uuid.nullable(),
+    category_name: z.string().nullable(),
+    kind: ledgerCategoryKindSchema.nullable(),
+    /** Summed signed cents booked to this category in the year. */
+    amount_cents: z.coerce.number().int(),
+  })
+  .openapi('AnnualCategoryRow');
+
+export const annualYearTotalsSchema = z
+  .object({
+    year: z.coerce.number().int(),
+    income_cents: z.coerce.number().int(),
+    expense_cents: z.coerce.number().int(),
+    net_cents: z.coerce.number().int(),
+  })
+  .openapi('AnnualYearTotals');
+
+export const annualReportSchema = z
+  .object({
+    club_id: uuid,
+    year: z.coerce.number().int(),
+    /** Kassenbuch totals for the year (income positive, expense positive, net = income - expense). */
+    income_cents: z.coerce.number().int(),
+    expense_cents: z.coerce.number().int(),
+    net_cents: z.coerce.number().int(),
+    /** Per-category signed sums (null category = uncategorised/legacy rows). */
+    by_category: z.array(annualCategoryRowSchema),
+    /** Prior-year totals for the comparison column. */
+    prev_year: annualYearTotalsSchema,
+    /** Change in net vs. the previous year (net_cents - prev_year.net_cents). */
+    net_delta_cents: z.coerce.number().int(),
+    /** Donations recorded in the year. */
+    donations_total_cents: z.coerce.number().int(),
+    donations_count: z.coerce.number().int(),
+    /** Invoices still open at year end (issued on/before Dec 31 of the year). */
+    open_items_count: z.coerce.number().int(),
+    open_items_total_cents: z.coerce.number().int(),
+  })
+  .openapi('AnnualReport');
+
 export const competitionEntrySchema = z
   .object({
     id: uuid,

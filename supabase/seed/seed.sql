@@ -539,6 +539,55 @@ values
    'a0000000-0000-4000-8000-000000000014', 'RSV-M-2021-0014', '1290', 'Petra Köhler',      '2021-02-01', 'active');
 
 -- ----------------------------------------------------------------------------
+-- Bank transactions (Bankabgleich, 0015). amount_cents SIGNED: + Eingang /
+-- - Ausgang. Three unmatched income rows line up 1:1 with OPEN invoices so the
+-- match flow has real candidates (Müller 8600 → inv …002, Finn 3500 → …003,
+-- Charlotte 5400 → …005); one outgoing hall rent, one anonymous donation-in,
+-- one ignored private transfer. status starts 'unmatched' (the treasurer's inbox).
+-- ----------------------------------------------------------------------------
+insert into app.bank_transactions (id, club_id, booked_on, amount_cents, purpose, counterparty, status, imported_at)
+values
+  ('ba000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 3,  8600::bigint,  'Vereinsbeitrag Q2 Familie Müller',        'Stefanie Müller',              'unmatched', now() - interval '3 days'),
+  ('ba000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 3,  3500::bigint,  'Wettkampfmeldung Bezirksmeisterschaft',   'Petra Köhler',                 'unmatched', now() - interval '3 days'),
+  ('ba000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 2,  5400::bigint,  'Vereinsbeitrag Q2',                       'Charlotte Vogler',             'unmatched', now() - interval '2 days'),
+  ('ba000000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 2, -68000::bigint, 'Hallenmiete Ballei-Sporthalle Juli',      'Stadt Neckarsulm',             'unmatched', now() - interval '2 days'),
+  ('ba000000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 1,  5000::bigint,  'Spende Sommerfest',                       'Familie Weber',                'unmatched', now() - interval '1 day'),
+  ('ba000000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001',
+   current_date - 1,  2500::bigint,  'Private Rückbuchung (kein Vereinsbezug)', 'J. Häberle',                   'ignored',   now() - interval '1 day');
+
+-- ----------------------------------------------------------------------------
+-- Donations (Spenden, 0015). receipt_number is race-free per club+year via
+-- app.next_donation_receipt_number(); the seed hard-codes SP-<year>-0001…0003
+-- and primes the counter to 3 so the next API-created donation gets 0004.
+-- Katrin (member …009) and Petra (member …014) have a member link (each sees
+-- ONLY their own under RLS); the Weber donation is anonymous (member_id null).
+-- ----------------------------------------------------------------------------
+insert into app.donations (id, club_id, member_id, donor_name, donor_address, amount_cents, donation_date, receipt_number, purpose, issued_at)
+select v.id::uuid, 'c1ab0000-0000-4000-8000-000000000001', v.member_id::uuid,
+       v.donor_name, v.donor_address, v.amount_cents, v.donation_date,
+       format('SP-%s-%s', extract(year from now())::int, v.num), v.purpose, v.issued_at
+from (values
+  ('d1a00000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   'Katrin Grünewald', 'Marktstraße 3, 74172 Neckarsulm', 5000::bigint, current_date - 40, '0001',
+   'Förderung Nachwuchsarbeit', (current_date - 38 + time '09:00')::timestamptz),
+  ('d1a00000-0000-4000-8000-000000000002', null,
+   'Familie Weber', 'Rathausplatz 1, 74172 Neckarsulm', 10000::bigint, current_date - 20, '0002',
+   'Spende Sommerfest', null::timestamptz),
+  ('d1a00000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000014',
+   'Petra Köhler', 'Amorbacher Str. 9, 74172 Neckarsulm', 2500::bigint, current_date - 10, '0003',
+   null, null::timestamptz)
+) as v(id, member_id, donor_name, donor_address, amount_cents, donation_date, num, purpose, issued_at);
+
+-- keep the receipt sequence consistent with the highest seeded number (0003)
+insert into app.donation_receipt_counters (club_id, year, last_value)
+values ('c1ab0000-0000-4000-8000-000000000001', extract(year from now())::int, 3);
+
+-- ----------------------------------------------------------------------------
 -- Tasks (mock task-01 … task-07)
 -- ----------------------------------------------------------------------------
 insert into app.tasks (club_id, title, done, due_on, assignee_member_id, competition_id)

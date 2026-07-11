@@ -905,6 +905,38 @@ export interface ReportSummary {
   "upcoming_events": ReportUpcomingEvent[];
 }
 
+export type LedgerCategoryKind = "income" | "expense";
+export const LedgerCategoryKindValues: readonly LedgerCategoryKind[] = ["income", "expense"] as const;
+
+export interface AnnualCategoryRow {
+  "category_id": string | null;
+  "category_name": string | null;
+  "kind": LedgerCategoryKind;
+  "amount_cents": number | null;
+}
+
+export interface AnnualYearTotals {
+  "year": number | null;
+  "income_cents": number | null;
+  "expense_cents": number | null;
+  "net_cents": number | null;
+}
+
+export interface AnnualReport {
+  "club_id": string;
+  "year": number | null;
+  "income_cents": number | null;
+  "expense_cents": number | null;
+  "net_cents": number | null;
+  "by_category": AnnualCategoryRow[];
+  "prev_year": AnnualYearTotals;
+  "net_delta_cents": number | null;
+  "donations_total_cents": number | null;
+  "donations_count": number | null;
+  "open_items_count": number | null;
+  "open_items_total_cents": number | null;
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 
@@ -944,9 +976,6 @@ export interface InvoiceUpdate {
 
 export type CounterpartyKind = "person" | "org";
 export const CounterpartyKindValues: readonly CounterpartyKind[] = ["person", "org"] as const;
-
-export type LedgerCategoryKind = "income" | "expense";
-export const LedgerCategoryKindValues: readonly LedgerCategoryKind[] = ["income", "expense"] as const;
 
 export interface LedgerEntry {
   "id": string;
@@ -999,6 +1028,104 @@ export interface LedgerCategoryCreate {
 
 export interface LedgerReverse {
   "description"?: string;
+}
+
+export type BankTransactionStatus = "unmatched" | "matched" | "ignored";
+export const BankTransactionStatusValues: readonly BankTransactionStatus[] = ["unmatched", "matched", "ignored"] as const;
+
+export interface BankTransaction {
+  "id": string;
+  "club_id": string;
+  "booked_on": string;
+  "amount_cents": number | null;
+  "purpose": string | null;
+  "counterparty": string | null;
+  "matched_invoice_id": string | null;
+  "matched_ledger_entry_id": string | null;
+  "status": BankTransactionStatus;
+  "imported_at": string;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface BankTransactionCreate {
+  "club_id": string;
+  "booked_on": string;
+  "amount_cents": number;
+  "purpose"?: string;
+  "counterparty"?: string;
+}
+
+export interface BankTransactionImportRow {
+  "booked_on": string;
+  "amount_cents": number;
+  "purpose"?: string;
+  "counterparty"?: string;
+}
+
+export interface BankTransactionImport {
+  "club_id": string;
+  "rows": BankTransactionImportRow[];
+}
+
+export interface BankTransactionMatch {
+  "invoice_id": string;
+  "post_to_ledger"?: boolean;
+  "ledger_category_id"?: string;
+}
+
+export interface BankTransactionIgnore {
+  "note"?: string;
+}
+
+export interface Donation {
+  "id": string;
+  "club_id": string;
+  "member_id": string | null;
+  "donor_name": string;
+  "donor_address": string | null;
+  "amount_cents": number | null;
+  "donation_date": string;
+  "receipt_number": string;
+  "purpose": string | null;
+  "issued_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface DonationCreate {
+  "club_id": string;
+  "member_id"?: string;
+  "donor_name": string;
+  "donor_address"?: string;
+  "amount_cents": number;
+  "donation_date": string;
+  "purpose"?: string;
+}
+
+export interface DonationUpdate {
+  "donor_name"?: string;
+  "donor_address"?: string;
+  "amount_cents"?: number;
+  "donation_date"?: string;
+  "purpose"?: string;
+  "issue"?: boolean;
+}
+
+export interface DonationReceipt {
+  "donation_id": string;
+  "receipt_number": string;
+  "club_name": string;
+  "donor_name": string;
+  "donor_address": string | null;
+  "amount_cents": number | null;
+  "amount_eur": string;
+  "donation_date": string;
+  "purpose": string | null;
+  "issued": boolean;
+  "text": string;
 }
 
 export type MembershipPeriod = "monthly" | "quarterly" | "yearly" | "once";

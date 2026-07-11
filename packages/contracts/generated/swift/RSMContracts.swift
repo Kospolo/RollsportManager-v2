@@ -180,6 +180,11 @@ public enum GalleryKind: String, Codable, CaseIterable, Sendable, Equatable {
     case video = "video"
 }
 
+public enum LedgerCategoryKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case income = "income"
+    case expense = "expense"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -192,9 +197,10 @@ public enum CounterpartyKind: String, Codable, CaseIterable, Sendable, Equatable
     case org = "org"
 }
 
-public enum LedgerCategoryKind: String, Codable, CaseIterable, Sendable, Equatable {
-    case income = "income"
-    case expense = "expense"
+public enum BankTransactionStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case unmatched = "unmatched"
+    case matched = "matched"
+    case ignored = "ignored"
 }
 
 public enum MembershipPeriod: String, Codable, CaseIterable, Sendable, Equatable {
@@ -3669,6 +3675,118 @@ public struct ReportSummary: Codable, Equatable, Sendable {
     }
 }
 
+public struct AnnualCategoryRow: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var categoryId: String?
+    public var categoryName: String?
+    public var kind: LedgerCategoryKind
+    public var amountCents: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case categoryId = "category_id"
+        case categoryName = "category_name"
+        case kind
+        case amountCents = "amount_cents"
+    }
+
+    public init(
+        categoryId: String? = nil,
+        categoryName: String? = nil,
+        kind: LedgerCategoryKind,
+        amountCents: Int? = nil
+    ) {
+        self.categoryId = categoryId
+        self.categoryName = categoryName
+        self.kind = kind
+        self.amountCents = amountCents
+    }
+}
+
+public struct AnnualYearTotals: Codable, Equatable, Sendable {
+    public var year: Int?
+    public var incomeCents: Int?
+    public var expenseCents: Int?
+    public var netCents: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case year
+        case incomeCents = "income_cents"
+        case expenseCents = "expense_cents"
+        case netCents = "net_cents"
+    }
+
+    public init(
+        year: Int? = nil,
+        incomeCents: Int? = nil,
+        expenseCents: Int? = nil,
+        netCents: Int? = nil
+    ) {
+        self.year = year
+        self.incomeCents = incomeCents
+        self.expenseCents = expenseCents
+        self.netCents = netCents
+    }
+}
+
+public struct AnnualReport: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var year: Int?
+    public var incomeCents: Int?
+    public var expenseCents: Int?
+    public var netCents: Int?
+    public var byCategory: [AnnualCategoryRow]
+    public var prevYear: AnnualYearTotals
+    public var netDeltaCents: Int?
+    public var donationsTotalCents: Int?
+    public var donationsCount: Int?
+    public var openItemsCount: Int?
+    public var openItemsTotalCents: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case year
+        case incomeCents = "income_cents"
+        case expenseCents = "expense_cents"
+        case netCents = "net_cents"
+        case byCategory = "by_category"
+        case prevYear = "prev_year"
+        case netDeltaCents = "net_delta_cents"
+        case donationsTotalCents = "donations_total_cents"
+        case donationsCount = "donations_count"
+        case openItemsCount = "open_items_count"
+        case openItemsTotalCents = "open_items_total_cents"
+    }
+
+    public init(
+        clubId: String,
+        year: Int? = nil,
+        incomeCents: Int? = nil,
+        expenseCents: Int? = nil,
+        netCents: Int? = nil,
+        byCategory: [AnnualCategoryRow],
+        prevYear: AnnualYearTotals,
+        netDeltaCents: Int? = nil,
+        donationsTotalCents: Int? = nil,
+        donationsCount: Int? = nil,
+        openItemsCount: Int? = nil,
+        openItemsTotalCents: Int? = nil
+    ) {
+        self.clubId = clubId
+        self.year = year
+        self.incomeCents = incomeCents
+        self.expenseCents = expenseCents
+        self.netCents = netCents
+        self.byCategory = byCategory
+        self.prevYear = prevYear
+        self.netDeltaCents = netDeltaCents
+        self.donationsTotalCents = donationsTotalCents
+        self.donationsCount = donationsCount
+        self.openItemsCount = openItemsCount
+        self.openItemsTotalCents = openItemsTotalCents
+    }
+}
+
 public struct Invoice: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String
@@ -4019,6 +4137,384 @@ public struct LedgerReverse: Codable, Equatable, Sendable {
         description: String? = nil
     ) {
         self.description = description
+    }
+}
+
+public struct BankTransaction: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var bookedOn: String
+    public var amountCents: Int?
+    public var purpose: String?
+    public var counterparty: String?
+    /// Format: uuid
+    public var matchedInvoiceId: String?
+    /// Format: uuid
+    public var matchedLedgerEntryId: String?
+    public var status: BankTransactionStatus
+    public var importedAt: String
+    public var createdAt: String
+    public var updatedAt: String
+    public var deletedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case bookedOn = "booked_on"
+        case amountCents = "amount_cents"
+        case purpose
+        case counterparty
+        case matchedInvoiceId = "matched_invoice_id"
+        case matchedLedgerEntryId = "matched_ledger_entry_id"
+        case status
+        case importedAt = "imported_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case deletedAt = "deleted_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        bookedOn: String,
+        amountCents: Int? = nil,
+        purpose: String? = nil,
+        counterparty: String? = nil,
+        matchedInvoiceId: String? = nil,
+        matchedLedgerEntryId: String? = nil,
+        status: BankTransactionStatus,
+        importedAt: String,
+        createdAt: String,
+        updatedAt: String,
+        deletedAt: String? = nil
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.bookedOn = bookedOn
+        self.amountCents = amountCents
+        self.purpose = purpose
+        self.counterparty = counterparty
+        self.matchedInvoiceId = matchedInvoiceId
+        self.matchedLedgerEntryId = matchedLedgerEntryId
+        self.status = status
+        self.importedAt = importedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
+    }
+}
+
+public struct BankTransactionCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: date
+    public var bookedOn: String
+    public var amountCents: Int
+    public var purpose: String?
+    public var counterparty: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case bookedOn = "booked_on"
+        case amountCents = "amount_cents"
+        case purpose
+        case counterparty
+    }
+
+    public init(
+        clubId: String,
+        bookedOn: String,
+        amountCents: Int,
+        purpose: String? = nil,
+        counterparty: String? = nil
+    ) {
+        self.clubId = clubId
+        self.bookedOn = bookedOn
+        self.amountCents = amountCents
+        self.purpose = purpose
+        self.counterparty = counterparty
+    }
+}
+
+public struct BankTransactionImportRow: Codable, Equatable, Sendable {
+    /// Format: date
+    public var bookedOn: String
+    public var amountCents: Int
+    public var purpose: String?
+    public var counterparty: String?
+
+    enum CodingKeys: String, CodingKey {
+        case bookedOn = "booked_on"
+        case amountCents = "amount_cents"
+        case purpose
+        case counterparty
+    }
+
+    public init(
+        bookedOn: String,
+        amountCents: Int,
+        purpose: String? = nil,
+        counterparty: String? = nil
+    ) {
+        self.bookedOn = bookedOn
+        self.amountCents = amountCents
+        self.purpose = purpose
+        self.counterparty = counterparty
+    }
+}
+
+public struct BankTransactionImport: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var rows: [BankTransactionImportRow]
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case rows
+    }
+
+    public init(
+        clubId: String,
+        rows: [BankTransactionImportRow]
+    ) {
+        self.clubId = clubId
+        self.rows = rows
+    }
+}
+
+public struct BankTransactionMatch: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var invoiceId: String
+    public var postToLedger: Bool?
+    /// Format: uuid
+    public var ledgerCategoryId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case invoiceId = "invoice_id"
+        case postToLedger = "post_to_ledger"
+        case ledgerCategoryId = "ledger_category_id"
+    }
+
+    public init(
+        invoiceId: String,
+        postToLedger: Bool? = true,
+        ledgerCategoryId: String? = nil
+    ) {
+        self.invoiceId = invoiceId
+        self.postToLedger = postToLedger
+        self.ledgerCategoryId = ledgerCategoryId
+    }
+}
+
+public struct BankTransactionIgnore: Codable, Equatable, Sendable {
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case note
+    }
+
+    public init(
+        note: String? = nil
+    ) {
+        self.note = note
+    }
+}
+
+public struct Donation: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String?
+    public var donorName: String
+    public var donorAddress: String?
+    public var amountCents: Int?
+    public var donationDate: String
+    public var receiptNumber: String
+    public var purpose: String?
+    public var issuedAt: String?
+    public var createdAt: String
+    public var updatedAt: String
+    public var deletedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case donorName = "donor_name"
+        case donorAddress = "donor_address"
+        case amountCents = "amount_cents"
+        case donationDate = "donation_date"
+        case receiptNumber = "receipt_number"
+        case purpose
+        case issuedAt = "issued_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case deletedAt = "deleted_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        memberId: String? = nil,
+        donorName: String,
+        donorAddress: String? = nil,
+        amountCents: Int? = nil,
+        donationDate: String,
+        receiptNumber: String,
+        purpose: String? = nil,
+        issuedAt: String? = nil,
+        createdAt: String,
+        updatedAt: String,
+        deletedAt: String? = nil
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.memberId = memberId
+        self.donorName = donorName
+        self.donorAddress = donorAddress
+        self.amountCents = amountCents
+        self.donationDate = donationDate
+        self.receiptNumber = receiptNumber
+        self.purpose = purpose
+        self.issuedAt = issuedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
+    }
+}
+
+public struct DonationCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String?
+    public var donorName: String
+    public var donorAddress: String?
+    public var amountCents: Int
+    /// Format: date
+    public var donationDate: String
+    public var purpose: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case donorName = "donor_name"
+        case donorAddress = "donor_address"
+        case amountCents = "amount_cents"
+        case donationDate = "donation_date"
+        case purpose
+    }
+
+    public init(
+        clubId: String,
+        memberId: String? = nil,
+        donorName: String,
+        donorAddress: String? = nil,
+        amountCents: Int,
+        donationDate: String,
+        purpose: String? = nil
+    ) {
+        self.clubId = clubId
+        self.memberId = memberId
+        self.donorName = donorName
+        self.donorAddress = donorAddress
+        self.amountCents = amountCents
+        self.donationDate = donationDate
+        self.purpose = purpose
+    }
+}
+
+public struct DonationUpdate: Codable, Equatable, Sendable {
+    public var donorName: String?
+    public var donorAddress: String?
+    public var amountCents: Int?
+    /// Format: date
+    public var donationDate: String?
+    public var purpose: String?
+    public var issue: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case donorName = "donor_name"
+        case donorAddress = "donor_address"
+        case amountCents = "amount_cents"
+        case donationDate = "donation_date"
+        case purpose
+        case issue
+    }
+
+    public init(
+        donorName: String? = nil,
+        donorAddress: String? = nil,
+        amountCents: Int? = nil,
+        donationDate: String? = nil,
+        purpose: String? = nil,
+        issue: Bool? = nil
+    ) {
+        self.donorName = donorName
+        self.donorAddress = donorAddress
+        self.amountCents = amountCents
+        self.donationDate = donationDate
+        self.purpose = purpose
+        self.issue = issue
+    }
+}
+
+public struct DonationReceipt: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var donationId: String
+    public var receiptNumber: String
+    public var clubName: String
+    public var donorName: String
+    public var donorAddress: String?
+    public var amountCents: Int?
+    public var amountEur: String
+    public var donationDate: String
+    public var purpose: String?
+    public var issued: Bool
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+        case donationId = "donation_id"
+        case receiptNumber = "receipt_number"
+        case clubName = "club_name"
+        case donorName = "donor_name"
+        case donorAddress = "donor_address"
+        case amountCents = "amount_cents"
+        case amountEur = "amount_eur"
+        case donationDate = "donation_date"
+        case purpose
+        case issued
+        case text
+    }
+
+    public init(
+        donationId: String,
+        receiptNumber: String,
+        clubName: String,
+        donorName: String,
+        donorAddress: String? = nil,
+        amountCents: Int? = nil,
+        amountEur: String,
+        donationDate: String,
+        purpose: String? = nil,
+        issued: Bool,
+        text: String
+    ) {
+        self.donationId = donationId
+        self.receiptNumber = receiptNumber
+        self.clubName = clubName
+        self.donorName = donorName
+        self.donorAddress = donorAddress
+        self.amountCents = amountCents
+        self.amountEur = amountEur
+        self.donationDate = donationDate
+        self.purpose = purpose
+        self.issued = issued
+        self.text = text
     }
 }
 

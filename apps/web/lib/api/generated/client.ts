@@ -955,6 +955,15 @@ export class ApiClient {
   }
 
   /**
+   * Annual financial close (Jahresabschluss) - can_manage_finance only
+   * 
+   * `GET /reports/annual`
+   */
+  async getReportsAnnual(query: { "club_id": string; "year": number }, options?: RequestOptions): Promise<M.AnnualReport> {
+    return this.request<M.AnnualReport>("GET", "/reports/annual", { query, auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever see their own / their children's invoices regardless of the filter (RLS).
    * 
@@ -1048,6 +1057,94 @@ export class ApiClient {
    */
   async postLedgerByEntryIdReverse(entryId: string, body?: M.LedgerReverse, options?: RequestOptions): Promise<M.LedgerEntry> {
     return this.request<M.LedgerEntry>("POST", `/ledger/${encodeURIComponent(entryId)}/reverse`, { body, auth: true, options });
+  }
+
+  /**
+   * List bank transactions of a club - finance roles only
+   * Optional status filter (unmatched/matched/ignored). amount_cents is signed (+ Eingang / - Ausgang). RLS restricts reads to can_manage_finance.
+   * 
+   * `GET /bank-transactions`
+   */
+  async getBankTransactions(query: { "club_id": string; "status"?: M.BankTransactionStatus }, options?: RequestOptions): Promise<M.BankTransaction[]> {
+    return this.request<M.BankTransaction[]>("GET", "/bank-transactions", { query, auth: true, options });
+  }
+
+  /**
+   * Record a bank transaction manually (can_manage_finance)
+   * 
+   * `POST /bank-transactions`
+   */
+  async postBankTransactions(body: M.BankTransactionCreate, options?: RequestOptions): Promise<M.BankTransaction> {
+    return this.request<M.BankTransaction>("POST", "/bank-transactions", { body, auth: true, options });
+  }
+
+  /**
+   * Import a bank statement (rows) - all start unmatched (can_manage_finance)
+   * Bulk insert of parsed statement lines. Each row: booked_on, signed amount_cents, optional purpose/counterparty. Returns the created rows (all status=unmatched).
+   * 
+   * `POST /bank-transactions/import`
+   */
+  async postBankTransactionsImport(body: M.BankTransactionImport, options?: RequestOptions): Promise<M.BankTransaction[]> {
+    return this.request<M.BankTransaction[]>("POST", "/bank-transactions/import", { body, auth: true, options });
+  }
+
+  /**
+   * Match a bank transaction to an invoice (can_manage_finance)
+   * Links the transaction to an invoice of the SAME club and sets status=matched. post_to_ledger=true (default) additionally marks an OPEN invoice paid and appends a matching Kassenbuch income row (recorded as matched_ledger_entry_id). Already-paid invoices are linked without a second booking.
+   * 
+   * `PATCH /bank-transactions/{transactionId}/match`
+   */
+  async patchBankTransactionsByTransactionIdMatch(transactionId: string, body: M.BankTransactionMatch, options?: RequestOptions): Promise<M.BankTransaction> {
+    return this.request<M.BankTransaction>("PATCH", `/bank-transactions/${encodeURIComponent(transactionId)}/match`, { body, auth: true, options });
+  }
+
+  /**
+   * Ignore a bank transaction (can_manage_finance)
+   * 
+   * `PATCH /bank-transactions/{transactionId}/ignore`
+   */
+  async patchBankTransactionsByTransactionIdIgnore(transactionId: string, body?: M.BankTransactionIgnore, options?: RequestOptions): Promise<M.BankTransaction> {
+    return this.request<M.BankTransaction>("PATCH", `/bank-transactions/${encodeURIComponent(transactionId)}/ignore`, { body, auth: true, options });
+  }
+
+  /**
+   * List donations (RLS: finance all, member their own)
+   * Optional member_id filter. A plain member only ever sees their own donation(s) regardless of the filter (RLS); finance sees everything.
+   * 
+   * `GET /donations`
+   */
+  async getDonations(query: { "club_id": string; "member_id"?: string }, options?: RequestOptions): Promise<M.Donation[]> {
+    return this.request<M.Donation[]>("GET", "/donations", { query, auth: true, options });
+  }
+
+  /**
+   * Create a donation (can_manage_finance) with a race-free receipt number
+   * Service-mode operation: receipt_number comes from app.next_donation_receipt_number() (service_role only). The finance role is re-verified against the database, not just claims.
+   * 
+   * `POST /donations`
+   */
+  async postDonations(body: M.DonationCreate, options?: RequestOptions): Promise<M.Donation> {
+    return this.request<M.Donation>("POST", "/donations", { body, auth: true, options });
+  }
+
+  /**
+   * Edit or issue a donation (can_manage_finance)
+   * Edit the master data (only while unissued) and/or issue the Spendenbescheinigung (issue=true → issued_at=now). An already-issued donation is frozen (GoBD): master-data edits are rejected, re-issuing is a no-op conflict.
+   * 
+   * `PATCH /donations/{donationId}`
+   */
+  async patchDonationsByDonationId(donationId: string, body: M.DonationUpdate, options?: RequestOptions): Promise<M.Donation> {
+    return this.request<M.Donation>("PATCH", `/donations/${encodeURIComponent(donationId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Printable Spendenbescheinigung (RLS: finance or the donor)
+   * Renders the donation into a ready-to-print Bescheinigungstext (DE). Visible to finance or the donor member themselves (RLS on app.donations).
+   * 
+   * `GET /donations/{donationId}/receipt`
+   */
+  async getDonationsByDonationIdReceipt(donationId: string, options?: RequestOptions): Promise<M.DonationReceipt> {
+    return this.request<M.DonationReceipt>("GET", `/donations/${encodeURIComponent(donationId)}/receipt`, { auth: true, options });
   }
 
   /**

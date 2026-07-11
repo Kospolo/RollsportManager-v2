@@ -79,6 +79,14 @@
       "description": "Money ops (invoice numbers are service-mode only)"
     },
     {
+      "name": "bank-transactions",
+      "description": "Bankabgleich: reconcile bank movements against invoices (finance only)"
+    },
+    {
+      "name": "donations",
+      "description": "Spenden + Spendenbescheinigung (finance writes; donor reads own)"
+    },
+    {
       "name": "entitlements",
       "description": "License state - read-only for clients"
     },
@@ -3986,6 +3994,136 @@
           "upcoming_events"
         ]
       },
+      "LedgerCategoryKind": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "income",
+          "expense"
+        ]
+      },
+      "AnnualCategoryRow": {
+        "type": "object",
+        "properties": {
+          "category_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "category_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LedgerCategoryKind"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "category_id",
+          "category_name",
+          "kind",
+          "amount_cents"
+        ]
+      },
+      "AnnualYearTotals": {
+        "type": "object",
+        "properties": {
+          "year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "income_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "expense_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "net_cents": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "year",
+          "income_cents",
+          "expense_cents",
+          "net_cents"
+        ]
+      },
+      "AnnualReport": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "year": {
+            "type": "integer",
+            "nullable": true
+          },
+          "income_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "expense_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "net_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "by_category": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnnualCategoryRow"
+            }
+          },
+          "prev_year": {
+            "$ref": "#/components/schemas/AnnualYearTotals"
+          },
+          "net_delta_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "donations_total_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "donations_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "open_items_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "open_items_total_cents": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "club_id",
+          "year",
+          "income_cents",
+          "expense_cents",
+          "net_cents",
+          "by_category",
+          "prev_year",
+          "net_delta_cents",
+          "donations_total_cents",
+          "donations_count",
+          "open_items_count",
+          "open_items_total_cents"
+        ]
+      },
       "InvoiceStatus": {
         "type": "string",
         "enum": [
@@ -4160,14 +4298,6 @@
         "enum": [
           "person",
           "org"
-        ]
-      },
-      "LedgerCategoryKind": {
-        "type": "string",
-        "nullable": true,
-        "enum": [
-          "income",
-          "expense"
         ]
       },
       "LedgerEntry": {
@@ -4398,6 +4528,438 @@
             "minLength": 1
           }
         }
+      },
+      "BankTransactionStatus": {
+        "type": "string",
+        "enum": [
+          "unmatched",
+          "matched",
+          "ignored"
+        ]
+      },
+      "BankTransaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "booked_on": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "counterparty": {
+            "type": "string",
+            "nullable": true
+          },
+          "matched_invoice_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "matched_ledger_entry_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BankTransactionStatus"
+          },
+          "imported_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "booked_on",
+          "amount_cents",
+          "purpose",
+          "counterparty",
+          "matched_invoice_id",
+          "matched_ledger_entry_id",
+          "status",
+          "imported_at",
+          "created_at",
+          "updated_at",
+          "deleted_at"
+        ]
+      },
+      "BankTransactionCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "booked_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount_cents": {
+            "type": "integer"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "counterparty": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "club_id",
+          "booked_on",
+          "amount_cents"
+        ]
+      },
+      "BankTransactionImportRow": {
+        "type": "object",
+        "properties": {
+          "booked_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "amount_cents": {
+            "type": "integer"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "counterparty": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "booked_on",
+          "amount_cents"
+        ]
+      },
+      "BankTransactionImport": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BankTransactionImportRow"
+            },
+            "minItems": 1,
+            "maxItems": 1000
+          }
+        },
+        "required": [
+          "club_id",
+          "rows"
+        ]
+      },
+      "BankTransactionMatch": {
+        "type": "object",
+        "properties": {
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "post_to_ledger": {
+            "type": "boolean",
+            "default": true
+          },
+          "ledger_category_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "invoice_id"
+        ]
+      },
+      "BankTransactionIgnore": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "Donation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "donor_name": {
+            "type": "string"
+          },
+          "donor_address": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "donation_date": {
+            "type": "string"
+          },
+          "receipt_number": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "donor_name",
+          "donor_address",
+          "amount_cents",
+          "donation_date",
+          "receipt_number",
+          "purpose",
+          "issued_at",
+          "created_at",
+          "updated_at",
+          "deleted_at"
+        ]
+      },
+      "DonationCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "donor_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "donor_address": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "donation_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "club_id",
+          "donor_name",
+          "amount_cents",
+          "donation_date"
+        ]
+      },
+      "DonationUpdate": {
+        "type": "object",
+        "properties": {
+          "donor_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "donor_address": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "donation_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "issue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DonationReceipt": {
+        "type": "object",
+        "properties": {
+          "donation_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "receipt_number": {
+            "type": "string"
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "donor_name": {
+            "type": "string"
+          },
+          "donor_address": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "amount_eur": {
+            "type": "string"
+          },
+          "donation_date": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "issued": {
+            "type": "boolean"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "donation_id",
+          "receipt_number",
+          "club_name",
+          "donor_name",
+          "donor_address",
+          "amount_cents",
+          "amount_eur",
+          "donation_date",
+          "purpose",
+          "issued",
+          "text"
+        ]
       },
       "MembershipPeriod": {
         "type": "string",
@@ -13068,6 +13630,92 @@
         }
       }
     },
+    "/reports/annual": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Annual financial close (Jahresabschluss) - can_manage_finance only",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 2100
+            },
+            "required": true,
+            "name": "year",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Annual aggregate incl. prior-year comparison",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnualReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/invoices": {
       "get": {
         "tags": [
@@ -13895,6 +14543,779 @@
                 "schema": {
                   "type": "object",
                   "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bank-transactions": {
+      "get": {
+        "tags": [
+          "bank-transactions"
+        ],
+        "summary": "List bank transactions of a club - finance roles only",
+        "description": "Optional status filter (unmatched/matched/ignored). amount_cents is signed (+ Eingang / - Ausgang). RLS restricts reads to can_manage_finance.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/BankTransactionStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bank transactions, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankTransaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bank-transactions"
+        ],
+        "summary": "Record a bank transaction manually (can_manage_finance)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankTransactionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The recorded transaction (status unmatched)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bank-transactions/import": {
+      "post": {
+        "tags": [
+          "bank-transactions"
+        ],
+        "summary": "Import a bank statement (rows) - all start unmatched (can_manage_finance)",
+        "description": "Bulk insert of parsed statement lines. Each row: booked_on, signed amount_cents, optional purpose/counterparty. Returns the created rows (all status=unmatched).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankTransactionImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The imported transactions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BankTransaction"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bank-transactions/{transactionId}/match": {
+      "patch": {
+        "tags": [
+          "bank-transactions"
+        ],
+        "summary": "Match a bank transaction to an invoice (can_manage_finance)",
+        "description": "Links the transaction to an invoice of the SAME club and sets status=matched. post_to_ledger=true (default) additionally marks an OPEN invoice paid and appends a matching Kassenbuch income row (recorded as matched_ledger_entry_id). Already-paid invoices are linked without a second booking.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "transactionId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankTransactionMatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The matched transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transaction already matched/ignored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bank-transactions/{transactionId}/ignore": {
+      "patch": {
+        "tags": [
+          "bank-transactions"
+        ],
+        "summary": "Ignore a bank transaction (can_manage_finance)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "transactionId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BankTransactionIgnore"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The ignored transaction",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BankTransaction"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transaction is already matched",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/donations": {
+      "get": {
+        "tags": [
+          "donations"
+        ],
+        "summary": "List donations (RLS: finance all, member their own)",
+        "description": "Optional member_id filter. A plain member only ever sees their own donation(s) regardless of the filter (RLS); finance sees everything.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "member_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Donations visible to the caller, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Donation"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "donations"
+        ],
+        "summary": "Create a donation (can_manage_finance) with a race-free receipt number",
+        "description": "Service-mode operation: receipt_number comes from app.next_donation_receipt_number() (service_role only). The finance role is re-verified against the database, not just claims.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DonationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created donation (unissued)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Donation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/donations/{donationId}": {
+      "patch": {
+        "tags": [
+          "donations"
+        ],
+        "summary": "Edit or issue a donation (can_manage_finance)",
+        "description": "Edit the master data (only while unissued) and/or issue the Spendenbescheinigung (issue=true → issued_at=now). An already-issued donation is frozen (GoBD): master-data edits are rejected, re-issuing is a no-op conflict.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "donationId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DonationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated donation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Donation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Donation already issued (frozen)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/donations/{donationId}/receipt": {
+      "get": {
+        "tags": [
+          "donations"
+        ],
+        "summary": "Printable Spendenbescheinigung (RLS: finance or the donor)",
+        "description": "Renders the donation into a ready-to-print Bescheinigungstext (DE). Visible to finance or the donor member themselves (RLS on app.donations).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "donationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rendered receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DonationReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

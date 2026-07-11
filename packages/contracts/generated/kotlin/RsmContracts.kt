@@ -164,6 +164,12 @@ enum class GalleryKind {
 }
 
 @Serializable
+enum class LedgerCategoryKind {
+    @SerialName("income") INCOME,
+    @SerialName("expense") EXPENSE;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -178,9 +184,10 @@ enum class CounterpartyKind {
 }
 
 @Serializable
-enum class LedgerCategoryKind {
-    @SerialName("income") INCOME,
-    @SerialName("expense") EXPENSE;
+enum class BankTransactionStatus {
+    @SerialName("unmatched") UNMATCHED,
+    @SerialName("matched") MATCHED,
+    @SerialName("ignored") IGNORED;
 }
 
 @Serializable
@@ -1202,6 +1209,38 @@ data class ReportSummary(
 )
 
 @Serializable
+data class AnnualCategoryRow(
+    @SerialName("category_id") val categoryId: String?,
+    @SerialName("category_name") val categoryName: String?,
+    val kind: LedgerCategoryKind,
+    @SerialName("amount_cents") val amountCents: Long?
+)
+
+@Serializable
+data class AnnualYearTotals(
+    val year: Long?,
+    @SerialName("income_cents") val incomeCents: Long?,
+    @SerialName("expense_cents") val expenseCents: Long?,
+    @SerialName("net_cents") val netCents: Long?
+)
+
+@Serializable
+data class AnnualReport(
+    @SerialName("club_id") val clubId: String,
+    val year: Long?,
+    @SerialName("income_cents") val incomeCents: Long?,
+    @SerialName("expense_cents") val expenseCents: Long?,
+    @SerialName("net_cents") val netCents: Long?,
+    @SerialName("by_category") val byCategory: List<AnnualCategoryRow>,
+    @SerialName("prev_year") val prevYear: AnnualYearTotals,
+    @SerialName("net_delta_cents") val netDeltaCents: Long?,
+    @SerialName("donations_total_cents") val donationsTotalCents: Long?,
+    @SerialName("donations_count") val donationsCount: Long?,
+    @SerialName("open_items_count") val openItemsCount: Long?,
+    @SerialName("open_items_total_cents") val openItemsTotalCents: Long?
+)
+
+@Serializable
 data class Invoice(
     val id: String,
     @SerialName("club_id") val clubId: String,
@@ -1294,6 +1333,111 @@ data class LedgerCategoryCreate(
 @Serializable
 data class LedgerReverse(
     val description: String? = null
+)
+
+@Serializable
+data class BankTransaction(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("booked_on") val bookedOn: String,
+    @SerialName("amount_cents") val amountCents: Long?,
+    val purpose: String?,
+    val counterparty: String?,
+    @SerialName("matched_invoice_id") val matchedInvoiceId: String?,
+    @SerialName("matched_ledger_entry_id") val matchedLedgerEntryId: String?,
+    val status: BankTransactionStatus,
+    @SerialName("imported_at") val importedAt: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class BankTransactionCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("booked_on") val bookedOn: String,
+    @SerialName("amount_cents") val amountCents: Long,
+    val purpose: String? = null,
+    val counterparty: String? = null
+)
+
+@Serializable
+data class BankTransactionImportRow(
+    @SerialName("booked_on") val bookedOn: String,
+    @SerialName("amount_cents") val amountCents: Long,
+    val purpose: String? = null,
+    val counterparty: String? = null
+)
+
+@Serializable
+data class BankTransactionImport(
+    @SerialName("club_id") val clubId: String,
+    val rows: List<BankTransactionImportRow>
+)
+
+@Serializable
+data class BankTransactionMatch(
+    @SerialName("invoice_id") val invoiceId: String,
+    @SerialName("post_to_ledger") val postToLedger: Boolean? = true,
+    @SerialName("ledger_category_id") val ledgerCategoryId: String? = null
+)
+
+@Serializable
+data class BankTransactionIgnore(
+    val note: String? = null
+)
+
+@Serializable
+data class Donation(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("donor_name") val donorName: String,
+    @SerialName("donor_address") val donorAddress: String?,
+    @SerialName("amount_cents") val amountCents: Long?,
+    @SerialName("donation_date") val donationDate: String,
+    @SerialName("receipt_number") val receiptNumber: String,
+    val purpose: String?,
+    @SerialName("issued_at") val issuedAt: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class DonationCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String? = null,
+    @SerialName("donor_name") val donorName: String,
+    @SerialName("donor_address") val donorAddress: String? = null,
+    @SerialName("amount_cents") val amountCents: Long,
+    @SerialName("donation_date") val donationDate: String,
+    val purpose: String? = null
+)
+
+@Serializable
+data class DonationUpdate(
+    @SerialName("donor_name") val donorName: String? = null,
+    @SerialName("donor_address") val donorAddress: String? = null,
+    @SerialName("amount_cents") val amountCents: Long? = null,
+    @SerialName("donation_date") val donationDate: String? = null,
+    val purpose: String? = null,
+    val issue: Boolean? = null
+)
+
+@Serializable
+data class DonationReceipt(
+    @SerialName("donation_id") val donationId: String,
+    @SerialName("receipt_number") val receiptNumber: String,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("donor_name") val donorName: String,
+    @SerialName("donor_address") val donorAddress: String?,
+    @SerialName("amount_cents") val amountCents: Long?,
+    @SerialName("amount_eur") val amountEur: String,
+    @SerialName("donation_date") val donationDate: String,
+    val purpose: String?,
+    val issued: Boolean,
+    val text: String
 )
 
 @Serializable
