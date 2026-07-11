@@ -26,6 +26,7 @@ struct MainTabView: View {
         case notes, events, departments, anniversaries
         case lockers, waitlists, budget, profile
         case gallery, documents
+        case kassenbuch, rechnungen, mahnungen
         case verwaltung
         case verwMitglieder = "verw-mitglieder"
         case verwRollen = "verw-rollen"
@@ -107,6 +108,11 @@ struct MainTabView: View {
                         case .profile: ProfileRootView()
                         case .gallery: GalleryRootView()
                         case .documents: DocumentsRootView()
+                        // Finanz-Tiefe A (Deeplinks für DEBUG-Smoke; als
+                        // `member` erwartet man den Sperr-Screen).
+                        case .kassenbuch: KassenbuchRootView()
+                        case .rechnungen: RechnungenRootView()
+                        case .mahnungen: MahnwesenRootView()
                         case .verwaltung: VerwaltungHubView()
                         case .verwMitglieder: MembersAdminRootView()
                         case .verwRollen: RolesRootView()

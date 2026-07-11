@@ -219,7 +219,10 @@ enum MehrCatalog {
             id: "finance",
             titleKey: "module.finance.title", descKey: "module.finance.desc",
             systemImage: "eurosign.circle.fill", tone: .success,
-            destination: AnyView(FinanceView())
+            // Einstieg ist jetzt der Finanzen-Sub-Hub (Übersicht + Tiefe A:
+            // Kassenbuch/Rechnungen/Mahnwesen); die bestehende `FinanceView`
+            // bleibt darin die erste Kachel.
+            destination: AnyView(FinanceHubView())
         ),
     ]
 
