@@ -56,6 +56,30 @@ enum MehrCatalog {
     /// + die bereits nativen Bereiche (Ziele = bestehende Feature-Roots).
     static let available: [MehrTile] = [
         MehrTile(
+            id: "lockers",
+            titleKey: "module.lockers.title", descKey: "module.lockers.desc",
+            systemImage: "lock.square.fill", tone: .info, isNew: true,
+            destination: AnyView(LockersRootView())
+        ),
+        MehrTile(
+            id: "waitlists",
+            titleKey: "module.waitlists.title", descKey: "module.waitlists.desc",
+            systemImage: "person.badge.clock.fill", tone: .warn, isNew: true,
+            destination: AnyView(WaitlistsRootView())
+        ),
+        MehrTile(
+            id: "budget",
+            titleKey: "module.budget.title", descKey: "module.budget.desc",
+            systemImage: "chart.pie.fill", tone: .success, isNew: true,
+            destination: AnyView(BudgetRootView())
+        ),
+        MehrTile(
+            id: "profile",
+            titleKey: "module.profile.title", descKey: "module.profile.desc",
+            systemImage: "person.crop.circle.fill", tone: .brand, isNew: true,
+            destination: AnyView(ProfileRootView())
+        ),
+        MehrTile(
             id: "notes",
             titleKey: "module.notes.title", descKey: "module.notes.desc",
             systemImage: "note.text", tone: .info, isNew: true,

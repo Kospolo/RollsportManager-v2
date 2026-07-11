@@ -94,6 +94,11 @@ struct DashboardView: View {
     private var profileMenu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
+                NavigationLink {
+                    ProfileRootView()
+                } label: {
+                    Label("module.profile.title", systemImage: "person.crop.circle")
+                }
                 Button(role: .destructive) {
                     session.logout()
                 } label: {
