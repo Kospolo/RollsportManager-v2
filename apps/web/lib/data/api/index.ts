@@ -13,6 +13,7 @@ import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
 import { moduleApiRepositoryMe } from "./modules-me";
 import { moduleApiRepositoryOrg } from "./modules-org";
+import { moduleApiRepositoryPlatform } from "./modules-platform";
 import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
 import {
   mapAttendance,
@@ -347,4 +348,7 @@ export const apiRepository: DataRepository = {
   async platformStats() {
     return mapPlatformStats(await apiClient.getPlatformStats());
   },
+
+  /* ---------- Plattform-Konsole: Lizenzen, Zahlungen, Produkte, System, Einstellungen ---------- */
+  ...moduleApiRepositoryPlatform,
 };

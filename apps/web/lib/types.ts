@@ -60,6 +60,13 @@ export type * from "./types-financec";
 // als Typen re-exportiert.
 export type * from "./types-org";
 
+// Plattform-/Betreiber-Konsolen-Typen ((super)-Bereich: Lizenzen, Zahlungen,
+// Produkte, System-Info, Plattform-Einstellungen) leben ausgelagert in
+// lib/types-platform.ts, sind aber weiterhin unter "@/lib/types" verfügbar.
+// Die Enums (PlatformTier/PlatformEntitlementStatus/…) sind reine String-Unions
+// und werden als Typen re-exportiert.
+export type * from "./types-platform";
+
 /* ---------- Verein & Menschen ---------- */
 
 export interface Club {

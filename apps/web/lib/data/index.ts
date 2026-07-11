@@ -122,6 +122,16 @@ export type {
   UpdateDepartmentInput,
   UpdateLockerInput,
 } from "./inputs-org";
+export type {
+  PlatformConsoleRepository,
+  PlatformPaymentsQuery,
+  SetEntitlementInput,
+  UpdatePlatformContentInput,
+  UpdatePlatformLegalInput,
+  UpdatePlatformSettingsInput,
+  UpdatePlatformSmtpInput,
+  UpdateProductInput,
+} from "./inputs-platform";
 export type { SaveRoutineScoreInput, WettkampfRepository } from "./inputs-wettkampf";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";

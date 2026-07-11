@@ -45,7 +45,7 @@ beforeAll(async () => {
   memberToken = await sign({ sub: '00000000-0000-4000-8000-000000000003', role: 'authenticated', club_roles: { [CLUB]: 'member' } });
 });
 
-function req(method: string, path: string, token?: string, body?: unknown): Promise<Response> {
+function req(method: string, path: string, token?: string, body?: unknown): Response | Promise<Response> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (token) headers.authorization = `Bearer ${token}`;
   return app.request(path, {

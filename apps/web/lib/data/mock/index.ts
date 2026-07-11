@@ -21,6 +21,7 @@ import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
 import { moduleRepositoryMe } from "./modules-me";
 import { moduleRepositoryOrg } from "./modules-org";
+import { moduleRepositoryPlatform } from "./modules-platform";
 import { moduleRepositoryWettkampf } from "./modules-wettkampf";
 
 /**
@@ -325,4 +326,7 @@ export const mockRepository: DataRepository = {
       openInvoices: openInvoices(mock.invoices).length,
     };
   },
+
+  /* ---------- Plattform-Konsole: Lizenzen, Zahlungen, Produkte, System, Einstellungen ---------- */
+  ...moduleRepositoryPlatform,
 };

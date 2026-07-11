@@ -69,6 +69,7 @@ import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
 import type { MeRepository } from "./inputs-me";
 import type { OrgRepository } from "./inputs-org";
+import type { PlatformConsoleRepository } from "./inputs-platform";
 import type { WettkampfRepository } from "./inputs-wettkampf";
 
 /**
@@ -193,6 +194,7 @@ export interface DataRepository
     FinanceCRepository,
     MeRepository,
     OrgRepository,
+    PlatformConsoleRepository,
     WettkampfRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
@@ -215,12 +217,10 @@ export interface DataRepository
   /* ---------- Finanzen (Aggregat-Lesesichten; Draft-Rechnungen gefiltert) ---------- */
   getInvoices(): Promise<Invoice[]>;
   getLedger(): Promise<LedgerEntry[]>;
-  // Kassenbuch-Kategorien, Rechnungs-Detail/Settle, Mahnwesen:
-  // Signaturen in ./inputs-finance (FinanceRepository) — DataRepository erbt sie.
-  // Beitragskategorien, Beitragszuordnungen inkl. Summary, Familienrabatte,
-  // SEPA-Mandate: Signaturen in ./inputs-financeb (FinanceBRepository).
-  // Bankabgleich, Spenden/Bescheinigungen, Jahresabschluss + Datei-Export:
-  // Signaturen in ./inputs-financec (FinanceCRepository) — DataRepository erbt sie.
+  // Kassenbuch-Kategorien, Rechnungs-Detail/Settle, Mahnwesen: ./inputs-finance
+  // (FinanceRepository) — geerbt. Beiträge, Familienrabatte, SEPA-Mandate:
+  // ./inputs-financeb (FinanceBRepository). Bankabgleich, Spenden, Jahresabschluss
+  // + Datei-Export: ./inputs-financec (FinanceCRepository) — alle geerbt.
 
   /* ---------- Wettkampf & Aufgaben ---------- */
   getCompetitions(): Promise<Competition[]>;
@@ -378,19 +378,14 @@ export interface DataRepository
   updateDutyEntry(entryId: Id, patch: UpdateDutyEntryInput): Promise<DutyEntry>;
   /** Ist-Stunden soft-löschen (eigene ODER Trainer) — liefert die gelöschte ID zurück. */
   deleteDutyEntry(entryId: Id): Promise<{ id: Id }>;
-
   /* ---------- Module: Auswertung (NUR Trainer/Admin, reine Lesesicht) ---------- */
   /** Vereins-Auswertung (Mitglieder, Anwesenheit, Finanzen, Medaillen, Termine). */
   getReportsSummary(): Promise<ReportsSummary>;
-
-  /* ---------- Module: Chat, Check-in, überregionale Events (Batch 4) ---------- */
-  // Signaturen in ./inputs-batch4 (Batch4Repository) — DataRepository erbt sie.
-
-  /* ---------- Module: Galerie, Dokumente, Entitlement/PRO-Gate (Batch 5) ---------- */
-  // Signaturen in ./inputs-batch5 (Batch5Repository) — DataRepository erbt sie.
+  // Chat/Check-in/überregionale Events: ./inputs-batch4 (Batch4Repository) — geerbt.
+  // Galerie/Dokumente/Entitlement-Gate: ./inputs-batch5 (Batch5Repository) — geerbt.
   // Abteilungen, Schließfächer, Jubiläen: ./inputs-org (OrgRepository) — geerbt.
-  // Wettkampf: Rangliste, Live-Wertung, Verbandsmeldung-Export, Kür-Teilen +
-  // öffentliche Token-Ansicht: ./inputs-wettkampf (WettkampfRepository) — geerbt.
+  // Wettkampf (Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen + Token-Ansicht):
+  // ./inputs-wettkampf (WettkampfRepository) — geerbt.
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */
@@ -399,4 +394,6 @@ export interface DataRepository
   platformListUsers(): Promise<PlatformUserSummary[]>;
   /** Plattform-Kennzahlen. */
   platformStats(): Promise<PlatformStats>;
+  // Lizenzen, Zahlungen/Abos, Produkte, System-Info, Plattform-Einstellungen
+  // ((super)-Bereich): ./inputs-platform (PlatformConsoleRepository) — geerbt.
 }
