@@ -1030,6 +1030,693 @@
           "open_invoices"
         ]
       },
+      "PlatformSmtp": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer",
+            "nullable": true
+          },
+          "user": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "secure": {
+            "type": "boolean"
+          },
+          "password_set": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "host",
+          "port",
+          "user",
+          "from",
+          "secure",
+          "password_set"
+        ]
+      },
+      "PlatformLegal": {
+        "type": "object",
+        "properties": {
+          "impressum": {
+            "type": "string"
+          },
+          "datenschutz": {
+            "type": "string"
+          },
+          "agb": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "impressum",
+          "datenschutz",
+          "agb"
+        ]
+      },
+      "PlatformContent": {
+        "type": "object",
+        "properties": {
+          "website_title": {
+            "type": "string"
+          },
+          "website_subtitle": {
+            "type": "string"
+          },
+          "seo_title": {
+            "type": "string"
+          },
+          "seo_description": {
+            "type": "string"
+          },
+          "seo_keywords": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "website_title",
+          "website_subtitle",
+          "seo_title",
+          "seo_description",
+          "seo_keywords"
+        ]
+      },
+      "PlatformSettings": {
+        "type": "object",
+        "properties": {
+          "smtp": {
+            "$ref": "#/components/schemas/PlatformSmtp"
+          },
+          "legal": {
+            "$ref": "#/components/schemas/PlatformLegal"
+          },
+          "content": {
+            "$ref": "#/components/schemas/PlatformContent"
+          },
+          "feature_flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "smtp",
+          "legal",
+          "content",
+          "feature_flags",
+          "updated_at"
+        ]
+      },
+      "PlatformSmtpPatch": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string",
+            "minLength": 1
+          },
+          "port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "user": {
+            "type": "string",
+            "minLength": 1
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "secure": {
+            "type": "boolean"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "PlatformLegalPatch": {
+        "type": "object",
+        "properties": {
+          "impressum": {
+            "type": "string"
+          },
+          "datenschutz": {
+            "type": "string"
+          },
+          "agb": {
+            "type": "string"
+          }
+        }
+      },
+      "PlatformContentPatch": {
+        "type": "object",
+        "properties": {
+          "website_title": {
+            "type": "string"
+          },
+          "website_subtitle": {
+            "type": "string"
+          },
+          "seo_title": {
+            "type": "string"
+          },
+          "seo_description": {
+            "type": "string"
+          },
+          "seo_keywords": {
+            "type": "string"
+          }
+        }
+      },
+      "PlatformSettingsPatch": {
+        "type": "object",
+        "properties": {
+          "smtp": {
+            "$ref": "#/components/schemas/PlatformSmtpPatch"
+          },
+          "legal": {
+            "$ref": "#/components/schemas/PlatformLegalPatch"
+          },
+          "content": {
+            "$ref": "#/components/schemas/PlatformContentPatch"
+          },
+          "feature_flags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "PlatformEntitlementRow": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "short_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "member_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "entitlement_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "tier": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "source": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "stripe",
+              "revenuecat",
+              "manual"
+            ]
+          },
+          "provider_ref": {
+            "type": "string",
+            "nullable": true
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "club_id",
+          "club_name",
+          "short_name",
+          "member_count",
+          "entitlement_id",
+          "tier",
+          "status",
+          "source",
+          "provider_ref",
+          "valid_until",
+          "updated_at"
+        ]
+      },
+      "PlatformTier": {
+        "type": "string",
+        "enum": [
+          "basic",
+          "pro",
+          "premium"
+        ]
+      },
+      "PlatformEntitlementStatus": {
+        "type": "string",
+        "enum": [
+          "trial",
+          "active",
+          "past_due",
+          "canceled"
+        ]
+      },
+      "PlatformEntitlementPatch": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "$ref": "#/components/schemas/PlatformTier"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PlatformEntitlementStatus"
+          },
+          "valid_until": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "trial_days": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "tier",
+          "status"
+        ]
+      },
+      "PlatformPaymentEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true
+          },
+          "received_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "processed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "provider",
+          "event_id",
+          "event_type",
+          "status",
+          "error",
+          "received_at",
+          "processed_at"
+        ]
+      },
+      "PlatformSubscriptionSummary": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "integer",
+            "nullable": true
+          },
+          "trial": {
+            "type": "integer",
+            "nullable": true
+          },
+          "past_due": {
+            "type": "integer",
+            "nullable": true
+          },
+          "canceled": {
+            "type": "integer",
+            "nullable": true
+          },
+          "licensed_clubs": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "active",
+          "trial",
+          "past_due",
+          "canceled",
+          "licensed_clubs"
+        ]
+      },
+      "PlatformPaymentsPage": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "nullable": true
+          },
+          "offset": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "total",
+          "limit",
+          "offset"
+        ]
+      },
+      "PlatformPayments": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlatformPaymentEvent"
+            }
+          },
+          "subscription_summary": {
+            "$ref": "#/components/schemas/PlatformSubscriptionSummary"
+          },
+          "page": {
+            "$ref": "#/components/schemas/PlatformPaymentsPage"
+          }
+        },
+        "required": [
+          "events",
+          "subscription_summary",
+          "page"
+        ]
+      },
+      "PlatformProduct": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "club_license",
+              "personal_pro"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "price_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "billing_interval": {
+            "type": "string",
+            "enum": [
+              "month",
+              "year"
+            ]
+          },
+          "max_members": {
+            "type": "integer",
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "name",
+          "description",
+          "price_cents",
+          "currency",
+          "billing_interval",
+          "max_members",
+          "active",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "PlatformProductPatch": {
+        "type": "object",
+        "properties": {
+          "price_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PlatformSystemDb": {
+        "type": "object",
+        "properties": {
+          "clubs": {
+            "type": "integer",
+            "nullable": true
+          },
+          "users": {
+            "type": "integer",
+            "nullable": true
+          },
+          "members": {
+            "type": "integer",
+            "nullable": true
+          },
+          "active_entitlements": {
+            "type": "integer",
+            "nullable": true
+          },
+          "webhook_events": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size_bytes": {
+            "type": "integer",
+            "nullable": true
+          },
+          "size_pretty": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clubs",
+          "users",
+          "members",
+          "active_entitlements",
+          "webhook_events",
+          "size_bytes",
+          "size_pretty"
+        ]
+      },
+      "PlatformSystemMigrations": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "latest": {
+            "type": "string",
+            "nullable": true
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "count",
+          "latest",
+          "list"
+        ]
+      },
+      "PlatformSystemHealth": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "db_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "db_time"
+        ]
+      },
+      "PlatformSystem": {
+        "type": "object",
+        "properties": {
+          "app_version": {
+            "type": "string"
+          },
+          "auth_mode": {
+            "type": "string",
+            "enum": [
+              "dev",
+              "prod"
+            ]
+          },
+          "db": {
+            "$ref": "#/components/schemas/PlatformSystemDb"
+          },
+          "migrations": {
+            "$ref": "#/components/schemas/PlatformSystemMigrations"
+          },
+          "health": {
+            "$ref": "#/components/schemas/PlatformSystemHealth"
+          }
+        },
+        "required": [
+          "app_version",
+          "auth_mode",
+          "db",
+          "migrations",
+          "health"
+        ]
+      },
       "EventType": {
         "type": "string",
         "enum": [
@@ -8491,6 +9178,652 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlatformStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/settings": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Platform settings incl. SMTP (password masked) (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operator settings; SMTP password masked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Update platform settings (SMTP/legal/content/flags) (platform admin only)",
+        "description": "Deep-merges the given sections into the singleton settings row. The SMTP password is write-only: send it to set/replace it, omit it to keep the stored one. The response masks it to password_set.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformSettingsPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated operator settings (SMTP password masked)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/entitlements": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "All clubs incl. license tier/status/term (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Club license overview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformEntitlementRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/entitlements/{clubId}": {
+      "patch": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Set a club license tier/status/term by hand (platform admin only)",
+        "description": "Writes the club_license entitlement through the single billing writer (state machine + audit). source=manual, actor=platform:<sub>. trial_days is a convenience for status='trial' (term = now + N days).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformEntitlementPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated club license row",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformEntitlementRow"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Illegal license transition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unknown product / billing invariant violated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/payments": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Payment webhook events + subscription states, paginated (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "stripe",
+                "revenuecat"
+              ]
+            },
+            "required": false,
+            "name": "provider",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "received",
+                "processed",
+                "failed",
+                "skipped"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Webhook events + subscription summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformPayments"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/products": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Full product catalog incl. inactive (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All products (active + inactive)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformProduct"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/products/{id}": {
+      "patch": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Update a product price / active flag (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformProductPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated product",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformProduct"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/system": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "System health: version, DB figures, migrations, health (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operational system snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformSystem"
                 }
               }
             }

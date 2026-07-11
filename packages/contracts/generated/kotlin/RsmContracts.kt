@@ -52,6 +52,21 @@ enum class Theme {
 }
 
 @Serializable
+enum class PlatformTier {
+    @SerialName("basic") BASIC,
+    @SerialName("pro") PRO,
+    @SerialName("premium") PREMIUM;
+}
+
+@Serializable
+enum class PlatformEntitlementStatus {
+    @SerialName("trial") TRIAL,
+    @SerialName("active") ACTIVE,
+    @SerialName("past_due") PAST_DUE,
+    @SerialName("canceled") CANCELED;
+}
+
+@Serializable
 enum class EventType {
     @SerialName("training") TRAINING,
     @SerialName("competition") COMPETITION,
@@ -253,6 +268,41 @@ enum class InviteQueuedStatus {
 @Serializable
 enum class DeletedStatus {
     @SerialName("deleted") DELETED;
+}
+
+/** Inline enum of PlatformEntitlementRow.source (hoisted by codegen). */
+@Serializable
+enum class PlatformEntitlementRowSource {
+    @SerialName("stripe") STRIPE,
+    @SerialName("revenuecat") REVENUECAT,
+    @SerialName("manual") MANUAL;
+}
+
+/** Inline enum of PlatformProduct.kind (hoisted by codegen). */
+@Serializable
+enum class PlatformProductKind {
+    @SerialName("club_license") CLUB_LICENSE,
+    @SerialName("personal_pro") PERSONAL_PRO;
+}
+
+/** Inline enum of PlatformProduct.billing_interval (hoisted by codegen). */
+@Serializable
+enum class PlatformProductBillingInterval {
+    @SerialName("month") MONTH,
+    @SerialName("year") YEAR;
+}
+
+/** Inline enum of PlatformSystemHealth.status (hoisted by codegen). */
+@Serializable
+enum class PlatformSystemHealthStatus {
+    @SerialName("ok") OK;
+}
+
+/** Inline enum of PlatformSystem.auth_mode (hoisted by codegen). */
+@Serializable
+enum class PlatformSystemAuthMode {
+    @SerialName("dev") DEV,
+    @SerialName("prod") PROD;
 }
 
 /** Inline enum of InvoiceUpdate.status (hoisted by codegen). */
@@ -554,6 +604,191 @@ data class PlatformStats(
     val teams: Long?,
     val events: Long?,
     @SerialName("open_invoices") val openInvoices: Long?
+)
+
+@Serializable
+data class PlatformSmtp(
+    val host: String,
+    val port: Long?,
+    val user: String,
+    val from: String,
+    val secure: Boolean,
+    @SerialName("password_set") val passwordSet: Boolean
+)
+
+@Serializable
+data class PlatformLegal(
+    val impressum: String,
+    val datenschutz: String,
+    val agb: String
+)
+
+@Serializable
+data class PlatformContent(
+    @SerialName("website_title") val websiteTitle: String,
+    @SerialName("website_subtitle") val websiteSubtitle: String,
+    @SerialName("seo_title") val seoTitle: String,
+    @SerialName("seo_description") val seoDescription: String,
+    @SerialName("seo_keywords") val seoKeywords: String
+)
+
+@Serializable
+data class PlatformSettings(
+    val smtp: PlatformSmtp,
+    val legal: PlatformLegal,
+    val content: PlatformContent,
+    @SerialName("feature_flags") val featureFlags: JsonObject,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class PlatformSmtpPatch(
+    val host: String? = null,
+    val port: Long? = null,
+    val user: String? = null,
+    val from: String? = null,
+    val secure: Boolean? = null,
+    val password: String? = null
+)
+
+@Serializable
+data class PlatformLegalPatch(
+    val impressum: String? = null,
+    val datenschutz: String? = null,
+    val agb: String? = null
+)
+
+@Serializable
+data class PlatformContentPatch(
+    @SerialName("website_title") val websiteTitle: String? = null,
+    @SerialName("website_subtitle") val websiteSubtitle: String? = null,
+    @SerialName("seo_title") val seoTitle: String? = null,
+    @SerialName("seo_description") val seoDescription: String? = null,
+    @SerialName("seo_keywords") val seoKeywords: String? = null
+)
+
+@Serializable
+data class PlatformSettingsPatch(
+    val smtp: PlatformSmtpPatch? = null,
+    val legal: PlatformLegalPatch? = null,
+    val content: PlatformContentPatch? = null,
+    @SerialName("feature_flags") val featureFlags: JsonObject? = null
+)
+
+@Serializable
+data class PlatformEntitlementRow(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("short_name") val shortName: String?,
+    @SerialName("member_count") val memberCount: Long?,
+    @SerialName("entitlement_id") val entitlementId: String?,
+    val tier: String?,
+    val status: String?,
+    val source: PlatformEntitlementRowSource?,
+    @SerialName("provider_ref") val providerRef: String?,
+    @SerialName("valid_until") val validUntil: String?,
+    @SerialName("updated_at") val updatedAt: String?
+)
+
+@Serializable
+data class PlatformEntitlementPatch(
+    val tier: PlatformTier,
+    val status: PlatformEntitlementStatus,
+    @SerialName("valid_until") val validUntil: String? = null,
+    @SerialName("trial_days") val trialDays: Long? = null,
+    val reason: String? = null
+)
+
+@Serializable
+data class PlatformPaymentEvent(
+    val id: String,
+    val provider: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("event_type") val eventType: String?,
+    val status: String,
+    val error: String?,
+    @SerialName("received_at") val receivedAt: String,
+    @SerialName("processed_at") val processedAt: String?
+)
+
+@Serializable
+data class PlatformSubscriptionSummary(
+    val active: Long?,
+    val trial: Long?,
+    @SerialName("past_due") val pastDue: Long?,
+    val canceled: Long?,
+    @SerialName("licensed_clubs") val licensedClubs: Long?
+)
+
+@Serializable
+data class PlatformPaymentsPage(
+    val total: Long?,
+    val limit: Long?,
+    val offset: Long?
+)
+
+@Serializable
+data class PlatformPayments(
+    val events: List<PlatformPaymentEvent>,
+    @SerialName("subscription_summary") val subscriptionSummary: PlatformSubscriptionSummary,
+    val page: PlatformPaymentsPage
+)
+
+@Serializable
+data class PlatformProduct(
+    val id: String,
+    val code: String,
+    val kind: PlatformProductKind,
+    val name: String,
+    val description: String?,
+    @SerialName("price_cents") val priceCents: Long?,
+    val currency: String,
+    @SerialName("billing_interval") val billingInterval: PlatformProductBillingInterval,
+    @SerialName("max_members") val maxMembers: Long?,
+    val active: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class PlatformProductPatch(
+    @SerialName("price_cents") val priceCents: Long? = null,
+    val active: Boolean? = null,
+    val name: String? = null,
+    val description: String? = null
+)
+
+@Serializable
+data class PlatformSystemDb(
+    val clubs: Long?,
+    val users: Long?,
+    val members: Long?,
+    @SerialName("active_entitlements") val activeEntitlements: Long?,
+    @SerialName("webhook_events") val webhookEvents: Long?,
+    @SerialName("size_bytes") val sizeBytes: Long?,
+    @SerialName("size_pretty") val sizePretty: String
+)
+
+@Serializable
+data class PlatformSystemMigrations(
+    val count: Long?,
+    val latest: String?,
+    val list: List<String>
+)
+
+@Serializable
+data class PlatformSystemHealth(
+    val status: PlatformSystemHealthStatus,
+    @SerialName("db_time") val dbTime: String
+)
+
+@Serializable
+data class PlatformSystem(
+    @SerialName("app_version") val appVersion: String,
+    @SerialName("auth_mode") val authMode: PlatformSystemAuthMode,
+    val db: PlatformSystemDb,
+    val migrations: PlatformSystemMigrations,
+    val health: PlatformSystemHealth
 )
 
 @Serializable

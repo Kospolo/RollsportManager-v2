@@ -428,6 +428,89 @@ console.log('[smoke] platform console (is_platform_admin ONLY)');
   assertEq('club owner is NOT a platform admin -> 403', denied.status, 403);
 }
 
+console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses/payments/products/system)');
+{
+  // --- Einstellungen: SMTP password is NEVER returned in cleartext ----------
+  const s = await call('GET', '/platform/settings', { as: t.platform });
+  assertEq('platform admin reads settings -> 200', s.status, 200);
+  assertEq('...smtp exposes password_set (bool), not a password', typeof s.json?.smtp?.password_set, 'boolean');
+  if (!('password' in (s.json?.smtp ?? {}))) ok('...smtp has NO cleartext password field');
+  else fail('smtp masking', 'smtp.password leaked in GET response');
+  assertEq('...legal placeholder present', typeof s.json?.legal?.impressum, 'string');
+
+  const patched = await call('PATCH', '/platform/settings', {
+    as: t.platform,
+    body: { smtp: { password: 'super-secret-pw', host: 'smtp.strato.de' }, feature_flags: { maintenance_mode: true } },
+  });
+  assertEq('platform admin updates settings -> 200', patched.status, 200);
+  assertEq('...smtp host persisted', patched.json?.smtp?.host, 'smtp.strato.de');
+  assertEq('...password_set now true', patched.json?.smtp?.password_set, true);
+  if (!('password' in (patched.json?.smtp ?? {}))) ok('...PATCH response still masks the password');
+  else fail('smtp masking (PATCH)', 'smtp.password leaked in PATCH response');
+  assertEq('...feature flag persisted', patched.json?.feature_flags?.maintenance_mode, true);
+
+  assertEq('club owner CANNOT read platform settings -> 403',
+    (await call('GET', '/platform/settings', { as: t.owner })).status, 403);
+  assertEq('plain member CANNOT patch platform settings -> 403',
+    (await call('PATCH', '/platform/settings', { as: t.parent, body: { feature_flags: { x: true } } })).status, 403);
+
+  // --- Lizenzen -------------------------------------------------------------
+  const ents = await call('GET', '/platform/entitlements', { as: t.platform });
+  assertEq('platform admin lists club licenses -> 200', ents.status, 200);
+  const clubRow = ents.json?.find?.((e) => e.club_id === CLUB);
+  if (clubRow && typeof clubRow.member_count === 'number') ok(`...club_license row carries member_count (${clubRow.member_count})`);
+  else fail('platform entitlements row', `got ${JSON.stringify(clubRow)}`);
+
+  const setLic = await call('PATCH', `/platform/entitlements/${CLUB}`, {
+    as: t.platform,
+    body: { tier: 'premium', status: 'active', reason: 'smoke manual upgrade' },
+  });
+  assertEq('platform admin sets a club license -> 200', setLic.status, 200);
+  assertEq('...tier persisted', setLic.json?.tier, 'premium');
+  assertEq('...status persisted', setLic.json?.status, 'active');
+  assertEq('...source is manual', setLic.json?.source, 'manual');
+
+  assertEq('club owner CANNOT patch a license -> 403',
+    (await call('PATCH', `/platform/entitlements/${CLUB}`, { as: t.owner, body: { tier: 'pro', status: 'active' } })).status, 403);
+
+  // --- Zahlungen ------------------------------------------------------------
+  const pay = await call('GET', '/platform/payments?limit=10', { as: t.platform });
+  assertEq('platform admin reads payments feed -> 200', pay.status, 200);
+  if (pay.json?.subscription_summary && typeof pay.json.subscription_summary.active === 'number') ok('...subscription_summary present');
+  else fail('payments summary', `got ${JSON.stringify(pay.json?.subscription_summary)}`);
+  if (pay.json?.page && pay.json.page.limit === 10) ok('...pagination envelope present (limit=10)');
+  else fail('payments page', `got ${JSON.stringify(pay.json?.page)}`);
+  assertEq('club owner CANNOT read payments -> 403',
+    (await call('GET', '/platform/payments', { as: t.owner })).status, 403);
+
+  // --- Produkte / Monetarisierung ------------------------------------------
+  const prods = await call('GET', '/platform/products', { as: t.platform });
+  assertEq('platform admin lists products -> 200', prods.status, 200);
+  const prod = prods.json?.[0];
+  if (prod?.id) ok(`...catalog non-empty (first: ${prod.code})`);
+  else fail('platform products', `got ${JSON.stringify(prods.json)}`);
+  const newPrice = (prod?.price_cents ?? 0) + 100;
+  const setProd = await call('PATCH', `/platform/products/${prod.id}`, {
+    as: t.platform,
+    body: { price_cents: newPrice, active: true },
+  });
+  assertEq('platform admin updates a product price -> 200', setProd.status, 200);
+  assertEq('...price persisted', setProd.json?.price_cents, newPrice);
+  assertEq('club owner CANNOT patch a product -> 403',
+    (await call('PATCH', `/platform/products/${prod.id}`, { as: t.owner, body: { active: false } })).status, 403);
+
+  // --- System ---------------------------------------------------------------
+  const sys = await call('GET', '/platform/system', { as: t.platform });
+  assertEq('platform admin reads system snapshot -> 200', sys.status, 200);
+  if ((sys.json?.migrations?.count ?? 0) >= 19) ok(`...migrations ledger >= 19 (${sys.json.migrations.count})`);
+  else fail('system migrations', `got ${sys.json?.migrations?.count}`);
+  assertEq('...health ok', sys.json?.health?.status, 'ok');
+  if ((sys.json?.db?.clubs ?? 0) >= 1) ok(`...db.clubs >= 1 (${sys.json.db.clubs})`);
+  else fail('system db.clubs', `got ${sys.json?.db?.clubs}`);
+  assertEq('club owner CANNOT read system -> 403',
+    (await call('GET', '/platform/system', { as: t.owner })).status, 403);
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

@@ -83,6 +83,19 @@ public enum Theme: String, Codable, CaseIterable, Sendable, Equatable {
     case auto = "auto"
 }
 
+public enum PlatformTier: String, Codable, CaseIterable, Sendable, Equatable {
+    case basic = "basic"
+    case pro = "pro"
+    case premium = "premium"
+}
+
+public enum PlatformEntitlementStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case trial = "trial"
+    case active = "active"
+    case pastDue = "past_due"
+    case canceled = "canceled"
+}
+
 public enum EventType: String, Codable, CaseIterable, Sendable, Equatable {
     case training = "training"
     case competition = "competition"
@@ -256,6 +269,36 @@ public enum InviteQueuedStatus: String, Codable, CaseIterable, Sendable, Equatab
 /// Inline enum of Deleted.status (hoisted by codegen).
 public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case deleted = "deleted"
+}
+
+/// Inline enum of PlatformEntitlementRow.source (hoisted by codegen).
+public enum PlatformEntitlementRowSource: String, Codable, CaseIterable, Sendable, Equatable {
+    case stripe = "stripe"
+    case revenuecat = "revenuecat"
+    case manual = "manual"
+}
+
+/// Inline enum of PlatformProduct.kind (hoisted by codegen).
+public enum PlatformProductKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case clubLicense = "club_license"
+    case personalPro = "personal_pro"
+}
+
+/// Inline enum of PlatformProduct.billing_interval (hoisted by codegen).
+public enum PlatformProductBillingInterval: String, Codable, CaseIterable, Sendable, Equatable {
+    case month = "month"
+    case year = "year"
+}
+
+/// Inline enum of PlatformSystemHealth.status (hoisted by codegen).
+public enum PlatformSystemHealthStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case ok = "ok"
+}
+
+/// Inline enum of PlatformSystem.auth_mode (hoisted by codegen).
+public enum PlatformSystemAuthMode: String, Codable, CaseIterable, Sendable, Equatable {
+    case dev = "dev"
+    case prod = "prod"
 }
 
 /// Inline enum of InvoiceUpdate.status (hoisted by codegen).
@@ -1176,6 +1219,631 @@ public struct PlatformStats: Codable, Equatable, Sendable {
         self.teams = teams
         self.events = events
         self.openInvoices = openInvoices
+    }
+}
+
+public struct PlatformSmtp: Codable, Equatable, Sendable {
+    public var host: String
+    public var port: Int?
+    public var user: String
+    public var from: String
+    public var secure: Bool
+    public var passwordSet: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case host
+        case port
+        case user
+        case from
+        case secure
+        case passwordSet = "password_set"
+    }
+
+    public init(
+        host: String,
+        port: Int? = nil,
+        user: String,
+        from: String,
+        secure: Bool,
+        passwordSet: Bool
+    ) {
+        self.host = host
+        self.port = port
+        self.user = user
+        self.from = from
+        self.secure = secure
+        self.passwordSet = passwordSet
+    }
+}
+
+public struct PlatformLegal: Codable, Equatable, Sendable {
+    public var impressum: String
+    public var datenschutz: String
+    public var agb: String
+
+    enum CodingKeys: String, CodingKey {
+        case impressum
+        case datenschutz
+        case agb
+    }
+
+    public init(
+        impressum: String,
+        datenschutz: String,
+        agb: String
+    ) {
+        self.impressum = impressum
+        self.datenschutz = datenschutz
+        self.agb = agb
+    }
+}
+
+public struct PlatformContent: Codable, Equatable, Sendable {
+    public var websiteTitle: String
+    public var websiteSubtitle: String
+    public var seoTitle: String
+    public var seoDescription: String
+    public var seoKeywords: String
+
+    enum CodingKeys: String, CodingKey {
+        case websiteTitle = "website_title"
+        case websiteSubtitle = "website_subtitle"
+        case seoTitle = "seo_title"
+        case seoDescription = "seo_description"
+        case seoKeywords = "seo_keywords"
+    }
+
+    public init(
+        websiteTitle: String,
+        websiteSubtitle: String,
+        seoTitle: String,
+        seoDescription: String,
+        seoKeywords: String
+    ) {
+        self.websiteTitle = websiteTitle
+        self.websiteSubtitle = websiteSubtitle
+        self.seoTitle = seoTitle
+        self.seoDescription = seoDescription
+        self.seoKeywords = seoKeywords
+    }
+}
+
+public struct PlatformSettings: Codable, Equatable, Sendable {
+    public var smtp: PlatformSmtp
+    public var legal: PlatformLegal
+    public var content: PlatformContent
+    public var featureFlags: [String: JSONValue]
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case smtp
+        case legal
+        case content
+        case featureFlags = "feature_flags"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        smtp: PlatformSmtp,
+        legal: PlatformLegal,
+        content: PlatformContent,
+        featureFlags: [String: JSONValue],
+        updatedAt: String
+    ) {
+        self.smtp = smtp
+        self.legal = legal
+        self.content = content
+        self.featureFlags = featureFlags
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct PlatformSmtpPatch: Codable, Equatable, Sendable {
+    public var host: String?
+    public var port: Int?
+    public var user: String?
+    public var from: String?
+    public var secure: Bool?
+    public var password: String?
+
+    enum CodingKeys: String, CodingKey {
+        case host
+        case port
+        case user
+        case from
+        case secure
+        case password
+    }
+
+    public init(
+        host: String? = nil,
+        port: Int? = nil,
+        user: String? = nil,
+        from: String? = nil,
+        secure: Bool? = nil,
+        password: String? = nil
+    ) {
+        self.host = host
+        self.port = port
+        self.user = user
+        self.from = from
+        self.secure = secure
+        self.password = password
+    }
+}
+
+public struct PlatformLegalPatch: Codable, Equatable, Sendable {
+    public var impressum: String?
+    public var datenschutz: String?
+    public var agb: String?
+
+    enum CodingKeys: String, CodingKey {
+        case impressum
+        case datenschutz
+        case agb
+    }
+
+    public init(
+        impressum: String? = nil,
+        datenschutz: String? = nil,
+        agb: String? = nil
+    ) {
+        self.impressum = impressum
+        self.datenschutz = datenschutz
+        self.agb = agb
+    }
+}
+
+public struct PlatformContentPatch: Codable, Equatable, Sendable {
+    public var websiteTitle: String?
+    public var websiteSubtitle: String?
+    public var seoTitle: String?
+    public var seoDescription: String?
+    public var seoKeywords: String?
+
+    enum CodingKeys: String, CodingKey {
+        case websiteTitle = "website_title"
+        case websiteSubtitle = "website_subtitle"
+        case seoTitle = "seo_title"
+        case seoDescription = "seo_description"
+        case seoKeywords = "seo_keywords"
+    }
+
+    public init(
+        websiteTitle: String? = nil,
+        websiteSubtitle: String? = nil,
+        seoTitle: String? = nil,
+        seoDescription: String? = nil,
+        seoKeywords: String? = nil
+    ) {
+        self.websiteTitle = websiteTitle
+        self.websiteSubtitle = websiteSubtitle
+        self.seoTitle = seoTitle
+        self.seoDescription = seoDescription
+        self.seoKeywords = seoKeywords
+    }
+}
+
+public struct PlatformSettingsPatch: Codable, Equatable, Sendable {
+    public var smtp: PlatformSmtpPatch?
+    public var legal: PlatformLegalPatch?
+    public var content: PlatformContentPatch?
+    public var featureFlags: [String: JSONValue]?
+
+    enum CodingKeys: String, CodingKey {
+        case smtp
+        case legal
+        case content
+        case featureFlags = "feature_flags"
+    }
+
+    public init(
+        smtp: PlatformSmtpPatch? = nil,
+        legal: PlatformLegalPatch? = nil,
+        content: PlatformContentPatch? = nil,
+        featureFlags: [String: JSONValue]? = nil
+    ) {
+        self.smtp = smtp
+        self.legal = legal
+        self.content = content
+        self.featureFlags = featureFlags
+    }
+}
+
+public struct PlatformEntitlementRow: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String
+    public var shortName: String?
+    public var memberCount: Int?
+    /// Format: uuid
+    public var entitlementId: String?
+    public var tier: String?
+    public var status: String?
+    public var source: PlatformEntitlementRowSource?
+    public var providerRef: String?
+    public var validUntil: String?
+    public var updatedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case shortName = "short_name"
+        case memberCount = "member_count"
+        case entitlementId = "entitlement_id"
+        case tier
+        case status
+        case source
+        case providerRef = "provider_ref"
+        case validUntil = "valid_until"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        clubId: String,
+        clubName: String,
+        shortName: String? = nil,
+        memberCount: Int? = nil,
+        entitlementId: String? = nil,
+        tier: String? = nil,
+        status: String? = nil,
+        source: PlatformEntitlementRowSource? = nil,
+        providerRef: String? = nil,
+        validUntil: String? = nil,
+        updatedAt: String? = nil
+    ) {
+        self.clubId = clubId
+        self.clubName = clubName
+        self.shortName = shortName
+        self.memberCount = memberCount
+        self.entitlementId = entitlementId
+        self.tier = tier
+        self.status = status
+        self.source = source
+        self.providerRef = providerRef
+        self.validUntil = validUntil
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct PlatformEntitlementPatch: Codable, Equatable, Sendable {
+    public var tier: PlatformTier
+    public var status: PlatformEntitlementStatus
+    /// Format: date-time
+    public var validUntil: String?
+    public var trialDays: Int?
+    public var reason: String?
+
+    enum CodingKeys: String, CodingKey {
+        case tier
+        case status
+        case validUntil = "valid_until"
+        case trialDays = "trial_days"
+        case reason
+    }
+
+    public init(
+        tier: PlatformTier,
+        status: PlatformEntitlementStatus,
+        validUntil: String? = nil,
+        trialDays: Int? = nil,
+        reason: String? = nil
+    ) {
+        self.tier = tier
+        self.status = status
+        self.validUntil = validUntil
+        self.trialDays = trialDays
+        self.reason = reason
+    }
+}
+
+public struct PlatformPaymentEvent: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    public var provider: String
+    public var eventId: String
+    public var eventType: String?
+    public var status: String
+    public var error: String?
+    public var receivedAt: String
+    public var processedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case provider
+        case eventId = "event_id"
+        case eventType = "event_type"
+        case status
+        case error
+        case receivedAt = "received_at"
+        case processedAt = "processed_at"
+    }
+
+    public init(
+        id: String,
+        provider: String,
+        eventId: String,
+        eventType: String? = nil,
+        status: String,
+        error: String? = nil,
+        receivedAt: String,
+        processedAt: String? = nil
+    ) {
+        self.id = id
+        self.provider = provider
+        self.eventId = eventId
+        self.eventType = eventType
+        self.status = status
+        self.error = error
+        self.receivedAt = receivedAt
+        self.processedAt = processedAt
+    }
+}
+
+public struct PlatformSubscriptionSummary: Codable, Equatable, Sendable {
+    public var active: Int?
+    public var trial: Int?
+    public var pastDue: Int?
+    public var canceled: Int?
+    public var licensedClubs: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case active
+        case trial
+        case pastDue = "past_due"
+        case canceled
+        case licensedClubs = "licensed_clubs"
+    }
+
+    public init(
+        active: Int? = nil,
+        trial: Int? = nil,
+        pastDue: Int? = nil,
+        canceled: Int? = nil,
+        licensedClubs: Int? = nil
+    ) {
+        self.active = active
+        self.trial = trial
+        self.pastDue = pastDue
+        self.canceled = canceled
+        self.licensedClubs = licensedClubs
+    }
+}
+
+public struct PlatformPaymentsPage: Codable, Equatable, Sendable {
+    public var total: Int?
+    public var limit: Int?
+    public var offset: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case total
+        case limit
+        case offset
+    }
+
+    public init(
+        total: Int? = nil,
+        limit: Int? = nil,
+        offset: Int? = nil
+    ) {
+        self.total = total
+        self.limit = limit
+        self.offset = offset
+    }
+}
+
+public struct PlatformPayments: Codable, Equatable, Sendable {
+    public var events: [PlatformPaymentEvent]
+    public var subscriptionSummary: PlatformSubscriptionSummary
+    public var page: PlatformPaymentsPage
+
+    enum CodingKeys: String, CodingKey {
+        case events
+        case subscriptionSummary = "subscription_summary"
+        case page
+    }
+
+    public init(
+        events: [PlatformPaymentEvent],
+        subscriptionSummary: PlatformSubscriptionSummary,
+        page: PlatformPaymentsPage
+    ) {
+        self.events = events
+        self.subscriptionSummary = subscriptionSummary
+        self.page = page
+    }
+}
+
+public struct PlatformProduct: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    public var code: String
+    public var kind: PlatformProductKind
+    public var name: String
+    public var description: String?
+    public var priceCents: Int?
+    public var currency: String
+    public var billingInterval: PlatformProductBillingInterval
+    public var maxMembers: Int?
+    public var active: Bool
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case code
+        case kind
+        case name
+        case description
+        case priceCents = "price_cents"
+        case currency
+        case billingInterval = "billing_interval"
+        case maxMembers = "max_members"
+        case active
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        code: String,
+        kind: PlatformProductKind,
+        name: String,
+        description: String? = nil,
+        priceCents: Int? = nil,
+        currency: String,
+        billingInterval: PlatformProductBillingInterval,
+        maxMembers: Int? = nil,
+        active: Bool,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.code = code
+        self.kind = kind
+        self.name = name
+        self.description = description
+        self.priceCents = priceCents
+        self.currency = currency
+        self.billingInterval = billingInterval
+        self.maxMembers = maxMembers
+        self.active = active
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct PlatformProductPatch: Codable, Equatable, Sendable {
+    public var priceCents: Int?
+    public var active: Bool?
+    public var name: String?
+    public var description: String?
+
+    enum CodingKeys: String, CodingKey {
+        case priceCents = "price_cents"
+        case active
+        case name
+        case description
+    }
+
+    public init(
+        priceCents: Int? = nil,
+        active: Bool? = nil,
+        name: String? = nil,
+        description: String? = nil
+    ) {
+        self.priceCents = priceCents
+        self.active = active
+        self.name = name
+        self.description = description
+    }
+}
+
+public struct PlatformSystemDb: Codable, Equatable, Sendable {
+    public var clubs: Int?
+    public var users: Int?
+    public var members: Int?
+    public var activeEntitlements: Int?
+    public var webhookEvents: Int?
+    public var sizeBytes: Int?
+    public var sizePretty: String
+
+    enum CodingKeys: String, CodingKey {
+        case clubs
+        case users
+        case members
+        case activeEntitlements = "active_entitlements"
+        case webhookEvents = "webhook_events"
+        case sizeBytes = "size_bytes"
+        case sizePretty = "size_pretty"
+    }
+
+    public init(
+        clubs: Int? = nil,
+        users: Int? = nil,
+        members: Int? = nil,
+        activeEntitlements: Int? = nil,
+        webhookEvents: Int? = nil,
+        sizeBytes: Int? = nil,
+        sizePretty: String
+    ) {
+        self.clubs = clubs
+        self.users = users
+        self.members = members
+        self.activeEntitlements = activeEntitlements
+        self.webhookEvents = webhookEvents
+        self.sizeBytes = sizeBytes
+        self.sizePretty = sizePretty
+    }
+}
+
+public struct PlatformSystemMigrations: Codable, Equatable, Sendable {
+    public var count: Int?
+    public var latest: String?
+    public var list: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case count
+        case latest
+        case list
+    }
+
+    public init(
+        count: Int? = nil,
+        latest: String? = nil,
+        list: [String]
+    ) {
+        self.count = count
+        self.latest = latest
+        self.list = list
+    }
+}
+
+public struct PlatformSystemHealth: Codable, Equatable, Sendable {
+    public var status: PlatformSystemHealthStatus
+    public var dbTime: String
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case dbTime = "db_time"
+    }
+
+    public init(
+        status: PlatformSystemHealthStatus,
+        dbTime: String
+    ) {
+        self.status = status
+        self.dbTime = dbTime
+    }
+}
+
+public struct PlatformSystem: Codable, Equatable, Sendable {
+    public var appVersion: String
+    public var authMode: PlatformSystemAuthMode
+    public var db: PlatformSystemDb
+    public var migrations: PlatformSystemMigrations
+    public var health: PlatformSystemHealth
+
+    enum CodingKeys: String, CodingKey {
+        case appVersion = "app_version"
+        case authMode = "auth_mode"
+        case db
+        case migrations
+        case health
+    }
+
+    public init(
+        appVersion: String,
+        authMode: PlatformSystemAuthMode,
+        db: PlatformSystemDb,
+        migrations: PlatformSystemMigrations,
+        health: PlatformSystemHealth
+    ) {
+        self.appVersion = appVersion
+        self.authMode = authMode
+        self.db = db
+        self.migrations = migrations
+        self.health = health
     }
 }
 

@@ -298,6 +298,80 @@ export class ApiClient {
   }
 
   /**
+   * Platform settings incl. SMTP (password masked) (platform admin only)
+   * 
+   * `GET /platform/settings`
+   */
+  async getPlatformSettings(options?: RequestOptions): Promise<M.PlatformSettings> {
+    return this.request<M.PlatformSettings>("GET", "/platform/settings", { auth: true, options });
+  }
+
+  /**
+   * Update platform settings (SMTP/legal/content/flags) (platform admin only)
+   * Deep-merges the given sections into the singleton settings row. The SMTP password is write-only: send it to set/replace it, omit it to keep the stored one. The response masks it to password_set.
+   * 
+   * `PATCH /platform/settings`
+   */
+  async patchPlatformSettings(body: M.PlatformSettingsPatch, options?: RequestOptions): Promise<M.PlatformSettings> {
+    return this.request<M.PlatformSettings>("PATCH", "/platform/settings", { body, auth: true, options });
+  }
+
+  /**
+   * All clubs incl. license tier/status/term (platform admin only)
+   * 
+   * `GET /platform/entitlements`
+   */
+  async getPlatformEntitlements(options?: RequestOptions): Promise<M.PlatformEntitlementRow[]> {
+    return this.request<M.PlatformEntitlementRow[]>("GET", "/platform/entitlements", { auth: true, options });
+  }
+
+  /**
+   * Set a club license tier/status/term by hand (platform admin only)
+   * Writes the club_license entitlement through the single billing writer (state machine + audit). source=manual, actor=platform:<sub>. trial_days is a convenience for status='trial' (term = now + N days).
+   * 
+   * `PATCH /platform/entitlements/{clubId}`
+   */
+  async patchPlatformEntitlementsByClubId(clubId: string, body: M.PlatformEntitlementPatch, options?: RequestOptions): Promise<M.PlatformEntitlementRow> {
+    return this.request<M.PlatformEntitlementRow>("PATCH", `/platform/entitlements/${encodeURIComponent(clubId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Payment webhook events + subscription states, paginated (platform admin only)
+   * 
+   * `GET /platform/payments`
+   */
+  async getPlatformPayments(query?: { "provider"?: "stripe" | "revenuecat"; "status"?: "received" | "processed" | "failed" | "skipped"; "limit"?: number; "offset"?: number | null }, options?: RequestOptions): Promise<M.PlatformPayments> {
+    return this.request<M.PlatformPayments>("GET", "/platform/payments", { query, auth: true, options });
+  }
+
+  /**
+   * Full product catalog incl. inactive (platform admin only)
+   * 
+   * `GET /platform/products`
+   */
+  async getPlatformProducts(options?: RequestOptions): Promise<M.PlatformProduct[]> {
+    return this.request<M.PlatformProduct[]>("GET", "/platform/products", { auth: true, options });
+  }
+
+  /**
+   * Update a product price / active flag (platform admin only)
+   * 
+   * `PATCH /platform/products/{id}`
+   */
+  async patchPlatformProductsById(id: string, body: M.PlatformProductPatch, options?: RequestOptions): Promise<M.PlatformProduct> {
+    return this.request<M.PlatformProduct>("PATCH", `/platform/products/${encodeURIComponent(id)}`, { body, auth: true, options });
+  }
+
+  /**
+   * System health: version, DB figures, migrations, health (platform admin only)
+   * 
+   * `GET /platform/system`
+   */
+  async getPlatformSystem(options?: RequestOptions): Promise<M.PlatformSystem> {
+    return this.request<M.PlatformSystem>("GET", "/platform/system", { auth: true, options });
+  }
+
+  /**
    * List events of a club (optionally time-windowed)
    * 
    * `GET /events`

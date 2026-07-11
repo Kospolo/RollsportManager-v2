@@ -228,6 +228,177 @@ export interface PlatformStats {
   "open_invoices": number | null;
 }
 
+export interface PlatformSmtp {
+  "host": string;
+  "port": number | null;
+  "user": string;
+  "from": string;
+  "secure": boolean;
+  "password_set": boolean;
+}
+
+export interface PlatformLegal {
+  "impressum": string;
+  "datenschutz": string;
+  "agb": string;
+}
+
+export interface PlatformContent {
+  "website_title": string;
+  "website_subtitle": string;
+  "seo_title": string;
+  "seo_description": string;
+  "seo_keywords": string;
+}
+
+export interface PlatformSettings {
+  "smtp": PlatformSmtp;
+  "legal": PlatformLegal;
+  "content": PlatformContent;
+  "feature_flags": Record<string, unknown>;
+  "updated_at": string;
+}
+
+export interface PlatformSmtpPatch {
+  "host"?: string;
+  "port"?: number;
+  "user"?: string;
+  "from"?: string;
+  "secure"?: boolean;
+  "password"?: string;
+}
+
+export interface PlatformLegalPatch {
+  "impressum"?: string;
+  "datenschutz"?: string;
+  "agb"?: string;
+}
+
+export interface PlatformContentPatch {
+  "website_title"?: string;
+  "website_subtitle"?: string;
+  "seo_title"?: string;
+  "seo_description"?: string;
+  "seo_keywords"?: string;
+}
+
+export interface PlatformSettingsPatch {
+  "smtp"?: PlatformSmtpPatch;
+  "legal"?: PlatformLegalPatch;
+  "content"?: PlatformContentPatch;
+  "feature_flags"?: Record<string, unknown>;
+}
+
+export interface PlatformEntitlementRow {
+  "club_id": string;
+  "club_name": string;
+  "short_name": string | null;
+  "member_count": number | null;
+  "entitlement_id": string | null;
+  "tier": string | null;
+  "status": string | null;
+  "source": "stripe" | "revenuecat" | "manual" | null;
+  "provider_ref": string | null;
+  "valid_until": string | null;
+  "updated_at": string | null;
+}
+
+export type PlatformTier = "basic" | "pro" | "premium";
+export const PlatformTierValues: readonly PlatformTier[] = ["basic", "pro", "premium"] as const;
+
+export type PlatformEntitlementStatus = "trial" | "active" | "past_due" | "canceled";
+export const PlatformEntitlementStatusValues: readonly PlatformEntitlementStatus[] = ["trial", "active", "past_due", "canceled"] as const;
+
+export interface PlatformEntitlementPatch {
+  "tier": PlatformTier;
+  "status": PlatformEntitlementStatus;
+  "valid_until"?: string | null;
+  "trial_days"?: number;
+  "reason"?: string;
+}
+
+export interface PlatformPaymentEvent {
+  "id": string;
+  "provider": string;
+  "event_id": string;
+  "event_type": string | null;
+  "status": string;
+  "error": string | null;
+  "received_at": string;
+  "processed_at": string | null;
+}
+
+export interface PlatformSubscriptionSummary {
+  "active": number | null;
+  "trial": number | null;
+  "past_due": number | null;
+  "canceled": number | null;
+  "licensed_clubs": number | null;
+}
+
+export interface PlatformPaymentsPage {
+  "total": number | null;
+  "limit": number | null;
+  "offset": number | null;
+}
+
+export interface PlatformPayments {
+  "events": PlatformPaymentEvent[];
+  "subscription_summary": PlatformSubscriptionSummary;
+  "page": PlatformPaymentsPage;
+}
+
+export interface PlatformProduct {
+  "id": string;
+  "code": string;
+  "kind": "club_license" | "personal_pro";
+  "name": string;
+  "description": string | null;
+  "price_cents": number | null;
+  "currency": string;
+  "billing_interval": "month" | "year";
+  "max_members": number | null;
+  "active": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface PlatformProductPatch {
+  "price_cents"?: number;
+  "active"?: boolean;
+  "name"?: string;
+  "description"?: string | null;
+}
+
+export interface PlatformSystemDb {
+  "clubs": number | null;
+  "users": number | null;
+  "members": number | null;
+  "active_entitlements": number | null;
+  "webhook_events": number | null;
+  "size_bytes": number | null;
+  "size_pretty": string;
+}
+
+export interface PlatformSystemMigrations {
+  "count": number | null;
+  "latest": string | null;
+  "list": string[];
+}
+
+export interface PlatformSystemHealth {
+  "status": "ok";
+  "db_time": string;
+}
+
+export interface PlatformSystem {
+  "app_version": string;
+  "auth_mode": "dev" | "prod";
+  "db": PlatformSystemDb;
+  "migrations": PlatformSystemMigrations;
+  "health": PlatformSystemHealth;
+}
+
 export type EventType = "training" | "competition" | "other";
 export const EventTypeValues: readonly EventType[] = ["training", "competition", "other"] as const;
 
