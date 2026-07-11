@@ -92,6 +92,16 @@ struct APIClient {
         try await request(method: "PATCH", path: path, query: [], body: body)
     }
 
+    /// DELETE ohne Request-Body. Die API antwortet mit 200 + JSON (z. B.
+    /// `Deleted` aus den Contracts), deshalb wird die Antwort dekodiert —
+    /// analog zu `get`. Für 403 gilt derselbe RFC-7807-Pfad wie überall.
+    func delete<Response: Decodable>(
+        _ path: String,
+        query: [URLQueryItem] = []
+    ) async throws -> Response {
+        try await request(method: "DELETE", path: path, query: query, body: nil as Never?)
+    }
+
     // MARK: - Kern
 
     private func request<Body: Encodable, Response: Decodable>(

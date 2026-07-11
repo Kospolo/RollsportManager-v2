@@ -56,6 +56,30 @@ enum MehrCatalog {
     /// + die bereits nativen Bereiche (Ziele = bestehende Feature-Roots).
     static let available: [MehrTile] = [
         MehrTile(
+            id: "notes",
+            titleKey: "module.notes.title", descKey: "module.notes.desc",
+            systemImage: "note.text", tone: .info, isNew: true,
+            destination: AnyView(NotesRootView())
+        ),
+        MehrTile(
+            id: "regevents",
+            titleKey: "module.regevents.title", descKey: "module.regevents.desc",
+            systemImage: "flag.2.crossed.fill", tone: .warn, isNew: true,
+            destination: AnyView(RegionalEventsRootView())
+        ),
+        MehrTile(
+            id: "departments",
+            titleKey: "module.departments.title", descKey: "module.departments.desc",
+            systemImage: "square.grid.2x2.fill", tone: .success, isNew: true,
+            destination: AnyView(DepartmentsRootView())
+        ),
+        MehrTile(
+            id: "anniversaries",
+            titleKey: "module.anniversaries.title", descKey: "module.anniversaries.desc",
+            systemImage: "gift.fill", tone: .honey, isNew: true,
+            destination: AnyView(AnniversariesRootView())
+        ),
+        MehrTile(
             id: "competition",
             titleKey: "module.competition.title", descKey: "module.competition.desc",
             systemImage: "trophy.fill", tone: .warn, isNew: true,
@@ -161,8 +185,6 @@ enum MehrCatalog {
 
     /// Noch nicht gebaut — nicht navigierbar, „Bald“-Kachel.
     static let soon: [MehrTile] = [
-        soonTile("regevents", "module.regevents.title", "module.regevents.desc", "flag.2.crossed.fill", .warn),
-        soonTile("notes", "module.notes.title", "module.notes.desc", "note.text", .info),
         soonTile("gallery", "module.gallery.title", "module.gallery.desc", "photo.on.rectangle.angled", .info),
         soonTile("document", "module.document.title", "module.document.desc", "doc.fill", .success),
         soonTile("manage", "module.manage.title", "module.manage.desc", "shield.fill", .neutral),
