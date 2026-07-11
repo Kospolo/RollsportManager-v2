@@ -57,6 +57,25 @@ export const profilDict = {
     noChanges: "Es gibt nichts zu speichern.",
     noPermission: "Keine Berechtigung — dein Profil wurde nicht geändert.",
 
+    /* Profilfoto (nur eigenes Profil) */
+    photoEyebrow: "Profilfoto",
+    photoTitle: "Dein Foto",
+    photoNoneLabel: "Noch kein Foto hinterlegt",
+    photoHasLabel: "Foto hinterlegt",
+    photoPreviewLabel: "Vorschau — noch nicht gespeichert",
+    photoFormatHint: "JPG, PNG oder WebP · bis 25 MB",
+    photoChoose: "Foto auswählen",
+    photoChange: "Foto ändern",
+    photoUpload: "Foto hochladen",
+    photoUploading: "Wird hochgeladen …",
+    photoDiscard: "Auswahl entfernen",
+    photoSavedToast: "Dein Profilfoto ist aktualisiert",
+    photoPrivacy:
+      "Dein Foto ist für die Vereinsleitung und andere Mitglieder deines Vereins sichtbar und wird auf dem Vereinsserver gespeichert. Du bearbeitest ausschließlich dein eigenes Profil.",
+    photoErrType: "Bitte wähle eine Bilddatei (JPG, PNG oder WebP).",
+    photoErrSize: "Das Bild ist zu groß — höchstens 25 MB.",
+    photoNoPermission: "Keine Berechtigung — dein Foto wurde nicht geändert.",
+
     /* Ohne Vereinsmitgliedschaft (Plattform-Persona) */
     noMembershipTitle: "Keine Vereinsmitgliedschaft",
     noMembershipBody:
@@ -129,6 +148,25 @@ export const profilDict = {
     savedToast: "Your profile has been updated",
     noChanges: "There is nothing to save.",
     noPermission: "No permission — your profile was not changed.",
+
+    /* Profile photo (own profile only) */
+    photoEyebrow: "Profile photo",
+    photoTitle: "Your photo",
+    photoNoneLabel: "No photo on file yet",
+    photoHasLabel: "Photo on file",
+    photoPreviewLabel: "Preview — not saved yet",
+    photoFormatHint: "JPG, PNG or WebP · up to 25 MB",
+    photoChoose: "Choose photo",
+    photoChange: "Change photo",
+    photoUpload: "Upload photo",
+    photoUploading: "Uploading …",
+    photoDiscard: "Remove selection",
+    photoSavedToast: "Your profile photo has been updated",
+    photoPrivacy:
+      "Your photo is visible to your club's administration and other club members and is stored on the club server. You are only editing your own profile.",
+    photoErrType: "Please choose an image file (JPG, PNG or WebP).",
+    photoErrSize: "The image is too large — 25 MB max.",
+    photoNoPermission: "No permission — your photo was not changed.",
 
     /* Without club membership (platform persona) */
     noMembershipTitle: "No club membership",

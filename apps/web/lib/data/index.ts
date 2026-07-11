@@ -74,6 +74,15 @@ export type {
   GalleryUploadMeta,
 } from "./inputs-batch5";
 export type {
+  AddGuardianshipInput,
+  Cluster6aRepository,
+  CreateChildInput,
+  GuardianRelation,
+  JoinWaitlistInput,
+  UpdateWaitlistInput,
+  UpsertBudgetInput,
+} from "./inputs-cluster6a";
+export type {
   ApplyDunningInput,
   CreateInvoiceInput,
   CreateLedgerCategoryInput,

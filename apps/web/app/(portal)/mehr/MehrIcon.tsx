@@ -28,7 +28,8 @@ export type MehrIconName =
   | "chart"
   | "department"
   | "locker"
-  | "anniversary";
+  | "anniversary"
+  | "waitlist";
 
 const PATHS: Record<MehrIconName, ReactNode> = {
   news: (
@@ -159,6 +160,14 @@ const PATHS: Record<MehrIconName, ReactNode> = {
       <path d="M4.5 13.5h15M12 9.5V20" />
       <path d="M12 9.5C10.1 9.5 8.5 8.4 8.5 6.9c0-1 .7-1.9 1.7-1.9 1.6 0 2.3 2.3 1.8 4.5z" />
       <path d="M12 9.5c1.9 0 3.5-1.1 3.5-2.6 0-1-.7-1.9-1.7-1.9-1.6 0-2.3 2.3-1.8 4.5z" />
+    </>
+  ),
+  waitlist: (
+    <>
+      <circle cx="6" cy="7" r="1.3" />
+      <circle cx="6" cy="12" r="1.3" />
+      <circle cx="6" cy="17" r="1.3" />
+      <path d="M10 7h9M10 12h9M10 17h6" />
     </>
   ),
 };

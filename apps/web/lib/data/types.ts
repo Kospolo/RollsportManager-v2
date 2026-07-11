@@ -64,6 +64,7 @@ import type {
 } from "./inputs-batch3";
 import type { Batch4Repository } from "./inputs-batch4";
 import type { Batch5Repository } from "./inputs-batch5";
+import type { Cluster6aRepository } from "./inputs-cluster6a";
 import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
@@ -189,6 +190,7 @@ export interface UpdateClubSettingsInput {
 export interface DataRepository
   extends Batch4Repository,
     Batch5Repository,
+    Cluster6aRepository,
     FinanceRepository,
     FinanceBRepository,
     FinanceCRepository,
@@ -384,8 +386,7 @@ export interface DataRepository
   // Chat/Check-in/überregionale Events: ./inputs-batch4 (Batch4Repository) — geerbt.
   // Galerie/Dokumente/Entitlement-Gate: ./inputs-batch5 (Batch5Repository) — geerbt.
   // Abteilungen, Schließfächer, Jubiläen: ./inputs-org (OrgRepository) — geerbt.
-  // Wettkampf (Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen + Token-Ansicht):
-  // ./inputs-wettkampf (WettkampfRepository) — geerbt.
+  // Wettkampf (Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen + Token): ./inputs-wettkampf (WettkampfRepository) — geerbt.
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */
@@ -394,6 +395,5 @@ export interface DataRepository
   platformListUsers(): Promise<PlatformUserSummary[]>;
   /** Plattform-Kennzahlen. */
   platformStats(): Promise<PlatformStats>;
-  // Lizenzen, Zahlungen/Abos, Produkte, System-Info, Plattform-Einstellungen
-  // ((super)-Bereich): ./inputs-platform (PlatformConsoleRepository) — geerbt.
+  // Lizenzen/Zahlungen/Produkte/System/Einstellungen ((super)): ./inputs-platform (PlatformConsoleRepository) — geerbt.
 }

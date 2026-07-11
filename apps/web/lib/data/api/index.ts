@@ -8,6 +8,7 @@ import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
 import { moduleApiRepositoryBatch4 } from "./modules-batch4";
 import { moduleApiRepositoryBatch5 } from "./modules-batch5";
+import { moduleApiRepositoryCluster6a } from "./modules-cluster6a";
 import { moduleApiRepositoryFinance } from "./modules-finance";
 import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
@@ -317,6 +318,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Galerie, Dokumente, Entitlement (Batch 5) ---------- */
   ...moduleApiRepositoryBatch5,
+
+  /* ---------- Module: Wartelisten, Budget, Familie-Selfservice, Profilfoto (Cluster 6a) ---------- */
+  ...moduleApiRepositoryCluster6a,
 
   /* ---------- Module: Kassenbuch-Kategorien, Rechnungs-Detail, Mahnwesen (Finanz A) ---------- */
   ...moduleApiRepositoryFinance,

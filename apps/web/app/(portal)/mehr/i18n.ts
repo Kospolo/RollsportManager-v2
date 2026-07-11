@@ -76,6 +76,8 @@ export const mehrDict = {
     lockersDesc: "Schließfächer verwalten und Mitgliedern zuweisen.",
     anniversaries: "Jubiläen",
     anniversariesDesc: "Anstehende Jubiläen und runde Geburtstage.",
+    waitlists: "Wartelisten",
+    waitlistsDesc: "Plätze für Hallen, Ausrüstung, Teams und Termine.",
   },
   en: {
     eyebrow: "All areas",
@@ -146,6 +148,8 @@ export const mehrDict = {
     lockersDesc: "Manage lockers and assign them to members.",
     anniversaries: "Anniversaries",
     anniversariesDesc: "Upcoming anniversaries and milestone birthdays.",
+    waitlists: "Waitlists",
+    waitlistsDesc: "Spots for facilities, equipment, teams and events.",
   },
 } satisfies Dict;
 

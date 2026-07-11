@@ -54,6 +54,11 @@ export interface MyProfileMembership {
   joinedOn?: string;
   /** Nur guest_coach: befristeter Zugang bis (ISO-Datum) */
   validUntil?: string;
+  /**
+   * Profilfoto-URL dieser Mitgliedschaft (im api-Modus bereits mit der
+   * API-Basis präfixiert). Fehlt = kein Foto → Avatar zeigt die Initialen.
+   */
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

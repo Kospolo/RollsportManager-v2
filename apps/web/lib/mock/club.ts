@@ -18,6 +18,20 @@ export const club: Club = {
 
 const c = club.id;
 
+/**
+ * Demo-Profilfoto als CSP-sichere Inline-SVG-Data-URI (kein externer Request).
+ * Zeigt die Foto-Variante des Avatars für einige Mock-Mitglieder; alle übrigen
+ * haben kein avatarUrl → farbige Initialen (Fallback).
+ */
+const demoAvatar = (hue: number): string =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">` +
+      `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">` +
+      `<stop offset="0" stop-color="hsl(${hue},68%,58%)"/>` +
+      `<stop offset="1" stop-color="hsl(${hue + 38},64%,42%)"/></linearGradient></defs>` +
+      `<rect width="128" height="128" fill="url(#g)"/></svg>`,
+  )}`;
+
 export const teams: Team[] = [
   { id: "t-01", clubId: c, name: "Minis & Anfänger", ageGroup: "U8–U10", coachIds: ["m-05"], skaterIds: [] },
   { id: "t-02", clubId: c, name: "Nachwuchs Pflicht", ageGroup: "U12–U15", coachIds: ["m-01", "m-05"], skaterIds: [] },
@@ -26,7 +40,7 @@ export const teams: Team[] = [
 
 export const members: Member[] = [
   // Vorstand, Verwaltung & Trainerteam
-  { id: "m-01", clubId: c, firstName: "Sandra", lastName: "Vogel", role: "coach", status: "active", email: "sandra.vogel@example.org", teamIds: ["t-02", "t-03"], joinedAt: "2015-09-01" },
+  { id: "m-01", clubId: c, firstName: "Sandra", lastName: "Vogel", role: "coach", status: "active", email: "sandra.vogel@example.org", teamIds: ["t-02", "t-03"], joinedAt: "2015-09-01", avatarUrl: demoAvatar(210) },
   { id: "m-02", clubId: c, firstName: "Jürgen", lastName: "Häberle", role: "owner", status: "active", email: "juergen.haeberle@example.org", teamIds: [], joinedAt: "1998-03-15" },
   { id: "m-03", clubId: c, firstName: "Beate", lastName: "Schäfer", role: "treasurer", status: "active", email: "beate.schaefer@example.org", teamIds: [], joinedAt: "2006-01-10" },
   { id: "m-04", clubId: c, firstName: "Thomas", lastName: "Krüger", role: "admin", status: "active", email: "thomas.krueger@example.org", teamIds: [], joinedAt: "2011-05-02" },
@@ -34,7 +48,7 @@ export const members: Member[] = [
   { id: "m-06", clubId: c, firstName: "Milena", lastName: "Öztürk", role: "guest_coach", status: "active", email: "milena.oeztuerk@example.org", teamIds: ["t-03"], joinedAt: dateFromNow(-14), guestAccessUntil: dateFromNow(30) },
 
   // Familie Grünewald
-  { id: "m-07", clubId: c, firstName: "Lina", lastName: "Grünewald", role: "member", status: "active", birthDate: "2014-04-12", teamIds: ["t-02"], joinedAt: "2021-09-01" },
+  { id: "m-07", clubId: c, firstName: "Lina", lastName: "Grünewald", role: "member", status: "active", birthDate: "2014-04-12", teamIds: ["t-02"], joinedAt: "2021-09-01", avatarUrl: demoAvatar(320) },
   { id: "m-08", clubId: c, firstName: "Emma", lastName: "Grünewald", role: "member", status: "active", birthDate: "2016-11-03", teamIds: ["t-01"], joinedAt: "2023-03-01" },
   { id: "m-09", clubId: c, firstName: "Katrin", lastName: "Grünewald", role: "member", status: "active", email: "katrin.gruenewald@example.org", teamIds: [], joinedAt: "2021-09-01" },
 

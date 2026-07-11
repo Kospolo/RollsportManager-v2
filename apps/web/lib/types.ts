@@ -12,6 +12,12 @@ export type Id = string;
 // lib/types-me.ts, ist aber weiterhin unter "@/lib/types" verfügbar.
 export type * from "./types-me";
 
+// Cluster-6a-Typen (Wartelisten, Budgetplanung, Familie-Selfservice, Profilfoto)
+// leben ausgelagert in lib/types-cluster6a.ts, sind aber weiterhin unter
+// "@/lib/types" verfügbar. Die Enums (WaitlistKind/WaitlistStatus) sind reine
+// String-Unions und werden als Typen re-exportiert.
+export type * from "./types-cluster6a";
+
 // Batch-2-Modul-Typen (Hallen, Buchungen, Equipment, Reservierungen, Erfolge)
 // leben ausgelagert in lib/types-batch2.ts, sind aber weiterhin unter
 // "@/lib/types" verfügbar.
@@ -104,6 +110,11 @@ export interface Member {
   joinedAt: string;
   /** Nur bei role === "guest_coach": befristeter Zugang bis (ISO-Datum) */
   guestAccessUntil?: string;
+  /**
+   * Profilfoto-URL (im api-Modus bereits mit der API-Basis präfixiert). Fehlt =
+   * kein Foto hinterlegt → der Avatar fällt auf die farbigen Initialen zurück.
+   */
+  avatarUrl?: string;
 }
 
 /** Familienmodell: Erziehungsberechtigte:r ↔ Kind (beide sind Members). */

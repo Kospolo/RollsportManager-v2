@@ -16,6 +16,7 @@ import { moduleRepositoryBatch2 } from "./modules-batch2";
 import { moduleRepositoryBatch3 } from "./modules-batch3";
 import { moduleRepositoryBatch4 } from "./modules-batch4";
 import { moduleRepositoryBatch5 } from "./modules-batch5";
+import { moduleRepositoryCluster6a } from "./modules-cluster6a";
 import { moduleRepositoryFinance } from "./modules-finance";
 import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
@@ -250,6 +251,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Galerie, Dokumente, Entitlement (Batch 5) ---------- */
   ...moduleRepositoryBatch5,
+
+  /* ---------- Module: Wartelisten, Budget, Familie-Selfservice, Profilfoto (Cluster 6a) ---------- */
+  ...moduleRepositoryCluster6a,
 
   /* ---------- Module: Kassenbuch-Kategorien, Rechnungs-Detail, Mahnwesen (Finanz A) ---------- */
   ...moduleRepositoryFinance,

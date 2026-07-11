@@ -33,7 +33,17 @@ export async function softNotImplemented<T>(promise: Promise<T>): Promise<T | nu
 
 /* ---------- Familien-Verknüpfungen ---------- */
 
-export type FamilyLink = { member: Member; relation: Guardianship["relation"] };
+/**
+ * Eine Familien-Verknüpfung aus Sicht der eingeloggten Person: das andere
+ * Mitglied (Kind bzw. Erziehungsberechtigte:r), das Verhältnis UND die
+ * guardianshipId — letztere braucht das Entfernen (removeGuardianship) und der
+ * optimistische Overlay der Verwaltungsansicht (Dedupe/Ausblenden).
+ */
+export type FamilyLink = {
+  guardianshipId: Guardianship["id"];
+  member: Member;
+  relation: Guardianship["relation"];
+};
 
 /** Kinder der Person (die Person ist Erziehungsberechtigte:r). */
 export function childrenOf(
@@ -43,7 +53,11 @@ export function childrenOf(
 ): FamilyLink[] {
   return guardianships
     .filter((g) => g.guardianId === personId)
-    .map((g) => ({ member: memberById(members, g.childId), relation: g.relation }))
+    .map((g) => ({
+      guardianshipId: g.id,
+      member: memberById(members, g.childId),
+      relation: g.relation,
+    }))
     .filter((link): link is FamilyLink => Boolean(link.member));
 }
 
@@ -55,7 +69,11 @@ export function guardiansOf(
 ): FamilyLink[] {
   return guardianships
     .filter((g) => g.childId === personId)
-    .map((g) => ({ member: memberById(members, g.guardianId), relation: g.relation }))
+    .map((g) => ({
+      guardianshipId: g.id,
+      member: memberById(members, g.guardianId),
+      relation: g.relation,
+    }))
     .filter((link): link is FamilyLink => Boolean(link.member));
 }
 

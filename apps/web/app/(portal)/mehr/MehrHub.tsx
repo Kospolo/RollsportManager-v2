@@ -84,6 +84,7 @@ const AVAILABLE: AvailableTile[] = [
   { key: "departments", href: "/abteilungen", icon: { mehr: "department" }, tone: "brand", titleKey: "departments", descKey: "departmentsDesc", isNew: true },
   { key: "lockers", href: "/schliessfaecher", icon: { mehr: "locker" }, tone: "success", titleKey: "lockers", descKey: "lockersDesc", isNew: true },
   { key: "anniversaries", href: "/jubilaeen", icon: { mehr: "anniversary" }, tone: "warn", titleKey: "anniversaries", descKey: "anniversariesDesc", isNew: true },
+  { key: "waitlists", href: "/wartelisten", icon: { mehr: "waitlist" }, tone: "info", titleKey: "waitlists", descKey: "waitlistsDesc", isNew: true },
   { key: "events", href: "/termine", icon: { shell: "events" }, tone: "brand", titleKey: "events", descKey: "eventsDesc" },
   { key: "members", href: "/mitglieder", icon: { shell: "members" }, tone: "info", titleKey: "members", descKey: "membersDesc" },
   { key: "routines", href: "/kueren", icon: { shell: "routines" }, tone: "neutral", titleKey: "routines", descKey: "routinesDesc" },

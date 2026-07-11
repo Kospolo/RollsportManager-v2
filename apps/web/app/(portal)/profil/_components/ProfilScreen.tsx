@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
 import { errorMessage, isNotImplemented } from "@/lib/data";
@@ -15,6 +16,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { profilDict, roleKey, statusKey } from "../i18n";
 import { ROLE_TONE, STATUS_TONE, splitDisplayName } from "../derive";
 import { ProfileEditCard } from "./ProfileEditCard";
+import { ProfilePhotoCard } from "./ProfilePhotoCard";
 import { AccountCard } from "./AccountCard";
 
 /**
@@ -94,6 +96,11 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
   const primary = profile.memberships[0] as MyProfileMembership | undefined;
   const others = profile.memberships.slice(1);
 
+  // Optimistischer Foto-Zustand nach dem Upload: zeigt das neue Foto sofort in
+  // Kopf und Karte, bevor der /me-Reload den Serverstand nachzieht.
+  const [photoOverride, setPhotoOverride] = useState<string | null>(null);
+  const shownAvatarUrl = photoOverride ?? primary?.avatarUrl ?? null;
+
   const name =
     profile.displayName ??
     (primary ? `${primary.firstName} ${primary.lastName}`.trim() : "—");
@@ -111,6 +118,7 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
           personId={avatarId}
           firstName={avatarName.firstName}
           lastName={avatarName.lastName}
+          avatarUrl={shownAvatarUrl}
           size="l"
         />
         <div className="grid min-w-0 gap-1.5">
@@ -142,8 +150,18 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
       </header>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        {/* Links: Bearbeiten (oder Hinweis ohne Mitgliedschaft) */}
+        {/* Links: Profilfoto + Bearbeiten (oder Hinweis ohne Mitgliedschaft) */}
         <div className="grid gap-5">
+          {primary && (
+            <ProfilePhotoCard
+              membership={primary}
+              currentUrl={shownAvatarUrl}
+              onUploaded={(url) => {
+                setPhotoOverride(url);
+                onSaved();
+              }}
+            />
+          )}
           {primary ? (
             <ProfileEditCard
               key={`${primary.id}:${primary.updatedAt}`}

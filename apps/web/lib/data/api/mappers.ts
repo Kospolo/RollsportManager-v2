@@ -28,6 +28,16 @@ import type {
   Team,
 } from "@/lib/types";
 import { waveformPeaks } from "@/lib/mock/util";
+import { API_BASE_URL } from "../config";
+
+/**
+ * Relative Media-URL (`/media/<key>`) mit der API-Basis präfixen — analog zu den
+ * übrigen Media-Downloads. Absolute URLs bleiben unangetastet; null/leer → undefined.
+ */
+export function mediaUrl(rel: string | null | undefined): string | undefined {
+  if (!rel) return undefined;
+  return /^https?:\/\//.test(rel) ? rel : `${API_BASE_URL}${rel}`;
+}
 
 /**
  * Mapper: API-Wire-Format (snake_case, Blueprint ADR-E7) → View-Typen
@@ -70,6 +80,7 @@ export function mapMember(w: M.ClubMember): Member {
     teamIds: w.team_ids,
     joinedAt: w.joined_on ?? w.created_at.slice(0, 10),
     guestAccessUntil: w.role === "guest_coach" ? (w.valid_until ?? undefined) : undefined,
+    avatarUrl: mediaUrl(w.avatar_url),
   };
 }
 
@@ -352,6 +363,7 @@ function mapMyProfileMembership(w: M.MeMembership): MyProfileMembership {
     status: mapMemberStatus(w.status),
     joinedOn: w.joined_on ?? undefined,
     validUntil: w.valid_until ?? undefined,
+    avatarUrl: mediaUrl(w.avatar_url),
     createdAt: w.created_at,
     updatedAt: w.updated_at,
   };

@@ -79,6 +79,13 @@ const TILES: HubTile[] = [
     descKey: "hubReportsDesc",
   },
   {
+    href: "/finanzen/budget",
+    icon: { mehr: "chart" },
+    tone: "brand",
+    titleKey: "hubBudgetTitle",
+    descKey: "hubBudgetDesc",
+  },
+  {
     href: "/finanzen/jahresabschluss",
     icon: { shell: "finance" },
     tone: "info",
