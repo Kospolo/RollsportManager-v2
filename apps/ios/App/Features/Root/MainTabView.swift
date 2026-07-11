@@ -22,6 +22,7 @@ struct MainTabView: View {
     enum MehrDeepLink: String, Hashable {
         case news, chat, medals, trainingplan
         case exercises, family, hours, chart
+        case wettkampf, belegung, ausruestung, checkin
     }
 
     @State private var selection: Tab
@@ -38,8 +39,9 @@ struct MainTabView: View {
            let tab = Tab(rawValue: raw) {
             initial = tab
         }
-        // `-devMehrOpen <news|chat|medals|trainingplan>` pusht direkt das
-        // Modul im „Mehr“-Stack (nur DEBUG-Smoke).
+        // `-devMehrOpen <news|chat|medals|trainingplan|exercises|family|
+        // hours|chart|wettkampf|belegung|ausruestung|checkin>` pusht direkt
+        // das Modul im „Mehr“-Stack (nur DEBUG-Smoke).
         if let raw = UserDefaults.standard.string(forKey: "devMehrOpen"),
            let link = MehrDeepLink(rawValue: raw) {
             initial = .mehr
@@ -82,6 +84,10 @@ struct MainTabView: View {
                         case .family: FamilyRootView()
                         case .hours: DutyHoursRootView()
                         case .chart: ReportsRootView()
+                        case .wettkampf: CompetitionRootView()
+                        case .belegung: FacilityRootView()
+                        case .ausruestung: EquipmentRootView()
+                        case .checkin: CheckinRootView()
                         }
                     }
             }

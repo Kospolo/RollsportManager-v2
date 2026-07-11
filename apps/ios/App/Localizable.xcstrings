@@ -1,42 +1,135 @@
 {
   "sourceLanguage": "en",
   "strings": {
-
-    "pflichtstunden.badge.fulfilled": {
+    "ausruestung.avail.outOfStock": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erfüllt"
+            "value": "Zurzeit nicht verfügbar"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Met"
+            "value": "Currently unavailable"
           }
         }
       }
     },
-
-    "pflichtstunden.badge.open": {
+    "ausruestung.avail.unknown": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Offen"
+            "value": "Bestand nicht erfasst"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open"
+            "value": "Stock not tracked"
           }
         }
       }
     },
-
-    "pflichtstunden.error.ok": {
+    "ausruestung.avail.value %lld %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld von %2$lld verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld available"
+          }
+        }
+      }
+    },
+    "ausruestung.cond.defect": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Defekt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Defective"
+          }
+        }
+      }
+    },
+    "ausruestung.cond.fair": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brauchbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usable"
+          }
+        }
+      }
+    },
+    "ausruestung.cond.good": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gut"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Good"
+          }
+        }
+      }
+    },
+    "ausruestung.empty.message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald Trainer:innen Material anlegen, kannst du es hier reservieren."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once coaches add gear, you can reserve it here."
+          }
+        }
+      }
+    },
+    "ausruestung.empty.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Ausrüstung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No equipment yet"
+          }
+        }
+      }
+    },
+    "ausruestung.error.ok": {
       "localizations": {
         "de": {
           "stringUnit": {
@@ -52,8 +145,23 @@
         }
       }
     },
-
-    "pflichtstunden.error.retry": {
+    "ausruestung.error.refresh.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualisieren fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh failed"
+          }
+        }
+      }
+    },
+    "ausruestung.error.retry": {
       "localizations": {
         "de": {
           "stringUnit": {
@@ -69,569 +177,215 @@
         }
       }
     },
-
-    "pflichtstunden.error.title": {
+    "ausruestung.error.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pflichtstunden konnten nicht geladen werden"
+            "value": "Ausrüstung konnte nicht geladen werden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Volunteer hours could not be loaded"
+            "value": "Equipment could not be loaded"
           }
         }
       }
     },
-
-    "pflichtstunden.field.date": {
+    "ausruestung.filter.all": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Datum"
+            "value": "Alle"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Date"
+            "value": "All"
           }
         }
       }
     },
-
-    "pflichtstunden.field.hours": {
+    "ausruestung.filter.empty.cta": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stunden"
+            "value": "Alle anzeigen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hours"
+            "value": "Show all"
           }
         }
       }
     },
-
-    "pflichtstunden.field.hours.error": {
+    "ausruestung.filter.empty.message": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bitte eine Stundenzahl größer als 0 angeben."
+            "value": "Wähle eine andere Kategorie oder zeige alles an."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Please enter a number of hours greater than 0."
+            "value": "Pick a different category or show everything."
           }
         }
       }
     },
-
-    "pflichtstunden.field.hours.hint": {
+    "ausruestung.filter.empty.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dezimal möglich, z. B. 2,5 — in halben Stunden."
+            "value": "Nichts in dieser Kategorie"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decimals allowed, e.g. 2.5 — in half hours."
+            "value": "Nothing in this category"
           }
         }
       }
     },
-
-    "pflichtstunden.field.hours.placeholder": {
+    "ausruestung.filter.uncategorized": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "z. B. 2,5"
+            "value": "Ohne Kategorie"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "e.g. 2.5"
+            "value": "Uncategorised"
           }
         }
       }
     },
-
-    "pflichtstunden.field.kind": {
+    "ausruestung.loading": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Art"
+            "value": "Ausrüstung wird geladen…"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Type"
+            "value": "Loading equipment…"
           }
         }
       }
     },
-
-    "pflichtstunden.field.note": {
+    "ausruestung.myres.empty.message": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notiz"
+            "value": "Reserviere oben einen Gegenstand — er erscheint dann hier."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Note"
+            "value": "Reserve an item above — it will show up here."
           }
         }
       }
     },
-
-    "pflichtstunden.field.note.placeholder": {
+    "ausruestung.myres.empty.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was hast du gemacht? (optional)"
+            "value": "Keine Reservierungen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What did you do? (optional)"
+            "value": "No reservations"
           }
         }
       }
     },
-
-    "pflichtstunden.forbidden": {
+    "ausruestung.myres.subtitle": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dafür fehlt dir die Berechtigung."
+            "value": "Deine aktiven und vergangenen Ausleihen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You don't have permission for this."
+            "value": "Your active and past loans"
           }
         }
       }
     },
-
-    "pflichtstunden.istApprovedNote": {
+    "ausruestung.myres.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "davon %@ genehmigt"
+            "value": "Meine Reservierungen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ approved"
+            "value": "My reservations"
           }
         }
       }
     },
-
-    "pflichtstunden.kind.competition": {
+    "ausruestung.res.qty %lld": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wettkampf"
+            "value": "%lld Stück"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Competition"
+            "value": "%lld pcs"
           }
         }
       }
     },
-
-    "pflichtstunden.kind.helper": {
+    "ausruestung.res.unknownItem": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Helfer"
+            "value": "Unbekannter Gegenstand"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Helper"
+            "value": "Unknown item"
           }
         }
       }
     },
-
-    "pflichtstunden.kind.other": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sonstiges"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Other"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.kind.training": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Training"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Training"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.kpi.ist": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ist"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Logged"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.kpi.rest": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rest"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remaining"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.kpi.soll": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Soll"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Target"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.level.club": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vereinsregel"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "club rule"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.level.member": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "persönliche Regel"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "personal rule"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.level.team": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Teamregel"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "team rule"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.list.empty.body": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trag deine erste geleistete Stunde ein — sie erscheint dann hier."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log your first completed hour — it will show up here."
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.list.empty.cta": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stunden erfassen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log hours"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.list.empty.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Stunden erfasst"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No hours logged yet"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.list.eyebrow": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meine Einträge"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My entries"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.list.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Neueste zuerst"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Newest first"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.loading": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pflichtstunden werden geladen …"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading volunteer hours …"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.log.a11y": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stunden erfassen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Log hours"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.mine.eyebrow": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Meine Stunden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My hours"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.mine.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Soll und Ist dieser Saison"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Target and logged this season"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.pending.many": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Einträge noch offen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld entries still open"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.pending.one": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld Eintrag noch offen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld entry still open"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.progress.label": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ von %2$@"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ of %2$@"
-          }
-        }
-      }
-    },
-
-    "pflichtstunden.sheet.cancel": {
+    "ausruestung.reserve.cancel": {
       "localizations": {
         "de": {
           "stringUnit": {
@@ -647,219 +401,482 @@
         }
       }
     },
-
-    "pflichtstunden.sheet.error.title": {
+    "ausruestung.reserve.conflict": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Konnte nicht gespeichert werden"
+            "value": "Nicht genügend Bestand für diesen Zeitraum."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Could not be saved"
+            "value": "Not enough stock for this period."
           }
         }
       }
     },
-
-    "pflichtstunden.sheet.eyebrow": {
+    "ausruestung.reserve.cta": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stunden erfassen"
+            "value": "Reservieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Log hours"
+            "value": "Reserve"
           }
         }
       }
     },
-
-    "pflichtstunden.sheet.submit": {
+    "ausruestung.reserve.err.qtyMax %lld": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erfassen"
+            "value": "Es sind nur %lld Stück verfügbar."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Log"
+            "value": "Only %lld pcs are available."
           }
         }
       }
     },
-
-    "pflichtstunden.sheet.title": {
+    "ausruestung.reserve.err.qtyMin": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stunden erfassen"
+            "value": "Bitte eine Menge von mindestens 1 angeben."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Log hours"
+            "value": "Please enter a quantity of at least 1."
           }
         }
       }
     },
-
-    "pflichtstunden.sollNone.body": {
+    "ausruestung.reserve.err.range": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Für dich ist derzeit keine Pflichtstunden-Regel aktiv. Erfasste Stunden zählst du trotzdem schon."
+            "value": "Das Ende muss nach dem Beginn liegen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No volunteer-hours rule is currently active for you. Any hours you log still count."
+            "value": "The end must be after the start."
           }
         }
       }
     },
-
-    "pflichtstunden.sollNone.title": {
+    "ausruestung.reserve.error.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Soll hinterlegt"
+            "value": "Reservierung fehlgeschlagen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No target set"
+            "value": "Reservation failed"
           }
         }
       }
     },
-
-    "pflichtstunden.status.approved": {
+    "ausruestung.reserve.eyebrow": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Genehmigt"
+            "value": "Reservierung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Approved"
+            "value": "Reservation"
           }
         }
       }
     },
-
-    "pflichtstunden.status.pending": {
+    "ausruestung.reserve.forSelf %@": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Offen"
+            "value": "Reservierung läuft auf dich (%@)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open"
+            "value": "Reserved in your name (%@)."
           }
         }
       }
     },
-
-    "pflichtstunden.title": {
+    "ausruestung.reserve.forbidden": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pflichtstunden"
+            "value": "Dafür fehlt dir die Berechtigung."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Volunteer hours"
+            "value": "You don't have permission for this."
           }
         }
       }
     },
-    "auswertung.title": {
+    "ausruestung.reserve.from": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auswertung"
+            "value": "Von"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reports"
+            "value": "From"
           }
         }
       }
     },
-    "auswertung.subtitle": {
+    "ausruestung.reserve.member": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kennzahlen des Vereins auf einen Blick — Mitglieder, Anwesenheit, Finanzen und Erfolge"
+            "value": "Für Mitglied"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The club's key figures at a glance — members, attendance, finances and achievements"
+            "value": "For member"
           }
         }
       }
     },
-    "auswertung.kpi.members.eyebrow": {
+    "ausruestung.reserve.member.hint": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mitglieder gesamt"
+            "value": "Als Trainer:in kannst du für ein Mitglied reservieren."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Members total"
+            "value": "As a coach you can reserve on behalf of a member."
           }
         }
       }
     },
-    "auswertung.kpi.members.sub %lld": {
+    "ausruestung.reserve.quantity": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld aktiv"
+            "value": "Menge"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld active"
+            "value": "Quantity"
+          }
+        }
+      }
+    },
+    "ausruestung.reserve.quantity.hint %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verfügbar: %lld Stück"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available: %lld pcs"
+          }
+        }
+      }
+    },
+    "ausruestung.reserve.quantity.hintUnknown": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestand nicht erfasst — bitte mit dem Trainerstab abstimmen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stock not tracked — please check with the coaching staff."
+          }
+        }
+      }
+    },
+    "ausruestung.reserve.submit": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reservieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reserve"
+          }
+        }
+      }
+    },
+    "ausruestung.reserve.to": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bis"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
+          }
+        }
+      }
+    },
+    "ausruestung.status.active": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        }
+      }
+    },
+    "ausruestung.status.cancelled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storniert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled"
+          }
+        }
+      }
+    },
+    "ausruestung.status.returned": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurückgegeben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Returned"
+          }
+        }
+      }
+    },
+    "ausruestung.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Equipment"
+          }
+        }
+      }
+    },
+    "auswertung.dist.empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Daten vorhanden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data available."
+          }
+        }
+      }
+    },
+    "auswertung.error.ok": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "auswertung.event.competition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
+          }
+        }
+      }
+    },
+    "auswertung.event.other": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termin"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event"
+          }
+        }
+      }
+    },
+    "auswertung.event.training": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training"
+          }
+        }
+      }
+    },
+    "auswertung.events.empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell sind keine Termine geplant."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No events are scheduled right now."
+          }
+        }
+      }
+    },
+    "auswertung.events.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kalender"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar"
+          }
+        }
+      }
+    },
+    "auswertung.events.more %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "und %lld weitere"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "and %lld more"
+          }
+        }
+      }
+    },
+    "auswertung.events.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommende Termine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming events"
           }
         }
       }
@@ -892,6 +909,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "confirmed and present"
+          }
+        }
+      }
+    },
+    "auswertung.kpi.events.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommende Termine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming events"
+          }
+        }
+      }
+    },
+    "auswertung.kpi.events.sub %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "die nächsten %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the next %lld"
+          }
+        }
+      }
+    },
+    "auswertung.kpi.events.sub.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "keine geplant"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "none scheduled"
+          }
+        }
+      }
+    },
+    "auswertung.kpi.members.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglieder gesamt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members total"
+          }
+        }
+      }
+    },
+    "auswertung.kpi.members.sub %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld aktiv"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld active"
           }
         }
       }
@@ -960,50 +1057,290 @@
         }
       }
     },
-    "auswertung.kpi.events.eyebrow": {
+    "auswertung.loadError.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kommende Termine"
+            "value": "Auswertung konnte nicht geladen werden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Upcoming events"
+            "value": "Reports could not be loaded"
           }
         }
       }
     },
-    "auswertung.kpi.events.sub.none": {
+    "auswertung.loading": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "keine geplant"
+            "value": "Auswertung wird geladen …"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "none scheduled"
+            "value": "Loading reports …"
           }
         }
       }
     },
-    "auswertung.kpi.events.sub %lld": {
+    "auswertung.medals.bronze": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "die nächsten %lld"
+            "value": "Bronze"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "the next %lld"
+            "value": "Bronze"
+          }
+        }
+      }
+    },
+    "auswertung.medals.empty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Medaillen erfasst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No medals recorded yet."
+          }
+        }
+      }
+    },
+    "auswertung.medals.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfolge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achievements"
+          }
+        }
+      }
+    },
+    "auswertung.medals.gold": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gold"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gold"
+          }
+        }
+      }
+    },
+    "auswertung.medals.silver": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silber"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Silver"
+          }
+        }
+      }
+    },
+    "auswertung.medals.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medaillenspiegel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Medal tally"
+          }
+        }
+      }
+    },
+    "auswertung.noAccess.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Vereins-Kennzahlen sind dem Trainerstab und der Vereinsleitung vorbehalten. Wende dich an dein Team, wenn du Zahlen brauchst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These club figures are reserved for the coaching staff and club management. Ask your team if you need the numbers."
+          }
+        }
+      }
+    },
+    "auswertung.noAccess.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Zugriff auf die Auswertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No access to the reports"
+          }
+        }
+      }
+    },
+    "auswertung.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "auswertung.role.admin": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Administration"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Administration"
+          }
+        }
+      }
+    },
+    "auswertung.role.coach": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainer:in"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coach"
+          }
+        }
+      }
+    },
+    "auswertung.role.guest": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gasttrainer:in"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guest coach"
+          }
+        }
+      }
+    },
+    "auswertung.role.member": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglied"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member"
+          }
+        }
+      }
+    },
+    "auswertung.role.moderator": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderation"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moderation"
+          }
+        }
+      }
+    },
+    "auswertung.role.owner": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhaber:in"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner"
+          }
+        }
+      }
+    },
+    "auswertung.role.treasurer": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kassenwart:in"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Treasurer"
           }
         }
       }
@@ -1056,6 +1393,22 @@
         }
       }
     },
+    "auswertung.subtitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kennzahlen des Vereins auf einen Blick — Mitglieder, Anwesenheit, Finanzen und Erfolge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The club's key figures at a glance — members, attendance, finances and achievements"
+          }
+        }
+      }
+    },
     "auswertung.teams.eyebrow": {
       "localizations": {
         "de": {
@@ -1104,423 +1457,653 @@
         }
       }
     },
-    "auswertung.dist.empty": {
+    "auswertung.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Daten vorhanden."
+            "value": "Auswertung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No data available."
+            "value": "Reports"
           }
         }
       }
     },
-    "auswertung.role.owner": {
+    "belegungsplan.book.cancel": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Inhaber:in"
+            "value": "Abbrechen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Owner"
+            "value": "Cancel"
           }
         }
       }
     },
-    "auswertung.role.admin": {
+    "belegungsplan.book.conflict.hint": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Administration"
+            "value": "Du kannst trotzdem buchen — Überschneidungen werden nicht automatisch verhindert."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Administration"
+            "value": "You can still book — overlaps aren't blocked automatically."
           }
         }
       }
     },
-    "auswertung.role.moderator": {
+    "belegungsplan.book.conflict.many %lld": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Moderation"
+            "value": "Achtung: Der Zeitraum überschneidet sich mit %lld bestehenden Buchungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Moderation"
+            "value": "Heads up: this slot overlaps with %lld existing bookings."
           }
         }
       }
     },
-    "auswertung.role.treasurer": {
+    "belegungsplan.book.conflict.one": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kassenwart:in"
+            "value": "Achtung: Der Zeitraum überschneidet sich mit einer bestehenden Buchung."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Treasurer"
+            "value": "Heads up: this slot overlaps with an existing booking."
           }
         }
       }
     },
-    "auswertung.role.coach": {
+    "belegungsplan.book.date": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trainer:in"
+            "value": "Datum"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Coach"
+            "value": "Date"
           }
         }
       }
     },
-    "auswertung.role.member": {
+    "belegungsplan.book.end": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mitglied"
+            "value": "Ende"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Member"
+            "value": "End"
           }
         }
       }
     },
-    "auswertung.role.guest": {
+    "belegungsplan.book.error.end": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gasttrainer:in"
+            "value": "Das Ende muss nach dem Beginn liegen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Guest coach"
+            "value": "The end must be after the start."
           }
         }
       }
     },
-    "auswertung.medals.eyebrow": {
+    "belegungsplan.book.error.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erfolge"
+            "value": "Bitte gib einen Titel ein."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Achievements"
+            "value": "Please enter a title."
           }
         }
       }
     },
-    "auswertung.medals.title": {
+    "belegungsplan.book.eyebrow": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Medaillenspiegel"
+            "value": "Neue Buchung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Medal tally"
+            "value": "New booking"
           }
         }
       }
     },
-    "auswertung.medals.gold": {
+    "belegungsplan.book.facility": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold"
+            "value": "Halle"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Gold"
+            "value": "Facility"
           }
         }
       }
     },
-    "auswertung.medals.silver": {
+    "belegungsplan.book.field.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Silber"
+            "value": "Titel"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Silver"
+            "value": "Title"
           }
         }
       }
     },
-    "auswertung.medals.bronze": {
+    "belegungsplan.book.field.title.placeholder": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bronze"
+            "value": "z. B. Kürtraining Leistung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bronze"
+            "value": "e.g. Freestyle training"
           }
         }
       }
     },
-    "auswertung.medals.empty": {
+    "belegungsplan.book.forbidden": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noch keine Medaillen erfasst."
+            "value": "Dafür fehlt dir die Berechtigung. Für andere buchen dürfen nur Trainer:innen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No medals recorded yet."
+            "value": "You don't have permission for this. Only coaches may book for others."
           }
         }
       }
     },
-    "auswertung.events.eyebrow": {
+    "belegungsplan.book.member": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kalender"
+            "value": "Gebucht für"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calendar"
+            "value": "Booked for"
           }
         }
       }
     },
-    "auswertung.events.title": {
+    "belegungsplan.book.member.self": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kommende Termine"
+            "value": "Für dich"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Upcoming events"
+            "value": "For you"
           }
         }
       }
     },
-    "auswertung.events.empty": {
+    "belegungsplan.book.member.selfHint": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktuell sind keine Termine geplant."
+            "value": "Für andere buchen dürfen nur Trainer:innen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No events are scheduled right now."
+            "value": "Only coaches may book for others."
           }
         }
       }
     },
-    "auswertung.events.more %lld": {
+    "belegungsplan.book.start": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "und %lld weitere"
+            "value": "Beginn"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "and %lld more"
+            "value": "Start"
           }
         }
       }
     },
-    "auswertung.event.training": {
+    "belegungsplan.book.status": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Training"
+            "value": "Status"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Training"
+            "value": "Status"
           }
         }
       }
     },
-    "auswertung.event.competition": {
+    "belegungsplan.book.status.memberHint": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wettkampf"
+            "value": "Deine Buchung wird als Anfrage gespeichert und von Trainer:innen bestätigt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Competition"
+            "value": "Your booking is saved as a request and confirmed by a coach."
           }
         }
       }
     },
-    "auswertung.event.other": {
+    "belegungsplan.book.submit": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Termin"
+            "value": "Buchen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Event"
+            "value": "Book"
           }
         }
       }
     },
-    "auswertung.noAccess.title": {
+    "belegungsplan.book.team": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kein Zugriff auf die Auswertung"
+            "value": "Team"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No access to the reports"
+            "value": "Team"
           }
         }
       }
     },
-    "auswertung.noAccess.body": {
+    "belegungsplan.book.team.none": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diese Vereins-Kennzahlen sind dem Trainerstab und der Vereinsleitung vorbehalten. Wende dich an dein Team, wenn du Zahlen brauchst."
+            "value": "Kein Team"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "These club figures are reserved for the coaching staff and club management. Ask your team if you need the numbers."
+            "value": "No team"
           }
         }
       }
     },
-    "auswertung.loadError.title": {
+    "belegungsplan.book.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auswertung konnte nicht geladen werden"
+            "value": "Halle buchen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reports could not be loaded"
+            "value": "Book facility"
           }
         }
       }
     },
-    "auswertung.loading": {
+    "belegungsplan.capacity %lld": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auswertung wird geladen …"
+            "value": "%lld Plätze"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loading reports …"
+            "value": "%lld spots"
           }
         }
       }
     },
-    "auswertung.retry": {
+    "belegungsplan.card.a11yHint": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erneut versuchen"
+            "value": "Öffnet Details und kommende Buchungen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Try again"
+            "value": "Opens details and upcoming bookings."
           }
         }
       }
     },
-    "auswertung.error.ok": {
+    "belegungsplan.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überschneidung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overlap"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.bookHere": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier buchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Book here"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.bookedBy %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "von %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "by %@"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.eyebrow": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsstätte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Facility"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.meta.address": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ort"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.meta.capacity": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapazität"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capacity"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.meta.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweise"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.noUpcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diese Halle sind keine kommenden Buchungen eingetragen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming bookings for this facility."
+          }
+        }
+      }
+    },
+    "belegungsplan.detail.upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommende Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming bookings"
+          }
+        }
+      }
+    },
+    "belegungsplan.empty.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Es sind noch keine Trainingsstätten hinterlegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No facilities have been set up yet."
+          }
+        }
+      }
+    },
+    "belegungsplan.empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Hallen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No facilities yet"
+          }
+        }
+      }
+    },
+    "belegungsplan.error.ok": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -1536,282 +2119,342 @@
         }
       }
     },
-    "familie.bornYear %lld": {
+    "belegungsplan.error.retry": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jahrgang %lld"
+            "value": "Wiederholen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Born %lld"
+            "value": "Retry"
           }
         }
       }
     },
-    "familie.children.title": {
+    "belegungsplan.error.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Meine Kinder"
+            "value": "Belegungsplan konnte nicht geladen werden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "My children"
+            "value": "Facilities could not be loaded"
           }
         }
       }
     },
-    "familie.count %lld": {
+    "belegungsplan.filter.all": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld verknüpft"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld verknüpft"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
           }
         },
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld linked"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld linked"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
           }
         }
       }
     },
-    "familie.empty.message": {
+    "belegungsplan.filter.empty.body": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sobald dir Kinder oder Bezugspersonen zugeordnet sind, erscheinen sie hier mit Team und Beziehung."
+            "value": "Wähle eine andere Art oder zeige alle Hallen an."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Once children or caregivers are linked to you, they appear here with their team and relationship."
+            "value": "Pick a different kind or show all facilities."
           }
         }
       }
     },
-    "familie.empty.title": {
+    "belegungsplan.filter.empty.cta": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Noch keine Familienmitglieder verknüpft"
+            "value": "Alle anzeigen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No family members linked yet"
+            "value": "Show all"
           }
         }
       }
     },
-    "familie.error.retry": {
+    "belegungsplan.filter.empty.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erneut versuchen"
+            "value": "Keine Hallen dieser Art"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Try again"
+            "value": "No facilities of this kind"
           }
         }
       }
     },
-    "familie.error.title": {
+    "belegungsplan.kind.hall": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daten konnten nicht geladen werden"
+            "value": "Halle"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Data could not be loaded"
+            "value": "Hall"
           }
         }
       }
     },
-    "familie.guardians.title": {
+    "belegungsplan.kind.other": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eltern & Bezugspersonen"
+            "value": "Sonstiges"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parents & caregivers"
+            "value": "Other"
           }
         }
       }
     },
-    "familie.loading": {
+    "belegungsplan.kind.outdoor": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Familie wird geladen …"
+            "value": "Außenbereich"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Loading family…"
+            "value": "Outdoor"
           }
         }
       }
     },
-    "familie.relation.grandparent": {
+    "belegungsplan.kind.room": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Großeltern"
+            "value": "Raum"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Grandparent"
+            "value": "Room"
           }
         }
       }
     },
-    "familie.relation.guardian": {
+    "belegungsplan.loading": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Erziehungsberechtigte:r"
+            "value": "Belegungsplan wird geladen …"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Legal guardian"
+            "value": "Loading facilities …"
           }
         }
       }
     },
-    "familie.relation.other": {
+    "belegungsplan.status.cancelled": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bezugsperson"
+            "value": "Storniert"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Caregiver"
+            "value": "Cancelled"
           }
         }
       }
     },
-    "familie.relation.parent": {
+    "belegungsplan.status.confirmed": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elternteil"
+            "value": "Bestätigt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Parent"
+            "value": "Confirmed"
           }
         }
       }
     },
-    "familie.selfserviceHint": {
+    "belegungsplan.status.pending": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Familien-Verknüpfungen pflegt die Vereinsverwaltung."
+            "value": "Angefragt"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Family links are maintained by the club administration."
+            "value": "Requested"
           }
         }
       }
     },
-    "familie.subtitle": {
+    "belegungsplan.subtitle": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine verknüpften Familienmitglieder im Verein — mit Team und Beziehung"
+            "value": "Hallen und Räume deines Vereins — belegen und buchen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your linked family members in the club — with team and relationship"
+            "value": "Your club's halls and rooms — plan and book them"
           }
         }
       }
     },
-    "familie.title": {
+    "belegungsplan.title": {
+      "extractionState": "manual",
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Familie"
+            "value": "Belegungsplan"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Family"
+            "value": "Facilities"
+          }
+        }
+      }
+    },
+    "belegungsplan.unknownMember": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        }
+      }
+    },
+    "belegungsplan.upcoming.many %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld kommende Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld upcoming bookings"
+          }
+        }
+      }
+    },
+    "belegungsplan.upcoming.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine kommenden Buchungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming bookings"
+          }
+        }
+      }
+    },
+    "belegungsplan.upcoming.one": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 kommende Buchung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 upcoming booking"
           }
         }
       }
@@ -2228,6 +2871,726 @@
           "stringUnit": {
             "state": "translated",
             "value": "Messages"
+          }
+        }
+      }
+    },
+    "checkin.club.emptyBody": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald jemand eincheckt, erscheint die Anwesenheit hier."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as someone checks in, the attendance shows up here."
+          }
+        }
+      }
+    },
+    "checkin.club.emptyTitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Check-ins"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No check-ins yet"
+          }
+        }
+      }
+    },
+    "checkin.club.sub": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Anwesenheiten des Vereins — neueste zuerst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All attendances in the club — newest first"
+          }
+        }
+      }
+    },
+    "checkin.club.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vereins-Check-ins"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Club check-ins"
+          }
+        }
+      }
+    },
+    "checkin.error.ok": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "checkin.error.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederholen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "checkin.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in konnte nicht geladen werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in could not be loaded"
+          }
+        }
+      }
+    },
+    "checkin.event.hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle den Termin, für den du dich einträgst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick the event you are checking in for."
+          }
+        }
+      }
+    },
+    "checkin.event.label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termin"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Event"
+          }
+        }
+      }
+    },
+    "checkin.event.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Termin"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No event"
+          }
+        }
+      }
+    },
+    "checkin.event.today": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        }
+      }
+    },
+    "checkin.event.upcoming": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommende Termine"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming events"
+          }
+        }
+      }
+    },
+    "checkin.forbidden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dafür fehlt dir die Berechtigung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You do not have permission for that."
+          }
+        }
+      }
+    },
+    "checkin.history.emptyBody": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald du eincheckst, erscheint deine Anwesenheit hier."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as you check in, your attendance shows up here."
+          }
+        }
+      }
+    },
+    "checkin.history.emptyTitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Check-ins"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No check-ins yet"
+          }
+        }
+      }
+    },
+    "checkin.history.sub": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle deine Anwesenheiten — neueste zuerst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All your attendances — newest first"
+          }
+        }
+      }
+    },
+    "checkin.history.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Check-ins"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My check-ins"
+          }
+        }
+      }
+    },
+    "checkin.kpi.month": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Monat"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This month"
+          }
+        }
+      }
+    },
+    "checkin.kpi.total": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesamt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
+    "checkin.kpi.week": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Woche"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This week"
+          }
+        }
+      }
+    },
+    "checkin.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in wird geladen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading check-in…"
+          }
+        }
+      }
+    },
+    "checkin.method.manual": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manuell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual"
+          }
+        }
+      }
+    },
+    "checkin.method.qr": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR"
+          }
+        }
+      }
+    },
+    "checkin.qr.a11y %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in-Code von %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in code for %@"
+          }
+        }
+      }
+    },
+    "checkin.qr.fullscreen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Großansicht öffnen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open full screen"
+          }
+        }
+      }
+    },
+    "checkin.qr.fullscreen.close": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "checkin.qr.hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Trainerstab scannt diesen Code, um dich einzuchecken."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The coaching staff scans this code to check you in."
+          }
+        }
+      }
+    },
+    "checkin.qr.idLabel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglieds-ID"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member ID"
+          }
+        }
+      }
+    },
+    "checkin.qr.sub": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeig diesen Code beim Training zum Einchecken vor"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show this code at training to check in"
+          }
+        }
+      }
+    },
+    "checkin.qr.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mein QR-Code"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My QR code"
+          }
+        }
+      }
+    },
+    "checkin.qr.unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR code unavailable"
+          }
+        }
+      }
+    },
+    "checkin.self.cta": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt einchecken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in now"
+          }
+        }
+      }
+    },
+    "checkin.self.doneToast": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eingecheckt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checked in."
+          }
+        }
+      }
+    },
+    "checkin.self.sub": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melde dich für dein heutiges Training an"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Register for your training today"
+          }
+        }
+      }
+    },
+    "checkin.self.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selbst einchecken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check yourself in"
+          }
+        }
+      }
+    },
+    "checkin.self.todayNote": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du bist heute bereits eingecheckt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are already checked in today."
+          }
+        }
+      }
+    },
+    "checkin.trainer.cta": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einchecken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in"
+          }
+        }
+      }
+    },
+    "checkin.trainer.doneToast %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ eingecheckt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ checked in."
+          }
+        }
+      }
+    },
+    "checkin.trainer.memberError": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitte ein Mitglied wählen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please choose a member."
+          }
+        }
+      }
+    },
+    "checkin.trainer.memberLabel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglied"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Member"
+          }
+        }
+      }
+    },
+    "checkin.trainer.memberPlaceholder": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglied wählen…"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose a member…"
+          }
+        }
+      }
+    },
+    "checkin.trainer.sub": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checke ein Mitglied manuell für einen Termin ein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check a member in manually for an event"
+          }
+        }
+      }
+    },
+    "checkin.trainer.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglied einchecken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check a member in"
+          }
+        }
+      }
+    },
+    "checkin.unknownEvent": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekannter Termin"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown event"
+          }
+        }
+      }
+    },
+    "checkin.unknownMember": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unbekanntes Mitglied"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown member"
           }
         }
       }
@@ -3924,6 +5287,286 @@
           "stringUnit": {
             "state": "translated",
             "value": "Training"
+          }
+        }
+      }
+    },
+    "familie.bornYear %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jahrgang %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Born %lld"
+          }
+        }
+      }
+    },
+    "familie.children.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Kinder"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My children"
+          }
+        }
+      }
+    },
+    "familie.count %lld": {
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld verknüpft"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld verknüpft"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld linked"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld linked"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "familie.empty.message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald dir Kinder oder Bezugspersonen zugeordnet sind, erscheinen sie hier mit Team und Beziehung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once children or caregivers are linked to you, they appear here with their team and relationship."
+          }
+        }
+      }
+    },
+    "familie.empty.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Familienmitglieder verknüpft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No family members linked yet"
+          }
+        }
+      }
+    },
+    "familie.error.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "familie.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten konnten nicht geladen werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data could not be loaded"
+          }
+        }
+      }
+    },
+    "familie.guardians.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eltern & Bezugspersonen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parents & caregivers"
+          }
+        }
+      }
+    },
+    "familie.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Familie wird geladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading family…"
+          }
+        }
+      }
+    },
+    "familie.relation.grandparent": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Großeltern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grandparent"
+          }
+        }
+      }
+    },
+    "familie.relation.guardian": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erziehungsberechtigte:r"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legal guardian"
+          }
+        }
+      }
+    },
+    "familie.relation.other": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bezugsperson"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caregiver"
+          }
+        }
+      }
+    },
+    "familie.relation.parent": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elternteil"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parent"
+          }
+        }
+      }
+    },
+    "familie.selfserviceHint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Familien-Verknüpfungen pflegt die Vereinsverwaltung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Family links are maintained by the club administration."
+          }
+        }
+      }
+    },
+    "familie.subtitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine verknüpften Familienmitglieder im Verein — mit Team und Beziehung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your linked family members in the club — with team and relationship"
+          }
+        }
+      }
+    },
+    "familie.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Familie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Family"
           }
         }
       }
@@ -6960,6 +8603,40 @@
         }
       }
     },
+    "module.competition.desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorbereitung, Meldung und Ergebnisse."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preparation, entries and results."
+          }
+        }
+      }
+    },
+    "module.competition.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
+          }
+        }
+      }
+    },
     "module.dashboard.desc": {
       "localizations": {
         "de": {
@@ -7506,32 +9183,32 @@
     },
     "module.scaffold.message": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This area is already available in the web app and is being built natively right now."
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Dieser Bereich ist in der Web-App bereits verfügbar und wird gerade nativ gebaut."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This area is already available in the web app and is being built natively right now."
           }
         }
       }
     },
     "module.scaffold.title": {
       "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Native version coming soon"
-          }
-        },
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Native Umsetzung folgt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Native version coming soon"
           }
         }
       }
@@ -8636,6 +10313,758 @@
           "stringUnit": {
             "state": "translated",
             "value": "Treasurer"
+          }
+        }
+      }
+    },
+    "pflichtstunden.badge.fulfilled": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfüllt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Met"
+          }
+        }
+      }
+    },
+    "pflichtstunden.badge.open": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "pflichtstunden.error.ok": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "pflichtstunden.error.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederholen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "pflichtstunden.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pflichtstunden konnten nicht geladen werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volunteer hours could not be loaded"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.date": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.hours": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.hours.error": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitte eine Stundenzahl größer als 0 angeben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter a number of hours greater than 0."
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.hours.hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dezimal möglich, z. B. 2,5 — in halben Stunden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decimals allowed, e.g. 2.5 — in half hours."
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.hours.placeholder": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "z. B. 2,5"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "e.g. 2.5"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.kind": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Art"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.note": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        }
+      }
+    },
+    "pflichtstunden.field.note.placeholder": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was hast du gemacht? (optional)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What did you do? (optional)"
+          }
+        }
+      }
+    },
+    "pflichtstunden.forbidden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dafür fehlt dir die Berechtigung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You don't have permission for this."
+          }
+        }
+      }
+    },
+    "pflichtstunden.istApprovedNote": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "davon %@ genehmigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ approved"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kind.competition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kind.helper": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helfer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Helper"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kind.other": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonstiges"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kind.training": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kpi.ist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ist"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Logged"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kpi.rest": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rest"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remaining"
+          }
+        }
+      }
+    },
+    "pflichtstunden.kpi.soll": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soll"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target"
+          }
+        }
+      }
+    },
+    "pflichtstunden.level.club": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vereinsregel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "club rule"
+          }
+        }
+      }
+    },
+    "pflichtstunden.level.member": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "persönliche Regel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "personal rule"
+          }
+        }
+      }
+    },
+    "pflichtstunden.level.team": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teamregel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "team rule"
+          }
+        }
+      }
+    },
+    "pflichtstunden.list.empty.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trag deine erste geleistete Stunde ein — sie erscheint dann hier."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log your first completed hour — it will show up here."
+          }
+        }
+      }
+    },
+    "pflichtstunden.list.empty.cta": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.list.empty.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Stunden erfasst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hours logged yet"
+          }
+        }
+      }
+    },
+    "pflichtstunden.list.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Einträge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My entries"
+          }
+        }
+      }
+    },
+    "pflichtstunden.list.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neueste zuerst"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Newest first"
+          }
+        }
+      }
+    },
+    "pflichtstunden.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pflichtstunden werden geladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading volunteer hours …"
+          }
+        }
+      }
+    },
+    "pflichtstunden.log.a11y": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.mine.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meine Stunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.mine.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soll und Ist dieser Saison"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target and logged this season"
+          }
+        }
+      }
+    },
+    "pflichtstunden.pending.many": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Einträge noch offen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld entries still open"
+          }
+        }
+      }
+    },
+    "pflichtstunden.pending.one": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Eintrag noch offen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld entry still open"
+          }
+        }
+      }
+    },
+    "pflichtstunden.progress.label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ von %2$@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sheet.cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sheet.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konnte nicht gespeichert werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not be saved"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sheet.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sheet.submit": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sheet.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stunden erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Log hours"
+          }
+        }
+      }
+    },
+    "pflichtstunden.sollNone.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für dich ist derzeit keine Pflichtstunden-Regel aktiv. Erfasste Stunden zählst du trotzdem schon."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No volunteer-hours rule is currently active for you. Any hours you log still count."
+          }
+        }
+      }
+    },
+    "pflichtstunden.sollNone.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Soll hinterlegt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No target set"
+          }
+        }
+      }
+    },
+    "pflichtstunden.status.approved": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genehmigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approved"
+          }
+        }
+      }
+    },
+    "pflichtstunden.status.pending": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open"
+          }
+        }
+      }
+    },
+    "pflichtstunden.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pflichtstunden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volunteer hours"
           }
         }
       }
@@ -10448,342 +12877,6 @@
         }
       }
     },
-    "uebungen.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übungsbibliothek"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exercise library"
-          }
-        }
-      }
-    },
-    "uebungen.subtitle": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trainingskatalog deines Vereins — nach Kategorie gefiltert"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your club's training catalogue — filtered by category"
-          }
-        }
-      }
-    },
-    "uebungen.loading": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übungen werden geladen …"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Loading exercises …"
-          }
-        }
-      }
-    },
-    "uebungen.error.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übungen konnten nicht geladen werden"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exercises could not be loaded"
-          }
-        }
-      }
-    },
-    "uebungen.error.retry": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wiederholen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Retry"
-          }
-        }
-      }
-    },
-    "uebungen.error.refreshTitle": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aktualisieren fehlgeschlagen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Refresh failed"
-          }
-        }
-      }
-    },
-    "uebungen.error.ok": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "OK"
-          }
-        }
-      }
-    },
-    "uebungen.empty.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Noch keine Übungen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No exercises yet"
-          }
-        }
-      }
-    },
-    "uebungen.empty.body": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Der Trainingskatalog deines Vereins ist noch leer."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your club's training catalogue is still empty."
-          }
-        }
-      }
-    },
-    "uebungen.filterEmpty.title": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Keine Übungen in dieser Kategorie"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No exercises in this category"
-          }
-        }
-      }
-    },
-    "uebungen.filterEmpty.body": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Wähle eine andere Kategorie oder zeige alle Übungen an."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick a different category or show all exercises."
-          }
-        }
-      }
-    },
-    "uebungen.filterEmpty.cta": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle anzeigen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show all"
-          }
-        }
-      }
-    },
-    "uebungen.filter.all": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Alle"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "All"
-          }
-        }
-      }
-    },
-    "uebungen.filter.a11y": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Übungen nach Kategorie filtern"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filter exercises by category"
-          }
-        }
-      }
-    },
-    "uebungen.cat.warmup": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Aufwärmen"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Warm-up"
-          }
-        }
-      }
-    },
-    "uebungen.cat.stretching": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dehnung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stretching"
-          }
-        }
-      }
-    },
-    "uebungen.cat.strength": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kraft"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Strength"
-          }
-        }
-      }
-    },
-    "uebungen.cat.jump": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sprung"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Jump"
-          }
-        }
-      }
-    },
-    "uebungen.cat.spin": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pirouette"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spin"
-          }
-        }
-      }
-    },
-    "uebungen.cat.steps": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Schritte"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Steps"
-          }
-        }
-      }
-    },
-    "uebungen.cat.combination": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Kombination"
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Combination"
-          }
-        }
-      }
-    },
     "uebungen.author.unknown": {
       "localizations": {
         "de": {
@@ -10848,98 +12941,130 @@
         }
       }
     },
-    "uebungen.difficulty.value %lld": {
+    "uebungen.cat.combination": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schwierigkeit %lld von 5"
+            "value": "Kombination"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Difficulty %lld of 5"
+            "value": "Combination"
           }
         }
       }
     },
-    "uebungen.difficulty.none": {
+    "uebungen.cat.jump": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ohne Angabe"
+            "value": "Sprung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Not set"
+            "value": "Jump"
           }
         }
       }
     },
-    "uebungen.difficulty.label": {
+    "uebungen.cat.spin": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Schwierigkeit"
+            "value": "Pirouette"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Difficulty"
+            "value": "Spin"
           }
         }
       }
     },
-    "uebungen.duration.unit": {
+    "uebungen.cat.steps": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Min."
+            "value": "Schritte"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "min"
+            "value": "Steps"
           }
         }
       }
     },
-    "uebungen.detail.title": {
+    "uebungen.cat.strength": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Übung"
+            "value": "Kraft"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exercise"
+            "value": "Strength"
           }
         }
       }
     },
-    "uebungen.detail.eyebrow": {
+    "uebungen.cat.stretching": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Übung"
+            "value": "Dehnung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Exercise"
+            "value": "Stretching"
+          }
+        }
+      }
+    },
+    "uebungen.cat.warmup": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufwärmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warm-up"
+          }
+        }
+      }
+    },
+    "uebungen.detail.author %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angelegt von %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Created by %@"
           }
         }
       }
@@ -10976,6 +13101,22 @@
         }
       }
     },
+    "uebungen.detail.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise"
+          }
+        }
+      }
+    },
     "uebungen.detail.instructions": {
       "localizations": {
         "de": {
@@ -10992,18 +13133,18 @@
         }
       }
     },
-    "uebungen.detail.videoOpen": {
+    "uebungen.detail.title": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Video ansehen"
+            "value": "Übung"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Watch video"
+            "value": "Exercise"
           }
         }
       }
@@ -11024,18 +13165,1143 @@
         }
       }
     },
-    "uebungen.detail.author %@": {
+    "uebungen.detail.videoOpen": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Angelegt von %@"
+            "value": "Video ansehen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Created by %@"
+            "value": "Watch video"
+          }
+        }
+      }
+    },
+    "uebungen.difficulty.label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwierigkeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difficulty"
+          }
+        }
+      }
+    },
+    "uebungen.difficulty.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Angabe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set"
+          }
+        }
+      }
+    },
+    "uebungen.difficulty.value %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwierigkeit %lld von 5"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difficulty %lld of 5"
+          }
+        }
+      }
+    },
+    "uebungen.duration.unit": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Min."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "min"
+          }
+        }
+      }
+    },
+    "uebungen.empty.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Trainingskatalog deines Vereins ist noch leer."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your club's training catalogue is still empty."
+          }
+        }
+      }
+    },
+    "uebungen.empty.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Übungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No exercises yet"
+          }
+        }
+      }
+    },
+    "uebungen.error.ok": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "uebungen.error.refreshTitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktualisieren fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh failed"
+          }
+        }
+      }
+    },
+    "uebungen.error.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederholen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        }
+      }
+    },
+    "uebungen.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen konnten nicht geladen werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercises could not be loaded"
+          }
+        }
+      }
+    },
+    "uebungen.filter.a11y": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen nach Kategorie filtern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter exercises by category"
+          }
+        }
+      }
+    },
+    "uebungen.filter.all": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All"
+          }
+        }
+      }
+    },
+    "uebungen.filterEmpty.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle eine andere Kategorie oder zeige alle Übungen an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick a different category or show all exercises."
+          }
+        }
+      }
+    },
+    "uebungen.filterEmpty.cta": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle anzeigen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all"
+          }
+        }
+      }
+    },
+    "uebungen.filterEmpty.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Übungen in dieser Kategorie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No exercises in this category"
+          }
+        }
+      }
+    },
+    "uebungen.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen werden geladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading exercises …"
+          }
+        }
+      }
+    },
+    "uebungen.subtitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingskatalog deines Vereins — nach Kategorie gefiltert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your club's training catalogue — filtered by category"
+          }
+        }
+      }
+    },
+    "uebungen.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungsbibliothek"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exercise library"
+          }
+        }
+      }
+    },
+    "wettkampf.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "wettkampf.card.a11y.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet Startliste und Rangliste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens start order and standings"
+          }
+        }
+      }
+    },
+    "wettkampf.category.count %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Starter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Starter"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld skater"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld skaters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "wettkampf.category.fallback": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Kategorie"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No category"
+          }
+        }
+      }
+    },
+    "wettkampf.col.components": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Komponenten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Components"
+          }
+        }
+      }
+    },
+    "wettkampf.col.technical": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Technik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Technical"
+          }
+        }
+      }
+    },
+    "wettkampf.col.total": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesamt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Total"
+          }
+        }
+      }
+    },
+    "wettkampf.deadline %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meldeschluss %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entry deadline %@"
+          }
+        }
+      }
+    },
+    "wettkampf.deadline.passed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meldeschluss überschritten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entry deadline passed"
+          }
+        }
+      }
+    },
+    "wettkampf.delta.down": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "unter der Vorwertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "below the previous score"
+          }
+        }
+      }
+    },
+    "wettkampf.delta.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "keine Vorwertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "no previous score"
+          }
+        }
+      }
+    },
+    "wettkampf.delta.same": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gleich wie die Vorwertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "same as the previous score"
+          }
+        }
+      }
+    },
+    "wettkampf.delta.up": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "über der Vorwertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "above the previous score"
+          }
+        }
+      }
+    },
+    "wettkampf.detail.empty.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald Starter mit Kür gemeldet sind, erscheinen sie hier je Kategorie."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Once skaters with a routine are registered they appear here per category."
+          }
+        }
+      }
+    },
+    "wettkampf.detail.empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine gemeldeten Küren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No entered routines yet"
+          }
+        }
+      }
+    },
+    "wettkampf.detail.state.final": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endstand"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Final standings"
+          }
+        }
+      }
+    },
+    "wettkampf.detail.state.progress": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zwischenstand"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standings"
+          }
+        }
+      }
+    },
+    "wettkampf.detail.state.startlist": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startliste — noch keine Wertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start order — no scores yet"
+          }
+        }
+      }
+    },
+    "wettkampf.empty.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald ein Wettkampf angesetzt ist, erscheint er hier — mit Meldeschluss, Startliste und Live-Rangliste."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as a competition is scheduled it appears here — with entry deadline, start order and live standings."
+          }
+        }
+      }
+    },
+    "wettkampf.empty.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Wettkämpfe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No competitions yet"
+          }
+        }
+      }
+    },
+    "wettkampf.error.ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "wettkampf.error.retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "wettkampf.error.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten konnten nicht geladen werden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data could not be loaded"
+          }
+        }
+      }
+    },
+    "wettkampf.intro.member": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Wertungen erfasst der Trainerstab. Die Rangliste läuft hier mit — samt Rang und Delta zur Vorwertung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The coaching staff records the scores. The standings run here — including rank and delta versus the previous score."
+          }
+        }
+      }
+    },
+    "wettkampf.intro.trainer": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Werte jede Kür mit der RollArt-Schnelleingabe — die Rangliste aktualisiert sich für alle im Verein."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Score each routine with the RollArt quick entry — the standings update for everyone in the club."
+          }
+        }
+      }
+    },
+    "wettkampf.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkämpfe werden geladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading competitions …"
+          }
+        }
+      }
+    },
+    "wettkampf.rank %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rang %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rank %lld"
+          }
+        }
+      }
+    },
+    "wettkampf.rank.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch kein Rang"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No rank yet"
+          }
+        }
+      }
+    },
+    "wettkampf.routines %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Kür gemeldet"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Küren gemeldet"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld routine entered"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld routines entered"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "wettkampf.row.a11y.score": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippen, um die RollArt-Wertung zu erfassen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to record the RollArt score"
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.a11y.submit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RollArt-Wertung speichern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save RollArt score"
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.forbidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur der Trainerstab darf Wertungen erfassen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the coaching staff can record scores."
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.hint.new": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Wertung — Werte frei einstellen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No score yet — set the values freely."
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.hint.prefilled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorbelegt mit der letzten Wertung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pre-filled with the last score."
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.submit": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wertung übernehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save score"
+          }
+        }
+      }
+    },
+    "wettkampf.scorepad.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RollArt-Wertung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RollArt score"
+          }
+        }
+      }
+    },
+    "wettkampf.section.past": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vergangene Wettkämpfe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Past competitions"
+          }
+        }
+      }
+    },
+    "wettkampf.section.upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommende Wettkämpfe"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upcoming competitions"
+          }
+        }
+      }
+    },
+    "wettkampf.standings.error.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rangliste nicht verfügbar"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standings unavailable"
+          }
+        }
+      }
+    },
+    "wettkampf.starters %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Starter"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Starter"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld skater"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld skaters"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "wettkampf.status.cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgesagt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled"
+          }
+        }
+      }
+    },
+    "wettkampf.status.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beendet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finished"
+          }
+        }
+      }
+    },
+    "wettkampf.status.running": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läuft"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live"
+          }
+        }
+      }
+    },
+    "wettkampf.status.upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angesetzt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduled"
+          }
+        }
+      }
+    },
+    "wettkampf.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wettkampf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Competition"
           }
         }
       }

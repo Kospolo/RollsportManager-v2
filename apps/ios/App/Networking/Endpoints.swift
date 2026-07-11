@@ -127,10 +127,38 @@ extension APIClient {
         try await get("/routines/\(routineId)/scores")
     }
 
-    // MARK: - Wettkämpfe
+    // MARK: - Wettkämpfe (Competitions + Standings + Wertungen)
+    //
+    // Web-Referenz: /(portal)/wettkampf. Liste der Wettkämpfe des Vereins,
+    // je Wettkampf ein serverseitig aggregiertes Ergebnis-Tableau
+    // (CompetitionStandings, nach Kategorie + Rang sortiert). Wertungen einer
+    // Kür werden über /routines/{id}/scores erfasst (Trainerstab; sonst 403).
 
     func competitions(clubId: String) async throws -> [Competition] {
         try await get("/competitions", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    /// Alias auf `competitions(clubId:)` — semantisch die Wettkampf-Liste
+    /// (existiert, damit der im Auftrag genannte Name aufrufbar ist).
+    func listCompetitions(clubId: String) async throws -> [Competition] {
+        try await competitions(clubId: clubId)
+    }
+
+    /// GET /competitions/{competitionId}/standings — aggregiertes Ergebnis-
+    /// Tableau eines Wettkampfs (`CompetitionStandings` mit den nach Kategorie
+    /// gruppierten `CompetitionStandingRow`-Zeilen). Sichtbar für Mitglieder.
+    func getCompetitionStandings(competitionId: String) async throws -> CompetitionStandings {
+        try await get("/competitions/\(competitionId)/standings")
+    }
+
+    /// POST /routines/{routineId}/scores — Wertung an einer Kür erfassen
+    /// (Trainerstab; `member`/`guest` erhalten ein `Problem` mit `status == 403`).
+    /// Antwort ist der erzeugte `RoutineScore` inkl. ID.
+    func saveRoutineScore(
+        routineId: String,
+        _ input: RoutineScoreCreate
+    ) async throws -> RoutineScore {
+        try await post("/routines/\(routineId)/scores", body: input)
     }
 
     // MARK: - Aufgaben
@@ -303,5 +331,79 @@ extension APIClient {
     /// GET /reports/summary — aggregierte Vereins-Auswertung.
     func getReportsSummary(clubId: String) async throws -> ReportSummary {
         try await get("/reports/summary", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    // MARK: - Belegungsplan (Facilities + Buchungen)
+    //
+    // Web-Referenz: /(portal)/belegungsplan. Hallen/Räume (Facility) des
+    // Vereins und ihre Buchungen (FacilityBooking), optional auf eine Halle
+    // eingegrenzt. Buchen dürfen Trainerstab/berechtigte Rollen — sonst 403.
+
+    /// GET /facilities — Hallen und Räume des Vereins.
+    func listFacilities(clubId: String) async throws -> [Facility] {
+        try await get("/facilities", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    /// GET /facility-bookings — Buchungen des Vereins, optional je Halle/Raum
+    /// (`facilityId`). Server-sortiert nach Startzeit.
+    func listFacilityBookings(clubId: String, facilityId: String? = nil) async throws -> [FacilityBooking] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let facilityId { query.append(URLQueryItem(name: "facility_id", value: facilityId)) }
+        return try await get("/facility-bookings", query: query)
+    }
+
+    /// POST /facility-bookings — Buchung anlegen. `clubId`/`facilityId`/
+    /// `bookedByMemberId`/`startsAt`/`endsAt` stecken im `FacilityBookingCreate`
+    /// (Zeiten als volle ISO-8601-`date-time`-Strings, analog `createEvent`).
+    /// Überschneidungen quittiert der Server mit `Problem` (409).
+    func createBooking(_ input: FacilityBookingCreate) async throws -> FacilityBooking {
+        try await post("/facility-bookings", body: input)
+    }
+
+    // MARK: - Ausrüstung (Equipment + Reservierungen)
+    //
+    // Web-Referenz: /(portal)/ausruestung. Ausrüstungs-Inventar (Equipment)
+    // und Reservierungen (EquipmentReservation), optional je Ausrüstung
+    // (`equipmentId`). Der Web-Screen filtert „Meine Reservierungen“ clientseitig
+    // über `reservedByMemberId` — der Endpunkt kennt KEINEN member_id-Filter.
+
+    /// GET /equipment — Ausrüstungs-Inventar des Vereins.
+    func listEquipment(clubId: String) async throws -> [Equipment] {
+        try await get("/equipment", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
+
+    /// GET /equipment-reservations — Reservierungen des Vereins, optional je
+    /// Ausrüstung (`equipmentId`). Server-sortiert nach Zeitraum.
+    func listReservations(clubId: String, equipmentId: String? = nil) async throws -> [EquipmentReservation] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let equipmentId { query.append(URLQueryItem(name: "equipment_id", value: equipmentId)) }
+        return try await get("/equipment-reservations", query: query)
+    }
+
+    /// POST /equipment-reservations — Reservierung anlegen. `clubId`/
+    /// `equipmentId`/`reservedByMemberId`/`fromAt`/`toAt` stecken im
+    /// `EquipmentReservationCreate`. Überbuchung quittiert der Server mit 409.
+    func createReservation(_ input: EquipmentReservationCreate) async throws -> EquipmentReservation {
+        try await post("/equipment-reservations", body: input)
+    }
+
+    // MARK: - Check-in (Anwesenheit per QR)
+    //
+    // Web-Referenz: /(portal)/checkin. Check-ins des Vereins, optional auf ein
+    // Mitglied (`memberId`) eingegrenzt. Der Web-Screen filtert „Meine Check-ins“
+    // clientseitig über `memberId` — der Endpunkt unterstützt den Filter aber
+    // auch serverseitig.
+
+    /// GET /checkins — Check-ins des Vereins, optional je Mitglied (`memberId`).
+    func listCheckins(clubId: String, memberId: String? = nil) async throws -> [Checkin] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let memberId { query.append(URLQueryItem(name: "member_id", value: memberId)) }
+        return try await get("/checkins", query: query)
+    }
+
+    /// POST /checkins — Check-in erfassen. `clubId`/`memberId` stecken im
+    /// `CheckinCreate`; `method` (default `.qr`) und `checkedInAt` sind optional.
+    func createCheckin(_ input: CheckinCreate) async throws -> Checkin {
+        try await post("/checkins", body: input)
     }
 }

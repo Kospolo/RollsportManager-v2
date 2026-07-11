@@ -56,6 +56,30 @@ enum MehrCatalog {
     /// + die bereits nativen Bereiche (Ziele = bestehende Feature-Roots).
     static let available: [MehrTile] = [
         MehrTile(
+            id: "competition",
+            titleKey: "module.competition.title", descKey: "module.competition.desc",
+            systemImage: "trophy.fill", tone: .warn, isNew: true,
+            destination: AnyView(CompetitionRootView())
+        ),
+        MehrTile(
+            id: "facility",
+            titleKey: "module.facility.title", descKey: "module.facility.desc",
+            systemImage: "building.2.fill", tone: .info, isNew: true,
+            destination: AnyView(FacilityRootView())
+        ),
+        MehrTile(
+            id: "equipment",
+            titleKey: "module.equipment.title", descKey: "module.equipment.desc",
+            systemImage: "shippingbox.fill", tone: .success, isNew: true,
+            destination: AnyView(EquipmentRootView())
+        ),
+        MehrTile(
+            id: "checkin",
+            titleKey: "module.checkin.title", descKey: "module.checkin.desc",
+            systemImage: "qrcode.viewfinder", tone: .warn, isNew: true,
+            destination: AnyView(CheckinRootView())
+        ),
+        MehrTile(
             id: "news",
             titleKey: "module.news.title", descKey: "module.news.desc",
             systemImage: "newspaper.fill", tone: .brand, isNew: true,
@@ -137,9 +161,6 @@ enum MehrCatalog {
 
     /// Noch nicht gebaut — nicht navigierbar, „Bald“-Kachel.
     static let soon: [MehrTile] = [
-        soonTile("facility", "module.facility.title", "module.facility.desc", "building.2.fill", .info),
-        soonTile("equipment", "module.equipment.title", "module.equipment.desc", "shippingbox.fill", .success),
-        soonTile("checkin", "module.checkin.title", "module.checkin.desc", "qrcode.viewfinder", .warn),
         soonTile("regevents", "module.regevents.title", "module.regevents.desc", "flag.2.crossed.fill", .warn),
         soonTile("notes", "module.notes.title", "module.notes.desc", "note.text", .info),
         soonTile("gallery", "module.gallery.title", "module.gallery.desc", "photo.on.rectangle.angled", .info),
