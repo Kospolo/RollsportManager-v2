@@ -406,4 +406,87 @@ extension APIClient {
     func createCheckin(_ input: CheckinCreate) async throws -> Checkin {
         try await post("/checkins", body: input)
     }
+
+    // MARK: - Verwaltung: Mitglieder-Stammdaten + Rollen
+    //
+    // Web-Referenz: /(portal)/verwaltung/mitglieder + /rollen. Schreibrechte
+    // (Server ist Autorität, Client spiegelt nur via permissions()):
+    //   - Stammdaten (updateMember)   = can_manage_members (treasurer+is_club_admin)
+    //   - Rollenwechsel (changeRole)  = owner/admin (jede Rolle) bzw. moderator
+    //     (nur ranktiefere Ziele); letzter Owner via 409 geschützt.
+
+    /// PATCH /clubs/{clubId}/members/{memberId} — Stammdaten ändern (Vorname/
+    /// Nachname/E-Mail/Geburtsdatum/Status/Gültigkeit). Die ROLLE ist hier
+    /// bewusst NICHT änderbar — dafür `changeMemberRole`. `member`/`guest`
+    /// erhalten `Problem` mit `status == 403`. Antwort ist der aktualisierte
+    /// `ClubMember` (für den optimistischen Ersatz in der Liste).
+    func updateMember(
+        clubId: String,
+        memberId: String,
+        _ patch: ClubMemberUpdate
+    ) async throws -> ClubMember {
+        try await self.patch("/clubs/\(clubId)/members/\(memberId)", body: patch)
+    }
+
+    /// Rollenwechsel per `AssignableClubRole` (Convenience-Overload zur bereits
+    /// bestehenden `changeMemberRole(clubId:memberId:_:)`, die den fertigen
+    /// `ClubMemberRoleChange` nimmt). 403 = nicht berechtigt, 409 = letzter Owner.
+    func changeMemberRole(
+        clubId: String,
+        memberId: String,
+        role: AssignableClubRole
+    ) async throws -> ClubMember {
+        try await changeMemberRole(
+            clubId: clubId,
+            memberId: memberId,
+            ClubMemberRoleChange(role: role)
+        )
+    }
+
+    // MARK: - Verwaltung: Teams
+    //
+    // Web-Referenz: /(portal)/verwaltung/teams. Alle Schreibrechte = is_club_admin
+    // (moderator/admin/owner); sonst `Problem` mit `status == 403`.
+
+    /// POST /clubs/{clubId}/teams — Team anlegen. Antwort ist das erzeugte `Team`.
+    func createTeam(clubId: String, _ create: TeamCreate) async throws -> Team {
+        try await post("/clubs/\(clubId)/teams", body: create)
+    }
+
+    /// PATCH /clubs/{clubId}/teams/{teamId} — Team umbenennen / Altersklasse ändern.
+    func updateTeam(
+        clubId: String,
+        teamId: String,
+        _ patch: TeamUpdate
+    ) async throws -> Team {
+        try await self.patch("/clubs/\(clubId)/teams/\(teamId)", body: patch)
+    }
+
+    /// DELETE /clubs/{clubId}/teams/{teamId} — Team soft-löschen. Antwort ist
+    /// `Deleted` (enthält die gelöschte ID).
+    func deleteTeam(clubId: String, teamId: String) async throws -> Deleted {
+        try await delete("/clubs/\(clubId)/teams/\(teamId)")
+    }
+
+    /// PUT /clubs/{clubId}/teams/{teamId}/members — Roster als VOLL-Replace
+    /// setzen (Läufer:innen + Trainerstab). Fehlende Mitglieder werden
+    /// soft-detached; bei Überlappung gewinnt „coach". Antwort ist das `Team`.
+    func setTeamMembers(
+        clubId: String,
+        teamId: String,
+        _ set: TeamMembersSet
+    ) async throws -> Team {
+        try await put("/clubs/\(clubId)/teams/\(teamId)/members", body: set)
+    }
+
+    // MARK: - Verwaltung: Vereins-Einstellungen
+    //
+    // Web-Referenz: /(portal)/verwaltung/verein. „Update own club (owner/admin)".
+
+    /// PATCH /clubs/{clubId} — Vereins-Stammdaten/-Einstellungen ändern
+    /// (Name/Kurzname/Ort/Disziplin/`settings`). Nur owner/admin; sonst
+    /// `Problem` mit `status == 403`. Antwort ist der aktualisierte `Club`.
+    func updateClubSettings(clubId: String, _ patch: ClubUpdate) async throws -> Club {
+        try await self.patch("/clubs/\(clubId)", body: patch)
+    }
 }

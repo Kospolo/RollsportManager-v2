@@ -224,9 +224,17 @@ enum MehrCatalog {
     ]
 
     /// Noch nicht gebaut — nicht navigierbar, „Bald“-Kachel.
-    static let soon: [MehrTile] = [
-        soonTile("manage", "module.manage.title", "module.manage.desc", "shield.fill", .neutral),
-    ]
+    static let soon: [MehrTile] = []
+
+    /// „Verwaltung“-Kachel — rollen-gated (nur `permissions(role).isClubAdmin`),
+    /// deshalb NICHT im statischen `available`-Raster, sondern von `MehrHubView`
+    /// bedingt eingehängt. Ziel ist der Sub-Hub `VerwaltungHubView`.
+    static let verwaltung = MehrTile(
+        id: "verwaltung",
+        titleKey: "module.manage.title", descKey: "module.manage.desc",
+        systemImage: "shield.fill", tone: .neutral,
+        destination: AnyView(VerwaltungHubView())
+    )
 
     private static func soonTile(
         _ id: String,

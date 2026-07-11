@@ -26,6 +26,11 @@ struct MainTabView: View {
         case notes, events, departments, anniversaries
         case lockers, waitlists, budget, profile
         case gallery, documents
+        case verwaltung
+        case verwMitglieder = "verw-mitglieder"
+        case verwRollen = "verw-rollen"
+        case verwTeams = "verw-teams"
+        case verwVerein = "verw-verein"
     }
 
     @State private var selection: Tab
@@ -102,6 +107,11 @@ struct MainTabView: View {
                         case .profile: ProfileRootView()
                         case .gallery: GalleryRootView()
                         case .documents: DocumentsRootView()
+                        case .verwaltung: VerwaltungHubView()
+                        case .verwMitglieder: MembersAdminRootView()
+                        case .verwRollen: RolesRootView()
+                        case .verwTeams: TeamsAdminRootView()
+                        case .verwVerein: ClubSettingsRootView()
                         }
                     }
             }

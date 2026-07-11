@@ -13,17 +13,29 @@ import SwiftUI
 /// Erwartet `SessionStore` im Environment (liefert die Tab-Shell) und einen
 /// umgebenden NavigationStack.
 struct MehrHubView: View {
+    @EnvironmentObject private var session: SessionStore
+
     private let columns = [
         GridItem(.flexible(), spacing: Theme.Spacing.s3),
         GridItem(.flexible(), spacing: Theme.Spacing.s3),
     ]
 
+    /// „Verfügbar“-Raster: die Verwaltungs-Kachel steht (rollen-gated) ganz oben,
+    /// danach der statische Katalog. Nur `isClubAdmin` sieht die Verwaltung.
+    private var availableTiles: [MehrTile] {
+        session.permissions.isClubAdmin
+            ? [MehrCatalog.verwaltung] + MehrCatalog.available
+            : MehrCatalog.available
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
-                    section(header: "mehr.section.available", tiles: MehrCatalog.available)
-                    section(header: "mehr.section.soon", tiles: MehrCatalog.soon)
+                    section(header: "mehr.section.available", tiles: availableTiles)
+                    if !MehrCatalog.soon.isEmpty {
+                        section(header: "mehr.section.soon", tiles: MehrCatalog.soon)
+                    }
                 }
                 .padding(Theme.Spacing.s5)
             }

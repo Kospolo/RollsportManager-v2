@@ -16,8 +16,16 @@ enum DevPersona: String, Codable, CaseIterable, Identifiable {
     case owner
     case treasurer
     case admin
+    case moderator
     case member
     case guest
+    // MELDEN / bewusst NICHT enthalten: die Server-Persona `platform`
+    // (super_admin). Ihr Login-Profil liefert member_id/club_id/club_role = null
+    // und zusätzlich is_platform_admin=true. `DevLoginProfile` hat diese Felder
+    // non-optional und kennt is_platform_admin nicht — das Dekodieren würde
+    // fehlschlagen. Für echtes Plattform-Admin-Gating müssen zuerst
+    // DevLoginProfile.{memberId,clubId,clubRole} optional werden und ein
+    // `isPlatformAdmin`-Feld dazukommen (betrifft mehrere Feature-ViewModels).
 
     var id: String { rawValue }
 }
