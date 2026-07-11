@@ -80,6 +80,30 @@ enum MehrCatalog {
             destination: AnyView(TrainingPlanRootView())
         ),
         MehrTile(
+            id: "exercises",
+            titleKey: "module.exercises.title", descKey: "module.exercises.desc",
+            systemImage: "figure.flexibility", tone: .success, isNew: true,
+            destination: AnyView(ExercisesRootView())
+        ),
+        MehrTile(
+            id: "family",
+            titleKey: "module.family.title", descKey: "module.family.desc",
+            systemImage: "figure.2.and.child.holdinghands", tone: .warn, isNew: true,
+            destination: AnyView(FamilyRootView())
+        ),
+        MehrTile(
+            id: "hours",
+            titleKey: "module.hours.title", descKey: "module.hours.desc",
+            systemImage: "clock.badge.checkmark", tone: .info, isNew: true,
+            destination: AnyView(DutyHoursRootView())
+        ),
+        MehrTile(
+            id: "chart",
+            titleKey: "module.chart.title", descKey: "module.chart.desc",
+            systemImage: "chart.bar.fill", tone: .success, isNew: true,
+            destination: AnyView(ReportsRootView())
+        ),
+        MehrTile(
             id: "dashboard",
             titleKey: "module.dashboard.title", descKey: "module.dashboard.desc",
             systemImage: "house.fill", tone: .neutral,
@@ -115,12 +139,8 @@ enum MehrCatalog {
     static let soon: [MehrTile] = [
         soonTile("facility", "module.facility.title", "module.facility.desc", "building.2.fill", .info),
         soonTile("equipment", "module.equipment.title", "module.equipment.desc", "shippingbox.fill", .success),
-        soonTile("hours", "module.hours.title", "module.hours.desc", "clock.badge.checkmark", .info),
-        soonTile("chart", "module.chart.title", "module.chart.desc", "chart.bar.fill", .success),
         soonTile("checkin", "module.checkin.title", "module.checkin.desc", "qrcode.viewfinder", .warn),
         soonTile("regevents", "module.regevents.title", "module.regevents.desc", "flag.2.crossed.fill", .warn),
-        soonTile("family", "module.family.title", "module.family.desc", "figure.2.and.child.holdinghands", .warn),
-        soonTile("exercises", "module.exercises.title", "module.exercises.desc", "figure.flexibility", .success),
         soonTile("notes", "module.notes.title", "module.notes.desc", "note.text", .info),
         soonTile("gallery", "module.gallery.title", "module.gallery.desc", "photo.on.rectangle.angled", .info),
         soonTile("document", "module.document.title", "module.document.desc", "doc.fill", .success),

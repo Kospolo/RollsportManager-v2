@@ -21,6 +21,7 @@ struct MainTabView: View {
     /// Deep-Link-Ziele im „Mehr“-Hub (nur DEBUG-Smoke-Automation).
     enum MehrDeepLink: String, Hashable {
         case news, chat, medals, trainingplan
+        case exercises, family, hours, chart
     }
 
     @State private var selection: Tab
@@ -77,6 +78,10 @@ struct MainTabView: View {
                         case .chat: ChatRootView()
                         case .medals: MedalsRootView()
                         case .trainingplan: TrainingPlanRootView()
+                        case .exercises: ExercisesRootView()
+                        case .family: FamilyRootView()
+                        case .hours: DutyHoursRootView()
+                        case .chart: ReportsRootView()
                         }
                     }
             }

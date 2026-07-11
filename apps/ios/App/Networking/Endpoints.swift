@@ -229,4 +229,79 @@ extension APIClient {
         if let teamId { query.append(URLQueryItem(name: "team_id", value: teamId)) }
         return try await get("/training-slots", query: query)
     }
+
+    // MARK: - Übungen (Exercises)
+    //
+    // Web-Referenz: /(portal)/uebungen. Übungs-Bibliothek des Vereins,
+    // optional nach Kategorie gefiltert. Schreiben nur Trainerstab
+    // (is_club_trainer) — hier vorerst nur die Leseliste.
+
+    /// GET /exercises — Übungen des Vereins, optional auf eine `category`
+    /// (ExerciseCategory) eingegrenzt. Sichtbar für alle Mitglieder.
+    func listExercises(clubId: String, category: ExerciseCategory? = nil) async throws -> [Exercise] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let category { query.append(URLQueryItem(name: "category", value: category.rawValue)) }
+        return try await get("/exercises", query: query)
+    }
+
+    // MARK: - Familie (Guardianships)
+    //
+    // Web-Referenz: /(portal)/familie. Das Familienmodell nutzt zwei bereits
+    // bestehende Calls (siehe oben): `guardianships(clubId:)` liefert die
+    // Eltern-/Kind-Beziehungen (RLS-scoped), `members(clubId:)` die
+    // Mitglieder-Stammdaten zum Auflösen der IDs. Deshalb hier bewusst keine
+    // Duplikate — das Familie-Team ruft `guardianships` + `members`.
+
+    /// Alias auf `guardianships(clubId:)` — semantisch die Familie-Liste.
+    /// Existiert, damit der im Auftrag genannte Name aufrufbar ist.
+    func listGuardianships(clubId: String) async throws -> [Guardianship] {
+        try await guardianships(clubId: clubId)
+    }
+
+    /// Alias auf `members(clubId:)` — Mitglieder zum Auflösen der Familie-IDs.
+    func listMembers(clubId: String) async throws -> [ClubMember] {
+        try await members(clubId: clubId)
+    }
+
+    // MARK: - Pflichtstunden (Duty)
+    //
+    // Web-Referenz: /(portal)/pflichtstunden. Zwei Ebenen: das Soll
+    // (DutyRequirement, je Verein/Team/Mitglied) und die Ist-Einträge
+    // (DutyEntry). Mitglieder erfassen eigene Stunden; Trainerstab alle.
+
+    /// GET /duty-requirements — Soll-Vorgaben des Vereins, optional je Team.
+    func listDutyRequirements(clubId: String, teamId: String? = nil) async throws -> [DutyRequirement] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let teamId { query.append(URLQueryItem(name: "team_id", value: teamId)) }
+        return try await get("/duty-requirements", query: query)
+    }
+
+    /// GET /duty-entries — erfasste Stunden. Ohne `memberId` liefert der Server
+    /// die eigenen Einträge (Mitglied) bzw. alle (Trainerstab); mit `memberId`
+    /// die eines Mitglieds (nur mit Berechtigung, sonst RLS-gefiltert).
+    func listDutyEntries(clubId: String, memberId: String? = nil) async throws -> [DutyEntry] {
+        var query = [URLQueryItem(name: "club_id", value: clubId)]
+        if let memberId { query.append(URLQueryItem(name: "member_id", value: memberId)) }
+        return try await get("/duty-entries", query: query)
+    }
+
+    /// POST /duty-entries — Stunden erfassen. `clubId`/`memberId`/`hours`/
+    /// `activityDate` stecken im `DutyEntryCreate` (analog zu `createEvent`).
+    /// `approved` setzt nur der Trainerstab — Mitglieder-Einträge, die `true`
+    /// senden, quittiert der Server/DB-Trigger mit `Problem` (403/42501).
+    func createDutyEntry(_ create: DutyEntryCreate) async throws -> DutyEntry {
+        try await post("/duty-entries", body: create)
+    }
+
+    // MARK: - Auswertung (Reports)
+    //
+    // Web-Referenz: /(portal)/auswertung. Ein aggregiertes Kennzahlen-Objekt
+    // (Mitglieder nach Rolle/Team, Anwesenheitsquote, offene Rechnungen,
+    // Medaillenspiegel, kommende Termine). Nur Trainerstab/Admin —
+    // `member`/`guest` erhalten `Problem` mit `status == 403`.
+
+    /// GET /reports/summary — aggregierte Vereins-Auswertung.
+    func getReportsSummary(clubId: String) async throws -> ReportSummary {
+        try await get("/reports/summary", query: [URLQueryItem(name: "club_id", value: clubId)])
+    }
 }
