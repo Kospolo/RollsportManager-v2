@@ -407,12 +407,49 @@ export class ApiClient {
   }
 
   /**
+   * Create a public share link for a routine (coaching staff)
+   * 
+   * `POST /routines/{routineId}/share`
+   */
+  async postRoutinesByRoutineIdShare(routineId: string, body: M.RoutineShareCreate, options?: RequestOptions): Promise<M.RoutineShareCreated> {
+    return this.request<M.RoutineShareCreated>("POST", `/routines/${encodeURIComponent(routineId)}/share`, { body, auth: true, options });
+  }
+
+  /**
+   * Revoke a share link (coaching staff)
+   * 
+   * `DELETE /routines/{routineId}/share/{token}`
+   */
+  async deleteRoutinesByRoutineIdShareByToken(routineId: string, token: string, options?: RequestOptions): Promise<M.RoutineShareRevoked> {
+    return this.request<M.RoutineShareRevoked>("DELETE", `/routines/${encodeURIComponent(routineId)}/share/${encodeURIComponent(token)}`, { auth: true, options });
+  }
+
+  /**
    * List competitions of a club incl. entries (start list)
    * 
    * `GET /competitions`
    */
   async getCompetitions(query: { "club_id": string }, options?: RequestOptions): Promise<M.Competition[]> {
     return this.request<M.Competition[]>("GET", "/competitions", { query, auth: true, options });
+  }
+
+  /**
+   * Ranked standings of a competition (per category)
+   * 
+   * `GET /competitions/{competitionId}/standings`
+   */
+  async getCompetitionsByCompetitionIdStandings(competitionId: string, options?: RequestOptions): Promise<M.CompetitionStandings> {
+    return this.request<M.CompetitionStandings>("GET", `/competitions/${encodeURIComponent(competitionId)}/standings`, { auth: true, options });
+  }
+
+  /**
+   * Public, login-free view of a shared Kür (opaque token)
+   * Unauthenticated. Resolves a share token to the minimal, non-personal Kür payload. A revoked, expired or unknown token returns 404. No skater identities, no finance.
+   * 
+   * `GET /public/routines/{token}`
+   */
+  async getPublicRoutinesByToken(token: string, options?: RequestOptions): Promise<M.PublicRoutine> {
+    return this.request<M.PublicRoutine>("GET", `/public/routines/${encodeURIComponent(token)}`, { auth: false, options });
   }
 
   /**

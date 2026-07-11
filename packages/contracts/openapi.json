@@ -44,7 +44,11 @@
     },
     {
       "name": "competitions",
-      "description": "Competitions incl. start list (read model)"
+      "description": "Competitions incl. start list, standings + federation export"
+    },
+    {
+      "name": "public",
+      "description": "Login-free token views (shared Kür) — minimal, non-personal data"
     },
     {
       "name": "tasks",
@@ -1586,6 +1590,10 @@
             "type": "number",
             "nullable": true
           },
+          "placement": {
+            "type": "integer",
+            "nullable": true
+          },
           "note": {
             "type": "string",
             "nullable": true
@@ -1601,6 +1609,7 @@
           "technical_score",
           "components_score",
           "total_score",
+          "placement",
           "note"
         ]
       },
@@ -1628,12 +1637,66 @@
             "type": "string",
             "format": "uuid"
           },
+          "placement": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
           "note": {
             "type": "string"
           }
         },
         "required": [
           "scored_on"
+        ]
+      },
+      "RoutineShareCreated": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "url",
+          "expires_at"
+        ]
+      },
+      "RoutineShareCreate": {
+        "type": "object",
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RoutineShareRevoked": {
+        "type": "object",
+        "properties": {
+          "revoked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "revoked"
         ]
       },
       "CompetitionStatus": {
@@ -1764,6 +1827,199 @@
           "entries",
           "created_at",
           "updated_at"
+        ]
+      },
+      "CompetitionStandingRow": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer",
+            "nullable": true
+          },
+          "entry_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "routine_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routine_title": {
+            "type": "string"
+          },
+          "technical_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "components_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "total_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "placement": {
+            "type": "integer",
+            "nullable": true
+          },
+          "delta": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "category",
+          "rank",
+          "entry_id",
+          "member_id",
+          "first_name",
+          "last_name",
+          "routine_id",
+          "routine_title",
+          "technical_score",
+          "components_score",
+          "total_score",
+          "placement",
+          "delta"
+        ]
+      },
+      "CompetitionStandings": {
+        "type": "object",
+        "properties": {
+          "competition_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompetitionStandingRow"
+            }
+          }
+        },
+        "required": [
+          "competition_id",
+          "name",
+          "rows"
+        ]
+      },
+      "PublicRoutine": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "discipline": {
+            "type": "string",
+            "nullable": true
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "music_title": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_artist": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_bpm": {
+            "type": "integer",
+            "nullable": true
+          },
+          "music_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "markers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "time_ms": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "label": {
+                  "type": "string"
+                },
+                "element_code": {
+                  "type": "string",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "time_ms",
+                "label",
+                "element_code"
+              ]
+            }
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scored_on": {
+                  "type": "string"
+                },
+                "technical_score": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "components_score": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "total_score": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "placement": {
+                  "type": "integer",
+                  "nullable": true
+                }
+              },
+              "required": [
+                "scored_on",
+                "technical_score",
+                "components_score",
+                "total_score",
+                "placement"
+              ]
+            }
+          }
+        },
+        "required": [
+          "title",
+          "discipline",
+          "club_name",
+          "music_title",
+          "music_artist",
+          "music_bpm",
+          "music_duration_ms",
+          "markers",
+          "scores"
         ]
       },
       "Task": {
@@ -9267,6 +9523,176 @@
         }
       }
     },
+    "/routines/{routineId}/share": {
+      "post": {
+        "tags": [
+          "routines"
+        ],
+        "summary": "Create a public share link for a routine (coaching staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "routineId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoutineShareCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created share token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutineShareCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/routines/{routineId}/share/{token}": {
+      "delete": {
+        "tags": [
+          "routines"
+        ],
+        "summary": "Revoke a share link (coaching staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "routineId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutineShareRevoked"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/competitions": {
       "get": {
         "tags": [
@@ -9335,6 +9761,124 @@
           },
           "404": {
             "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/competitions/{competitionId}/standings": {
+      "get": {
+        "tags": [
+          "competitions"
+        ],
+        "summary": "Ranked standings of a competition (per category)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "competitionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Standings grouped and ranked by category",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompetitionStandings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/routines/{token}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Public, login-free view of a shared Kür (opaque token)",
+        "description": "Unauthenticated. Resolves a share token to the minimal, non-personal Kür payload. A revoked, expired or unknown token returns 404. No skater identities, no finance.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shared Kür (minimal, non-personal)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRoutine"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token unknown, revoked or expired",
             "content": {
               "application/json": {
                 "schema": {

@@ -7,6 +7,7 @@
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
+import { randomBytes } from 'node:crypto';
 import {
   markerCreateSchema,
   markerSchema,
@@ -14,12 +15,25 @@ import {
   routineSchema,
   scoreCreateSchema,
   scoreSchema,
+  shareCreateSchema,
+  shareCreatedSchema,
   uuid,
 } from '../lib/validation.js';
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { COACH_ROLES, hasClubRole, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { ownMemberId } from '../lib/ownership.js';
+
+/** URL-safe, high-entropy share token (kuer-share.html). */
+function generateShareToken(): string {
+  return 'shr_' + randomBytes(24).toString('base64url');
+}
+
+/** Relative public path the web app renders for a share token. */
+export function shareUrlFor(token: string): string {
+  return `/wettkampf/kuer/${token}`;
+}
 
 export const routinesRouter = createRouter();
 
@@ -264,14 +278,107 @@ routinesRouter.openapi(
       const rows = await tx`
         insert into app.routine_scores
           (club_id, routine_id, competition_id, scored_on, scoring_system,
-           technical_score, components_score, total_score, note)
+           technical_score, components_score, total_score, placement, note)
         values
           (${routine.club_id}, ${routineId}, ${body.competition_id ?? null}, ${body.scored_on},
            ${body.scoring_system}, ${body.technical_score ?? null},
-           ${body.components_score ?? null}, ${body.total_score ?? null}, ${body.note ?? null})
+           ${body.components_score ?? null}, ${body.total_score ?? null},
+           ${body.placement ?? null}, ${body.note ?? null})
         returning *`;
       return rows[0];
     });
     return c.json(scoreSchema.parse(created), 201);
+  },
+);
+
+// ----------------------------------------------------------------------------
+// Kür teilen (kuer-share.html): create / revoke an opaque share token. Both
+// are is_club_trainer (Referenz 1.3). The PUBLIC token view lives in
+// routes/public-routines.ts and is unauthenticated.
+// ----------------------------------------------------------------------------
+routinesRouter.openapi(
+  createRoute({
+    method: 'post',
+    path: '/routines/{routineId}/share',
+    tags: ['routines'],
+    summary: 'Create a public share link for a routine (coaching staff)',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: routineIdParam,
+      body: { content: { 'application/json': { schema: shareCreateSchema } }, required: true },
+    },
+    responses: {
+      201: jsonContent(shareCreatedSchema, 'Created share token'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { routineId } = c.req.valid('param');
+    const body = c.req.valid('json');
+    const claims = c.get('claims');
+
+    const created = await withUser(claims, async (tx) => {
+      const routine = await loadRoutine(tx, routineId);
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+        throw problem(403, 'Forbidden', 'Sharing requires a coaching role');
+      }
+      const memberId = await ownMemberId(tx, claims, routine.club_id);
+      const token = generateShareToken();
+      const rows = await tx`
+        insert into app.routine_shares
+          (club_id, routine_id, token, created_by_member_id, expires_at)
+        values
+          (${routine.club_id}, ${routineId}, ${token}, ${memberId},
+           ${body.expires_at ?? null})
+        returning token, expires_at`;
+      return rows[0] as { token: string; expires_at: string | null };
+    });
+    return c.json(
+      shareCreatedSchema.parse({
+        token: created.token,
+        url: shareUrlFor(created.token),
+        expires_at: created.expires_at,
+      }),
+      201,
+    );
+  },
+);
+
+routinesRouter.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/routines/{routineId}/share/{token}',
+    tags: ['routines'],
+    summary: 'Revoke a share link (coaching staff)',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: z.object({
+        routineId: uuid.openapi({ param: { name: 'routineId', in: 'path' } }),
+        token: z.string().openapi({ param: { name: 'token', in: 'path' } }),
+      }),
+    },
+    responses: {
+      200: jsonContent(z.object({ revoked: z.boolean() }).openapi('RoutineShareRevoked'), 'Revoked'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { routineId, token } = c.req.valid('param');
+    const claims = c.get('claims');
+
+    await withUser(claims, async (tx) => {
+      const routine = await loadRoutine(tx, routineId);
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+        throw problem(403, 'Forbidden', 'Revoking requires a coaching role');
+      }
+      // RLS (is_club_trainer) is the second line of defense on this UPDATE.
+      const rows = await tx`
+        update app.routine_shares
+           set revoked = true
+         where token = ${token} and routine_id = ${routineId} and deleted_at is null
+        returning id`;
+      if (rows.length === 0) throw problem(404, 'Not Found', 'Share token not found');
+    });
+    return c.json({ revoked: true }, 200);
   },
 );

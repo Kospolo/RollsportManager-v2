@@ -34,7 +34,12 @@ const BODYLESS_MUTATIONS = new Set([
   "PATCH /lockers/{lockerId}/release",
 ]);
 /** Routes that are public by design (no bearerAuth). */
-const PUBLIC_ROUTES = new Set(["GET /health"]);
+const PUBLIC_ROUTES = new Set([
+  "GET /health",
+  // Login-free Kür token view: opaque token in, minimal non-personal data out.
+  // Handler resolves the token in service mode (routes/public-routines.ts).
+  "GET /public/routines/{token}",
+]);
 
 let failures = 0;
 const fail = (msg) => {

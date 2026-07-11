@@ -353,6 +353,7 @@ export interface RoutineScore {
   "technical_score": number | null;
   "components_score": number | null;
   "total_score": number | null;
+  "placement": number | null;
   "note": string | null;
 }
 
@@ -363,7 +364,22 @@ export interface RoutineScoreCreate {
   "components_score"?: number;
   "total_score"?: number;
   "competition_id"?: string;
+  "placement"?: number;
   "note"?: string;
+}
+
+export interface RoutineShareCreated {
+  "token": string;
+  "url": string;
+  "expires_at": string | null;
+}
+
+export interface RoutineShareCreate {
+  "expires_at"?: string;
+}
+
+export interface RoutineShareRevoked {
+  "revoked": boolean;
 }
 
 export type CompetitionStatus = "upcoming" | "running" | "done" | "cancelled";
@@ -391,6 +407,40 @@ export interface Competition {
   "entries": CompetitionEntry[];
   "created_at": string;
   "updated_at": string;
+}
+
+export interface CompetitionStandingRow {
+  "category": string;
+  "rank": number | null;
+  "entry_id": string;
+  "member_id": string;
+  "first_name": string | null;
+  "last_name": string | null;
+  "routine_id": string;
+  "routine_title": string;
+  "technical_score": number | null;
+  "components_score": number | null;
+  "total_score": number | null;
+  "placement": number | null;
+  "delta": number | null;
+}
+
+export interface CompetitionStandings {
+  "competition_id": string;
+  "name": string;
+  "rows": CompetitionStandingRow[];
+}
+
+export interface PublicRoutine {
+  "title": string;
+  "discipline": string | null;
+  "club_name": string;
+  "music_title": string | null;
+  "music_artist": string | null;
+  "music_bpm": number | null;
+  "music_duration_ms": number | null;
+  "markers": { "time_ms": number | null; "label": string; "element_code": string | null }[];
+  "scores": { "scored_on": string; "technical_score": number | null; "components_score": number | null; "total_score": number | null; "placement": number | null }[];
 }
 
 export interface Task {

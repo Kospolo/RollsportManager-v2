@@ -366,20 +366,46 @@ from (values
 ) as v(routine_id, time_ms, label, element_code);
 
 -- ----------------------------------------------------------------------------
--- Score history (mock: 8 scores; c-02 = Kreispokal 21 days ago)
+-- Score history (mock: 8 scores; c-02 = Kreispokal 21 days ago). The three
+-- Kreispokal scores carry a placement (final rank) — they drive the standings
+-- demo (GET /competitions/{id}/standings): each Kür ranks in its own category,
+-- and the Delta-zur-Vorwertung compares against the routine's previous score.
 -- ----------------------------------------------------------------------------
-insert into app.routine_scores (club_id, routine_id, competition_id, scored_on, technical_score, components_score, total_score)
-select 'c1ab0000-0000-4000-8000-000000000001', v.routine_id::uuid, v.competition_id::uuid, v.scored_on, v.tech, v.comp, v.total
+insert into app.routine_scores (club_id, routine_id, competition_id, scored_on, technical_score, components_score, total_score, placement)
+select 'c1ab0000-0000-4000-8000-000000000001', v.routine_id::uuid, v.competition_id::uuid, v.scored_on, v.tech, v.comp, v.total, v.placement
 from (values
-  ('d0000000-0000-4000-8000-000000000001', null,                                     current_date - 140, 21.4, 19.15, 40.55),
-  ('d0000000-0000-4000-8000-000000000001', null,                                     current_date - 70,  22.6, 20.2,  42.8),
-  ('d0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  23.3, 20.8,  44.1),
-  ('d0000000-0000-4000-8000-000000000002', null,                                     current_date - 70,  25.1, 23.4,  48.5),
-  ('d0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  24.6, 24.15, 48.75),
-  ('d0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  18.9, 17.65, 36.55),
-  ('d0000000-0000-4000-8000-000000000006', null,                                     current_date - 320, 26.2, 24.9,  51.1),
-  ('d0000000-0000-4000-8000-000000000006', null,                                     current_date - 250, 27.0, 25.3,  52.3)
-) as v(routine_id, competition_id, scored_on, tech, comp, total);
+  ('d0000000-0000-4000-8000-000000000001', null,                                     current_date - 140, 21.4, 19.15, 40.55, null::int),
+  ('d0000000-0000-4000-8000-000000000001', null,                                     current_date - 70,  22.6, 20.2,  42.8,  null),
+  ('d0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  23.3, 20.8,  44.1,  2),
+  ('d0000000-0000-4000-8000-000000000002', null,                                     current_date - 70,  25.1, 23.4,  48.5,  null),
+  ('d0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  24.6, 24.15, 48.75, 1),
+  ('d0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000002',   current_date - 21,  18.9, 17.65, 36.55, 3),
+  ('d0000000-0000-4000-8000-000000000006', null,                                     current_date - 320, 26.2, 24.9,  51.1,  null),
+  ('d0000000-0000-4000-8000-000000000006', null,                                     current_date - 250, 27.0, 25.3,  52.3,  null)
+) as v(routine_id, competition_id, scored_on, tech, comp, total, placement);
+
+-- ----------------------------------------------------------------------------
+-- Routine shares (Kür-Teilen tokens, kuer-share.html). Two live tokens for the
+-- public, unauthenticated token view (GET /public/routines/{token}) plus one
+-- revoked and one expired token so the 404-paths are demonstrable from the
+-- seed. created_by = Sandra (coach, 90..01 -> her club_members row).
+-- ----------------------------------------------------------------------------
+insert into app.routine_shares (id, club_id, routine_id, token, created_by_member_id, expires_at, revoked)
+select v.id::uuid, 'c1ab0000-0000-4000-8000-000000000001', v.routine_id::uuid, v.token,
+       (select id from app.club_members
+          where club_id = 'c1ab0000-0000-4000-8000-000000000001'
+            and profile_id = '90000000-0000-4000-8000-000000000001' and deleted_at is null limit 1),
+       v.expires_at, v.revoked
+from (values
+  ('f5a00000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
+   'shr_feuervogel_7Qk2mX9pLtRv3Bd', null::timestamptz, false),
+  ('f5a00000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000003',
+   'shr_sommerregen_Za8Wc1Ne5Yh0Uf', (current_date + 30 + time '12:00')::timestamptz, false),
+  ('f5a00000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000002',
+   'shr_mondlicht_REVOKED_kQ4dP', null, true),
+  ('f5a00000-0000-4000-8000-000000000004', 'd0000000-0000-4000-8000-000000000006',
+   'shr_nordwind_EXPIRED_9wLmT', (current_date - 2 + time '12:00')::timestamptz, false)
+) as v(id, routine_id, token, expires_at, revoked);
 
 -- ----------------------------------------------------------------------------
 -- Competition entries (c-01: 8 starters, c-02: 3 starters)

@@ -356,6 +356,8 @@ export const scoreSchema = z
     technical_score: z.coerce.number().nullable(),
     components_score: z.coerce.number().nullable(),
     total_score: z.coerce.number().nullable(),
+    /** Final rank of the Kür at a competition (Live-Scoring), 1-based. */
+    placement: z.coerce.number().int().nullable(),
     note: z.string().nullable(),
   })
   .openapi('RoutineScore');
@@ -368,9 +370,94 @@ export const scoreCreateSchema = z
     components_score: z.number().optional(),
     total_score: z.number().optional(),
     competition_id: uuid.optional(),
+    placement: z.number().int().positive().optional(),
     note: z.string().optional(),
   })
   .openapi('RoutineScoreCreate');
+
+// ----------------------------------------------------------------------------
+// Standings (GET /competitions/{id}/standings) — computed read model: per
+// category, the starters ranked by total_score with the delta to the routine's
+// previous score. Personal names are club-internal (member view), never public.
+// ----------------------------------------------------------------------------
+export const standingRowSchema = z
+  .object({
+    category: z.string(),
+    rank: z.coerce.number().int(),
+    entry_id: uuid,
+    member_id: uuid,
+    first_name: z.string().nullable(),
+    last_name: z.string().nullable(),
+    routine_id: uuid,
+    routine_title: z.string(),
+    technical_score: z.coerce.number().nullable(),
+    components_score: z.coerce.number().nullable(),
+    total_score: z.coerce.number().nullable(),
+    placement: z.coerce.number().int().nullable(),
+    /** total_score minus the routine's previous score (null if no prior). */
+    delta: z.coerce.number().nullable(),
+  })
+  .openapi('CompetitionStandingRow');
+
+export const standingsSchema = z
+  .object({
+    competition_id: uuid,
+    name: z.string(),
+    rows: z.array(standingRowSchema),
+  })
+  .openapi('CompetitionStandings');
+
+// ----------------------------------------------------------------------------
+// Küren teilen (kuer-share.html): create an opaque, revocable share link.
+// ----------------------------------------------------------------------------
+export const shareCreateSchema = z
+  .object({
+    /** ISO 8601; omit for a link that never expires ("Nie"). */
+    expires_at: z.string().datetime().optional(),
+  })
+  .openapi('RoutineShareCreate');
+
+export const shareCreatedSchema = z
+  .object({
+    token: z.string(),
+    /** Relative public path the web app renders as the share target. */
+    url: z.string(),
+    expires_at: timestamp.nullable(),
+  })
+  .openapi('RoutineShareCreated');
+
+// ----------------------------------------------------------------------------
+// Public token view (GET /public/routines/{token}) — UNAUTHENTICATED. Minimal,
+// non-personal Kür payload only: NO skater identities, NO contact/finance data.
+// ----------------------------------------------------------------------------
+export const publicRoutineSchema = z
+  .object({
+    title: z.string(),
+    /** RollArt discipline / category label, e.g. 'Jugend Kür A'. */
+    discipline: z.string().nullable(),
+    club_name: z.string(),
+    music_title: z.string().nullable(),
+    music_artist: z.string().nullable(),
+    music_bpm: z.coerce.number().int().nullable(),
+    music_duration_ms: z.coerce.number().int().nullable(),
+    markers: z.array(
+      z.object({
+        time_ms: z.coerce.number().int(),
+        label: z.string(),
+        element_code: z.string().nullable(),
+      }),
+    ),
+    scores: z.array(
+      z.object({
+        scored_on: isoDate,
+        technical_score: z.coerce.number().nullable(),
+        components_score: z.coerce.number().nullable(),
+        total_score: z.coerce.number().nullable(),
+        placement: z.coerce.number().int().nullable(),
+      }),
+    ),
+  })
+  .openapi('PublicRoutine');
 
 export const invoiceSchema = z
   .object({

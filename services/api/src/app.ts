@@ -19,6 +19,7 @@ import { platformRouter } from './routes/platform.js';
 import { eventsRouter } from './routes/events.js';
 import { routinesRouter } from './routes/routines.js';
 import { competitionsRouter } from './routes/competitions.js';
+import { publicRoutinesRouter } from './routes/public-routines.js';
 import { tasksRouter } from './routes/tasks.js';
 import { newsRouter } from './routes/news.js';
 import { notesRouter } from './routes/notes.js';
@@ -62,6 +63,12 @@ import { dunningRouter } from './modules/dunning/routes.js';
  * AUTH_MODE=dev (routes/dev-login.ts), so being "public" leaks nothing in
  * prod. Like the webhooks it is a plain Hono router - never in the OpenAPI
  * spec, never in the generated clients.
+ *
+ * The /public/ PREFIX is the login-free surface (currently only the Kür token
+ * view GET /public/routines/{token}). It is a TYPED route in the OpenAPI
+ * contract but declares no bearerAuth and is allowlisted in
+ * packages/contracts/codegen/check.mjs (PUBLIC_ROUTES). Its handler resolves
+ * the opaque token in service mode and returns only minimal, non-personal data.
  */
 const PUBLIC_PATHS = new Set([
   '/health',
@@ -70,6 +77,9 @@ const PUBLIC_PATHS = new Set([
   '/webhooks/revenuecat',
   '/dev/login',
 ]);
+
+/** Path prefixes that are public (auth skipped). Kept explicit and narrow. */
+const PUBLIC_PREFIXES = ['/public/'];
 
 /**
  * DEV-ONLY CORS for the web portal on localhost:3021. Checked per request so
@@ -94,6 +104,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   });
   app.use('*', async (c, next) => {
     if (PUBLIC_PATHS.has(c.req.path)) return next();
+    if (PUBLIC_PREFIXES.some((p) => c.req.path.startsWith(p))) return next();
     return requireAuth(c, next);
   });
   app.onError(onError);
@@ -108,6 +119,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', eventsRouter);
   app.route('/', routinesRouter);
   app.route('/', competitionsRouter);
+  app.route('/', publicRoutinesRouter);
   app.route('/', tasksRouter);
   app.route('/', newsRouter);
   app.route('/', notesRouter);
@@ -187,7 +199,8 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'platform', description: 'Cross-club super-admin console (platform admin claim only)' },
     { name: 'events', description: 'Events, RSVPs, attendance' },
     { name: 'routines', description: 'Küren: routines, markers, scores' },
-    { name: 'competitions', description: 'Competitions incl. start list (read model)' },
+    { name: 'competitions', description: 'Competitions incl. start list, standings + federation export' },
+    { name: 'public', description: 'Login-free token views (shared Kür) — minimal, non-personal data' },
     { name: 'tasks', description: 'Club to-dos (tick-off by staff or assignee)' },
     { name: 'facilities', description: 'Halls & rooms incl. bookings (self-service or staff)' },
     { name: 'equipment', description: 'Gear inventory incl. reservations (self-service or staff)' },

@@ -20,10 +20,17 @@ import { Hono } from 'hono';
 import type { AuthEnv } from '../../middleware/auth.js';
 import { problem } from '../../middleware/error.js';
 import { withUser } from '../../db.js';
-import { FINANCE_ROLES, requireClubRole } from '../../lib/guards.js';
+import { COACH_ROLES, FINANCE_ROLES, requireClubRole } from '../../lib/guards.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** entry_status -> German Startgeld-/Meldestatus label (verbandsmeldung.html). */
+const ENTRY_STATUS_DE: Record<string, string> = {
+  registered: 'gemeldet',
+  confirmed: 'bestätigt',
+  withdrawn: 'zurückgezogen',
+};
 
 /** Escape one CSV field for a semicolon-delimited file (German/DATEV convention). */
 function csvField(value: unknown): string {
@@ -162,6 +169,72 @@ export function createExportRouter(): Hono<AuthEnv> {
     }
 
     const fname = `datev_${clubId}_${year}.csv`;
+    return new Response(csvBody(body), {
+      status: 200,
+      headers: {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename="${fname}"`,
+        'cache-control': 'private, no-store',
+        'x-content-type-options': 'nosniff',
+      },
+    });
+  });
+
+  // --- Verbandsmeldung / federation start-list export ------------------------
+  // GET /competitions/{competitionId}/federation-export -> the competition's
+  // start list as CSV (Starter, Kategorie, Kür, Startgeld-Status, Verein).
+  // Rights: is_club_trainer (COACH_ROLES) - enforced by the API guard AND, via
+  // the impersonated read, by the competition_entries RLS as a second line.
+  router.get('/competitions/:competitionId/federation-export', async (c) => {
+    const claims = c.get('claims');
+    const competitionId = c.req.param('competitionId');
+    if (!UUID_RE.test(competitionId)) {
+      throw problem(400, 'Bad Request', 'competitionId (uuid) is required');
+    }
+
+    const data = await withUser(claims, async (tx) => {
+      const compRows = await tx`
+        select comp.id, comp.club_id, comp.name, cl.name as club_name
+          from app.competitions comp
+          join app.clubs cl on cl.id = comp.club_id
+         where comp.id = ${competitionId} and comp.deleted_at is null`;
+      const comp = compRows[0] as
+        | { id: string; club_id: string; name: string; club_name: string }
+        | undefined;
+      if (!comp) return undefined;
+      // A member could read the competition (RLS); only a trainer may export.
+      requireClubRole(claims, comp.club_id, COACH_ROLES);
+
+      const rows = await tx`
+        select m.first_name, m.last_name,
+               coalesce(r.category, '') as category,
+               coalesce(r.title, '')    as routine_title,
+               ce.status
+          from app.competition_entries ce
+          join app.club_members m on m.id = ce.member_id
+          left join app.routines r on r.id = ce.routine_id and r.deleted_at is null
+         where ce.competition_id = ${competitionId} and ce.deleted_at is null
+         order by category, m.last_name, m.first_name`;
+      return { comp, rows };
+    });
+
+    if (data === undefined) throw problem(404, 'Not Found', 'Competition not found');
+
+    const header = ['Starter', 'Kategorie', 'Kür', 'Startgeld-Status', 'Verein'];
+    const body: string[][] = [header];
+    for (const r of data.rows) {
+      const row = r as Record<string, unknown>;
+      const starter = `${row['first_name'] ?? ''} ${row['last_name'] ?? ''}`.trim();
+      body.push([
+        starter,
+        (row['category'] as string) || '',
+        (row['routine_title'] as string) || '',
+        ENTRY_STATUS_DE[String(row['status'])] ?? String(row['status']),
+        data.comp.club_name,
+      ]);
+    }
+
+    const fname = `verbandsmeldung_${data.comp.id}.csv`;
     return new Response(csvBody(body), {
       status: 200,
       headers: {

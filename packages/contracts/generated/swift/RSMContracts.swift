@@ -296,6 +296,60 @@ public enum DunningActionAction: String, Codable, CaseIterable, Sendable, Equata
     case none = "none"
 }
 
+/// Inline object of PublicRoutine.markers (hoisted by codegen).
+public struct PublicRoutineMarkers: Codable, Equatable, Sendable {
+    public var timeMs: Int?
+    public var label: String
+    public var elementCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case timeMs = "time_ms"
+        case label
+        case elementCode = "element_code"
+    }
+
+    public init(
+        timeMs: Int? = nil,
+        label: String,
+        elementCode: String? = nil
+    ) {
+        self.timeMs = timeMs
+        self.label = label
+        self.elementCode = elementCode
+    }
+}
+
+/// Inline object of PublicRoutine.scores (hoisted by codegen).
+public struct PublicRoutineScores: Codable, Equatable, Sendable {
+    public var scoredOn: String
+    public var technicalScore: Double?
+    public var componentsScore: Double?
+    public var totalScore: Double?
+    public var placement: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case scoredOn = "scored_on"
+        case technicalScore = "technical_score"
+        case componentsScore = "components_score"
+        case totalScore = "total_score"
+        case placement
+    }
+
+    public init(
+        scoredOn: String,
+        technicalScore: Double? = nil,
+        componentsScore: Double? = nil,
+        totalScore: Double? = nil,
+        placement: Int? = nil
+    ) {
+        self.scoredOn = scoredOn
+        self.technicalScore = technicalScore
+        self.componentsScore = componentsScore
+        self.totalScore = totalScore
+        self.placement = placement
+    }
+}
+
 /// Inline object of DunningRunResult.summary (hoisted by codegen).
 public struct DunningRunResultSummary: Codable, Equatable, Sendable {
     public var auto: Int
@@ -1561,6 +1615,7 @@ public struct RoutineScore: Codable, Equatable, Sendable {
     public var technicalScore: Double?
     public var componentsScore: Double?
     public var totalScore: Double?
+    public var placement: Int?
     public var note: String?
 
     enum CodingKeys: String, CodingKey {
@@ -1573,6 +1628,7 @@ public struct RoutineScore: Codable, Equatable, Sendable {
         case technicalScore = "technical_score"
         case componentsScore = "components_score"
         case totalScore = "total_score"
+        case placement
         case note
     }
 
@@ -1586,6 +1642,7 @@ public struct RoutineScore: Codable, Equatable, Sendable {
         technicalScore: Double? = nil,
         componentsScore: Double? = nil,
         totalScore: Double? = nil,
+        placement: Int? = nil,
         note: String? = nil
     ) {
         self.id = id
@@ -1597,6 +1654,7 @@ public struct RoutineScore: Codable, Equatable, Sendable {
         self.technicalScore = technicalScore
         self.componentsScore = componentsScore
         self.totalScore = totalScore
+        self.placement = placement
         self.note = note
     }
 }
@@ -1610,6 +1668,7 @@ public struct RoutineScoreCreate: Codable, Equatable, Sendable {
     public var totalScore: Double?
     /// Format: uuid
     public var competitionId: String?
+    public var placement: Int?
     public var note: String?
 
     enum CodingKeys: String, CodingKey {
@@ -1619,6 +1678,7 @@ public struct RoutineScoreCreate: Codable, Equatable, Sendable {
         case componentsScore = "components_score"
         case totalScore = "total_score"
         case competitionId = "competition_id"
+        case placement
         case note
     }
 
@@ -1629,6 +1689,7 @@ public struct RoutineScoreCreate: Codable, Equatable, Sendable {
         componentsScore: Double? = nil,
         totalScore: Double? = nil,
         competitionId: String? = nil,
+        placement: Int? = nil,
         note: String? = nil
     ) {
         self.scoredOn = scoredOn
@@ -1637,7 +1698,59 @@ public struct RoutineScoreCreate: Codable, Equatable, Sendable {
         self.componentsScore = componentsScore
         self.totalScore = totalScore
         self.competitionId = competitionId
+        self.placement = placement
         self.note = note
+    }
+}
+
+public struct RoutineShareCreated: Codable, Equatable, Sendable {
+    public var token: String
+    public var url: String
+    public var expiresAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case token
+        case url
+        case expiresAt = "expires_at"
+    }
+
+    public init(
+        token: String,
+        url: String,
+        expiresAt: String? = nil
+    ) {
+        self.token = token
+        self.url = url
+        self.expiresAt = expiresAt
+    }
+}
+
+public struct RoutineShareCreate: Codable, Equatable, Sendable {
+    /// Format: date-time
+    public var expiresAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case expiresAt = "expires_at"
+    }
+
+    public init(
+        expiresAt: String? = nil
+    ) {
+        self.expiresAt = expiresAt
+    }
+}
+
+public struct RoutineShareRevoked: Codable, Equatable, Sendable {
+    public var revoked: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case revoked
+    }
+
+    public init(
+        revoked: Bool
+    ) {
+        self.revoked = revoked
     }
 }
 
@@ -1723,6 +1836,140 @@ public struct Competition: Codable, Equatable, Sendable {
         self.entries = entries
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+    }
+}
+
+public struct CompetitionStandingRow: Codable, Equatable, Sendable {
+    public var category: String
+    public var rank: Int?
+    /// Format: uuid
+    public var entryId: String
+    /// Format: uuid
+    public var memberId: String
+    public var firstName: String?
+    public var lastName: String?
+    /// Format: uuid
+    public var routineId: String
+    public var routineTitle: String
+    public var technicalScore: Double?
+    public var componentsScore: Double?
+    public var totalScore: Double?
+    public var placement: Int?
+    public var delta: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case category
+        case rank
+        case entryId = "entry_id"
+        case memberId = "member_id"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case routineId = "routine_id"
+        case routineTitle = "routine_title"
+        case technicalScore = "technical_score"
+        case componentsScore = "components_score"
+        case totalScore = "total_score"
+        case placement
+        case delta
+    }
+
+    public init(
+        category: String,
+        rank: Int? = nil,
+        entryId: String,
+        memberId: String,
+        firstName: String? = nil,
+        lastName: String? = nil,
+        routineId: String,
+        routineTitle: String,
+        technicalScore: Double? = nil,
+        componentsScore: Double? = nil,
+        totalScore: Double? = nil,
+        placement: Int? = nil,
+        delta: Double? = nil
+    ) {
+        self.category = category
+        self.rank = rank
+        self.entryId = entryId
+        self.memberId = memberId
+        self.firstName = firstName
+        self.lastName = lastName
+        self.routineId = routineId
+        self.routineTitle = routineTitle
+        self.technicalScore = technicalScore
+        self.componentsScore = componentsScore
+        self.totalScore = totalScore
+        self.placement = placement
+        self.delta = delta
+    }
+}
+
+public struct CompetitionStandings: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var competitionId: String
+    public var name: String
+    public var rows: [CompetitionStandingRow]
+
+    enum CodingKeys: String, CodingKey {
+        case competitionId = "competition_id"
+        case name
+        case rows
+    }
+
+    public init(
+        competitionId: String,
+        name: String,
+        rows: [CompetitionStandingRow]
+    ) {
+        self.competitionId = competitionId
+        self.name = name
+        self.rows = rows
+    }
+}
+
+public struct PublicRoutine: Codable, Equatable, Sendable {
+    public var title: String
+    public var discipline: String?
+    public var clubName: String
+    public var musicTitle: String?
+    public var musicArtist: String?
+    public var musicBpm: Int?
+    public var musicDurationMs: Int?
+    public var markers: [PublicRoutineMarkers]
+    public var scores: [PublicRoutineScores]
+
+    enum CodingKeys: String, CodingKey {
+        case title
+        case discipline
+        case clubName = "club_name"
+        case musicTitle = "music_title"
+        case musicArtist = "music_artist"
+        case musicBpm = "music_bpm"
+        case musicDurationMs = "music_duration_ms"
+        case markers
+        case scores
+    }
+
+    public init(
+        title: String,
+        discipline: String? = nil,
+        clubName: String,
+        musicTitle: String? = nil,
+        musicArtist: String? = nil,
+        musicBpm: Int? = nil,
+        musicDurationMs: Int? = nil,
+        markers: [PublicRoutineMarkers],
+        scores: [PublicRoutineScores]
+    ) {
+        self.title = title
+        self.discipline = discipline
+        self.clubName = clubName
+        self.musicTitle = musicTitle
+        self.musicArtist = musicArtist
+        self.musicBpm = musicBpm
+        self.musicDurationMs = musicDurationMs
+        self.markers = markers
+        self.scores = scores
     }
 }
 

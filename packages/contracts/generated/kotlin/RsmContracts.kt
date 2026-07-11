@@ -299,6 +299,24 @@ enum class DunningActionAction {
     @SerialName("none") NONE;
 }
 
+/** Inline object of PublicRoutine.markers (hoisted by codegen). */
+@Serializable
+data class PublicRoutineMarkers(
+    @SerialName("time_ms") val timeMs: Long?,
+    val label: String,
+    @SerialName("element_code") val elementCode: String?
+)
+
+/** Inline object of PublicRoutine.scores (hoisted by codegen). */
+@Serializable
+data class PublicRoutineScores(
+    @SerialName("scored_on") val scoredOn: String,
+    @SerialName("technical_score") val technicalScore: Double?,
+    @SerialName("components_score") val componentsScore: Double?,
+    @SerialName("total_score") val totalScore: Double?,
+    val placement: Long?
+)
+
 /** Inline object of DunningRunResult.summary (hoisted by codegen). */
 @Serializable
 data class DunningRunResultSummary(
@@ -662,6 +680,7 @@ data class RoutineScore(
     @SerialName("technical_score") val technicalScore: Double?,
     @SerialName("components_score") val componentsScore: Double?,
     @SerialName("total_score") val totalScore: Double?,
+    val placement: Long?,
     val note: String?
 )
 
@@ -673,7 +692,25 @@ data class RoutineScoreCreate(
     @SerialName("components_score") val componentsScore: Double? = null,
     @SerialName("total_score") val totalScore: Double? = null,
     @SerialName("competition_id") val competitionId: String? = null,
+    val placement: Long? = null,
     val note: String? = null
+)
+
+@Serializable
+data class RoutineShareCreated(
+    val token: String,
+    val url: String,
+    @SerialName("expires_at") val expiresAt: String?
+)
+
+@Serializable
+data class RoutineShareCreate(
+    @SerialName("expires_at") val expiresAt: String? = null
+)
+
+@Serializable
+data class RoutineShareRevoked(
+    val revoked: Boolean
 )
 
 @Serializable
@@ -697,6 +734,43 @@ data class Competition(
     val entries: List<CompetitionEntry>,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class CompetitionStandingRow(
+    val category: String,
+    val rank: Long?,
+    @SerialName("entry_id") val entryId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("first_name") val firstName: String?,
+    @SerialName("last_name") val lastName: String?,
+    @SerialName("routine_id") val routineId: String,
+    @SerialName("routine_title") val routineTitle: String,
+    @SerialName("technical_score") val technicalScore: Double?,
+    @SerialName("components_score") val componentsScore: Double?,
+    @SerialName("total_score") val totalScore: Double?,
+    val placement: Long?,
+    val delta: Double?
+)
+
+@Serializable
+data class CompetitionStandings(
+    @SerialName("competition_id") val competitionId: String,
+    val name: String,
+    val rows: List<CompetitionStandingRow>
+)
+
+@Serializable
+data class PublicRoutine(
+    val title: String,
+    val discipline: String?,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("music_title") val musicTitle: String?,
+    @SerialName("music_artist") val musicArtist: String?,
+    @SerialName("music_bpm") val musicBpm: Long?,
+    @SerialName("music_duration_ms") val musicDurationMs: Long?,
+    val markers: List<PublicRoutineMarkers>,
+    val scores: List<PublicRoutineScores>
 )
 
 @Serializable
