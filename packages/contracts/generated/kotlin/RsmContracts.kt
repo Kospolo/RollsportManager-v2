@@ -177,6 +177,19 @@ enum class LedgerCategoryKind {
 }
 
 @Serializable
+enum class AnniversaryKind {
+    @SerialName("membership") MEMBERSHIP,
+    @SerialName("birthday") BIRTHDAY;
+}
+
+@Serializable
+enum class LockerStatus {
+    @SerialName("free") FREE,
+    @SerialName("assigned") ASSIGNED,
+    @SerialName("broken") BROKEN;
+}
+
+@Serializable
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
@@ -1303,6 +1316,88 @@ data class AnnualReport(
     @SerialName("donations_count") val donationsCount: Long?,
     @SerialName("open_items_count") val openItemsCount: Long?,
     @SerialName("open_items_total_cents") val openItemsTotalCents: Long?
+)
+
+@Serializable
+data class Anniversary(
+    @SerialName("member_id") val memberId: String,
+    @SerialName("member_name") val memberName: String,
+    val kind: AnniversaryKind,
+    val date: String,
+    val years: Long,
+    @SerialName("days_until") val daysUntil: Long
+)
+
+@Serializable
+data class Department(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val description: String?,
+    @SerialName("lead_member_id") val leadMemberId: String?,
+    @SerialName("sort_order") val sortOrder: Long,
+    @SerialName("member_ids") val memberIds: List<String>,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class DepartmentCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val description: String? = null,
+    @SerialName("lead_member_id") val leadMemberId: String? = null,
+    @SerialName("sort_order") val sortOrder: Long? = 0L
+)
+
+@Serializable
+data class DepartmentUpdate(
+    val name: String? = null,
+    val description: String? = null,
+    @SerialName("lead_member_id") val leadMemberId: String? = null,
+    @SerialName("sort_order") val sortOrder: Long? = null
+)
+
+@Serializable
+data class DepartmentMembersSet(
+    @SerialName("member_ids") val memberIds: List<String>? = emptyList()
+)
+
+@Serializable
+data class Locker(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val label: String,
+    val location: String?,
+    val status: LockerStatus,
+    @SerialName("assigned_member_id") val assignedMemberId: String?,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class LockerCreate(
+    @SerialName("club_id") val clubId: String,
+    val label: String,
+    val location: String? = null,
+    val status: LockerStatus? = LockerStatus.FREE,
+    @SerialName("assigned_member_id") val assignedMemberId: String? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class LockerUpdate(
+    val label: String? = null,
+    val location: String? = null,
+    val status: LockerStatus? = null,
+    @SerialName("assigned_member_id") val assignedMemberId: String? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class LockerAssign(
+    @SerialName("member_id") val memberId: String
 )
 
 @Serializable

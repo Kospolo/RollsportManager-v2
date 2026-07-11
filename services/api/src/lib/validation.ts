@@ -1881,3 +1881,115 @@ export const productSchema = z
     updated_at: timestamp,
   })
   .openapi('Product');
+
+// ---------------------------------------------------------------------------
+// Organisation (migration 0017): departments, department members, lockers.
+// ---------------------------------------------------------------------------
+
+export const departmentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    description: z.string().nullable(),
+    /** club_members.id of the optional Abteilungsleiter. */
+    lead_member_id: uuid.nullable(),
+    sort_order: z.number().int(),
+    /** club_members.id list of the department's members (skaters + staff). */
+    member_ids: z.array(uuid),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Department');
+
+export const departmentCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    description: z.string().nullable().optional(),
+    lead_member_id: uuid.nullable().optional(),
+    sort_order: z.number().int().default(0),
+  })
+  .openapi('DepartmentCreate');
+
+export const departmentUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    description: z.string().nullable().optional(),
+    lead_member_id: uuid.nullable().optional(),
+    sort_order: z.number().int().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('DepartmentUpdate');
+
+/** Full replace of a department roster (is_club_trainer). */
+export const departmentMembersSetSchema = z
+  .object({ member_ids: z.array(uuid).default([]) })
+  .openapi('DepartmentMembersSet');
+
+export const lockerStatusSchema = z.enum(['free', 'assigned', 'broken']).openapi('LockerStatus');
+
+export const lockerSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    label: z.string(),
+    location: z.string().nullable(),
+    status: lockerStatusSchema,
+    assigned_member_id: uuid.nullable(),
+    note: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Locker');
+
+export const lockerCreateSchema = z
+  .object({
+    club_id: uuid,
+    label: z.string().min(1),
+    location: z.string().nullable().optional(),
+    status: lockerStatusSchema.default('free'),
+    assigned_member_id: uuid.nullable().optional(),
+    note: z.string().nullable().optional(),
+  })
+  .openapi('LockerCreate');
+
+export const lockerUpdateSchema = z
+  .object({
+    label: z.string().min(1).optional(),
+    location: z.string().nullable().optional(),
+    status: lockerStatusSchema.optional(),
+    assigned_member_id: uuid.nullable().optional(),
+    note: z.string().nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('LockerUpdate');
+
+/** Assign a locker to a member (status -> 'assigned'). */
+export const lockerAssignSchema = z
+  .object({ member_id: uuid })
+  .openapi('LockerAssign');
+
+// ---------------------------------------------------------------------------
+// Anniversaries (Jubiläen, v1 jubilaeen.html) — a read-only derived report.
+// kind = 'membership' (5/10/15/20/25 … years from joined_on) or 'birthday'
+// (round birthdays, multiples of 10 from birth_date). `date` is the next
+// occurrence (YYYY-MM-DD), `years` the milestone reached on that date, and
+// `days_until` the distance from today (the sort key: nearest first).
+// ---------------------------------------------------------------------------
+
+export const anniversaryKindSchema = z.enum(['membership', 'birthday']).openapi('AnniversaryKind');
+
+export const anniversarySchema = z
+  .object({
+    member_id: uuid,
+    member_name: z.string(),
+    kind: anniversaryKindSchema,
+    /** ISO date of the upcoming milestone (YYYY-MM-DD). */
+    date: z.string(),
+    /** Milestone reached on `date`: years of membership, or age turned. */
+    years: z.number().int(),
+    /** Whole days from today until `date` (>= 0; sort ascending). */
+    days_until: z.number().int(),
+  })
+  .openapi('Anniversary');

@@ -191,6 +191,17 @@ public enum LedgerCategoryKind: String, Codable, CaseIterable, Sendable, Equatab
     case expense = "expense"
 }
 
+public enum AnniversaryKind: String, Codable, CaseIterable, Sendable, Equatable {
+    case membership = "membership"
+    case birthday = "birthday"
+}
+
+public enum LockerStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case free = "free"
+    case assigned = "assigned"
+    case broken = "broken"
+}
+
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
@@ -3992,6 +4003,296 @@ public struct AnnualReport: Codable, Equatable, Sendable {
         self.donationsCount = donationsCount
         self.openItemsCount = openItemsCount
         self.openItemsTotalCents = openItemsTotalCents
+    }
+}
+
+public struct Anniversary: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var memberId: String
+    public var memberName: String
+    public var kind: AnniversaryKind
+    public var date: String
+    public var years: Int
+    public var daysUntil: Int
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+        case memberName = "member_name"
+        case kind
+        case date
+        case years
+        case daysUntil = "days_until"
+    }
+
+    public init(
+        memberId: String,
+        memberName: String,
+        kind: AnniversaryKind,
+        date: String,
+        years: Int,
+        daysUntil: Int
+    ) {
+        self.memberId = memberId
+        self.memberName = memberName
+        self.kind = kind
+        self.date = date
+        self.years = years
+        self.daysUntil = daysUntil
+    }
+}
+
+public struct Department: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var description: String?
+    /// Format: uuid
+    public var leadMemberId: String?
+    public var sortOrder: Int
+    /// Format: [uuid]
+    public var memberIds: [String]
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case description
+        case leadMemberId = "lead_member_id"
+        case sortOrder = "sort_order"
+        case memberIds = "member_ids"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        description: String? = nil,
+        leadMemberId: String? = nil,
+        sortOrder: Int,
+        memberIds: [String],
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.description = description
+        self.leadMemberId = leadMemberId
+        self.sortOrder = sortOrder
+        self.memberIds = memberIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct DepartmentCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var description: String?
+    /// Format: uuid
+    public var leadMemberId: String?
+    public var sortOrder: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case description
+        case leadMemberId = "lead_member_id"
+        case sortOrder = "sort_order"
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        description: String? = nil,
+        leadMemberId: String? = nil,
+        sortOrder: Int? = 0
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.description = description
+        self.leadMemberId = leadMemberId
+        self.sortOrder = sortOrder
+    }
+}
+
+public struct DepartmentUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var description: String?
+    /// Format: uuid
+    public var leadMemberId: String?
+    public var sortOrder: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case description
+        case leadMemberId = "lead_member_id"
+        case sortOrder = "sort_order"
+    }
+
+    public init(
+        name: String? = nil,
+        description: String? = nil,
+        leadMemberId: String? = nil,
+        sortOrder: Int? = nil
+    ) {
+        self.name = name
+        self.description = description
+        self.leadMemberId = leadMemberId
+        self.sortOrder = sortOrder
+    }
+}
+
+public struct DepartmentMembersSet: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var memberIds: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case memberIds = "member_ids"
+    }
+
+    public init(
+        memberIds: [String]? = []
+    ) {
+        self.memberIds = memberIds
+    }
+}
+
+public struct Locker: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var label: String
+    public var location: String?
+    public var status: LockerStatus
+    /// Format: uuid
+    public var assignedMemberId: String?
+    public var note: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case label
+        case location
+        case status
+        case assignedMemberId = "assigned_member_id"
+        case note
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        label: String,
+        location: String? = nil,
+        status: LockerStatus,
+        assignedMemberId: String? = nil,
+        note: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.label = label
+        self.location = location
+        self.status = status
+        self.assignedMemberId = assignedMemberId
+        self.note = note
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct LockerCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var label: String
+    public var location: String?
+    public var status: LockerStatus?
+    /// Format: uuid
+    public var assignedMemberId: String?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case label
+        case location
+        case status
+        case assignedMemberId = "assigned_member_id"
+        case note
+    }
+
+    public init(
+        clubId: String,
+        label: String,
+        location: String? = nil,
+        status: LockerStatus? = .free,
+        assignedMemberId: String? = nil,
+        note: String? = nil
+    ) {
+        self.clubId = clubId
+        self.label = label
+        self.location = location
+        self.status = status
+        self.assignedMemberId = assignedMemberId
+        self.note = note
+    }
+}
+
+public struct LockerUpdate: Codable, Equatable, Sendable {
+    public var label: String?
+    public var location: String?
+    public var status: LockerStatus?
+    /// Format: uuid
+    public var assignedMemberId: String?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case label
+        case location
+        case status
+        case assignedMemberId = "assigned_member_id"
+        case note
+    }
+
+    public init(
+        label: String? = nil,
+        location: String? = nil,
+        status: LockerStatus? = nil,
+        assignedMemberId: String? = nil,
+        note: String? = nil
+    ) {
+        self.label = label
+        self.location = location
+        self.status = status
+        self.assignedMemberId = assignedMemberId
+        self.note = note
+    }
+}
+
+public struct LockerAssign: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var memberId: String
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+    }
+
+    public init(
+        memberId: String
+    ) {
+        self.memberId = memberId
     }
 }
 

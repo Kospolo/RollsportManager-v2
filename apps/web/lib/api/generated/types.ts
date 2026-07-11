@@ -992,6 +992,85 @@ export interface AnnualReport {
   "open_items_total_cents": number | null;
 }
 
+export type AnniversaryKind = "membership" | "birthday";
+export const AnniversaryKindValues: readonly AnniversaryKind[] = ["membership", "birthday"] as const;
+
+export interface Anniversary {
+  "member_id": string;
+  "member_name": string;
+  "kind": AnniversaryKind;
+  "date": string;
+  "years": number;
+  "days_until": number;
+}
+
+export interface Department {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "description": string | null;
+  "lead_member_id": string | null;
+  "sort_order": number;
+  "member_ids": string[];
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface DepartmentCreate {
+  "club_id": string;
+  "name": string;
+  "description"?: string | null;
+  "lead_member_id"?: string | null;
+  "sort_order"?: number;
+}
+
+export interface DepartmentUpdate {
+  "name"?: string;
+  "description"?: string | null;
+  "lead_member_id"?: string | null;
+  "sort_order"?: number;
+}
+
+export interface DepartmentMembersSet {
+  "member_ids"?: string[];
+}
+
+export type LockerStatus = "free" | "assigned" | "broken";
+export const LockerStatusValues: readonly LockerStatus[] = ["free", "assigned", "broken"] as const;
+
+export interface Locker {
+  "id": string;
+  "club_id": string;
+  "label": string;
+  "location": string | null;
+  "status": LockerStatus;
+  "assigned_member_id": string | null;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface LockerCreate {
+  "club_id": string;
+  "label": string;
+  "location"?: string | null;
+  "status"?: LockerStatus;
+  "assigned_member_id"?: string | null;
+  "note"?: string | null;
+}
+
+export interface LockerUpdate {
+  "label"?: string;
+  "location"?: string | null;
+  "status"?: LockerStatus;
+  "assigned_member_id"?: string | null;
+  "note"?: string | null;
+}
+
+export interface LockerAssign {
+  "member_id": string;
+}
+
 export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
 export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
 

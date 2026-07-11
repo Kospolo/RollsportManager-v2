@@ -12,9 +12,9 @@
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
-import { annualReportSchema, reportSummarySchema, uuid } from '../lib/validation.js';
-import { withServiceRole } from '../db.js';
-import { COACH_ROLES, FINANCE_ROLES, requireClubRole } from '../lib/guards.js';
+import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
+import { withServiceRole, withUser } from '../db.js';
+import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
 
 export const reportsRouter = createRouter();
 
@@ -226,5 +226,70 @@ reportsRouter.openapi(
     );
 
     return c.json(annualReportSchema.parse(report), 200);
+  },
+);
+
+// ============================================================================
+// GET /reports/anniversaries?club_id - Jubiläen (v1 jubilaeen.html).
+//
+// A read-only DERIVED list (nothing is stored): membership anniversaries at
+// 5/10/15/20/25 … years (multiples of 5) from joined_on, plus round birthdays
+// (multiples of 10) from birth_date, for the next 12 months. Each entry carries
+// the upcoming `date`, the milestone `years` reached, and `days_until` (the sort
+// key: nearest first). Access = is_club_member (Referenz 1.3, lesend); it reads
+// only the roster a member may already see under RLS, so it runs as the caller
+// (withUser) - no service mode needed.
+// ============================================================================
+reportsRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/reports/anniversaries',
+    tags: ['reports'],
+    summary: 'Upcoming anniversaries & round birthdays (is_club_member)',
+    security: [{ bearerAuth: [] }],
+    request: { query: z.object({ club_id: uuid }) },
+    responses: {
+      200: jsonContent(z.array(anniversarySchema), 'Upcoming anniversaries, nearest first'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { club_id } = c.req.valid('query');
+    const claims = c.get('claims');
+    requireClubMember(claims, club_id);
+
+    const rows = await withUser(claims, (tx) =>
+      tx`
+        with roster as (
+          select id, (first_name || ' ' || last_name) as member_name, joined_on, birth_date
+          from app.club_members
+          where club_id = ${club_id} and deleted_at is null and status = 'active'
+        ),
+        membership as (
+          -- 5/10/15/20/25 … years of membership (multiples of 5)
+          select r.id as member_id, r.member_name, 'membership'::text as kind,
+                 (r.joined_on + (y * interval '1 year'))::date as date, y as years
+          from roster r
+          cross join generate_series(5, 80, 5) as y
+          where r.joined_on is not null
+            and (r.joined_on + (y * interval '1 year'))::date
+                between current_date and (current_date + interval '365 days')::date
+        ),
+        birthdays as (
+          -- round birthdays (multiples of 10): 10, 20, 30 …
+          select r.id as member_id, r.member_name, 'birthday'::text as kind,
+                 (r.birth_date + (a * interval '1 year'))::date as date, a as years
+          from roster r
+          cross join generate_series(10, 100, 10) as a
+          where r.birth_date is not null
+            and (r.birth_date + (a * interval '1 year'))::date
+                between current_date and (current_date + interval '365 days')::date
+        )
+        select member_id, member_name, kind, date::text as date, years,
+               (date - current_date)::int as days_until
+        from (select * from membership union all select * from birthdays) ann
+        order by days_until, kind, member_name`,
+    );
+    return c.json(z.array(anniversarySchema).parse(rows), 200);
   },
 );

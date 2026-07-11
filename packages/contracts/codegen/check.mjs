@@ -29,7 +29,10 @@ const args = new Set(process.argv.slice(2));
 const API_DIR = join(REPO_ROOT, "services", "api");
 
 /** Mutations that intentionally take no request body (action endpoints). */
-const BODYLESS_MUTATIONS = new Set(["POST /invoices/{invoiceId}/send-reminder"]);
+const BODYLESS_MUTATIONS = new Set([
+  "POST /invoices/{invoiceId}/send-reminder",
+  "PATCH /lockers/{lockerId}/release",
+]);
 /** Routes that are public by design (no bearerAuth). */
 const PUBLIC_ROUTES = new Set(["GET /health"]);
 

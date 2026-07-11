@@ -5,10 +5,15 @@ import {
   attendanceUpsertSchema,
   chatMessageCreateSchema,
   checkinCreateSchema,
+  departmentCreateSchema,
+  departmentMembersSetSchema,
   dutyEntryCreateSchema,
   dutyRequirementCreateSchema,
   eventCreateSchema,
   invoiceCreateSchema,
+  lockerAssignSchema,
+  lockerCreateSchema,
+  lockerUpdateSchema,
   memberCreateSchema,
   regionalEventCreateSchema,
   roleChangeSchema,
@@ -226,5 +231,44 @@ describe('rsvp / attendance enums', () => {
   it('rejects unknown states', () => {
     expect(rsvpUpsertSchema.safeParse({ member_id: MEMBER, status: 'yes' }).success).toBe(false);
     expect(attendanceUpsertSchema.safeParse({ member_id: MEMBER, status: 'here' }).success).toBe(false);
+  });
+});
+
+describe('organisation schemas (departments)', () => {
+  it('accepts a minimal department and defaults sort_order to 0', () => {
+    const parsed = departmentCreateSchema.parse({ club_id: CLUB, name: 'Leistungssport' });
+    expect(parsed.sort_order).toBe(0);
+  });
+
+  it('rejects an empty name and a non-uuid lead', () => {
+    expect(departmentCreateSchema.safeParse({ club_id: CLUB, name: '' }).success).toBe(false);
+    expect(
+      departmentCreateSchema.safeParse({ club_id: CLUB, name: 'X', lead_member_id: 'nope' }).success,
+    ).toBe(false);
+  });
+
+  it('members-set defaults to an empty roster', () => {
+    expect(departmentMembersSetSchema.parse({}).member_ids).toEqual([]);
+    expect(departmentMembersSetSchema.safeParse({ member_ids: [MEMBER, PEER] }).success).toBe(true);
+    expect(departmentMembersSetSchema.safeParse({ member_ids: ['x'] }).success).toBe(false);
+  });
+});
+
+describe('organisation schemas (lockers)', () => {
+  it('accepts the three statuses and defaults new lockers to free', () => {
+    expect(lockerCreateSchema.parse({ club_id: CLUB, label: 'Fach 01' }).status).toBe('free');
+    for (const status of ['free', 'assigned', 'broken'] as const) {
+      expect(lockerCreateSchema.safeParse({ club_id: CLUB, label: 'F', status }).success).toBe(true);
+    }
+  });
+
+  it('rejects an unknown status and an empty update', () => {
+    expect(lockerCreateSchema.safeParse({ club_id: CLUB, label: 'F', status: 'kaputt' }).success).toBe(false);
+    expect(lockerUpdateSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('assign requires a member uuid', () => {
+    expect(lockerAssignSchema.safeParse({ member_id: MEMBER }).success).toBe(true);
+    expect(lockerAssignSchema.safeParse({}).success).toBe(false);
   });
 });

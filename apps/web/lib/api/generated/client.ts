@@ -1001,6 +1001,115 @@ export class ApiClient {
   }
 
   /**
+   * Upcoming anniversaries & round birthdays (is_club_member)
+   * 
+   * `GET /reports/anniversaries`
+   */
+  async getReportsAnniversaries(query: { "club_id": string }, options?: RequestOptions): Promise<M.Anniversary[]> {
+    return this.request<M.Anniversary[]>("GET", "/reports/anniversaries", { query, auth: true, options });
+  }
+
+  /**
+   * List club departments (is_club_member)
+   * 
+   * `GET /departments`
+   */
+  async getDepartments(query: { "club_id": string }, options?: RequestOptions): Promise<M.Department[]> {
+    return this.request<M.Department[]>("GET", "/departments", { query, auth: true, options });
+  }
+
+  /**
+   * Create a department (is_club_admin)
+   * 
+   * `POST /departments`
+   */
+  async postDepartments(body: M.DepartmentCreate, options?: RequestOptions): Promise<M.Department> {
+    return this.request<M.Department>("POST", "/departments", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a department (is_club_admin)
+   * 
+   * `PATCH /departments/{departmentId}`
+   */
+  async patchDepartmentsByDepartmentId(departmentId: string, body: M.DepartmentUpdate, options?: RequestOptions): Promise<M.Department> {
+    return this.request<M.Department>("PATCH", `/departments/${encodeURIComponent(departmentId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a department (is_club_admin)
+   * 
+   * `DELETE /departments/{departmentId}`
+   */
+  async deleteDepartmentsByDepartmentId(departmentId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/departments/${encodeURIComponent(departmentId)}`, { auth: true, options });
+  }
+
+  /**
+   * Replace a department roster (is_club_trainer)
+   * Full replace. Member ids must belong to the department's club. Missing members are soft-detached; previously removed members are revived. Assigning is trainer work (is_club_trainer).
+   * 
+   * `PUT /departments/{departmentId}/members`
+   */
+  async putDepartmentsByDepartmentIdMembers(departmentId: string, body: M.DepartmentMembersSet, options?: RequestOptions): Promise<M.Department> {
+    return this.request<M.Department>("PUT", `/departments/${encodeURIComponent(departmentId)}/members`, { body, auth: true, options });
+  }
+
+  /**
+   * List club lockers (is_club_member)
+   * 
+   * `GET /lockers`
+   */
+  async getLockers(query: { "club_id": string }, options?: RequestOptions): Promise<M.Locker[]> {
+    return this.request<M.Locker[]>("GET", "/lockers", { query, auth: true, options });
+  }
+
+  /**
+   * Create a locker (is_club_admin)
+   * 
+   * `POST /lockers`
+   */
+  async postLockers(body: M.LockerCreate, options?: RequestOptions): Promise<M.Locker> {
+    return this.request<M.Locker>("POST", "/lockers", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a locker's master data (is_club_admin)
+   * 
+   * `PATCH /lockers/{lockerId}`
+   */
+  async patchLockersByLockerId(lockerId: string, body: M.LockerUpdate, options?: RequestOptions): Promise<M.Locker> {
+    return this.request<M.Locker>("PATCH", `/lockers/${encodeURIComponent(lockerId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a locker (is_club_admin)
+   * 
+   * `DELETE /lockers/{lockerId}`
+   */
+  async deleteLockersByLockerId(lockerId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/lockers/${encodeURIComponent(lockerId)}`, { auth: true, options });
+  }
+
+  /**
+   * Assign a locker to a member (is_club_trainer)
+   * 
+   * `PATCH /lockers/{lockerId}/assign`
+   */
+  async patchLockersByLockerIdAssign(lockerId: string, body: M.LockerAssign, options?: RequestOptions): Promise<M.Locker> {
+    return this.request<M.Locker>("PATCH", `/lockers/${encodeURIComponent(lockerId)}/assign`, { body, auth: true, options });
+  }
+
+  /**
+   * Release a locker (is_club_trainer) - status back to free
+   * 
+   * `PATCH /lockers/{lockerId}/release`
+   */
+  async patchLockersByLockerIdRelease(lockerId: string, options?: RequestOptions): Promise<M.Locker> {
+    return this.request<M.Locker>("PATCH", `/lockers/${encodeURIComponent(lockerId)}/release`, { auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever see their own / their children's invoices regardless of the filter (RLS).
    * 

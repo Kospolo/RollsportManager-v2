@@ -37,6 +37,8 @@ import { regionalEventsRouter } from './routes/regional-events.js';
 import { galleryRouter } from './routes/gallery.js';
 import { documentsRouter } from './routes/documents.js';
 import { reportsRouter } from './routes/reports.js';
+import { departmentsRouter } from './routes/departments.js';
+import { lockersRouter } from './routes/lockers.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { ledgerRouter } from './routes/ledger.js';
 import { bankTransactionsRouter } from './routes/bank-transactions.js';
@@ -124,6 +126,8 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', galleryRouter);
   app.route('/', documentsRouter);
   app.route('/', reportsRouter);
+  app.route('/', departmentsRouter);
+  app.route('/', lockersRouter);
   app.route('/', invoicesRouter);
   app.route('/', ledgerRouter);
   app.route('/', bankTransactionsRouter);
@@ -178,6 +182,8 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'clubs', description: 'Clubs (tenant root)' },
     { name: 'members', description: 'Roster, roles & guardianships (family model)' },
     { name: 'teams', description: 'Teams incl. skater/coach member ids + management' },
+    { name: 'departments', description: 'Abteilungen: read = member, manage = club admin, assign members = trainer' },
+    { name: 'lockers', description: 'Schließfächer: read = member, master data = club admin, assign/release = trainer' },
     { name: 'platform', description: 'Cross-club super-admin console (platform admin claim only)' },
     { name: 'events', description: 'Events, RSVPs, attendance' },
     { name: 'routines', description: 'Küren: routines, markers, scores' },
