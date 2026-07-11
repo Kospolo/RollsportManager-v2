@@ -6,12 +6,17 @@
 //                        metadata the caller then posts to /gallery or
 //                        /documents. Requires a coaching role AND an active
 //                        PRO/Premium club licence (402 otherwise).
+//   POST /me/photo       multipart/form-data (field: file, an image). Stores
+//                        the bytes and sets the caller's OWN club_members
+//                        avatar_key (every membership row of the caller). Any
+//                        member may set their own photo - no club role needed.
 //   GET  /media/{key}    Streams the bytes with their stored content_type.
 //                        Access is RLS-enforced: the key must resolve to a
 //                        gallery/document row VISIBLE to the caller (member +
-//                        PRO), otherwise 404.
+//                        PRO) or a roster avatar of a club the caller belongs
+//                        to, otherwise 404.
 //
-// These two routes move raw bytes, so they are a PLAIN Hono router and are
+// These routes move raw bytes, so they are a PLAIN Hono router and are
 // deliberately NOT part of the OpenAPI contract (like modules/billing/
 // webhooks.ts). They are NOT in PUBLIC_PATHS (app.ts), so requireAuth still
 // runs and c.get('claims') is present. The typed JSON CRUD lives in
@@ -93,6 +98,56 @@ export function createMediaRouter(): Hono<AuthEnv> {
     );
   });
 
+  // --- Profile photo ---------------------------------------------------------
+  // Any member may set their OWN avatar (no club role needed). Images only.
+  // The bytes are stored like any media asset; the key is written to every
+  // club_members row of the caller (club_members_update_self RLS, migration
+  // 0016 - the protect_club_membership trigger does not guard avatar_key).
+  router.post('/me/photo', async (c) => {
+    const claims = c.get('claims');
+
+    const form = await c.req.parseBody();
+    const file = form['file'];
+    if (!(file instanceof File)) {
+      throw problem(400, 'Bad Request', 'file (multipart) is required');
+    }
+
+    const contentType = file.type;
+    if (!isAllowedContentType(contentType) || !contentType.toLowerCase().startsWith('image/')) {
+      throw problem(415, 'Unsupported Media Type', 'profile photos must be an image (jpeg/png/gif/webp/heic)');
+    }
+
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.byteLength === 0) throw problem(400, 'Bad Request', 'file is empty');
+    if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+      throw problem(413, 'Payload Too Large', `file exceeds the ${MAX_UPLOAD_BYTES} byte limit`);
+    }
+
+    const storageKey = generateStorageKey(contentType);
+    await saveBytes(storageKey, bytes);
+
+    // Set avatar_key on every membership row of the caller (self only: the
+    // WHERE profile_id = auth.uid() + RLS both pin it to the caller).
+    const rows = await withUser(claims, (tx) => tx`
+      update app.club_members set avatar_key = ${storageKey}
+      where profile_id = ${claims.sub} and deleted_at is null
+      returning id`);
+    if (rows.length === 0) {
+      throw problem(404, 'Not Found', 'No membership row for the current user');
+    }
+
+    return c.json(
+      {
+        avatar_key: storageKey,
+        avatar_url: `/media/${storageKey}`,
+        content_type: contentType,
+        size_bytes: bytes.byteLength,
+        updated_members: rows.length,
+      },
+      201,
+    );
+  });
+
   // --- Serve -----------------------------------------------------------------
   router.get('/media/:key', async (c) => {
     const claims = c.get('claims');
@@ -116,6 +171,9 @@ export function createMediaRouter(): Hono<AuthEnv> {
       union all
       select null::text as content_type from app.gallery_items
         where thumbnail_key = ${key} and deleted_at is null
+      union all
+      select null::text as content_type from app.club_members
+        where avatar_key = ${key} and deleted_at is null
       limit 1`);
     if (rows.length === 0) {
       throw problem(404, 'Not Found', 'No accessible media for this key');

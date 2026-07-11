@@ -86,6 +86,8 @@ export const memberSchema = z
     status: memberStatusSchema,
     joined_on: isoDate.nullable(),
     valid_until: timestamp.nullable(),
+    /** Served profile-photo URL derived from avatar_key (null = no photo). */
+    avatar_url: z.string().nullable(),
     /** Teams (skater or coach) this member belongs to - from app.team_members. */
     team_ids: z.array(uuid),
     created_at: timestamp,
@@ -157,6 +159,8 @@ export const meMembershipSchema = z
     status: memberStatusSchema,
     joined_on: isoDate.nullable(),
     valid_until: timestamp.nullable(),
+    /** Served profile-photo URL derived from avatar_key (null = no photo). */
+    avatar_url: z.string().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -565,6 +569,87 @@ export const guardianshipSchema = z
   })
   .openapi('Guardianship');
 
+/** Link an EXISTING member as a child. guardian defaults to the caller's own
+ *  membership when omitted (self-service); providing a foreign guardian needs
+ *  is_club_admin (server-enforced in routes/members.ts). */
+export const guardianshipCreateSchema = z
+  .object({
+    child_member_id: uuid,
+    /** Omit for self-service (guardian = the caller's own membership). */
+    guardian_member_id: uuid.optional(),
+    relation: z.enum(['parent', 'guardian', 'other']).default('parent'),
+  })
+  .openapi('GuardianshipCreate');
+
+/** Create a CHILD (club_members row without a login) plus the guardianship in
+ *  one call. guardian defaults to the caller's own membership (self-service);
+ *  a chosen guardian_member_id requires is_club_admin. */
+export const childCreateSchema = z
+  .object({
+    first_name: z.string().min(1),
+    last_name: z.string().min(1),
+    birth_date: z.string().date().optional(),
+    joined_on: z.string().date().optional(),
+    /** Omit for self-service (guardian = the caller's own membership). */
+    guardian_member_id: uuid.optional(),
+    relation: z.enum(['parent', 'guardian', 'other']).default('parent'),
+  })
+  .openapi('ChildCreate');
+
+/** POST /clubs/{id}/children response: the created child + guardianship. */
+export const childCreatedSchema = z
+  .object({
+    child: memberSchema,
+    guardianship: guardianshipSchema,
+  })
+  .openapi('ChildCreated');
+
+// ---------------------------------------------------------------------------
+// Waitlists (Cluster 6a, migration 0020) — a member queues for a scarce
+// resource; read/write = own row OR trainer.
+// ---------------------------------------------------------------------------
+export const waitlistKindSchema = z
+  .enum(['facility', 'equipment', 'team', 'event'])
+  .openapi('WaitlistKind');
+export const waitlistStatusSchema = z
+  .enum(['waiting', 'offered', 'fulfilled', 'cancelled'])
+  .openapi('WaitlistStatus');
+
+export const waitlistSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid,
+    kind: waitlistKindSchema,
+    /** Optional concrete resource id (facility/equipment/team/event) — no FK. */
+    target_id: uuid.nullable(),
+    note: z.string().nullable(),
+    status: waitlistStatusSchema,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Waitlist');
+
+export const waitlistCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** The member joining the queue (self, or anyone when trainer+). */
+    member_id: uuid,
+    kind: waitlistKindSchema,
+    target_id: uuid.nullable().optional(),
+    note: z.string().max(2000).nullable().optional(),
+  })
+  .openapi('WaitlistCreate');
+
+/** PATCH a waitlist entry: status transition and/or note (both optional). */
+export const waitlistUpdateSchema = z
+  .object({
+    status: waitlistStatusSchema.optional(),
+    note: z.string().max(2000).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('WaitlistUpdate');
+
 export const ledgerCategoryKindSchema = z.enum(['income', 'expense']).openapi('LedgerCategoryKind');
 
 export const ledgerCategorySchema = z
@@ -587,6 +672,66 @@ export const ledgerCategoryCreateSchema = z
     sort_order: z.number().int().default(0),
   })
   .openapi('LedgerCategoryCreate');
+
+// ---------------------------------------------------------------------------
+// Budget planning (Cluster 6a, migration 0020) — planned amount per Kassenbuch
+// category and year; can_manage_finance only. Plan-vs-Ist in the report below.
+// ---------------------------------------------------------------------------
+export const budgetSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    year: z.coerce.number().int(),
+    category_id: uuid,
+    planned_cents: z.coerce.number().int(),
+    note: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Budget');
+
+export const budgetCreateSchema = z
+  .object({
+    club_id: uuid,
+    year: z.coerce.number().int().min(2000).max(2100),
+    category_id: uuid,
+    planned_cents: z.coerce.number().int(),
+    note: z.string().max(2000).nullable().optional(),
+  })
+  .openapi('BudgetCreate');
+
+export const budgetUpdateSchema = z
+  .object({
+    planned_cents: z.coerce.number().int().optional(),
+    note: z.string().max(2000).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('BudgetUpdate');
+
+/** One category row of the budget report: plan vs. booked (Ist) + variance. */
+export const budgetReportRowSchema = z
+  .object({
+    category_id: uuid,
+    category_name: z.string().nullable(),
+    kind: ledgerCategoryKindSchema.nullable(),
+    planned_cents: z.coerce.number().int(),
+    /** Signed sum booked to this category in the year (from the ledger). */
+    actual_cents: z.coerce.number().int(),
+    /** actual_cents - planned_cents. */
+    variance_cents: z.coerce.number().int(),
+  })
+  .openapi('BudgetReportRow');
+
+export const budgetReportSchema = z
+  .object({
+    club_id: uuid,
+    year: z.coerce.number().int(),
+    rows: z.array(budgetReportRowSchema),
+    planned_total_cents: z.coerce.number().int(),
+    actual_total_cents: z.coerce.number().int(),
+    variance_total_cents: z.coerce.number().int(),
+  })
+  .openapi('BudgetReport');
 
 export const ledgerEntrySchema = z
   .object({

@@ -64,6 +64,7 @@ export interface ClubMember {
   "status": MemberStatus;
   "joined_on": string | null;
   "valid_until": string | null;
+  "avatar_url": string | null;
   "team_ids": string[];
   "created_at": string;
   "updated_at": string;
@@ -114,6 +115,107 @@ export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
 }
 
+export interface ChildCreated {
+  "child": ClubMember;
+  "guardianship": Guardianship;
+}
+
+export interface ChildCreate {
+  "first_name": string;
+  "last_name": string;
+  "birth_date"?: string;
+  "joined_on"?: string;
+  "guardian_member_id"?: string;
+  "relation"?: "parent" | "guardian" | "other";
+}
+
+export interface GuardianshipCreate {
+  "child_member_id": string;
+  "guardian_member_id"?: string;
+  "relation"?: "parent" | "guardian" | "other";
+}
+
+export interface Deleted {
+  "status": "deleted";
+  "id": string;
+}
+
+export type WaitlistKind = "facility" | "equipment" | "team" | "event";
+export const WaitlistKindValues: readonly WaitlistKind[] = ["facility", "equipment", "team", "event"] as const;
+
+export type WaitlistStatus = "waiting" | "offered" | "fulfilled" | "cancelled";
+export const WaitlistStatusValues: readonly WaitlistStatus[] = ["waiting", "offered", "fulfilled", "cancelled"] as const;
+
+export interface Waitlist {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "kind": WaitlistKind;
+  "target_id": string | null;
+  "note": string | null;
+  "status": WaitlistStatus;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface WaitlistCreate {
+  "club_id": string;
+  "member_id": string;
+  "kind": WaitlistKind;
+  "target_id"?: string | null;
+  "note"?: string | null;
+}
+
+export interface WaitlistUpdate {
+  "status"?: WaitlistStatus;
+  "note"?: string | null;
+}
+
+export interface Budget {
+  "id": string;
+  "club_id": string;
+  "year": number | null;
+  "category_id": string;
+  "planned_cents": number | null;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface BudgetCreate {
+  "club_id": string;
+  "year": number;
+  "category_id": string;
+  "planned_cents": number | null;
+  "note"?: string | null;
+}
+
+export interface BudgetUpdate {
+  "planned_cents"?: number | null;
+  "note"?: string | null;
+}
+
+export type LedgerCategoryKind = "income" | "expense";
+export const LedgerCategoryKindValues: readonly LedgerCategoryKind[] = ["income", "expense"] as const;
+
+export interface BudgetReportRow {
+  "category_id": string;
+  "category_name": string | null;
+  "kind": LedgerCategoryKind;
+  "planned_cents": number | null;
+  "actual_cents": number | null;
+  "variance_cents": number | null;
+}
+
+export interface BudgetReport {
+  "club_id": string;
+  "year": number | null;
+  "rows": BudgetReportRow[];
+  "planned_total_cents": number | null;
+  "actual_total_cents": number | null;
+  "variance_total_cents": number | null;
+}
+
 export interface MeMembership {
   "id": string;
   "club_id": string;
@@ -127,6 +229,7 @@ export interface MeMembership {
   "status": MemberStatus;
   "joined_on": string | null;
   "valid_until": string | null;
+  "avatar_url": string | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -188,11 +291,6 @@ export interface TeamCreate {
 export interface TeamUpdate {
   "name"?: string;
   "age_group"?: string | null;
-}
-
-export interface Deleted {
-  "status": "deleted";
-  "id": string;
 }
 
 export interface TeamMembersSet {
@@ -1180,9 +1278,6 @@ export interface ReportSummary {
   "upcoming_events_count": number | null;
   "upcoming_events": ReportUpcomingEvent[];
 }
-
-export type LedgerCategoryKind = "income" | "expense";
-export const LedgerCategoryKindValues: readonly LedgerCategoryKind[] = ["income", "expense"] as const;
 
 export interface AnnualCategoryRow {
   "category_id": string | null;

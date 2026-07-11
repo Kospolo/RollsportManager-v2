@@ -169,6 +169,16 @@ export class ApiClient {
   }
 
   /**
+   * Link an existing child to a guardian (self-service or admin)
+   * Links an existing member as a child of a guardian. The guardian defaults to the CALLER'S own membership; a foreign guardian_member_id requires is_club_admin. Self-service is restricted to UNCLAIMED managed children (no login, no existing guardianship) so it can never claim an account or another family's child.
+   * 
+   * `POST /clubs/{clubId}/guardianships`
+   */
+  async postClubsByClubIdGuardianships(clubId: string, body: M.GuardianshipCreate, options?: RequestOptions): Promise<M.Guardianship> {
+    return this.request<M.Guardianship>("POST", `/clubs/${encodeURIComponent(clubId)}/guardianships`, { body, auth: true, options });
+  }
+
+  /**
    * Edit member master data (can_manage_members; never the role)
    * Updates first/last name, e-mail, birth date, status and validity. The ROLE is deliberately not editable here - use PATCH .../members/{memberId}/role. can_manage_members = owner/admin/moderator/treasurer.
    * 
@@ -185,6 +195,107 @@ export class ApiClient {
    */
   async patchClubsByClubIdMembersByMemberIdRole(clubId: string, memberId: string, body: M.ClubMemberRoleChange, options?: RequestOptions): Promise<M.ClubMember> {
     return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/role`, { body, auth: true, options });
+  }
+
+  /**
+   * Create a child (no login) + guardianship (self-service or admin)
+   * Creates a club_members row without a profile (a child) and links it to a guardian. The guardian defaults to the CALLER'S own membership (self-service - any member may add their own child); passing a foreign guardian_member_id requires is_club_admin.
+   * 
+   * `POST /clubs/{clubId}/children`
+   */
+  async postClubsByClubIdChildren(clubId: string, body: M.ChildCreate, options?: RequestOptions): Promise<M.ChildCreated> {
+    return this.request<M.ChildCreated>("POST", `/clubs/${encodeURIComponent(clubId)}/children`, { body, auth: true, options });
+  }
+
+  /**
+   * Remove a guardianship (its guardian, self-service, or admin)
+   * 
+   * `DELETE /clubs/{clubId}/guardianships/{guardianshipId}`
+   */
+  async deleteClubsByClubIdGuardianshipsByGuardianshipId(clubId: string, guardianshipId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/guardianships/${encodeURIComponent(guardianshipId)}`, { auth: true, options });
+  }
+
+  /**
+   * List waitlist entries (own, or all when trainer+)
+   * RLS-scoped: a plain member sees only their OWN entries; a trainer/admin sees the whole club queue. Optionally filtered by kind (facility/equipment/team/event).
+   * 
+   * `GET /waitlists`
+   */
+  async getWaitlists(query: { "club_id": string; "kind"?: M.WaitlistKind }, options?: RequestOptions): Promise<M.Waitlist[]> {
+    return this.request<M.Waitlist[]>("GET", "/waitlists", { query, auth: true, options });
+  }
+
+  /**
+   * Join a waitlist (self, or a trainer queuing anyone)
+   * 
+   * `POST /waitlists`
+   */
+  async postWaitlists(body: M.WaitlistCreate, options?: RequestOptions): Promise<M.Waitlist> {
+    return this.request<M.Waitlist>("POST", "/waitlists", { body, auth: true, options });
+  }
+
+  /**
+   * Update a waitlist entry (status/note) - creator or trainer
+   * 
+   * `PATCH /waitlists/{waitlistId}`
+   */
+  async patchWaitlistsByWaitlistId(waitlistId: string, body: M.WaitlistUpdate, options?: RequestOptions): Promise<M.Waitlist> {
+    return this.request<M.Waitlist>("PATCH", `/waitlists/${encodeURIComponent(waitlistId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Leave/remove a waitlist entry (creator or trainer)
+   * 
+   * `DELETE /waitlists/{waitlistId}`
+   */
+  async deleteWaitlistsByWaitlistId(waitlistId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/waitlists/${encodeURIComponent(waitlistId)}`, { auth: true, options });
+  }
+
+  /**
+   * List budget plan rows for a club/year (can_manage_finance)
+   * 
+   * `GET /budgets`
+   */
+  async getBudgets(query: { "club_id": string; "year": number }, options?: RequestOptions): Promise<M.Budget[]> {
+    return this.request<M.Budget[]>("GET", "/budgets", { query, auth: true, options });
+  }
+
+  /**
+   * Create a budget plan row (can_manage_finance)
+   * 
+   * `POST /budgets`
+   */
+  async postBudgets(body: M.BudgetCreate, options?: RequestOptions): Promise<M.Budget> {
+    return this.request<M.Budget>("POST", "/budgets", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a budget plan row (can_manage_finance)
+   * 
+   * `PATCH /budgets/{budgetId}`
+   */
+  async patchBudgetsByBudgetId(budgetId: string, body: M.BudgetUpdate, options?: RequestOptions): Promise<M.Budget> {
+    return this.request<M.Budget>("PATCH", `/budgets/${encodeURIComponent(budgetId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a budget plan row (can_manage_finance)
+   * 
+   * `DELETE /budgets/{budgetId}`
+   */
+  async deleteBudgetsByBudgetId(budgetId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/budgets/${encodeURIComponent(budgetId)}`, { auth: true, options });
+  }
+
+  /**
+   * Budget plan vs. actual per category (can_manage_finance)
+   * 
+   * `GET /reports/budget`
+   */
+  async getReportsBudget(query: { "club_id": string; "year": number }, options?: RequestOptions): Promise<M.BudgetReport> {
+    return this.request<M.BudgetReport>("GET", "/reports/budget", { query, auth: true, options });
   }
 
   /**

@@ -1094,4 +1094,31 @@ insert into app.lockers (id, club_id, label, location, status, assigned_member_i
   ('e0c00000-0000-4000-8000-000000000008', 'c1ab0000-0000-4000-8000-000000000001',
    'Fach 08', 'Umkleide B – Reihe 2', 'broken', 'a0000000-0000-4000-8000-000000000023', 'Tür klemmt – Inhalt noch drin');
 
+-- ----------------------------------------------------------------------------
+-- Waitlists (Cluster 6a, migration 0020) — 2 self-join entries: Lina (child)
+-- waits for a hall slot, Maja for loan skates. Both queued by the member row.
+-- ----------------------------------------------------------------------------
+insert into app.waitlists (club_id, member_id, kind, target_id, note, status) values
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000007',
+   'facility', 'fac00000-0000-4000-8000-000000000001',
+   'Wartet auf einen freien Trainingsplatz in der Ballei-Sporthalle.', 'waiting'),
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000016',
+   'equipment', null,
+   'Wartet auf ein Paar Leih-Rollschuhe (Größe 38).', 'waiting');
+
+-- ----------------------------------------------------------------------------
+-- Budgets (Cluster 6a, migration 0020) — the current-year plan, one row per
+-- Kassenbuch category (ledger_categories ca1…-01…05). Plan-vs-Ist is derived
+-- against the ledger by GET /reports/budget.
+-- ----------------------------------------------------------------------------
+insert into app.budgets (club_id, year, category_id, planned_cents, note)
+select 'c1ab0000-0000-4000-8000-000000000001', extract(year from now())::int, v.category_id, v.planned_cents, v.note
+from (values
+  ('ca100000-0000-4000-8000-000000000001'::uuid,  1200000::bigint, 'Geplante Mitgliedsbeiträge'),
+  ('ca100000-0000-4000-8000-000000000002'::uuid,    80000::bigint, 'Erwartete Spenden'),
+  ('ca100000-0000-4000-8000-000000000003'::uuid,  -900000::bigint, 'Hallenmiete Jahresbudget'),
+  ('ca100000-0000-4000-8000-000000000004'::uuid,  -150000::bigint, 'Material & Ausrüstung'),
+  ('ca100000-0000-4000-8000-000000000005'::uuid,   -60000::bigint, 'Sonstige Ausgaben')
+) as v(category_id, planned_cents, note);
+
 commit;

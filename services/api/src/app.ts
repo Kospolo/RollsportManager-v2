@@ -13,6 +13,9 @@ import { healthRouter } from './routes/health.js';
 import { createDevLoginRouter } from './routes/dev-login.js';
 import { clubsRouter } from './routes/clubs.js';
 import { membersRouter } from './routes/members.js';
+import { familyRouter } from './routes/family.js';
+import { waitlistsRouter } from './routes/waitlists.js';
+import { budgetsRouter } from './routes/budgets.js';
 import { meRouter } from './routes/me.js';
 import { teamsRouter } from './routes/teams.js';
 import { platformRouter } from './routes/platform.js';
@@ -117,6 +120,9 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', healthRouter);
   app.route('/', clubsRouter);
   app.route('/', membersRouter);
+  app.route('/', familyRouter);
+  app.route('/', waitlistsRouter);
+  app.route('/', budgetsRouter);
   app.route('/', meRouter);
   app.route('/', teamsRouter);
   app.route('/', platformRouter);
@@ -200,7 +206,9 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
   tags: [
     { name: 'system', description: 'Health & meta' },
     { name: 'clubs', description: 'Clubs (tenant root)' },
-    { name: 'members', description: 'Roster, roles & guardianships (family model)' },
+    { name: 'members', description: 'Roster, roles & guardianships (family model incl. child self-service)' },
+    { name: 'waitlists', description: 'Wartelisten: self-join/leave a scarce resource; trainer manages all' },
+    { name: 'budgets', description: 'Budget(-planung): plan per category/year + plan-vs-actual report (finance only)' },
     { name: 'teams', description: 'Teams incl. skater/coach member ids + management' },
     { name: 'departments', description: 'Abteilungen: read = member, manage = club admin, assign members = trainer' },
     { name: 'lockers', description: 'Schließfächer: read = member, master data = club admin, assign/release = trainer' },

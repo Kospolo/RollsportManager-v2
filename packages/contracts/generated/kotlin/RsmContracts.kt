@@ -45,6 +45,28 @@ enum class AssignableClubRole {
 }
 
 @Serializable
+enum class WaitlistKind {
+    @SerialName("facility") FACILITY,
+    @SerialName("equipment") EQUIPMENT,
+    @SerialName("team") TEAM,
+    @SerialName("event") EVENT;
+}
+
+@Serializable
+enum class WaitlistStatus {
+    @SerialName("waiting") WAITING,
+    @SerialName("offered") OFFERED,
+    @SerialName("fulfilled") FULFILLED,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class LedgerCategoryKind {
+    @SerialName("income") INCOME,
+    @SerialName("expense") EXPENSE;
+}
+
+@Serializable
 enum class Theme {
     @SerialName("light") LIGHT,
     @SerialName("dark") DARK,
@@ -186,12 +208,6 @@ enum class GalleryKind {
 }
 
 @Serializable
-enum class LedgerCategoryKind {
-    @SerialName("income") INCOME,
-    @SerialName("expense") EXPENSE;
-}
-
-@Serializable
 enum class AnniversaryKind {
     @SerialName("membership") MEMBERSHIP,
     @SerialName("birthday") BIRTHDAY;
@@ -262,6 +278,22 @@ enum class HealthStatus {
 @Serializable
 enum class InviteQueuedStatus {
     @SerialName("queued") QUEUED;
+}
+
+/** Inline enum of ChildCreate.relation (hoisted by codegen). */
+@Serializable
+enum class ChildCreateRelation {
+    @SerialName("parent") PARENT,
+    @SerialName("guardian") GUARDIAN,
+    @SerialName("other") OTHER;
+}
+
+/** Inline enum of GuardianshipCreate.relation (hoisted by codegen). */
+@Serializable
+enum class GuardianshipCreateRelation {
+    @SerialName("parent") PARENT,
+    @SerialName("guardian") GUARDIAN,
+    @SerialName("other") OTHER;
 }
 
 /** Inline enum of Deleted.status (hoisted by codegen). */
@@ -428,6 +460,7 @@ data class ClubMember(
     val status: MemberStatus,
     @SerialName("joined_on") val joinedOn: String?,
     @SerialName("valid_until") val validUntil: String?,
+    @SerialName("avatar_url") val avatarUrl: String?,
     @SerialName("team_ids") val teamIds: List<String>,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
@@ -482,6 +515,110 @@ data class ClubMemberRoleChange(
 )
 
 @Serializable
+data class ChildCreated(
+    val child: ClubMember,
+    val guardianship: Guardianship
+)
+
+@Serializable
+data class ChildCreate(
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("joined_on") val joinedOn: String? = null,
+    @SerialName("guardian_member_id") val guardianMemberId: String? = null,
+    val relation: ChildCreateRelation? = ChildCreateRelation.PARENT
+)
+
+@Serializable
+data class GuardianshipCreate(
+    @SerialName("child_member_id") val childMemberId: String,
+    @SerialName("guardian_member_id") val guardianMemberId: String? = null,
+    val relation: GuardianshipCreateRelation? = GuardianshipCreateRelation.PARENT
+)
+
+@Serializable
+data class Deleted(
+    val status: DeletedStatus,
+    val id: String
+)
+
+@Serializable
+data class Waitlist(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val kind: WaitlistKind,
+    @SerialName("target_id") val targetId: String?,
+    val note: String?,
+    val status: WaitlistStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class WaitlistCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val kind: WaitlistKind,
+    @SerialName("target_id") val targetId: String? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class WaitlistUpdate(
+    val status: WaitlistStatus? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class Budget(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val year: Long?,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("planned_cents") val plannedCents: Long?,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class BudgetCreate(
+    @SerialName("club_id") val clubId: String,
+    val year: Long,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("planned_cents") val plannedCents: Long?,
+    val note: String? = null
+)
+
+@Serializable
+data class BudgetUpdate(
+    @SerialName("planned_cents") val plannedCents: Long? = null,
+    val note: String? = null
+)
+
+@Serializable
+data class BudgetReportRow(
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("category_name") val categoryName: String?,
+    val kind: LedgerCategoryKind,
+    @SerialName("planned_cents") val plannedCents: Long?,
+    @SerialName("actual_cents") val actualCents: Long?,
+    @SerialName("variance_cents") val varianceCents: Long?
+)
+
+@Serializable
+data class BudgetReport(
+    @SerialName("club_id") val clubId: String,
+    val year: Long?,
+    val rows: List<BudgetReportRow>,
+    @SerialName("planned_total_cents") val plannedTotalCents: Long?,
+    @SerialName("actual_total_cents") val actualTotalCents: Long?,
+    @SerialName("variance_total_cents") val varianceTotalCents: Long?
+)
+
+@Serializable
 data class MeMembership(
     val id: String,
     @SerialName("club_id") val clubId: String,
@@ -495,6 +632,7 @@ data class MeMembership(
     val status: MemberStatus,
     @SerialName("joined_on") val joinedOn: String?,
     @SerialName("valid_until") val validUntil: String?,
+    @SerialName("avatar_url") val avatarUrl: String?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -561,12 +699,6 @@ data class TeamCreate(
 data class TeamUpdate(
     val name: String? = null,
     @SerialName("age_group") val ageGroup: String? = null
-)
-
-@Serializable
-data class Deleted(
-    val status: DeletedStatus,
-    val id: String
 )
 
 @Serializable

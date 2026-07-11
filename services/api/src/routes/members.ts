@@ -23,6 +23,7 @@ import {
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
+import { avatarUrlFor } from '../lib/avatar.js';
 import {
   ADMIN_ROLES,
   MANAGE_MEMBER_ROLES,
@@ -40,6 +41,11 @@ const memberParams = z.object({
   clubId: uuid.openapi({ param: { name: 'clubId', in: 'path' } }),
   memberId: uuid.openapi({ param: { name: 'memberId', in: 'path' } }),
 });
+
+/** Add the derived avatar_url (from avatar_key) to a club_members row. */
+function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url: string | null } {
+  return { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) };
+}
 
 /** team_ids of one member (app.team_members, soft-deleted excluded). */
 async function teamIdsOf(tx: Tx, memberId: string): Promise<unknown> {
@@ -76,7 +82,7 @@ membersRouter.openapi(
          where m.club_id = ${clubId} and m.deleted_at is null
          order by m.last_name, m.first_name`,
     );
-    return c.json(z.array(memberSchema).parse(rows), 200);
+    return c.json(z.array(memberSchema).parse(rows.map(withAvatar)), 200);
   },
 );
 
@@ -119,7 +125,7 @@ membersRouter.openapi(
          returning *`,
     );
     // A brand-new membership row has no team links yet.
-    return c.json(memberSchema.parse({ ...rows[0], team_ids: [] }), 201);
+    return c.json(memberSchema.parse(withAvatar({ ...rows[0], team_ids: [] })), 201);
   },
 );
 
@@ -215,7 +221,7 @@ membersRouter.openapi(
         where id = ${memberId} and club_id = ${clubId} and deleted_at is null
         returning *`;
       if (rows.length === 0) throw problem(404, 'Not Found', 'Membership not found');
-      return { ...rows[0], team_ids: await teamIdsOf(tx, memberId) };
+      return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
     });
 
     return c.json(memberSchema.parse(updated), 200);
@@ -270,7 +276,7 @@ membersRouter.openapi(
       const rows = await tx`
         update app.club_members set role = ${newRole}
         where id = ${memberId} returning *`;
-      return { ...rows[0], team_ids: await teamIdsOf(tx, memberId) };
+      return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
     });
 
     return c.json(memberSchema.parse(updated), 200);
