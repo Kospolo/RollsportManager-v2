@@ -10,17 +10,16 @@ import { Tabs, TabPanel, type TabItem } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import { useLocale, useT } from "@/lib/i18n";
 import { dayDiff, formatDateShort, relativeDays } from "@/lib/format";
-import { data, errorMessage, isForbidden, isNotImplemented } from "@/lib/data";
+import { data, errorMessage, isForbidden, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import {
   competitionTasks,
   entryStats,
+  liveStartOrder,
   loadWettkampfData,
   nextCompetition,
   pastCompetitions,
   starterEntries,
-  startOrder,
-  type EnteredScore,
   type WettkampfData,
 } from "./derive";
 import { wettkampfDict } from "./i18n";
@@ -139,8 +138,14 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
   const stats = useMemo(() => entryStats(entries), [entries]);
   const order = useMemo(
     () =>
-      competition ? startOrder(competition, wettkampf.routines, wettkampf.members) : [],
+      competition ? liveStartOrder(competition, wettkampf.routines, wettkampf.members) : [],
     [competition, wettkampf],
+  );
+  /* Live-Wertung schreibt nur der Trainerstab (is_club_trainer+); Mitglieder
+     sehen die Rangliste lesend. Serverseitig verbindlich (RLS/403). */
+  const canScore = useMemo(
+    () => permissions(wettkampf.currentUser).isTrainer,
+    [wettkampf.currentUser],
   );
   const tasks = useMemo(
     () => (competition ? competitionTasks(competition, wettkampf.tasks) : []),
@@ -175,8 +180,9 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
   }
 
   /* Live-Modus- und Export-Zustand leben hier, damit Tab-Wechsel nichts verwerfen
-     (TabPanel unmountet inaktive Panels). */
-  const [entered, setEntered] = useState<EnteredScore[]>([]);
+     (TabPanel unmountet inaktive Panels). `liveScored` hält die Reihenfolge der
+     in dieser Session gewerteten Küren (der „Jetzt läuft"-Zeiger). */
+  const [liveScored, setLiveScored] = useState<string[]>([]);
   const [notified, setNotified] = useState<Record<string, boolean>>({});
 
   const tabs: TabItem<WettkampfTab>[] = [
@@ -261,11 +267,23 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
       </TabPanel>
 
       <TabPanel value="live" active={tab} idBase="wettkampf">
-        <LiveTab order={order} entered={entered} onEnteredChange={setEntered} />
+        <LiveTab
+          competition={competition}
+          order={order}
+          canScore={canScore}
+          scored={liveScored}
+          onScored={(routineId) => setLiveScored((prev) => [...prev, routineId])}
+          onReset={() => setLiveScored([])}
+        />
       </TabPanel>
 
       <TabPanel value="export" active={tab} idBase="wettkampf">
-        <ExportTab notified={notified} onNotified={setNotified} />
+        <ExportTab
+          competition={competition}
+          entries={entries}
+          notified={notified}
+          onNotified={setNotified}
+        />
       </TabPanel>
     </PageFrame>
   );

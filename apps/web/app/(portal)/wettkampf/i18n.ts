@@ -20,7 +20,7 @@ export const wettkampfDict = {
     tabOverview: "Übersicht",
     tabEntries: "Meldungen",
     tabLive: "Live-Modus",
-    tabExport: "Druck & Export",
+    tabExport: "Meldung & Export",
 
     kpiNext: "Nächster Wettkampf",
     kpiDeadline: "Meldeschluss",
@@ -93,9 +93,15 @@ export const wettkampfDict = {
     emptyFilterBody: "Mit einem anderen Filter wirst du fündig.",
     resetFilter: "Filter zurücksetzen",
 
-    livePreview: "Vorschau",
-    liveIntro:
-      "Am Wettkampftag führt euch der Live-Modus durch die Startliste. Probiere die RollArt-Schnelleingabe schon jetzt mit den gemeldeten Küren aus — alles bleibt auf diesem Gerät.",
+    liveBadge: "Live",
+    liveTrainerIntro:
+      "Der Live-Modus führt euch durch die Startliste: Werte jede Kür mit der RollArt-Schnelleingabe — die Rangliste aktualisiert sich sofort für alle im Verein.",
+    liveMemberIntro:
+      "Die Wertungen erfasst der Trainerstab. Hier läuft die Rangliste in Echtzeit mit — samt Rang und Punkte-Delta zur Vorwertung.",
+    liveProgress: "{done}/{total} gewertet",
+    liveNoStartlistTitle: "Noch keine Startliste",
+    liveNoStartlistBody:
+      "Sobald ein Wettkampf mit gemeldeten Küren ansteht, führt euch der Live-Modus hier durch die Starts.",
     startlistTitle: "Startliste",
     seedNote: "Reihenfolge nach Setzliste: schwächste letzte Wertung läuft zuerst.",
     startNo: "Start {n}",
@@ -111,6 +117,7 @@ export const wettkampfDict = {
     decreaseAria: "{label} um {step} verringern",
     increaseAria: "{label} um {step} erhöhen",
     submitScore: "Wertung übernehmen",
+    savingScore: "Speichern …",
     prefilledHint: "Vorbelegt mit der letzten Wertung ({total} Punkte).",
     noPrevHint: "Noch keine Vergleichswertung — Werte frei einstellen.",
     scoreToast: "Wertung gespeichert: {name} — {total} Punkte",
@@ -118,31 +125,72 @@ export const wettkampfDict = {
     standingsFinalTitle: "Endstand",
     standingsCaption:
       "Zwischenstand mit Rang, Veränderung, Starter, Technik-, Komponenten- und Gesamtwertung",
+    standingsLiveCaption:
+      "Live-Rangliste je Kategorie: Rang, Starter, Technik-, Komponenten-, Gesamtwertung und Delta zur Vorwertung",
     colRank: "Rang",
     colChange: "±",
+    colDelta: "Δ",
     colTechnical: "Technik",
     colComponents: "Komponenten",
     colTotal: "Gesamt",
     newBadge: "neu",
+    placementBadge: "Platz {n}",
+    deltaUpAria: "{v} Punkte über der Vorwertung",
+    deltaDownAria: "{v} Punkte unter der Vorwertung",
+    deltaSameAria: "gleich wie die Vorwertung",
+    deltaNoneAria: "keine Vorwertung",
     rankUpAria: "{n} Plätze gutgemacht",
     rankDownAria: "{n} Plätze verloren",
     rankSameAria: "Rang gehalten",
     standingsEmptyTitle: "Noch keine Wertungen",
     standingsEmptyBody: "Übernimm die erste Wertung — der Zwischenstand füllt sich sofort.",
+    standingsErrorTitle: "Rangliste nicht verfügbar",
     allScoredTitle: "Alle Starts gewertet",
     allScoredBody:
       "Der Endstand steht. Urkunden-Druck folgt bald — bis dahin: Applaus für alle!",
     resetLive: "Übung zurücksetzen",
 
-    exportTitle: "Druck & Export",
-    exportSub: "Urkunden und Verbandsmeldung — direkt aus den Meldungen erzeugt.",
+    exportTitle: "Meldung & Export",
+    exportSub: "Meldeliste, Verbandsmeldung und Urkunden — alles rund um die offizielle Abgabe.",
+
+    /* Meldeliste + Verbandsexport (nur Trainerstab) */
+    fedListTitle: "Meldeliste zur Verbandsmeldung",
+    fedListSub: "Starter, Kür und Startgeld-Status — Grundlage für die Abgabe beim Verband.",
+    fedExport: "Verbandsmeldung exportieren",
+    fedExporting: "Wird erstellt…",
+    fedExportDone: "Verbandsmeldung exportiert — {file}.",
+    fedExportForbidden: "Nur der Trainerstab darf die Verbandsmeldung exportieren.",
+    fedExportError: "Export fehlgeschlagen: {reason}",
+
+    /* Meldeschluss-Countdown */
+    deadlineLabel: "Meldeschluss",
+    deadlinePassed: "Meldeschluss überschritten",
+    deadlineNone: "Kein Meldeschluss hinterlegt",
+
+    /* Meldeliste-Tabelle */
+    fedColStatus: "Startgeld-Status",
+    fedStatusReported: "gemeldet",
+    fedStatusConfirmed: "bestätigt",
+    fedStatusWithdrawn: "zurückgezogen",
+    fedTableCaption: "Meldeliste zur {name}: Starter, Kategorie, Kür und Startgeld-Status",
+    fedEmptyTitle: "Noch keine Meldungen",
+    fedEmptyBody:
+      "Sobald Starter gemeldet sind, erscheinen sie hier — bereit für den Verbandsexport.",
+    fedNoCompTitle: "Kein anstehender Wettkampf",
+    fedNoCompBody:
+      "Sobald ein Wettkampf angesetzt ist, kannst du die Meldeliste hier exportieren.",
+
+    /* Trainer-Gate */
+    fedLockTitle: "Nur für den Trainerstab",
+    fedLockBody: "Meldeliste und Verbandsmeldung sind dem Trainerstab vorbehalten.",
+
+    /* Urkunden-Druck (Platzhalter) */
+    printTitle: "Urkunden & Druck",
+    printSub: "Direkt aus dem Endstand — kommt bald.",
     soon: "Bald verfügbar",
     certTitle: "Urkunden-Druck",
     certBody:
       "Urkunden für alle Platzierungen direkt aus dem Endstand drucken — mit Vereinslogo, Kategorie und Unterschriftszeile.",
-    fedTitle: "Verbandsmeldung-Export",
-    fedBody:
-      "Die Meldeliste im offiziellen Verbandsformat exportieren und mit einem Klick an den Ausrichter übergeben.",
     notify: "Benachrichtigen lassen",
     notified: "Vorgemerkt",
     notifyToast: "Alles klar — wir sagen Bescheid, sobald {feature} bereit ist.",
@@ -162,7 +210,7 @@ export const wettkampfDict = {
     tabOverview: "Overview",
     tabEntries: "Entries",
     tabLive: "Live mode",
-    tabExport: "Print & export",
+    tabExport: "Entries & export",
 
     kpiNext: "Next competition",
     kpiDeadline: "Entry deadline",
@@ -235,9 +283,15 @@ export const wettkampfDict = {
     emptyFilterBody: "Try a different filter.",
     resetFilter: "Reset filter",
 
-    livePreview: "Preview",
-    liveIntro:
-      "On competition day, live mode walks you through the start order. Try the RollArt quick entry with the registered routines now — everything stays on this device.",
+    liveBadge: "Live",
+    liveTrainerIntro:
+      "Live mode walks you through the start order: score each routine with the RollArt quick entry — the standings update instantly for everyone in the club.",
+    liveMemberIntro:
+      "The coaching staff records the scores. The standings run here in real time — including rank and the points delta versus the previous score.",
+    liveProgress: "{done}/{total} scored",
+    liveNoStartlistTitle: "No start order yet",
+    liveNoStartlistBody:
+      "As soon as a competition with entered routines is scheduled, live mode walks you through the starts here.",
     startlistTitle: "Start order",
     seedNote: "Seeded order: the lowest previous score skates first.",
     startNo: "Start {n}",
@@ -253,6 +307,7 @@ export const wettkampfDict = {
     decreaseAria: "Decrease {label} by {step}",
     increaseAria: "Increase {label} by {step}",
     submitScore: "Save score",
+    savingScore: "Saving …",
     prefilledHint: "Pre-filled with the last score ({total} points).",
     noPrevHint: "No previous score yet — set the values freely.",
     scoreToast: "Score saved: {name} — {total} points",
@@ -260,31 +315,72 @@ export const wettkampfDict = {
     standingsFinalTitle: "Final standings",
     standingsCaption:
       "Standings with rank, change, skater, technical, components and total score",
+    standingsLiveCaption:
+      "Live standings per category: rank, skater, technical, components, total score and delta versus the previous score",
     colRank: "Rank",
     colChange: "±",
+    colDelta: "Δ",
     colTechnical: "Technical",
     colComponents: "Components",
     colTotal: "Total",
     newBadge: "new",
+    placementBadge: "Place {n}",
+    deltaUpAria: "{v} points above the previous score",
+    deltaDownAria: "{v} points below the previous score",
+    deltaSameAria: "same as the previous score",
+    deltaNoneAria: "no previous score",
     rankUpAria: "moved up {n} places",
     rankDownAria: "moved down {n} places",
     rankSameAria: "rank held",
     standingsEmptyTitle: "No scores yet",
     standingsEmptyBody: "Save the first score — the standings fill up right away.",
+    standingsErrorTitle: "Standings unavailable",
     allScoredTitle: "All starts scored",
     allScoredBody:
       "Final standings are in. Certificate printing is coming soon — until then: applause for everyone!",
     resetLive: "Reset practice",
 
-    exportTitle: "Print & export",
-    exportSub: "Certificates and federation entries — generated straight from your entry list.",
+    exportTitle: "Entries & export",
+    exportSub:
+      "Entry list, federation entry and certificates — everything around the official submission.",
+
+    /* Entry list + federation export (coaching staff only) */
+    fedListTitle: "Entry list for the federation",
+    fedListSub: "Skater, routine and entry-fee status — the basis for your federation submission.",
+    fedExport: "Export federation entry",
+    fedExporting: "Preparing…",
+    fedExportDone: "Federation entry exported — {file}.",
+    fedExportForbidden: "Only the coaching staff can export the federation entry.",
+    fedExportError: "Export failed: {reason}",
+
+    /* Entry-deadline countdown */
+    deadlineLabel: "Entry deadline",
+    deadlinePassed: "Entry deadline passed",
+    deadlineNone: "No entry deadline set",
+
+    /* Entry-list table */
+    fedColStatus: "Entry fee status",
+    fedStatusReported: "reported",
+    fedStatusConfirmed: "confirmed",
+    fedStatusWithdrawn: "withdrawn",
+    fedTableCaption: "Entry list for {name}: skater, category, routine and entry-fee status",
+    fedEmptyTitle: "No entries yet",
+    fedEmptyBody:
+      "As soon as skaters are registered they show up here — ready for the federation export.",
+    fedNoCompTitle: "No upcoming competition",
+    fedNoCompBody: "Once a competition is scheduled you can export the entry list here.",
+
+    /* Coach gate */
+    fedLockTitle: "Coaching staff only",
+    fedLockBody: "The entry list and federation entry are reserved for the coaching staff.",
+
+    /* Certificate printing (placeholder) */
+    printTitle: "Certificates & print",
+    printSub: "Straight from the final standings — coming soon.",
     soon: "Coming soon",
     certTitle: "Certificate printing",
     certBody:
       "Print certificates for every placement straight from the final standings — with club logo, category and signature line.",
-    fedTitle: "Federation entry export",
-    fedBody:
-      "Export the entry list in the official federation format and hand it to the organiser in one click.",
     notify: "Notify me",
     notified: "On the list",
     notifyToast: "Got it — we'll let you know as soon as {feature} is ready.",

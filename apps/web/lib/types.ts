@@ -179,6 +179,8 @@ export interface RollArtScore {
   technical: number;
   components: number;
   total: number;
+  /** Platzierung in der Kategorie (1-basiert); null/undefined wenn (noch) nicht platziert. */
+  placement?: number | null;
 }
 
 export interface RoutineMusic {
@@ -280,6 +282,89 @@ export interface Competition {
   status: CompetitionStatus;
   participantIds: Id[];
   routineIds: Id[];
+}
+
+/* ---------- Wettkampf: Rangliste (Standings) ---------- */
+
+/**
+ * Eine Ranglistenzeile — eine gewertete Kür eines Starters in einer Kategorie.
+ * Der Server liefert die Zeilen bereits sortiert (category, rank, last_name);
+ * fürs UI nach `category` gruppieren (Gruppen-Header). `delta` ist die Differenz
+ * des total_score zur unmittelbaren Vorwertung derselben Kür (2 NK, +/-, Farbe
+ * grün bei ≥ 0, rot bei < 0); null, wenn es keine Vorwertung gibt.
+ */
+export interface CompetitionStandingRow {
+  category: string;
+  /** Rang innerhalb der Kategorie (1-basiert); null, solange kein total_score vorliegt. */
+  rank: number | null;
+  entryId: Id;
+  memberId: Id;
+  firstName: string | null;
+  lastName: string | null;
+  routineId: Id;
+  routineTitle: string;
+  technicalScore: number | null;
+  componentsScore: number | null;
+  totalScore: number | null;
+  placement: number | null;
+  /** total_score minus Vorwertung derselben Kür, auf 2 NK gerundet; null ohne Vorwertung. */
+  delta: number | null;
+}
+
+/** Rangliste eines Wettkampfs — pro Kategorie gruppiert + gerankt. is_club_member. */
+export interface CompetitionStandings {
+  competitionId: Id;
+  name: string;
+  rows: CompetitionStandingRow[];
+}
+
+/* ---------- Wettkampf: Kür-Teilen (öffentlicher Token-Link) ---------- */
+
+/**
+ * Ergebnis von createRoutineShare — ein öffentlich teilbarer Kür-Link.
+ * `url` ist ein RELATIVER Pfad `/wettkampf/kuer/{token}`; im Web zur vollen
+ * Teilen-URL zusammensetzen: `${location.origin}${url}` (Copy/QR/WhatsApp).
+ * `expiresAt` null = der Link läuft nie ab.
+ */
+export interface RoutineShare {
+  token: string;
+  url: string;
+  expiresAt: string | null;
+}
+
+/* ---------- Wettkampf: öffentliche Kür-Ansicht (UNAUTHENTIFIZIERT) ---------- */
+
+/** Eine Zeitmarke der öffentlichen Kür-Ansicht (ohne interne IDs). */
+export interface PublicRoutineMarker {
+  timeMs: number | null;
+  label: string;
+  elementCode: string | null;
+}
+
+/** Eine Wertungszeile der öffentlichen Kür-Ansicht (nicht personenbezogen). */
+export interface PublicRoutineScore {
+  scoredOn: string;
+  technicalScore: number | null;
+  componentsScore: number | null;
+  totalScore: number | null;
+  placement: number | null;
+}
+
+/**
+ * Minimale, NICHT personenbezogene Kür-Daten für die login-freie Token-Ansicht
+ * (`/public/routines/{token}`). KEINE Skater-Namen, keine Kontakt-/Finanzdaten —
+ * nur Titel, Disziplin, Vereinsname, Musik-Meta, Marker und Wertungen.
+ */
+export interface PublicRoutine {
+  title: string;
+  discipline: string | null;
+  clubName: string;
+  musicTitle: string | null;
+  musicArtist: string | null;
+  musicBpm: number | null;
+  musicDurationMs: number | null;
+  markers: PublicRoutineMarker[];
+  scores: PublicRoutineScore[];
 }
 
 export interface Task {

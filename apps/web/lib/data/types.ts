@@ -69,6 +69,7 @@ import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
 import type { MeRepository } from "./inputs-me";
 import type { OrgRepository } from "./inputs-org";
+import type { WettkampfRepository } from "./inputs-wettkampf";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -191,7 +192,8 @@ export interface DataRepository
     FinanceBRepository,
     FinanceCRepository,
     MeRepository,
-    OrgRepository {
+    OrgRepository,
+    WettkampfRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
   getMembers(): Promise<Member[]>;
@@ -387,6 +389,8 @@ export interface DataRepository
   /* ---------- Module: Galerie, Dokumente, Entitlement/PRO-Gate (Batch 5) ---------- */
   // Signaturen in ./inputs-batch5 (Batch5Repository) — DataRepository erbt sie.
   // Abteilungen, Schließfächer, Jubiläen: ./inputs-org (OrgRepository) — geerbt.
+  // Wettkampf: Rangliste, Live-Wertung, Verbandsmeldung-Export, Kür-Teilen +
+  // öffentliche Token-Ansicht: ./inputs-wettkampf (WettkampfRepository) — geerbt.
 
   /* ---------- Plattform-Konsole (nur is_platform_admin, reine Lesesicht) ---------- */
   /** Alle Vereine inkl. Mitgliederzahl. */

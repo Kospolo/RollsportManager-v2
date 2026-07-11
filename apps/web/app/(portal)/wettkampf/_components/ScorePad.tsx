@@ -16,18 +16,22 @@ import {
 import { wettkampfDict } from "../i18n";
 
 /**
- * RollArt-Schnelleingabe (Mock): zwei Stepper für Technik & Komponenten,
- * vorbelegt mit der letzten Wertung — rein lokaler React-State.
+ * RollArt-Schnelleingabe: zwei Stepper für Technik & Komponenten, vorbelegt
+ * mit der letzten Wertung. Der lokale State steuert die Eingabe; das Speichern
+ * übernimmt der Live-Modus über die Facade (`saveRoutineScore`). `submitting`
+ * sperrt die Eingabe, solange die Wertung geschrieben wird.
  */
 export function ScorePad({
   item,
   startNumber,
   locale,
+  submitting = false,
   onSubmit,
 }: {
   item: StartItem;
   startNumber: number;
   locale: Locale;
+  submitting?: boolean;
   onSubmit: (score: EnteredScore) => void;
 }) {
   const t = useT(wettkampfDict);
@@ -69,12 +73,14 @@ export function ScorePad({
           label={t("technicalLabel")}
           value={technical}
           locale={locale}
+          disabled={submitting}
           onChange={setTechnical}
         />
         <ScoreStepper
           label={t("componentsLabel")}
           value={components}
           locale={locale}
+          disabled={submitting}
           onChange={setComponents}
         />
 
@@ -93,10 +99,10 @@ export function ScorePad({
 
         <Button
           icon="check"
-          disabled={total <= 0}
+          disabled={total <= 0 || submitting}
           onClick={() => onSubmit({ routineId: item.routine.id, technical, components })}
         >
-          {t("submitScore")}
+          {submitting ? t("savingScore") : t("submitScore")}
         </Button>
       </div>
     </Card>
@@ -109,11 +115,13 @@ function ScoreStepper({
   label,
   value,
   locale,
+  disabled = false,
   onChange,
 }: {
   label: string;
   value: number;
   locale: Locale;
+  disabled?: boolean;
   onChange: (next: number) => void;
 }) {
   const t = useT(wettkampfDict);
@@ -130,6 +138,7 @@ function ScoreStepper({
             step={step}
             stepText={stepText(step)}
             value={value}
+            disabled={disabled}
             onChange={onChange}
             ariaLabel={t("decreaseAria", { label, step: stepText(step).slice(1) })}
           />
@@ -143,6 +152,7 @@ function ScoreStepper({
             step={step}
             stepText={stepText(step)}
             value={value}
+            disabled={disabled}
             onChange={onChange}
             ariaLabel={t("increaseAria", { label, step: stepText(step).slice(1) })}
           />
@@ -156,12 +166,14 @@ function StepButton({
   step,
   stepText,
   value,
+  disabled,
   onChange,
   ariaLabel,
 }: {
   step: number;
   stepText: string;
   value: number;
+  disabled: boolean;
   onChange: (next: number) => void;
   ariaLabel: string;
 }) {
@@ -169,8 +181,9 @@ function StepButton({
     <button
       type="button"
       aria-label={ariaLabel}
+      disabled={disabled}
       onClick={() => onChange(round2(Math.min(150, Math.max(0, value + step))))}
-      className="grid h-11 w-11 place-items-center rounded-full border border-line-strong bg-surface font-mono text-[12px] font-bold text-ink transition-colors duration-150 hover:bg-sunken active:scale-[.98]"
+      className="grid h-11 w-11 place-items-center rounded-full border border-line-strong bg-surface font-mono text-[12px] font-bold text-ink transition-colors duration-150 hover:bg-sunken active:scale-[.98] disabled:pointer-events-none disabled:opacity-45"
     >
       {stepText}
     </button>

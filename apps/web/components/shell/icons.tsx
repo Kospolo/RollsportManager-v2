@@ -36,7 +36,11 @@ export type IconName =
   | "dots"
   | "shield"
   | "teams"
-  | "globe";
+  | "globe"
+  | "share"
+  | "link"
+  | "copy"
+  | "trash";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   dashboard: (
@@ -199,6 +203,33 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <circle cx="12" cy="12" r="8.3" />
       <path d="M3.7 12h16.6" />
       <path d="M12 3.7c2.4 2.3 3.7 5.2 3.7 8.3S14.4 18 12 20.3C9.6 18 8.3 15.1 8.3 12S9.6 6 12 3.7Z" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="6" cy="12" r="2.6" />
+      <circle cx="17.5" cy="6" r="2.6" />
+      <circle cx="17.5" cy="18" r="2.6" />
+      <path d="M8.3 10.8 15.2 7.2M8.3 13.2l6.9 3.6" />
+    </>
+  ),
+  link: (
+    <>
+      <path d="M10.2 13.8a3.6 3.6 0 0 0 5.1 0l2.6-2.6a3.6 3.6 0 0 0-5.1-5.1l-1.3 1.3" />
+      <path d="M13.8 10.2a3.6 3.6 0 0 0-5.1 0l-2.6 2.6a3.6 3.6 0 0 0 5.1 5.1l1.3-1.3" />
+    </>
+  ),
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2.4" />
+      <path d="M15 9V6.4A2.4 2.4 0 0 0 12.6 4H6.4A2.4 2.4 0 0 0 4 6.4v6.2A2.4 2.4 0 0 0 6.4 15H9" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M5 7h14M10 7V5.5A1.5 1.5 0 0 1 11.5 4h1A1.5 1.5 0 0 1 14 5.5V7" />
+      <path d="M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
+      <path d="M10 11v5M14 11v5" />
     </>
   ),
 };

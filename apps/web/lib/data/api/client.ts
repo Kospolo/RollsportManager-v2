@@ -16,6 +16,16 @@ export const apiClient = new ApiClient({
   getAccessToken: () => readSession()?.token ?? null,
 });
 
+/**
+ * ÖFFENTLICHE Client-Variante OHNE Auth-Header — für die login-freie Kür-Ansicht
+ * (`GET /public/routines/{token}`, die einzige unauthentifizierte Route). Kein
+ * getAccessToken: es wird NIE ein Bearer-Token angehängt, auch wenn eine
+ * Dev-Session existiert. So funktioniert getPublicRoutine ohne Login.
+ */
+export const publicApiClient = new ApiClient({
+  baseUrl: API_BASE_URL,
+});
+
 /** club_id der aktiven Session (Fallback: der eine Demo-Verein aus dem Seed). */
 export function activeClubId(): string {
   return readSession()?.profile.club_id ?? DEV_CLUB_ID;

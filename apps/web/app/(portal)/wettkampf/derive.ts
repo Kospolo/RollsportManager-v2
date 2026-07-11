@@ -3,6 +3,7 @@ import { memberById, type DataRepository } from "@/lib/data";
 import type {
   Club,
   Competition,
+  CompetitionStandingRow,
   Guardianship,
   Invoice,
   Member,
@@ -29,6 +30,8 @@ export type WettkampfData = {
   routines: Routine[];
   guardianships: Guardianship[];
   invoices: Invoice[];
+  /** Angemeldete Person — steuert die clientseitige Sichtbarkeit (Live-Wertung nur Trainer+). */
+  currentUser: Member;
 };
 
 /**
@@ -37,7 +40,7 @@ export type WettkampfData = {
  * der Screen zeigt dann den „Noch nicht angebunden“-Hinweis (nie crashen).
  */
 export async function loadWettkampfData(repo: DataRepository): Promise<WettkampfData> {
-  const [club, competitions, tasks, members, teams, routines, guardianships, invoices] =
+  const [club, competitions, tasks, members, teams, routines, guardianships, invoices, currentUser] =
     await Promise.all([
       repo.getClub(),
       repo.getCompetitions(),
@@ -47,8 +50,19 @@ export async function loadWettkampfData(repo: DataRepository): Promise<Wettkampf
       repo.getRoutines(),
       repo.getGuardianships(),
       repo.getInvoices(),
+      repo.getCurrentUser(),
     ]);
-  return { club, competitions, tasks, members, teams, routines, guardianships, invoices };
+  return {
+    club,
+    competitions,
+    tasks,
+    members,
+    teams,
+    routines,
+    guardianships,
+    invoices,
+    currentUser,
+  };
 }
 
 /* ---------- Wettkämpfe & Aufgaben ---------- */
@@ -190,6 +204,52 @@ export function startOrder(
       lastScore: routine.scores.at(-1),
     }))
     .sort((a, b) => (a.lastScore?.total ?? -1) - (b.lastScore?.total ?? -1));
+}
+
+/**
+ * Startreihenfolge für den Live-Modus: Kategorie-first (Wettkämpfe laufen
+ * Kategorie für Kategorie), innerhalb der Kategorie schwächste Vorwertung
+ * zuerst. So sind die Kategorie-Blöcke im Flachlauf zusammenhängend — der
+ * globale „Jetzt läuft"-Zeiger und die Gruppen-Header bleiben deckungsgleich.
+ */
+export function liveStartOrder(
+  competition: Competition,
+  routines: Routine[],
+  members: Member[],
+): StartItem[] {
+  return startOrder(competition, routines, members).sort((a, b) =>
+    a.routine.category.localeCompare(b.routine.category, "de"),
+  );
+}
+
+/** Startliste in Kategorie-Blöcke mit globalem (1-basiertem) Startindex schneiden. */
+export type StartGroup = { category: string; items: { item: StartItem; index: number }[] };
+
+export function groupStartByCategory(order: StartItem[]): StartGroup[] {
+  const groups: StartGroup[] = [];
+  order.forEach((item, index) => {
+    const category = item.routine.category || "";
+    const last = groups[groups.length - 1];
+    if (last && last.category === category) last.items.push({ item, index });
+    else groups.push({ category, items: [{ item, index }] });
+  });
+  return groups;
+}
+
+/**
+ * Bereits (category, rank, last_name)-sortierte Ranglisten-Zeilen in
+ * Kategorie-Blöcke schneiden — für Gruppen-Header in der Live-Rangliste.
+ */
+export type StandingsGroup = { category: string; rows: CompetitionStandingRow[] };
+
+export function groupStandingsByCategory(rows: CompetitionStandingRow[]): StandingsGroup[] {
+  const groups: StandingsGroup[] = [];
+  for (const row of rows) {
+    const last = groups[groups.length - 1];
+    if (last && last.category === row.category) last.rows.push(row);
+    else groups.push({ category: row.category, rows: [row] });
+  }
+  return groups;
 }
 
 /* ---------- Ergebnisse vergangener Wettkämpfe ---------- */

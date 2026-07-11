@@ -1,258 +1,176 @@
 "use client";
 
-import { AvatarStack } from "@/components/ui/AvatarStack";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardHeader } from "@/components/ui/Card";
-import { DataTable, type Column } from "@/components/ui/DataTable";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
-import { Icon } from "@/components/shell/icons";
+import { data, errorMessage, isForbidden } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
-import { formatDurationMs } from "@/lib/format";
+import type { Competition, CompetitionStandings } from "@/lib/types";
 import {
   formatScore,
+  groupStartByCategory,
   skaterNames,
   totalOf,
   type EnteredScore,
   type StartItem,
 } from "../derive";
 import { wettkampfDict } from "../i18n";
+import { LiveStandings } from "./LiveStandings";
 import { ScorePad } from "./ScorePad";
+import { StartList } from "./StartList";
 
-/* ---------- Rechenhelfer (rein lokal, kein Backend) ---------- */
-
-function ranksOf(list: EnteredScore[]): Map<string, number> {
-  const sorted = [...list].sort((a, b) => totalOf(b) - totalOf(a));
-  return new Map(sorted.map((score, index) => [score.routineId, index + 1]));
+/** ISO-Datum (YYYY-MM-DD) von heute — Wertungsdatum für saveRoutineScore. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-/* ---------- Live-Modus-Vorschau ---------- */
-
+/**
+ * Live-Modus (das USP): führt den Trainerstab durch die Startliste, erfasst
+ * jede RollArt-Wertung ECHT über die Facade (`saveRoutineScore`) und zeigt die
+ * Live-Rangliste (`getCompetitionStandings`) mit Rang + Delta-Chips. Schreiben
+ * ist is_club_trainer+ (`canScore`); Mitglieder sehen die Rangliste lesend.
+ * Der Fortschritt (`scored`) lebt in der Client-Session, damit ein Tab-Wechsel
+ * nichts verwirft; die Rangliste ist die Wahrheit vom Server.
+ */
 export function LiveTab({
+  competition,
   order,
-  entered,
-  onEnteredChange,
+  canScore,
+  scored,
+  onScored,
+  onReset,
 }: {
+  competition: Competition | undefined;
   order: StartItem[];
-  entered: EnteredScore[];
-  onEnteredChange: (next: EnteredScore[]) => void;
+  canScore: boolean;
+  scored: string[];
+  onScored: (routineId: string) => void;
+  onReset: () => void;
 }) {
   const t = useT(wettkampfDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
 
-  const current = order[entered.length];
-  const allScored = order.length > 0 && entered.length >= order.length;
+  const competitionId = competition?.id;
+  const standings = useData(
+    (repo) =>
+      competitionId
+        ? repo.getCompetitionStandings(competitionId)
+        : Promise.resolve<CompetitionStandings | null>(null),
+    [competitionId],
+  );
 
-  const itemById = new Map(order.map((item) => [item.routine.id, item]));
-  const ranks = ranksOf(entered);
-  const prevRanks = ranksOf(entered.slice(0, -1));
-  const lastEnteredId = entered[entered.length - 1]?.routineId;
+  const groups = useMemo(() => groupStartByCategory(order), [order]);
+  const totalByRoutine = useMemo(() => {
+    const map = new Map<string, number | null>();
+    if (standings.status === "ready" && standings.data) {
+      for (const row of standings.data.rows) map.set(row.routineId, row.totalScore);
+    }
+    return map;
+  }, [standings]);
 
-  type StandingRow = { item: StartItem; score: EnteredScore; rank: number };
-  const standings: StandingRow[] = [...entered]
-    .sort((a, b) => totalOf(b) - totalOf(a))
-    .flatMap((score) => {
-      const item = itemById.get(score.routineId);
-      return item ? [{ item, score, rank: ranks.get(score.routineId) ?? 0 }] : [];
-    });
+  const pointer = scored.length;
+  const current = order[pointer];
+  const allScored = order.length > 0 && pointer >= order.length;
 
-  function handleSubmit(score: EnteredScore) {
-    const item = itemById.get(score.routineId);
-    onEnteredChange([...entered, score]);
-    if (item) {
+  async function handleSubmit(score: EnteredScore) {
+    if (!competitionId || !current || submitting) return;
+    setSubmitting(true);
+    const total = totalOf(score);
+    try {
+      await data.saveRoutineScore(score.routineId, {
+        scoredOn: todayIso(),
+        technicalScore: score.technical,
+        componentsScore: score.components,
+        totalScore: total,
+        competitionId,
+      });
+      onScored(score.routineId);
+      standings.reload();
       showToast(
         t("scoreToast", {
-          name: skaterNames(item.skaters),
-          total: formatScore(totalOf(score), locale),
+          name: skaterNames(current.skaters),
+          total: formatScore(total, locale),
         }),
         { tone: "success" },
       );
+    } catch (error: unknown) {
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+        actionLabel: t("retry"),
+        onAction: () => void handleSubmit(score),
+      });
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  const changeCell = (row: StandingRow) => {
-    if (row.score.routineId === lastEnteredId) {
-      return <Badge tone="brand">{t("newBadge")}</Badge>;
-    }
-    const prev = prevRanks.get(row.score.routineId);
-    const delta = prev === undefined ? 0 : prev - row.rank;
-    if (delta > 0) {
-      return (
-        <Badge tone="success">
-          <span aria-hidden="true">▲ {delta}</span>
-          <span className="sr-only">{t("rankUpAria", { n: delta })}</span>
-        </Badge>
-      );
-    }
-    if (delta < 0) {
-      return (
-        <Badge tone="danger">
-          <span aria-hidden="true">▼ {-delta}</span>
-          <span className="sr-only">{t("rankDownAria", { n: -delta })}</span>
-        </Badge>
-      );
-    }
+  /* Kein Wettkampf / keine gemeldeten Küren → freundlicher Hinweis. */
+  if (!competition || order.length === 0) {
     return (
-      <Badge tone="neutral">
-        <span aria-hidden="true">=</span>
-        <span className="sr-only">{t("rankSameAria")}</span>
-      </Badge>
+      <EmptyState
+        icon="competition"
+        title={t("liveNoStartlistTitle")}
+        body={t("liveNoStartlistBody")}
+      />
     );
-  };
+  }
 
-  const standingsColumns: Column<StandingRow>[] = [
-    {
-      id: "rank",
-      header: t("colRank"),
-      cellClassName: "w-14",
-      cell: (row) => (
-        <span className="font-mono text-mono-table tabular-nums text-ink">{row.rank}.</span>
-      ),
-    },
-    { id: "change", header: t("colChange"), cell: changeCell },
-    {
-      id: "skater",
-      header: t("colSkater"),
-      cell: (row) => (
-        <span className="flex items-center gap-2.5">
-          <AvatarStack
-            people={row.item.skaters.map((skater) => ({
-              personId: skater.id,
-              firstName: skater.firstName,
-              lastName: skater.lastName,
-            }))}
-            size="s"
-          />
-          <span className="grid min-w-0 gap-px">
-            <b className="font-bold text-ink">{skaterNames(row.item.skaters)}</b>
-            <span className="text-caption text-ink-faint">
-              {row.item.routine.title} · {row.item.routine.category}
-            </span>
+  const intro = (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-card">
+      <Badge tone="brand" icon="zap">
+        {t("liveBadge")}
+      </Badge>
+      <p className="min-w-0 flex-1 basis-64 text-caption text-ink-soft">
+        {canScore ? t("liveTrainerIntro") : t("liveMemberIntro")}
+      </p>
+      {canScore && (
+        <span className="flex items-center gap-3">
+          <span className="text-caption tabular-nums text-ink-faint">
+            {t("liveProgress", { done: pointer, total: order.length })}
           </span>
+          <Button variant="ghost" size="sm" disabled={pointer === 0} onClick={onReset}>
+            {t("resetLive")}
+          </Button>
         </span>
-      ),
-    },
-    {
-      id: "technical",
-      header: t("colTechnical"),
-      mono: true,
-      cell: (row) => formatScore(row.score.technical, locale),
-    },
-    {
-      id: "components",
-      header: t("colComponents"),
-      mono: true,
-      cell: (row) => formatScore(row.score.components, locale),
-    },
-    {
-      id: "total",
-      header: t("colTotal"),
-      mono: true,
-      cellClassName: "font-extrabold",
-      cell: (row) => formatScore(totalOf(row.score), locale),
-    },
-  ];
+      )}
+    </div>
+  );
 
+  /* Mitglieder: Rangliste lesend zuerst, Startliste als Referenz darunter. */
+  if (!canScore) {
+    return (
+      <div className="grid gap-5">
+        {intro}
+        <LiveStandings state={standings} />
+        <StartList groups={groups} pointer={-1} total={order.length} interactive={false} />
+      </div>
+    );
+  }
+
+  /* Trainerstab: Startliste + Schnelleingabe, darunter die Live-Rangliste. */
   return (
     <div className="grid gap-5">
-      {/* Vorschau-Hinweis + Zurücksetzen */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-4 shadow-card">
-        <Badge tone="info" icon="zap">
-          {t("livePreview")}
-        </Badge>
-        <p className="min-w-0 flex-1 basis-64 text-caption text-ink-soft">{t("liveIntro")}</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={entered.length === 0}
-          onClick={() => onEnteredChange([])}
-        >
-          {t("resetLive")}
-        </Button>
-      </div>
-
+      {intro}
       <div className="grid items-start gap-5 lg:grid-cols-[1.2fr_1fr]">
-        {/* ---------- Startliste ---------- */}
-        <Card>
-          <CardHeader
-            eyebrow={t("seedNote")}
-            title={t("startlistTitle")}
-            action={
-              <span className="text-caption tabular-nums text-ink-faint">
-                {entered.length}/{order.length}
-              </span>
-            }
-          />
-          <ol className="grid gap-2">
-            {order.map((item, index) => {
-              const isDone = index < entered.length;
-              const isCurrent = index === entered.length;
-              const isNext = index === entered.length + 1;
-              const doneScore = isDone ? entered[index] : undefined;
-              return (
-                <li
-                  key={item.routine.id}
-                  aria-current={isCurrent ? "step" : undefined}
-                  className={`flex min-h-14 flex-wrap items-center gap-3 rounded-lg border p-3 transition-colors duration-150 ${
-                    isCurrent ? "border-brand bg-brand-soft" : "border-line bg-canvas"
-                  }`}
-                >
-                  <span className="w-7 text-center font-mono text-[15px] font-bold tabular-nums text-ink-faint">
-                    {index + 1}
-                  </span>
-                  <AvatarStack
-                    people={item.skaters.map((skater) => ({
-                      personId: skater.id,
-                      firstName: skater.firstName,
-                      lastName: skater.lastName,
-                    }))}
-                    size="s"
-                  />
-                  <span className="grid min-w-0 flex-1 gap-px">
-                    <b className="text-[14px] font-bold text-ink">{skaterNames(item.skaters)}</b>
-                    <span className="text-caption text-ink-faint">
-                      {item.routine.title} · {item.routine.category}
-                    </span>
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 font-mono text-mono-table tabular-nums text-honey-deep">
-                    <Icon name="clock" className="ic h-[14px] w-[14px]" />
-                    <span className="sr-only">{t("srDuration")} </span>
-                    {formatDurationMs(item.routine.music.durationMs)}
-                  </span>
-                  {isDone && doneScore ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="font-mono text-mono-table tabular-nums text-ink">
-                        {formatScore(totalOf(doneScore), locale)}
-                      </span>
-                      <Badge tone="success" icon="check">
-                        {t("scoredBadge")}
-                      </Badge>
-                    </span>
-                  ) : isCurrent ? (
-                    <Badge tone="brand" icon="play">
-                      {t("nowRunning")}
-                    </Badge>
-                  ) : isNext ? (
-                    <Badge tone="info">{t("upNext")}</Badge>
-                  ) : (
-                    <Badge tone="neutral">{t("waiting")}</Badge>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-        </Card>
-
-        {/* ---------- RollArt-Schnelleingabe ---------- */}
+        <StartList
+          groups={groups}
+          pointer={pointer}
+          total={order.length}
+          interactive
+          totalByRoutine={totalByRoutine}
+        />
         {allScored || !current ? (
           <EmptyState
             icon="check"
             title={t("allScoredTitle")}
             body={t("allScoredBody")}
             action={
-              <Button variant="ghost" onClick={() => onEnteredChange([])}>
+              <Button variant="ghost" onClick={onReset}>
                 {t("resetLive")}
               </Button>
             }
@@ -261,33 +179,14 @@ export function LiveTab({
           <ScorePad
             key={current.routine.id}
             item={current}
-            startNumber={entered.length + 1}
+            startNumber={pointer + 1}
             locale={locale}
+            submitting={submitting}
             onSubmit={handleSubmit}
           />
         )}
       </div>
-
-      {/* ---------- Zwischenstand ---------- */}
-      <Card padded={false} className="px-2 py-4 sm:px-4">
-        <CardHeader
-          className="px-3 pt-1 sm:px-2"
-          title={allScored ? t("standingsFinalTitle") : t("standingsTitle")}
-        />
-        {standings.length === 0 ? (
-          <div className="grid gap-1 px-3 pb-4 sm:px-2">
-            <b className="text-[14.5px] font-bold text-ink">{t("standingsEmptyTitle")}</b>
-            <p className="text-body text-ink-soft">{t("standingsEmptyBody")}</p>
-          </div>
-        ) : (
-          <DataTable
-            columns={standingsColumns}
-            rows={standings}
-            rowKey={(row) => row.score.routineId}
-            caption={t("standingsCaption")}
-          />
-        )}
-      </Card>
+      <LiveStandings state={standings} />
     </div>
   );
 }

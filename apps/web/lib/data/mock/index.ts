@@ -21,6 +21,7 @@ import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
 import { moduleRepositoryMe } from "./modules-me";
 import { moduleRepositoryOrg } from "./modules-org";
+import { moduleRepositoryWettkampf } from "./modules-wettkampf";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -263,6 +264,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleRepositoryOrg,
+
+  /* ---------- Module: Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen (Wettkampf) ---------- */
+  ...moduleRepositoryWettkampf,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

@@ -13,6 +13,7 @@ import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
 import { moduleApiRepositoryMe } from "./modules-me";
 import { moduleApiRepositoryOrg } from "./modules-org";
+import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
 import {
   mapAttendance,
   mapClub,
@@ -330,6 +331,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleApiRepositoryOrg,
+
+  /* ---------- Module: Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen (Wettkampf) ---------- */
+  ...moduleApiRepositoryWettkampf,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

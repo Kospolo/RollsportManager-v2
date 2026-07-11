@@ -25,9 +25,10 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 - [ ] Mehrvereins-Onboarding: verein-create, verein-join, Verein-Wechsler „Verwaltest: X"
 
 ## 3. Wettkampf-Tiefe
-- [~] Wettkampf: Übersicht + Live-Vorschau da, aber wettkampf-live/wettkampf-modus (echtes Live-Scoring) fehlt
-- [ ] Verbandsmeldung (verbandsmeldung)
-- [ ] Kür teilen (kuer-share), training-hub, trainingsplanung
+- [x] Wettkampf-Live/Wettkampf-Modus (wettkampf-live/wettkampf-modus): echtes Live-Scoring über die Facade — Startliste je Kategorie (Jetzt-läuft/Gleich-dran/Gewertet-Zeiger, Session-lokal), RollArt-Schnelleingabe (Technik+Komponenten→Gesamt) mit echtem `saveRoutineScore`, Live-Rangliste (`getCompetitionStandings`, nach Kategorie gruppiert, Rang/Delta-Chip/Platz-Badge). Rechte serverseitig: Wertung erfassen = is_club_trainer (Member liest, 403→Toast). Migration 0018, Route POST /routines/{id}/scores + GET /competitions/{id}/standings, RLS. Gegen Dev-API als coach verifiziert (Screenshot: Startliste+Wertungseingabe+Zwischenstand, echter Save „Maja Weiß — 44,10").
+- [x] Verbandsmeldung (verbandsmeldung): Tab „Meldung & Export" (nur Trainerstab) — Meldeliste (Starter/Kategorie/Kür/Startgeld-Status), DeadlineCountdown (Meldeschluss), echter Verbandsmeldung-CSV-Download über `federationExportUrl`, Urkunden-Druck-Platzhalter. Gegen Dev-API als coach verifiziert (Screenshot + curl: Content-Type text/csv; charset=utf-8, 8 Starter).
+- [x] Kür teilen (kuer-share): öffentlicher Token-Link — Teilen-Dialog (Trainer+) mit `createRoutineShare`/`listRoutineShares`, Kopieren/WhatsApp/E-Mail/Öffnen/Widerrufen; UNAUTHENTIFIZIERTE öffentliche Ansicht `/wettkampf/kuer/{token}` (eigene (public)-Route-Gruppe ohne AuthGate, GET /public/routines/{token}) — nur Titel/Musik/Marker/Wertungen, KEINE Personen-/Kontakt-/Finanzdaten; revoked/expired/unknown → 404. Rechte serverseitig (RLS). Gegen Dev-API als coach + ohne Session verifiziert (Screenshots Detail-Teilen + öffentliche Ansicht; curl: kein Datenleck, 404-Pfade).
+- [ ] training-hub, trainingsplanung
 
 ## 4. App-Shell & UX (fällt beim Klicken sofort auf)
 - [x] Profil-Seite (profil) — eigenes Profil ansehen/bearbeiten (Vorname/Nachname/E-Mail/Geburtsdatum) über die Facade (`data.updateMyProfile` → `PATCH /me`), self-scoped serverseitig (WHERE profile_id = auth.uid(), Rolle/Status nicht änderbar). Konto-Karte (Anmelde-E-Mail, Passwort-Hinweis). Verlinkt im Topbar-Benutzermenü. Gegen Dev-API als coach + member verifiziert (Screenshots), member kann NUR eigenes Profil ändern (Role-Escalation vom Update-Schema verworfen → 400), fremdes nicht. Foto-Upload noch offen.

@@ -235,6 +235,7 @@ export function mapScore(w: M.RoutineScore): RollArtScore {
     technical: w.technical_score ?? 0,
     components: w.components_score ?? 0,
     total: w.total_score ?? (w.technical_score ?? 0) + (w.components_score ?? 0),
+    placement: w.placement ?? null,
   };
 }
 

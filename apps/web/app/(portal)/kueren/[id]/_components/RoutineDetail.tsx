@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Member, Routine, RoutineMarker } from "@/lib/types";
-import { data, errorMessage, isForbidden, isNotImplemented, memberById } from "@/lib/data";
+import {
+  data,
+  errorMessage,
+  isForbidden,
+  isNotImplemented,
+  memberById,
+  permissions,
+} from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
@@ -20,6 +27,7 @@ import { PlayerCard } from "./PlayerCard";
 import { MarkerList } from "./MarkerList";
 import { ScoreTrend } from "./ScoreTrend";
 import { NotesCard } from "./NotesCard";
+import { ShareRoutineDialog } from "./ShareRoutineDialog";
 
 /**
  * Kür-Detail (Mockup Screen 2): Kopf mit Läufer:in + Status-Chips,
@@ -32,7 +40,12 @@ import { NotesCard } from "./NotesCard";
 export function RoutineDetail({ routineId }: { routineId: string }) {
   const t = useT(kuerenDict);
   const state = useData(
-    (repo) => Promise.all([repo.getRoutineById(routineId), repo.getMembers()]),
+    (repo) =>
+      Promise.all([
+        repo.getRoutineById(routineId),
+        repo.getMembers(),
+        repo.getCurrentUser(),
+      ]),
     [routineId],
   );
 
@@ -59,7 +72,7 @@ export function RoutineDetail({ routineId }: { routineId: string }) {
     );
   }
 
-  const [routine, members] = state.data;
+  const [routine, members, currentUser] = state.data;
   if (!routine) {
     return (
       <div className="mx-auto grid w-full max-w-6xl gap-6">
@@ -75,7 +88,14 @@ export function RoutineDetail({ routineId }: { routineId: string }) {
   }
 
   /* key: bei Kür-Wechsel Player-/Marker-Zustand sauber neu aufsetzen. */
-  return <LoadedDetail key={routine.id} routine={routine} members={members} />;
+  return (
+    <LoadedDetail
+      key={routine.id}
+      routine={routine}
+      members={members}
+      currentUser={currentUser}
+    />
+  );
 }
 
 /** Lade-Gerüst — spiegelt Breadcrumb, Kopf, Player und die 2-Spalten-Karten. */
@@ -103,10 +123,22 @@ function DetailSkeleton() {
   );
 }
 
-function LoadedDetail({ routine, members }: { routine: Routine; members: Member[] }) {
+function LoadedDetail({
+  routine,
+  members,
+  currentUser,
+}: {
+  routine: Routine;
+  members: Member[];
+  currentUser: Member;
+}) {
   const t = useT(kuerenDict);
   const { showToast } = useToast();
   const playback = usePlayback(routine.music.durationMs);
+
+  /* Kür-Teilen ist Trainer:innen vorbehalten (serverseitig is_club_trainer). */
+  const canShare = permissions(currentUser).isTrainer;
+  const [shareOpen, setShareOpen] = useState(false);
 
   /* Marker optimistisch: sofort lokal, dann Facade-Write (api: POST). */
   const [markers, setMarkers] = useState<RoutineMarker[]>(routine.markers);
@@ -190,8 +222,13 @@ function LoadedDetail({ routine, members }: { routine: Routine; members: Member[
           </div>
         </div>
         <div className="ml-auto flex flex-none flex-wrap items-center gap-2.5">
+          {canShare && (
+            <Button variant="secondary" icon="share" onClick={() => setShareOpen(true)}>
+              {t("shareAction")}
+            </Button>
+          )}
           <Button
-            variant="secondary"
+            variant="ghost"
             icon="download"
             onClick={() => showToast(t("demoUnavailable"), { tone: "info" })}
           >
@@ -237,6 +274,15 @@ function LoadedDetail({ routine, members }: { routine: Routine; members: Member[
           <NotesCard routineId={routine.id} />
         </div>
       </div>
+
+      {canShare && (
+        <ShareRoutineDialog
+          routineId={routine.id}
+          routineTitle={routine.title}
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
 }
