@@ -19,6 +19,7 @@ import { moduleRepositoryBatch5 } from "./modules-batch5";
 import { moduleRepositoryFinance } from "./modules-finance";
 import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
+import { moduleRepositoryMe } from "./modules-me";
 
 /**
  * In-Memory-Ablage für im Mock-Modus angelegte/geänderte Objekte. Lebt für die
@@ -255,6 +256,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Bankabgleich, Spenden, Jahresabschluss, Export (Finanz C) ---------- */
   ...moduleRepositoryFinanceC,
+
+  /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
+  ...moduleRepositoryMe,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs(): Promise<PlatformClubSummary[]> {

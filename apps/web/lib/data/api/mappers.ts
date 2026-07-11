@@ -12,8 +12,11 @@ import type {
   LedgerEntry,
   Member,
   MemberStatus,
+  MyProfile,
+  MyProfileMembership,
   News,
   Note,
+  UserPreferences,
   PlatformClubSummary,
   PlatformStats,
   PlatformUserSummary,
@@ -329,5 +332,50 @@ export function mapInvoice(w: M.Invoice): Invoice | null {
     status: w.status,
     dunningLevel: Math.min(3, Math.max(0, w.dunning_level)) as DunningLevel,
     paidAt: w.paid_at ?? undefined,
+  };
+}
+
+/* ---------- App-Shell: eigene Selbstsicht (/me, /me/preferences) ---------- */
+
+function mapMyProfileMembership(w: M.MeMembership): MyProfileMembership {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    clubName: w.club_name,
+    clubShortName: w.club_short_name ?? undefined,
+    firstName: w.first_name,
+    lastName: w.last_name,
+    email: w.email ?? undefined,
+    birthDate: w.birth_date ?? undefined,
+    role: w.role,
+    status: mapMemberStatus(w.status),
+    joinedOn: w.joined_on ?? undefined,
+    validUntil: w.valid_until ?? undefined,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
+  };
+}
+
+export function mapMyProfile(w: M.Me): MyProfile {
+  return {
+    profileId: w.profile_id,
+    displayName: w.display_name ?? undefined,
+    locale: w.locale,
+    memberships: w.memberships.map(mapMyProfileMembership),
+  };
+}
+
+export function mapUserPreferences(w: M.UserPreferences): UserPreferences {
+  return {
+    profileId: w.profile_id,
+    locale: w.locale,
+    theme: w.theme,
+    notifications: {
+      events: w.notifications.events,
+      invoices: w.notifications.invoices,
+      news: w.notifications.news,
+      chat: w.notifications.chat,
+    },
+    updatedAt: w.updated_at,
   };
 }

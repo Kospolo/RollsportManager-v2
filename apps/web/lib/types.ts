@@ -8,6 +8,10 @@
 
 export type Id = string;
 
+// App-Shell-Selbstsicht (eigenes Profil + Präferenzen) lebt ausgelagert in
+// lib/types-me.ts, ist aber weiterhin unter "@/lib/types" verfügbar.
+export type * from "./types-me";
+
 // Batch-2-Modul-Typen (Hallen, Buchungen, Equipment, Reservierungen, Erfolge)
 // leben ausgelagert in lib/types-batch2.ts, sind aber weiterhin unter
 // "@/lib/types" verfügbar.

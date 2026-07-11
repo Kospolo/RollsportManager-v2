@@ -30,10 +30,10 @@ abgearbeitet und aktuell gehalten. `[ ]` = offen, `[~]` = teilweise da, `[x]` = 
 - [ ] Kür teilen (kuer-share), training-hub, trainingsplanung
 
 ## 4. App-Shell & UX (fällt beim Klicken sofort auf)
-- [ ] Profil-Seite (profile) — eigenes Profil ansehen/bearbeiten, Foto
-- [ ] Einstellungen (settings) inkl. notification-settings, email-settings, dashboard-settings, backup
-- [ ] Benachrichtigungen (Glocke oben rechts ist Deko — kein Feed)
-- [ ] Suche (Suchleiste oben ist Deko — keine Funktion)
+- [x] Profil-Seite (profil) — eigenes Profil ansehen/bearbeiten (Vorname/Nachname/E-Mail/Geburtsdatum) über die Facade (`data.updateMyProfile` → `PATCH /me`), self-scoped serverseitig (WHERE profile_id = auth.uid(), Rolle/Status nicht änderbar). Konto-Karte (Anmelde-E-Mail, Passwort-Hinweis). Verlinkt im Topbar-Benutzermenü. Gegen Dev-API als coach + member verifiziert (Screenshots), member kann NUR eigenes Profil ändern (Role-Escalation vom Update-Schema verworfen → 400), fremdes nicht. Foto-Upload noch offen.
+- [x] Einstellungen (einstellungen) — Sprache (DE/EN), Erscheinungsbild (Hell/Auto/Dunkel), Benachrichtigungs-Schalter (Termine/Rechnungen/Neuigkeiten/Chat) über die Facade (`getMyPreferences`/`updateMyPreferences` → `GET/PATCH /me/preferences`, user_preferences nur eigener Nutzer). Gegen Dev-API verifiziert (Screenshot). email-settings/dashboard-settings/backup noch offen; App-Boot-Hydration der Server-Präferenz (localStorage-first) offen.
+- [x] Benachrichtigungen (Glocke oben rechts) — funktionaler Feed mit Ungelesen-Zähler + „Alle gelesen", rollen-gescopt über die Facade-Reads (`deriveNotifications`), Leerzustand/Skeletons, DE+EN. Gelesen-Zustand clientseitig (localStorage). Gegen Dev-API als coach + member verifiziert (Screenshots, unterschiedliche Feeds). Live-Push/Polling + Chat-Quelle noch offen.
+- [x] Suche (Suchleiste oben / ⌘K) — funktionale Befehls-/Suchpalette (Overlay), live-gruppierte Treffer (Mitglieder/Termine/Küren/Neuigkeiten) über `searchAll()`, Tastatur-Navigation (Pfeile/Enter/Esc), respektiert RLS über die Facade-Reads. Gegen Dev-API als coach + member verifiziert (Screenshot „Grün" → Mitglieder; member sieht RLS-gescopt nur eigene Familie).
 - [ ] Favoriten (favoriten)
 - [ ] Registrierung/Onboarding (aktuell nur Dev-Login-Personas)
 

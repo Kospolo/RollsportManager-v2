@@ -47,9 +47,14 @@ export function UserMenu() {
     router.push("/login");
   }
 
+  function navigateTo(href: string) {
+    setOpen(false);
+    router.push(href);
+  }
+
   const items: { icon: IconName; label: string; onSelect: () => void }[] = [
-    { icon: "user", label: t("profile"), onSelect: () => setOpen(false) },
-    { icon: "settings", label: t("settings"), onSelect: () => setOpen(false) },
+    { icon: "user", label: t("profile"), onSelect: () => navigateTo("/profil") },
+    { icon: "settings", label: t("settings"), onSelect: () => navigateTo("/einstellungen") },
     { icon: "signout", label: t("signOut"), onSelect: handleSignOut },
   ];
 

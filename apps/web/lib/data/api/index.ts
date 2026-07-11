@@ -11,6 +11,7 @@ import { moduleApiRepositoryBatch5 } from "./modules-batch5";
 import { moduleApiRepositoryFinance } from "./modules-finance";
 import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
+import { moduleApiRepositoryMe } from "./modules-me";
 import {
   mapAttendance,
   mapClub,
@@ -322,6 +323,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Bankabgleich, Spenden, Jahresabschluss, Export (Finanz C) ---------- */
   ...moduleApiRepositoryFinanceC,
+
+  /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
+  ...moduleApiRepositoryMe,
 
   /* ---------- Plattform-Konsole (reine Lesesicht) ---------- */
   async platformListClubs() {

@@ -67,6 +67,7 @@ import type { Batch5Repository } from "./inputs-batch5";
 import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
+import type { MeRepository } from "./inputs-me";
 
 /**
  * Repository-Facade des Portals — die EINZIGE Datenquelle für Screens.
@@ -187,7 +188,8 @@ export interface DataRepository
     Batch5Repository,
     FinanceRepository,
     FinanceBRepository,
-    FinanceCRepository {
+    FinanceCRepository,
+    MeRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
   getMembers(): Promise<Member[]>;

@@ -108,6 +108,11 @@ export type {
   MatchBankTransactionInput,
   UpdateDonationInput,
 } from "./inputs-financec";
+export type {
+  MeRepository,
+  UpdateMyPreferencesInput,
+  UpdateMyProfileInput,
+} from "./inputs-me";
 export type { DataSourceName } from "./config";
 export { permissions, type Permissions } from "./permissions";
 export {
