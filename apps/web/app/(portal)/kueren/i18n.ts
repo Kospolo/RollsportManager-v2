@@ -28,6 +28,9 @@ export const kuerenDict = {
     listEmptyTitle: "Keine Küren in dieser Ansicht",
     listEmptyBody: "Ändere den Filter oder lege eine neue Kür mit Musik an.",
     listEmptyCta: "Alle anzeigen",
+    noRoutinesTitle: "Noch keine Küren",
+    noRoutinesBodyTrainer: "Lege die erste Kür mit Musik für deine Teams an.",
+    noRoutinesBodyMember: "Sobald dir eine Kür zugeordnet ist, erscheint sie hier.",
 
     /* Laden & Fehler (Facade) */
     loadErrorTitle: "Daten konnten nicht geladen werden",
@@ -169,6 +172,9 @@ export const kuerenDict = {
     listEmptyTitle: "No routines in this view",
     listEmptyBody: "Change the filter or create a new routine with music.",
     listEmptyCta: "Show all",
+    noRoutinesTitle: "No routines yet",
+    noRoutinesBodyTrainer: "Create the first routine with music for your teams.",
+    noRoutinesBodyMember: "As soon as a routine is assigned to you, it will appear here.",
 
     /* Loading & errors (facade) */
     loadErrorTitle: "Could not load data",

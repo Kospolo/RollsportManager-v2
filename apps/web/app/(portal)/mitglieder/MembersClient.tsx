@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort, formatEUR } from "@/lib/format";
-import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
+import { errorMessage, fullName, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Invoice, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -74,6 +74,7 @@ export function MembersClient() {
       repo.getInvoices(),
       softNotImplemented(repo.getTeams()),
       softNotImplemented(repo.getGuardianships()),
+      repo.getCurrentUser(),
     ] as const),
   );
 
@@ -81,6 +82,18 @@ export function MembersClient() {
   const invoices = state.data?.[1] ?? NO_INVOICES;
   const teams = state.data?.[2] ?? null;
   const guardianships = state.data?.[3] ?? null;
+  const currentUser = state.data?.[4] ?? null;
+
+  /**
+   * RLS-Verschärfung (Roster-Spaltenfilter am API-Layer): birth_date, email,
+   * valid_until, joined_on liefert die API für Nicht-Finanz-Rollen als null.
+   * Zahlstatus/Beitragsampel + PII zeigen wir daher NUR für can_manage_members
+   * (treasurer/moderator/admin/owner) oder Plattform-Admins — nie für plain
+   * member/guest_coach. Kein mock-Bypass: die Demo-Persona (Coach) sieht
+   * bewusst die reduzierte Namensliste, so wie es die RLS im api-Modus erzwingt.
+   */
+  const perms = permissions(currentUser);
+  const canSeeFinance = perms.canManageMembers || perms.isPlatformAdmin;
   /** Bekannte Contract-Lücken aktiv? Dann Hinweis in der Fußzeile. */
   const partialData = state.status === "ready" && (teams === null || guardianships === null);
 
@@ -105,32 +118,37 @@ export function MembersClient() {
   }));
 
   /** Offene Posten der angezeigten Personen (eigene Rechnungen — zählt nie doppelt). */
-  const shownOpenCents = rows.reduce((sum, member) => sum + openSumCentsOf(member.id, invoices), 0);
+  const shownOpenCents = canSeeFinance
+    ? rows.reduce((sum, member) => sum + openSumCentsOf(member.id, invoices), 0)
+    : 0;
 
   const columns: Column<Member>[] = [
     {
       id: "member",
       header: t("colMember"),
       footer: t("shownOf", { shown: rows.length, total: all.length }),
-      cell: (member) => (
-        <Link
-          href={`/mitglieder/${member.id}`}
-          aria-label={t("openProfile", { name: fullName(member) })}
-          className="group flex min-w-44 items-center gap-2.5 no-underline"
-        >
-          <Avatar personId={member.id} firstName={member.firstName} lastName={member.lastName} size="m" />
-          <span className="grid min-w-0">
-            <span className="truncate text-[14px] font-bold leading-tight text-ink group-hover:underline">
-              {fullName(member)}
+      cell: (member) => {
+        // birthDate/email liefert die API für Nicht-Finanz-Rollen als null →
+        // Untertitel nur zeigen, wenn wirklich ein Wert vorhanden ist.
+        const subtitle = member.birthDate
+          ? t("bornYear", { year: new Date(member.birthDate).getFullYear() })
+          : (member.email ?? null);
+        return (
+          <Link
+            href={`/mitglieder/${member.id}`}
+            aria-label={t("openProfile", { name: fullName(member) })}
+            className="group flex min-w-44 items-center gap-2.5 no-underline"
+          >
+            <Avatar personId={member.id} firstName={member.firstName} lastName={member.lastName} size="m" />
+            <span className="grid min-w-0">
+              <span className="truncate text-[14px] font-bold leading-tight text-ink group-hover:underline">
+                {fullName(member)}
+              </span>
+              {subtitle && <span className="truncate text-[12px] text-ink-faint">{subtitle}</span>}
             </span>
-            <span className="truncate text-[12px] text-ink-faint">
-              {member.birthDate
-                ? t("bornYear", { year: new Date(member.birthDate).getFullYear() })
-                : member.email ?? "—"}
-            </span>
-          </span>
-        </Link>
-      ),
+          </Link>
+        );
+      },
     },
     {
       id: "teams",
@@ -167,35 +185,44 @@ export function MembersClient() {
         </span>
       ),
     },
-    {
-      id: "dues",
-      header: t("colDues"),
-      footer: (
-        <span className="whitespace-nowrap font-mono text-mono-table tabular-nums">
-          {t("duesOpenSum", { sum: formatEUR(shownOpenCents, locale) })}
-        </span>
-      ),
-      cell: (member) => {
-        const status = duesStatus(member, invoices, guardianships);
-        if (status.kind === "exempt") return <Badge tone="neutral">{t("duesExempt")}</Badge>;
-        if (status.kind === "paid")
-          return (
-            <Badge tone="success" icon="check">
-              {t("duesPaid")}
-            </Badge>
-          );
-        return <DunningBadge level={status.level} />;
-      },
-    },
-    {
-      id: "joined",
-      header: t("colJoined"),
-      cell: (member) => (
-        <span className="whitespace-nowrap text-[13px] text-ink-soft tabular-nums">
-          {formatDateShort(member.joinedAt, locale)}
-        </span>
-      ),
-    },
+    // Beitragsstatus/Ampel + Beitritt NUR für Finanz-Rollen: die API liefert die
+    // zugrunde liegenden Felder für plain member/guest_coach ohnehin als null.
+    ...(canSeeFinance
+      ? ([
+          {
+            id: "dues",
+            header: t("colDues"),
+            footer: (
+              <span className="whitespace-nowrap font-mono text-mono-table tabular-nums">
+                {t("duesOpenSum", { sum: formatEUR(shownOpenCents, locale) })}
+              </span>
+            ),
+            cell: (member: Member) => {
+              const status = duesStatus(member, invoices, guardianships);
+              if (status.kind === "exempt") return <Badge tone="neutral">{t("duesExempt")}</Badge>;
+              if (status.kind === "paid")
+                return (
+                  <Badge tone="success" icon="check">
+                    {t("duesPaid")}
+                  </Badge>
+                );
+              return <DunningBadge level={status.level} />;
+            },
+          },
+          {
+            id: "joined",
+            header: t("colJoined"),
+            cell: (member: Member) =>
+              member.joinedAt ? (
+                <span className="whitespace-nowrap text-[13px] text-ink-soft tabular-nums">
+                  {formatDateShort(member.joinedAt, locale)}
+                </span>
+              ) : (
+                <span className="text-[13px] text-ink-faint">—</span>
+              ),
+          },
+        ] as Column<Member>[])
+      : []),
     {
       id: "open",
       header: <span className="sr-only">{t("colProfile")}</span>,
@@ -298,9 +325,13 @@ export function MembersClient() {
         title={t("title")}
         sub={t("sub")}
         action={
-          <Button icon="plus" onClick={() => setInviteOpen(true)}>
-            {t("invite")}
-          </Button>
+          // Einladen bleibt Finanz-/Verwaltungs-Rollen vorbehalten (Server: owner/admin);
+          // plain member/guest_coach bekommen den Button nicht mehr angeboten.
+          canSeeFinance ? (
+            <Button icon="plus" onClick={() => setInviteOpen(true)}>
+              {t("invite")}
+            </Button>
+          ) : undefined
         }
       />
 

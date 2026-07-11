@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { Member, Routine, RoutineStatus } from "@/lib/types";
-import { errorMessage, isNotImplemented, memberById } from "@/lib/data";
+import { dataSource, errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
@@ -35,8 +35,13 @@ const STATUS_ORDER: Record<RoutineStatus, number> = {
   archived: 3,
 };
 
-/** Kopf (Titel + „Neue Kür") — identisch über Lade-, Fehler- und Datenzustand. */
-function ListShell({ children }: { children: ReactNode }) {
+/**
+ * Kopf (Titel + „Neue Kür") — identisch über Lade-, Fehler- und Datenzustand.
+ * Die Liste ist RLS-gescoped: Mitglieder sehen nur ihre EIGENEN Küren, Coaches
+ * die ihrer Teams. Anlegen ist is_club_trainer vorbehalten — der „Neue Kür"-
+ * Button erscheint deshalb nur für Trainer:innen (canCreate).
+ */
+function ListShell({ canCreate, children }: { canCreate: boolean; children: ReactNode }) {
   const t = useT(kuerenDict);
   const { showToast } = useToast();
   return (
@@ -46,12 +51,14 @@ function ListShell({ children }: { children: ReactNode }) {
         title={t("pageTitle")}
         sub={t("pageSub")}
         action={
-          <Button
-            icon="plus"
-            onClick={() => showToast(t("demoUnavailable"), { tone: "info" })}
-          >
-            {t("newRoutine")}
-          </Button>
+          canCreate ? (
+            <Button
+              icon="plus"
+              onClick={() => showToast(t("demoUnavailable"), { tone: "info" })}
+            >
+              {t("newRoutine")}
+            </Button>
+          ) : undefined
         }
       />
       {children}
@@ -61,12 +68,18 @@ function ListShell({ children }: { children: ReactNode }) {
 
 export function RoutinesList() {
   const t = useT(kuerenDict);
-  /* Küren + Mitglieder (für die Läufer:innen-Avatare) gemeinsam laden. */
-  const state = useData((repo) => Promise.all([repo.getRoutines(), repo.getMembers()]));
+  /* Küren + Mitglieder (Läufer:innen-Avatare) + aktuelle Person gemeinsam laden. */
+  const state = useData((repo) =>
+    Promise.all([repo.getRoutines(), repo.getMembers(), repo.getCurrentUser()]),
+  );
+
+  // Anlegen = is_club_trainer; im mock-Modus (Demo-Persona Trainerin) sichtbar.
+  const isTrainer =
+    permissions(state.data?.[2] ?? null).isTrainer || dataSource === "mock";
 
   if (state.status === "loading") {
     return (
-      <ListShell>
+      <ListShell canCreate={isTrainer}>
         <div aria-hidden="true" className="grid gap-5">
           <Skeleton className="h-9 w-full max-w-xl rounded-full" />
           <ul className="grid list-none gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -83,7 +96,7 @@ export function RoutinesList() {
 
   if (state.status === "error") {
     return (
-      <ListShell>
+      <ListShell canCreate={isTrainer}>
         {isNotImplemented(state.error) ? (
           <EmptyState
             icon="sparkle"
@@ -103,10 +116,18 @@ export function RoutinesList() {
   }
 
   const [routines, members] = state.data;
-  return <LoadedList routines={routines} members={members} />;
+  return <LoadedList routines={routines} members={members} isTrainer={isTrainer} />;
 }
 
-function LoadedList({ routines, members }: { routines: Routine[]; members: Member[] }) {
+function LoadedList({
+  routines,
+  members,
+  isTrainer,
+}: {
+  routines: Routine[];
+  members: Member[];
+  isTrainer: boolean;
+}) {
   const t = useT(kuerenDict);
   const [filter, setFilter] = useState<StatusFilter>("all");
 
@@ -125,8 +146,22 @@ function LoadedList({ routines, members }: { routines: Routine[]; members: Membe
     { value: "archived", label: t("statusArchived"), count: countOf("archived") },
   ];
 
+  // Keine Küren im gescopeten Read: Mitglied hat (noch) keine eigene Kür,
+  // Trainer:in hat noch keine angelegt — kein „Filter zurücksetzen" anbieten.
+  if (routines.length === 0) {
+    return (
+      <ListShell canCreate={isTrainer}>
+        <EmptyState
+          icon="routines"
+          title={t("noRoutinesTitle")}
+          body={isTrainer ? t("noRoutinesBodyTrainer") : t("noRoutinesBodyMember")}
+        />
+      </ListShell>
+    );
+  }
+
   return (
-    <ListShell>
+    <ListShell canCreate={isTrainer}>
       <FilterChips
         options={filterOptions}
         value={filter}

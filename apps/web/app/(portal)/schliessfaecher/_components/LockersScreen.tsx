@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Locker, LockerStatus, Member } from "@/lib/types";
+import type { Locker, LockerStatus, Member, MemberRole } from "@/lib/types";
 import { dataSource, errorMessage, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
@@ -24,13 +24,22 @@ import { DeleteLockerDialog } from "./DeleteLockerDialog";
  * Komfort — die verbindliche Durchsetzung bleibt serverseitig (RLS/API/Trigger,
  * 403 → Toast + Rollback).
  *
- * Im mock-Modus ist die Demo-Persona eine Trainerin (kein Admin); damit ALLE
- * Schreibpfade erlebbar sind, werden die Rechte dort auf true gehoben. Im
- * api-Modus zählt allein die echte Rolle.
+ * RLS-Verschärfung: Fächer LESEN dürfen nur owner/admin/treasurer (+ Plattform-
+ * Admin) oder das eigene, zugeordnete Fach eines Mitglieds. Moderator/Coach
+ * sehen KEINE Fächer. VERWALTEN/ZUORDNEN ist owner/admin/treasurer vorbehalten.
+ * Die Zeilen-Sichtbarkeit erzwingt die RLS serverseitig; hier gaten wir nur die
+ * Aktionen und die Ansicht (Verwaltungs- vs. Mitglieds-Sicht).
+ *
+ * Im mock-Modus gibt es keine echte Session; damit ALLE Schreibpfade erlebbar
+ * sind, werden die Verwaltungsrechte dort auf true gehoben. Im api-Modus zählt
+ * allein die echte Rolle.
  */
 
 const NO_LOCKERS: Locker[] = [];
 const NO_MEMBERS: Member[] = [];
+
+/** Fächer verwalten/zuordnen: owner/admin/treasurer (+ Plattform-Admin). */
+const LOCKER_ADMIN_ROLES: readonly MemberRole[] = ["owner", "admin", "treasurer"];
 
 export function LockersScreen() {
   const t = useT(schliessfaecherDict);
@@ -45,8 +54,13 @@ export function LockersScreen() {
 
   const perms = permissions(currentUser);
   const isMock = dataSource === "mock";
-  const canManage = perms.isClubAdmin || isMock;
-  const canAssign = perms.isTrainer || isMock;
+  // Verwalten UND Zuordnen: owner/admin/treasurer (+ Plattform-Admin). Moderator
+  // und Coach dürfen weder verwalten noch überhaupt Fächer sehen.
+  const canManage =
+    (perms.role != null && LOCKER_ADMIN_ROLES.includes(perms.role)) || perms.isPlatformAdmin || isMock;
+  const canAssign = canManage;
+  /** Mitglieds-/Nicht-Verwalter-Sicht: nur das eigene Fach (oder keins). */
+  const memberView = !canManage;
 
   const [filter, setFilter] = useState<LockerStatus | "all">("all");
   const [form, setForm] = useState<LockerFormValue | null>(null);
@@ -99,17 +113,17 @@ export function LockersScreen() {
       />
     );
   } else if (lockers.length === 0) {
-    body = (
+    body = memberView ? (
+      <EmptyState icon="lock" title={t("emptyMemberTitle")} body={t("emptyMemberBody")} />
+    ) : (
       <EmptyState
         icon="lock"
         title={t("listEmptyTitle")}
-        body={canManage ? t("listEmptyBody") : t("listEmptyMember")}
+        body={t("listEmptyBody")}
         action={
-          canManage ? (
-            <Button icon="plus" onClick={() => setForm({ mode: "create" })}>
-              {t("listEmptyCta")}
-            </Button>
-          ) : undefined
+          <Button icon="plus" onClick={() => setForm({ mode: "create" })}>
+            {t("listEmptyCta")}
+          </Button>
         }
       />
     );
@@ -159,8 +173,8 @@ export function LockersScreen() {
     <div className="mx-auto grid w-full max-w-6xl gap-8">
       <SectionHeader
         level={1}
-        title={t("pageTitle")}
-        sub={t("pageSub")}
+        title={memberView ? t("pageTitleMember") : t("pageTitle")}
+        sub={memberView ? t("pageSubMember") : t("pageSub")}
         action={
           canManage && state.status === "ready" && lockers.length > 0 ? (
             <Button icon="plus" onClick={() => setForm({ mode: "create" })}>

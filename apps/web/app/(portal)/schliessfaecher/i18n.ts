@@ -18,6 +18,8 @@ export const schliessfaecherDict = {
     /* Kopf */
     pageTitle: "Schließfächer",
     pageSub: "Schließfächer deines Vereins — zuordnen, freigeben und verwalten",
+    pageTitleMember: "Dein Schließfach",
+    pageSubMember: "Dein zugeordnetes Schließfach im Verein",
     newLocker: "Schließfach anlegen",
 
     /* Status-Filter */
@@ -51,6 +53,8 @@ export const schliessfaecherDict = {
     listEmptyTitle: "Noch keine Schließfächer",
     listEmptyBody: "Lege das erste Schließfach für deinen Verein an.",
     listEmptyMember: "Sobald Schließfächer angelegt sind, siehst du hier ihren Status.",
+    emptyMemberTitle: "Dir ist kein Fach zugeordnet",
+    emptyMemberBody: "Sobald dir der Verein ein Schließfach zuordnet, erscheint es hier.",
     listEmptyCta: "Erstes Schließfach anlegen",
     filterEmptyTitle: "Nichts mit diesem Status",
     filterEmptyBody: "Wähle einen anderen Status oder zeige alle an.",
@@ -102,6 +106,8 @@ export const schliessfaecherDict = {
     /* Kopf */
     pageTitle: "Lockers",
     pageSub: "Your club's lockers — assign, release and manage",
+    pageTitleMember: "Your locker",
+    pageSubMember: "Your assigned locker at the club",
     newLocker: "Add locker",
 
     /* Status-Filter */
@@ -135,6 +141,8 @@ export const schliessfaecherDict = {
     listEmptyTitle: "No lockers yet",
     listEmptyBody: "Add the first locker for your club.",
     listEmptyMember: "Once lockers are added, you'll see their status here.",
+    emptyMemberTitle: "No locker assigned to you",
+    emptyMemberBody: "As soon as the club assigns you a locker, it will appear here.",
     listEmptyCta: "Add first locker",
     filterEmptyTitle: "Nothing with this status",
     filterEmptyBody: "Pick a different status or show everything.",

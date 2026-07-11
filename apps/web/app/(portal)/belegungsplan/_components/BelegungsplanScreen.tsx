@@ -65,7 +65,12 @@ export function BelegungsplanScreen() {
   const teams = state.data?.teams ?? NO_TEAMS;
   const currentUser = state.data?.currentUser ?? null;
 
+  // RLS-Verschärfung: Buchungen anlegen/ändern dürfen jetzt NUR Trainer:innen+
+  // (coach/moderator/admin/owner). Mitglieder + treasurer sehen den Plan rein
+  // lesend (POST liefert sonst 403). Der mock-Bypass hält die Demo-Schreibpfade
+  // erlebbar (Demo-Persona ist Trainerin).
   const isTrainer = permissions(currentUser).isTrainer || dataSource === "mock";
+  const canBook = isTrainer;
   const canDeleteBooking = (booking: FacilityBooking) =>
     isTrainer || booking.bookedByMemberId === currentUser?.id;
 
@@ -112,13 +117,11 @@ export function BelegungsplanScreen() {
   }
 
   const headerActions =
-    state.status === "ready" && facilities.length > 0 ? (
+    state.status === "ready" && facilities.length > 0 && isTrainer ? (
       <>
-        {isTrainer && (
-          <Button variant="secondary" icon="plus" onClick={() => setFacilityForm({ mode: "create" })}>
-            {t("newFacility")}
-          </Button>
-        )}
+        <Button variant="secondary" icon="plus" onClick={() => setFacilityForm({ mode: "create" })}>
+          {t("newFacility")}
+        </Button>
         <Button icon="events" onClick={() => openBooking()}>
           {t("newBooking")}
         </Button>
@@ -215,6 +218,7 @@ export function BelegungsplanScreen() {
           members={members}
           teams={teams}
           canManageFacility={isTrainer}
+          canBook={canBook}
           canDeleteBooking={canDeleteBooking}
           onBook={() => openBooking(detailFacility.id)}
           onEditFacility={() => {

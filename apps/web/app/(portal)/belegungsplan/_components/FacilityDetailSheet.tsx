@@ -22,10 +22,11 @@ import {
 /**
  * Detail-Sheet einer Halle: Stammdaten (Art, Ort, Kapazität, Hinweise) und die
  * kommenden Buchungen nach Datum gruppiert. „Hier buchen" öffnet das
- * Buchen-Sheet (Halle vorbelegt). Trainer:innen (canManageFacility) bekommen
- * Bearbeiten/Löschen der Halle; einzelne Buchungen darf löschen, wer sie
- * angelegt hat oder Trainer:in ist (canDeleteBooking). Überschneidungen werden
- * je Buchung als Warn-Chip markiert.
+ * Buchen-Sheet (Halle vorbelegt) — sichtbar NUR für Trainer:innen+ (canBook),
+ * da Mitglieder seit der RLS-Verschärfung nur noch lesen dürfen (POST ⇒ 403).
+ * Trainer:innen (canManageFacility) bekommen Bearbeiten/Löschen der Halle;
+ * einzelne Buchungen darf löschen, wer sie angelegt hat oder Trainer:in ist
+ * (canDeleteBooking). Überschneidungen werden je Buchung als Warn-Chip markiert.
  */
 export function FacilityDetailSheet({
   facility,
@@ -33,6 +34,7 @@ export function FacilityDetailSheet({
   members,
   teams,
   canManageFacility,
+  canBook,
   canDeleteBooking,
   onBook,
   onEditFacility,
@@ -46,6 +48,8 @@ export function FacilityDetailSheet({
   members: Member[];
   teams: Team[];
   canManageFacility: boolean;
+  /** Trainer:in+ — nur dann wird „Hier buchen" angeboten. */
+  canBook: boolean;
   canDeleteBooking: (booking: FacilityBooking) => boolean;
   onBook: () => void;
   onEditFacility: () => void;
@@ -83,18 +87,22 @@ export function FacilityDetailSheet({
             <Button variant="ghost" icon="edit" onClick={onEditFacility}>
               {t("editAction")}
             </Button>
-            <Button icon="events" onClick={onBook}>
-              {t("bookHere")}
-            </Button>
+            {canBook && (
+              <Button icon="events" onClick={onBook}>
+                {t("bookHere")}
+              </Button>
+            )}
           </>
         ) : (
           <>
             <Button variant="ghost" onClick={onClose}>
               {t("close")}
             </Button>
-            <Button icon="events" onClick={onBook}>
-              {t("bookHere")}
-            </Button>
+            {canBook && (
+              <Button icon="events" onClick={onBook}>
+                {t("bookHere")}
+              </Button>
+            )}
           </>
         )
       }
