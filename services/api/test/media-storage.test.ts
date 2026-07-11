@@ -12,6 +12,7 @@ import {
   MEDIA_DIR,
   assertValidKey,
   contentTypeFromKey,
+  deleteBytes,
   galleryKindFor,
   generateStorageKey,
   isAllowedContentType,
@@ -85,5 +86,27 @@ describe('byte round-trip', () => {
 
   it('returns undefined for an unknown key', async () => {
     expect(await readBytes('does-not-exist-xyz.png')).toBeUndefined();
+  });
+});
+
+describe('deleteBytes (DELETE /me/photo blob removal)', () => {
+  it('removes an uploaded blob and reports true, then false when already gone', async () => {
+    const key = `vitest-del-${Date.now()}.txt`;
+    await saveBytes(key, new TextEncoder().encode('weg damit'));
+    expect(await readBytes(key)).toBeDefined();
+
+    expect(await deleteBytes(key)).toBe(true); // first removal hits the file
+    expect(await readBytes(key)).toBeUndefined(); // and it is really gone
+    expect(await deleteBytes(key)).toBe(false); // idempotent: nothing left
+  });
+
+  it('never deletes committed seed assets and reports false', async () => {
+    // The seed asset lives in SEED_MEDIA_DIR, which deleteBytes never touches.
+    expect(await deleteBytes('seed-doc-satzung-2026.pdf')).toBe(false);
+    expect(await readBytes('seed-doc-satzung-2026.pdf')).toBeDefined();
+  });
+
+  it('rejects an unsafe key just like the other byte helpers', async () => {
+    await expect(deleteBytes('../etc/passwd')).rejects.toThrow();
   });
 });

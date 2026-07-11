@@ -23,7 +23,7 @@
 // ============================================================================
 
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, extname, join, resolve } from 'node:path';
 
@@ -131,6 +131,23 @@ export async function readBytes(key: string): Promise<Uint8Array | undefined> {
     }
   }
   return undefined;
+}
+
+/**
+ * Best-effort removal of an uploaded blob (e.g. when a member clears their
+ * profile photo). Only ever touches MEDIA_DIR — the committed seed assets in
+ * SEED_MEDIA_DIR are never deleted. Returns true when a file was removed,
+ * false when there was nothing to remove (already gone / seed-only key).
+ * Never throws: the DB row is the source of truth, a stray blob is harmless.
+ */
+export async function deleteBytes(key: string): Promise<boolean> {
+  assertValidKey(key);
+  try {
+    await rm(join(MEDIA_DIR, key));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Best-effort content type from a key's extension (fallback only). */

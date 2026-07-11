@@ -10,6 +10,9 @@
 //                        the bytes and sets the caller's OWN club_members
 //                        avatar_key (every membership row of the caller). Any
 //                        member may set their own photo - no club role needed.
+//   DELETE /me/photo     Clears the caller's OWN avatar_key (every membership
+//                        row of the caller) and best-effort removes the blob
+//                        when no roster row references it any more. Self only.
 //   GET  /media/{key}    Streams the bytes with their stored content_type.
 //                        Access is RLS-enforced: the key must resolve to a
 //                        gallery/document row VISIBLE to the caller (member +
@@ -35,6 +38,7 @@ import {
   MAX_UPLOAD_BYTES,
   assertValidKey,
   contentTypeFromKey,
+  deleteBytes,
   galleryKindFor,
   generateStorageKey,
   isAllowedContentType,
@@ -145,6 +149,63 @@ export function createMediaRouter(): Hono<AuthEnv> {
         updated_members: rows.length,
       },
       201,
+    );
+  });
+
+  // --- Remove profile photo --------------------------------------------------
+  // Any member may clear their OWN avatar (self only: WHERE profile_id =
+  // auth.uid() + club_members_update_self RLS both pin it to the caller; a
+  // foreign row is filtered to 0 rows). Idempotent: clearing when no photo is
+  // set still succeeds as long as the caller has a membership row. The blob is
+  // removed best-effort, but only once NO roster row references the key any
+  // more (guards against a shared/seed key) and never from the seed dir.
+  router.delete('/me/photo', async (c) => {
+    const claims = c.get('claims');
+
+    const outcome = await withUser(claims, async (tx) => {
+      // Keys currently on the caller's own rows, captured BEFORE clearing.
+      const before = await tx`
+        select distinct avatar_key from app.club_members
+        where profile_id = ${claims.sub} and deleted_at is null and avatar_key is not null`;
+
+      const rows = await tx`
+        update app.club_members set avatar_key = null
+        where profile_id = ${claims.sub} and deleted_at is null
+        returning id`;
+      if (rows.length === 0) return null; // no membership row for the caller
+
+      // Only orphan blobs (no remaining reference in any roster row) are safe
+      // to delete. RLS narrows this SELECT to rows the caller may see, which is
+      // fine: in practice an avatar key is unique to the caller's own rows.
+      const orphanKeys: string[] = [];
+      for (const r of before) {
+        const key = r['avatar_key'] as string;
+        const still = await tx`
+          select 1 from app.club_members
+          where avatar_key = ${key} and deleted_at is null limit 1`;
+        if (still.length === 0) orphanKeys.push(key);
+      }
+      return { cleared: rows.length, orphanKeys };
+    });
+
+    if (!outcome) {
+      throw problem(404, 'Not Found', 'No membership row for the current user');
+    }
+
+    // Best-effort blob removal outside the DB tx (never fails the request).
+    let removedBlobs = 0;
+    for (const key of outcome.orphanKeys) {
+      if (await deleteBytes(key)) removedBlobs += 1;
+    }
+
+    return c.json(
+      {
+        avatar_key: null,
+        avatar_url: null,
+        updated_members: outcome.cleared,
+        removed_blobs: removedBlobs,
+      },
+      200,
     );
   });
 

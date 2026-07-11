@@ -191,6 +191,15 @@ begin
   perform testkit.affects('photo: member cannot set avatar_key on a FOREIGN member (0 rows)',
     $q$update app.club_members set avatar_key = 'hijack-01.jpg'
         where id = 'a0000000-0000-4000-8000-000000000012'$q$, 0);
+  -- DELETE /me/photo backing UPDATE: clearing avatar_key is the SAME self-scoped
+  -- write (club_members_update_self). She MAY null her own row (just set above)
+  -- but a foreign clear stays a silent 0-row no-op.
+  perform testkit.affects('photo: member MAY clear avatar_key on HER OWN membership (1 row)',
+    $q$update app.club_members set avatar_key = null
+        where profile_id = '90000000-0000-4000-8000-000000000009' and deleted_at is null$q$, 1);
+  perform testkit.affects('photo: member cannot clear avatar_key on a FOREIGN member (0 rows)',
+    $q$update app.club_members set avatar_key = null
+        where id = 'a0000000-0000-4000-8000-000000000012'$q$, 0);
 end;
 $$;
 
