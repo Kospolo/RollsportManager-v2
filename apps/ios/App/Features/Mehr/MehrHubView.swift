@@ -19,16 +19,28 @@ struct MehrHubView: View {
     ]
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
-                section(header: "mehr.section.available", tiles: MehrCatalog.available)
-                section(header: "mehr.section.soon", tiles: MehrCatalog.soon)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                    section(header: "mehr.section.available", tiles: MehrCatalog.available)
+                    section(header: "mehr.section.soon", tiles: MehrCatalog.soon)
+                }
+                .padding(Theme.Spacing.s5)
             }
-            .padding(Theme.Spacing.s5)
+            .background(Theme.Colors.bgCanvas.ignoresSafeArea())
+            .navigationTitle(Text("mehr.title"))
+            .navigationBarTitleDisplayMode(.large)
+#if DEBUG
+            // NUR DEBUG/Smoke-Test: `-devMehrScrollTo <id>` scrollt eine Kachel
+            // in den sichtbaren Bereich (additive Deeplink-Automation).
+            .task {
+                if let id = UserDefaults.standard.string(forKey: "devMehrScrollTo") {
+                    try? await _Concurrency.Task.sleep(nanoseconds: 400_000_000)
+                    withAnimation { proxy.scrollTo(id, anchor: .center) }
+                }
+            }
+#endif
         }
-        .background(Theme.Colors.bgCanvas.ignoresSafeArea())
-        .navigationTitle(Text("mehr.title"))
-        .navigationBarTitleDisplayMode(.large)
     }
 
     private func section(header: LocalizedStringKey, tiles: [MehrTile]) -> some View {
@@ -43,6 +55,7 @@ struct MehrHubView: View {
             LazyVGrid(columns: columns, spacing: Theme.Spacing.s3) {
                 ForEach(tiles) { tile in
                     tileView(tile)
+                        .id(tile.id)
                 }
             }
         }
@@ -120,8 +133,15 @@ struct MehrTileCard: View {
     private var badge: some View {
         if isSoon {
             MehrBadge(text: "mehr.badge.soon", tone: .neutral)
-        } else if tile.isNew {
-            MehrBadge(text: "mehr.badge.new", tone: .brand)
+        } else if tile.isNew || tile.isPro {
+            HStack(spacing: Theme.Spacing.s1) {
+                if tile.isPro {
+                    MehrBadge(text: "mehr.badge.pro", tone: .honey)
+                }
+                if tile.isNew {
+                    MehrBadge(text: "mehr.badge.new", tone: .brand)
+                }
+            }
         } else {
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .bold))

@@ -25,6 +25,7 @@ struct MainTabView: View {
         case wettkampf, belegung, ausruestung, checkin
         case notes, events, departments, anniversaries
         case lockers, waitlists, budget, profile
+        case gallery, documents
     }
 
     @State private var selection: Tab
@@ -99,6 +100,8 @@ struct MainTabView: View {
                         case .waitlists: WaitlistsRootView()
                         case .budget: BudgetRootView()
                         case .profile: ProfileRootView()
+                        case .gallery: GalleryRootView()
+                        case .documents: DocumentsRootView()
                         }
                     }
             }

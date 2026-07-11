@@ -42,6 +42,10 @@ struct MehrTile: Identifiable {
     let systemImage: String
     let tone: MehrTone
     var isNew: Bool = false
+    /// PRO-Modul (Galerie/Dokumente): trägt zusätzlich ein „PRO"-Badge. Der
+    /// Zugang bleibt sichtbar; das eigentliche Gate zieht die Ziel-View
+    /// (Entitlement → Upgrade-Karte statt Inhalt).
+    var isPro: Bool = false
     let destination: AnyView?
 
     var isNavigable: Bool { destination != nil }
@@ -102,6 +106,18 @@ enum MehrCatalog {
             titleKey: "module.anniversaries.title", descKey: "module.anniversaries.desc",
             systemImage: "gift.fill", tone: .honey, isNew: true,
             destination: AnyView(AnniversariesRootView())
+        ),
+        MehrTile(
+            id: "gallery",
+            titleKey: "module.gallery.title", descKey: "module.gallery.desc",
+            systemImage: "photo.on.rectangle.angled", tone: .info, isNew: true, isPro: true,
+            destination: AnyView(GalleryRootView())
+        ),
+        MehrTile(
+            id: "document",
+            titleKey: "module.document.title", descKey: "module.document.desc",
+            systemImage: "doc.fill", tone: .success, isNew: true, isPro: true,
+            destination: AnyView(DocumentsRootView())
         ),
         MehrTile(
             id: "competition",
@@ -209,8 +225,6 @@ enum MehrCatalog {
 
     /// Noch nicht gebaut — nicht navigierbar, „Bald“-Kachel.
     static let soon: [MehrTile] = [
-        soonTile("gallery", "module.gallery.title", "module.gallery.desc", "photo.on.rectangle.angled", .info),
-        soonTile("document", "module.document.title", "module.document.desc", "doc.fill", .success),
         soonTile("manage", "module.manage.title", "module.manage.desc", "shield.fill", .neutral),
     ]
 

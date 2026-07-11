@@ -52,6 +52,13 @@ struct RoutineDetailView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text(verbatim: routine.title))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                // Nur Trainer:innen (Rolle aus SessionStore); der Button blendet
+                // sich selbst aus, wenn die Rolle das Teilen nicht erlaubt.
+                ShareRoutineButton(routineId: routine.id, routineTitle: routine.title)
+            }
+        }
         .task {
             await viewModel.loadIfNeeded(
                 api: session.api,

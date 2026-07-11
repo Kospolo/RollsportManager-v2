@@ -9,6 +9,12 @@ enum DevConfig {
     /// Default-Basis-URL des lokalen Hono-API-Stacks.
     static let defaultBaseURL = URL(string: "http://127.0.0.1:3022")!
 
+    /// Origin der lokalen Web-App (dev-stack.sh: `Web: http://localhost:3021`).
+    /// Kür-Share-Links sind serverseitig RELATIV (`/wettkampf/kuer/{token}`) —
+    /// die native App setzt diesen Origin davor (QR/Kopieren/Teilen). Kein
+    /// Prod-Mechanismus; die echte Domain kommt später aus der Konfiguration.
+    static let webBaseURL = URL(string: "http://localhost:3021")!
+
     /// UserDefaults-Schlüssel, um die Basis-URL in Dev-Szenarien zu
     /// übersteuern (z. B. `xcrun simctl launch ... --setenv` Alternativen
     /// oder ein verstecktes Debug-Menü). Kein Prod-Mechanismus.
