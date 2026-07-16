@@ -66,8 +66,35 @@ konfigurierbares, **serverseitig durchgesetztes** RBAC. Vom Nutzer genehmigt (20
 > 3. **`app.team_coaches` war ein RLS-Bypass** (0025 legte die View ohne `security_invoker` an, und
 >    `0001:41-43` grantet `authenticated` automatisch DML **auch auf Views**). Jeder authentifizierte
 >    Nutzer konnte fremde Trainer-Zuordnungen **lesen UND hart löschen** — reproduziert mit einer
->    Person ohne jede Mitgliedschaft. Geschlossen in `0027`; `93c` prüft es, und ein Stolperdraht
->    (Migration + Test) lässt **jede künftige View in `app` ohne `security_invoker`** scheitern.
+>    Person ohne jede Mitgliedschaft. Geschlossen in `0027`; `93c` prüft es.
+>    **Der Nachsatz „ein Stolperdraht (Migration + Test) lässt jede künftige View in `app` ohne
+>    `security_invoker` scheitern" war zur Hälfte eine Falschzusage — korrigiert 2026-07-16:**
+>    - **Migration-Hälfte: war falsch.** `0027:57-71` ist ein `do`-Block, der **einmal** zum
+>      Anwendungszeitpunkt lief und den damaligen Bestand prüfte. Eine *künftige* Migration mit
+>      einer unsicheren View läuft anstandslos durch — der Block ist längst Geschichte.
+>      Es gibt **keine** Event-Trigger im Repo (`select … from pg_event_trigger` → leer).
+>    - **Test-Hälfte: war richtig.** `93c:99-123` existiert und **wirkt**: die Erkennungslogik
+>      findet die View `app.zukunft_test` aus dem Befund sofort (nachgestellt gegen `rsm2-pg-dev`).
+>      Die pauschale Aussage „der Stolperdraht existiert nicht" ist dafür **nicht haltbar**.
+>    - **Was wirklich fehlte:** `93c` behauptet nur „es gibt keine unsichere View" und hat **nie
+>      geprüft, ob die Kontrolle rot werden *kann***. Wäre die Erkennung kaputt, bliebe sie ewig
+>      grün und schützte nichts. Eine grüne Kontrolle, die nicht rot werden kann, ist wertlos.
+>    - **Jetzt gebaut (`0030` + `93g`):** `app.insecure_views()` (Fundstellen) und
+>      `app.assert_no_insecure_views()` (wirft; **ans Ende jeder künftigen Migration hängen**) —
+>      eine Wahrheit statt Copy-Paste, auch **ohne Superuser** nutzbar. `93g` stellt den Angriff
+>      **nach** statt ihn zu behaupten: legt `app.zukunft_test` an, verlangt, dass der Schutz
+>      anschlägt (`P0001`), lässt dieselbe View **mit** `security_invoker` durch, und belegt den
+>      Abfluss Ende-zu-Ende (21 Zeilen an eine Person ohne jede Mitgliedschaft).
+>      **Geltungsbereich erweitert:** zusätzlich Schema `api` — dort grantet `0001:48-49` **ANON**
+>      `select`, eine View ohne `security_invoker` wäre dort ein Bypass für **Unangemeldete**.
+>      `api` ist heute leer, die Regel steht also da, *bevor* die erste PostgREST-View entsteht.
+>    - **Bewusst KEIN Event-Trigger.** Geprüft statt vermutet: als Nicht-Superuser (wie Supabase'
+>      `postgres`) liefert `create event trigger` → `ERROR: permission denied to create event
+>      trigger / HINT: Must be superuser`. Ein Event-Trigger würde die Migration auf Supabase-Prod
+>      **scheitern lassen**; ihn „nur wenn Superuser" anzulegen wäre die nächste Falschzusage — er
+>      existierte lokal und fehlte genau dort, wo man sich auf ihn verlässt. Der Testlauf ist
+>      ohnehin der wirksamere Ort: unsichere Views entstehen durch **Migrationen aus diesem Repo**,
+>      und die kommen alle an `93g` vorbei — *vor* dem Deploy.
 > 4. **`/reports/anniversaries` war ein Datenleck** (`date - years` rekonstruiert `birth_date`/
 >    `joined_on` exakt — Spalten, die `members.ts` redigiert). Gated seit Phase 2 auf
 >    `member_contact >= read_all`. **Verhaltensänderung:** coach/member/guest_coach 200 → 403.
