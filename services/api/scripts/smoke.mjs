@@ -29,7 +29,16 @@ const MEMBER = {
   admin: 'a0000000-0000-4000-8000-000000000004',
   linaChildOfParent: 'a0000000-0000-4000-8000-000000000007',
   sofiaNotHerChild: 'a0000000-0000-4000-8000-000000000010',
-  petraPlainMember: 'a0000000-0000-4000-8000-000000000014',
+  // Leonie Schröder - ein ECHTES einfaches Mitglied (member/active, kein Profil).
+  // Vorher stand hier a0..14 unter dem Namen "petraPlainMember" - das ist aber
+  // Petra Köhler, die MODERATORIN (seed.sql:115), nicht ein einfaches Mitglied.
+  // Der Schritt "owner promotes member to coach" hat damit unbemerkt die
+  // Moderatorin degradiert; die nachfolgenden Moderator-Tests liefen nur noch
+  // durch, weil der Claim im Token "moderator" behauptete. Seit 0025 löst die
+  // DB auf -> der Etikettenschwindel fliegt auf. Ziel korrigiert; dass die
+  // Degradierung SOFORT wirkt, prüft jetzt der eigene Block weiter unten.
+  plainMember: 'a0000000-0000-4000-8000-000000000015',
+  moderator: 'a0000000-0000-4000-8000-000000000014',
   stefanieMember: 'a0000000-0000-4000-8000-000000000012',
 };
 
@@ -202,7 +211,7 @@ console.log('[smoke] role changes (v1 gap + last owner)');
   assertEq('owner demoting himself (= last owner) -> 403 (self-change blocked)', r.status, 403);
 }
 {
-  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.petraPlainMember}/role`, {
+  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.plainMember}/role`, {
     as: t.owner,
     body: { role: 'coach' },
   });
@@ -216,7 +225,7 @@ console.log('[smoke] money ops (service-mode number + DB-verified role)');
     as: t.treasurer,
     body: {
       club_id: CLUB,
-      member_id: MEMBER.petraPlainMember,
+      member_id: MEMBER.plainMember,
       title: 'Nachtrag Wettkampfgebühr',
       amount_cents: 1500,
       issue: true,
@@ -235,7 +244,7 @@ console.log('[smoke] money ops (service-mode number + DB-verified role)');
     as: t.coach,
     body: {
       club_id: CLUB,
-      member_id: MEMBER.petraPlainMember,
+      member_id: MEMBER.plainMember,
       title: 'Sollte nicht gehen',
       amount_cents: 100,
     },
@@ -250,7 +259,7 @@ console.log('[smoke] money ops (service-mode number + DB-verified role)');
     as: forged,
     body: {
       club_id: CLUB,
-      member_id: MEMBER.petraPlainMember,
+      member_id: MEMBER.plainMember,
       title: 'Forged claims',
       amount_cents: 100,
     },
@@ -286,6 +295,50 @@ console.log('[smoke] moderator hierarchy + member master data (0007 matrix)');
   assertEq('moderator setting member -> coach -> 200', r.status, 200);
   assertEq('...role persisted', r.json?.role, 'coach');
 }
+console.log('[smoke] RBAC: Rechteaenderung wirkt SOFORT (0025 - Aufloesung aus der DB)');
+{
+  // Der Kern der Umstellung: der Owner nimmt Petra den Moderator-Rang. Ihr
+  // Token sagt WEITERHIN "moderator" und ist noch ~10 Minuten gueltig.
+  // Vor 0025 haette dieser Claim getragen (has_club_role las den Token) - die
+  // Degradierung waere erst beim naechsten Login wirksam geworden. Jetzt loest
+  // die DB auf: die Rechte sind sofort weg.
+  const demote = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.moderator}/role`, {
+    as: t.owner,
+    body: { role: 'member' },
+  });
+  assertEq('owner demotes the moderator -> 200', demote.status, 200);
+
+  const r = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.stefanieMember}`, {
+    as: t.moderator, // unveraenderter Token, behauptet weiterhin "moderator"
+    body: { last_name: 'Darf-Nicht-Durchgehen' },
+  });
+  // 404, weil der API-Guard noch den Claim liest (und ihn durchwinkt), die RLS
+  // aber die Zeile nicht mehr freigibt -> 0 Zeilen -> "not found". Fail-closed:
+  // die Schreiboperation findet NICHT statt. Phase 2 (Guards auf has_cap /
+  // /me/capabilities) macht daraus ein sauberes 403.
+  assertEq('demoted moderator: roster write blocked IMMEDIATELY despite a valid token -> 404', r.status, 404);
+
+  const roster = await call('GET', `/clubs/${CLUB}/members`, { as: t.owner });
+  const stefanie = roster.json?.find((m) => m.id === MEMBER.stefanieMember);
+  assertEq(
+    '...and the master data really is unchanged',
+    stefanie?.last_name !== 'Darf-Nicht-Durchgehen',
+    true,
+  );
+
+  // Rang zuruecksetzen - die folgenden Bloecke brauchen die Moderatorin wieder.
+  const restore = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.moderator}/role`, {
+    as: t.owner,
+    body: { role: 'moderator' },
+  });
+  assertEq('owner restores the moderator -> 200', restore.status, 200);
+  const back = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.stefanieMember}`, {
+    as: t.moderator,
+    body: { last_name: 'Müller-Test' },
+  });
+  assertEq('...and the restored moderator may write again IMMEDIATELY -> 200', back.status, 200);
+}
+
 {
   // treasurer manages members but may only create PLAIN members
   const bad = await call('POST', `/clubs/${CLUB}/members`, {
