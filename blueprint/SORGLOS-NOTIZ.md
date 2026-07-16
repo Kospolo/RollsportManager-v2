@@ -1,7 +1,7 @@
 # RollsportManager v2 — Sorglos-Notiz (Stand & „mach weiter")
 
 **Zweck:** Alles an einem Ort. Du sagst einfach **„mach weiter"**, dann arbeite ich die
-Reihenfolge unten von oben ab. Stand: 2026-07-11.
+Reihenfolge unten von oben ab. Stand: 2026-07-16.
 
 Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf Branch `main`
 (kein Remote; `apps/android/` bewusst untracked).
@@ -19,12 +19,23 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
   (Kassenbuch/Rechnungen/Mahnwesen). Jeweils im Simulator geprüft.
 - **Sicherheits-Härtung (2026-07-11):** Mitglieder-Sichtbarkeit verschärft (RLS+API): Mitglied sieht nur eigenes
   Schließfach, eigene Küren, Namensliste ohne Geburts-/E-Mail-/Zahldaten, darf nicht mehr buchen. Commits 38ebdd1 / bb5e48c.
+- **RBAC Phase 1 (2026-07-16, Commit 41db579):** Kern-Backend steht. Migrationen 0022–0026, **667/667 SQL-Tests grün**
+  (507 alte wörtlich unverändert — per `git diff --stat HEAD -- supabase/tests/` belegt). Tabellen `capabilities`/`roles`/
+  `role_permissions`/`member_roles` + Eskalations-Trigger. **Der Kniff:** nicht 110 Policies umgeschrieben, sondern nur der
+  Rumpf von `app.has_club_role` (Auflösung **JWT-Claim → Datenbank**) — alle Policies ziehen automatisch nach, sofortwirksam
+  ohne Re-Login. Live bewiesen mit EINEM unveränderten Token: nur Matrix geändert → 1 → 6 → 0 → 1 Küren.
 
 ## 2. Was NOCH zu tun ist (Reihenfolge = „mach weiter")
 > Web zuerst fertig war die Vorgabe — Web ist fertig. Reihenfolge jetzt:
 
-1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md`). Größter Umbau, 4 Durchläufe:
-   Kern-Backend/RLS → API+Contracts → Web-Admin-UI (editierbare Matrix, eigene Rollen, Mehrfachrollen, Trainer-Mehrfachteams) → Verifikation.
+1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md` — **Korrektur-Block ganz oben zuerst lesen**,
+   er überschreibt den Rest). 4 Durchläufe: ~~Kern-Backend/RLS~~ ✅ → **API+Contracts (Phase 2, läuft)** →
+   Web-Admin-UI (editierbare Matrix, eigene Rollen, Mehrfachrollen, Trainer-Mehrfachteams) → Verifikation.
+   - **Von Marcel entschieden (2026-07-16):** (a) Austritt/Soft-Delete entzieht Rechte **sofort**, für alle Rollen — freigegeben.
+     (b) Küren-Split in `routines_read` + `routines_edit`, damit auch Bearbeiten konfigurierbar wird. (c) Phase 2 freigegeben.
+   - **Noch offen:** `none` sperrt bisher nur SCHREIBEN, nicht LESEN → das UI darf `none` **nicht als „abgeschaltet" anzeigen**,
+     solange die SELECT-Policies nicht umgestellt sind (0027+). Performance von `cap_rank` ungemessen (vor Prod `EXPLAIN ANALYZE`).
+     Der GoTrue-Hook, der `club_roles` in den Token schreibt, ist im Repo **nicht auffindbar** — für Prod klären.
 2. **iOS fertigstellen:** Finanz-Tiefe B (Beitragskategorien/Mitgliedsbeiträge/Familienrabatte, Jahresabschluss, Bankabgleich, Spenden) ·
    Super-Admin-Konsole · **Politur-Pass** (UI-Rechte-Gating an die neue RLS anpassen — Buttons ausblenden statt 403; Bearbeiten-Flows in Lese-Modulen;
    Toast-System; Layout-Nickel wie Chip-Umbruch in Jubiläen/Notizen).
@@ -51,6 +62,8 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 - **Personas / Rollen:** owner=Jürgen Häberle · admin=Thomas Krüger · moderator=Petra Köhler · treasurer=Beate Schäfer ·
   coach=Sandra Vogel · member=Katrin Grünewald · guest=Milena Öztürk · platform=RSM Plattform-Admin. Demo-Verein: **RSV Neckarsulm**.
 - **Gates vor jedem Commit:** `supabase/tests/run-tests.sh` · `services/api` typecheck+vitest · `packages/contracts` check.mjs · `apps/web` next build.
+- **⚠️ Test-Harness braucht `HARNESS_HOST_PORT=55434`,** solange der fremde Container `rapportmanager-postgres-1` den Port 55432 hält.
+  (`api-db-test.sh` liegt unter `services/api/scripts/`, nicht unter `scripts/`.)
 
 ## 4. Wichtige Regeln (nicht vergessen)
 - Alt-Projekt `/Users/marcelgoldfuss/Apps/RollsportManager` (v1) NUR lesen. Nie zu rollsportmanager.de/Prod verbinden.

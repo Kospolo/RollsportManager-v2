@@ -3,6 +3,47 @@
 Verbindliche Bau-Spezifikation. Ersetzt das feste „eine Rolle pro Person"-Modell durch ein
 konfigurierbares, **serverseitig durchgesetztes** RBAC. Vom Nutzer genehmigt (2026-07-11).
 
+> ## ⚠️ KORREKTUREN NACH PHASE 1 (2026-07-16) — gelten VOR dem Rest des Dokuments
+> Phase 1 ist gebaut (Commit 41db579, Migrationen 0022–0026, 667 Tests grün). Beim Bau hat sich
+> gezeigt, dass diese Spec an mehreren Stellen **von der Realität des Codes abweicht**. Wo Spec und
+> Code sich widersprechen, **gilt der Code**. Konkret ist unten überholt:
+> - **§4 `team_coaches`** ist KEINE Tabelle, sondern eine **View auf `team_members(role='coach')`**.
+>   Die Spec-Prämisse „bestehende Coach-Zuordnung (teams.coach*)" (§8) ist **falsch** — `app.teams`
+>   (0003:30-38) hat keine solche Spalte. Mehrfachteams konnte `team_members` schon immer.
+>   Keine zweite Tabelle bauen: das wäre eine driftende zweite Wahrheit.
+> - **§3 Standard-Stufen** sind NICHT geseedet. Geseedet ist der **Ist-Zustand des Codes**; an 5 Stellen
+>   weicht er ab (routines/treasurer=read_own · lockers/moderator+coach=read_own · attendance/member=read_all ·
+>   member_contact/coach=none · finance/coach=read_own). Grund: die Spec-Defaults hätten Rechte
+>   **verschoben statt migriert**. Per Admin-UI (§7) sind sie ohnehin frei setzbar.
+> - **§5 `has_cap`** hat **keinen impliziten `is_platform_admin`-Bypass** (wäre eine Aufweichung).
+> - **Auflösung:** nicht jede Policy wurde umgeschrieben — umgestellt wurde der Rumpf von
+>   `app.has_club_role` (JWT-Claim → DB). Alle ~110 Policies ziehen automatisch nach und sind
+>   sofortwirksam ohne Re-Login.
+>
+> ### Vom Nutzer entschieden (2026-07-16)
+> 1. **Mitgliedschafts-Gate freigegeben:** `deleted_at`/`status`/`valid_until` gelten seit 0025 für
+>    **jede** Rolle (vorher nur `guest_coach`). Austritt/Soft-Delete entzieht Rechte **sofort**.
+> 2. **Küren-Asymmetrie wird aufgelöst:** statt der einen Fähigkeit `routines` kommen **zwei** —
+>    `routines_read` (none/read_own/read_team/read_all) und `routines_edit` (none/edit/manage).
+>    Damit wird „Trainer:in schreibt alle, liest nur eigene Teams" auf zwei geordneten Skalen
+>    darstellbar und im Admin konfigurierbar. Der bisher fest verdrahtete Schreibpfad
+>    (`is_club_trainer`) wird in Phase 2 auf `routines_edit` umgestellt — **Seed = heutiges Verhalten**.
+> 3. **Phase 2 ist freigegeben** (API + Contracts).
+>
+> ### Offen aus Phase 1 (in Phase 2/0027+ mitziehen)
+> - **`none` sperrt bisher nur SCHREIBEN, nicht LESEN** (z. B. `attendance_select` ist weiterhin
+>   `is_club_member`). Das UI darf `none` deshalb **nicht als „abgeschaltet" verkaufen**, solange die
+>   SELECT-Policies nicht umgestellt sind — sonst täuscht die Oberfläche den Nutzer.
+> - **`guards.ts:104` ist laxer als die DB** (treasurer dürfte dort `targetRole='member'` setzen;
+>   `app.can_change_member_role` sagt nein — heute nur vom Trigger abgefangen).
+>   In Phase 2 die **API an die DB** angleichen, NICHT die DB lockern.
+> - **API liest die Primärrolle noch aus dem Claim** (210 Guard-Aufrufe in 40 Dateien) → Mehrfachrollen
+>   wirken erst voll, wenn die Guards auf `has_cap`/`/me/capabilities` stehen. Heute fail-closed.
+> - **Performance ungemessen** — `cap_rank` ist ein 3er-Join pro Policy (STABLE, pro Statement gecacht),
+>   Indizes liegen. Vor Prod-Rollout `EXPLAIN ANALYZE` mit realistischem Volumen.
+> - **Betrieb:** `supabase/tests/run-tests.sh` und `services/api/scripts/api-db-test.sh` brauchen
+>   `HARNESS_HOST_PORT=55434`, solange der fremde Container `rapportmanager-postgres-1` Port 55432 hält.
+
 ## 1. Anforderungen (vom Nutzer)
 1. **Stufen statt on/off** pro Bereich: keine / (lesen mit Umfang) / bearbeiten / verwalten.
 2. **Eigene Rollen anlegen** — 7 Systemrollen als Vorlage, dazu beliebige Verein-Rollen.
