@@ -50,7 +50,8 @@ export function NextUpBanner({ item }: { item: Anniversary }) {
                 {item.memberName}
               </span>
               <span className="text-[14px] font-semibold text-ink-soft">
-                {t(kindLabelKey(item.kind))} · {t(milestoneLabelKey(item.kind), { years: item.years })}
+                {t(kindLabelKey(item.kind))}
+                {item.years !== null ? ` · ${t(milestoneLabelKey(item.kind), { years: item.years })}` : ""}
               </span>
             </div>
           </div>

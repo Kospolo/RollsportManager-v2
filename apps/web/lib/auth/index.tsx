@@ -12,6 +12,7 @@ import { API_BASE_URL, DATA_SOURCE } from "@/lib/data/config";
 import {
   clearSession,
   readSession,
+  setSessionClub,
   subscribeAuth,
   writeSession,
   type AuthProfile,
@@ -125,3 +126,10 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error("useAuth muss innerhalb von <AuthProvider> verwendet werden");
   return ctx;
 }
+
+/**
+ * Re-Export: die Registrierung merkt sich nach der Vereinsanlage, welchen
+ * Verein das Portal anzeigen soll (siehe storage.setSessionClub — kein
+ * Rechte-Trick, die Rechte kommen aus der DB).
+ */
+export { setSessionClub };

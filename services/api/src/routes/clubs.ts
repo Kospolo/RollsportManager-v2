@@ -252,7 +252,7 @@ clubsRouter.openapi(
             (subject_type, subject_id, entitlement, source, provider_ref, valid_until, metadata)
           values ('club', ${club.id}, 'club_license', 'manual', 'self-service trial',
                   now() + (${TRIAL_DAYS} || ' days')::interval,
-                  ${JSON.stringify({ tier: 'pro', status: 'trial' })}::jsonb)
+                  ${tx.json({ tier: 'pro', status: 'trial' })})
           returning valid_until`;
 
         // Einwilligungen - je Zweck eine Zeile (Art. 7 Abs. 2 DSGVO).
@@ -261,7 +261,7 @@ clubsRouter.openapi(
             insert into app.consents
               (club_id, member_id, subject_profile_id, purpose, granted, granted_by_profile_id, evidence)
             values (${club.id}, ${member['id'] as string}, ${claims.sub}, ${purpose}, true, ${claims.sub},
-                    ${JSON.stringify({ surface: 'POST /clubs' })}::jsonb)`;
+                    ${tx.json({ surface: 'POST /clubs' })})`;
         }
 
         const clubRow = await tx<Record<string, unknown>[]>`

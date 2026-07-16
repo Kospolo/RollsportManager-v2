@@ -27,7 +27,6 @@ export const jubilaeenDict = {
     kindMembership: "Vereinsjubiläum",
     kindBirthday: "Geburtstag",
     milestoneMembership: "{years} Jahre Mitglied",
-    milestoneBirthday: "wird {years}",
 
     // Countdown
     countToday: "heute",
@@ -62,7 +61,6 @@ export const jubilaeenDict = {
     kindMembership: "Club anniversary",
     kindBirthday: "Birthday",
     milestoneMembership: "{years} years a member",
-    milestoneBirthday: "turns {years}",
 
     countToday: "today",
     countTomorrow: "tomorrow",
@@ -88,6 +86,21 @@ export function kindLabelKey(kind: AnniversaryKind): JubilaeenKey {
   return kind === "birthday" ? "kindBirthday" : "kindMembership";
 }
 
-export function milestoneLabelKey(kind: AnniversaryKind): JubilaeenKey {
-  return kind === "birthday" ? "milestoneBirthday" : "milestoneMembership";
+/**
+ * Meilenstein-Text — es gibt ihn NUR fuer Vereinsjubilaeen.
+ *
+ * Frueher stand hier fuer Geburtstage "wird {years}" / "turns {years}". Genau
+ * das ist die Zeile, die das Alter eines Kindes an jedes Vereinsmitglied
+ * ausgab: zusammen mit `date` liess sich daraus das exakte Geburtsdatum
+ * zurueckrechnen. Die API liefert bei Geburtstagen deshalb years=null (siehe
+ * services/api reports.ts), und die Karte zeigt dort nichts an — der
+ * Art-Chip sagt bereits "Geburtstag", das Datum steht rechts daneben. Fuer den
+ * Verein ist "Emma · Geburtstag · 3. Nov" genau die Information, die er
+ * braucht.
+ *
+ * Bei kind="membership" ist die Zahl der ganze Sinn ("10 Jahre Mitglied") und
+ * bleibt.
+ */
+export function milestoneLabelKey(_kind: AnniversaryKind): JubilaeenKey {
+  return "milestoneMembership";
 }

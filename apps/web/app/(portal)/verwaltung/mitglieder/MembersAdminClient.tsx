@@ -19,6 +19,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { InviteSheet } from "../../mitglieder/InviteSheet";
 import { EditMemberSheet } from "./EditMemberSheet";
+import { JoinRequestsCard } from "./JoinRequestsCard";
 import { mitgliederVerwaltungDict, roleKey, statusKey, type MitgliederVerwaltungKey } from "./i18n";
 import {
   matchesRoleFilter,
@@ -372,6 +373,10 @@ export function MembersAdminClient() {
           ) : undefined
         }
       />
+
+      {/* Die Freigabe-Liste steht GANZ OBEN und nicht unter einem Status-Filter:
+          ein Antrag, den niemand sieht, ist ein Mensch, der wartet. */}
+      <JoinRequestsCard canManage={canManageMembers} onChanged={state.reload} />
 
       {body}
 

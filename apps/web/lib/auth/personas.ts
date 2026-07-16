@@ -88,6 +88,18 @@ export const DEV_PERSONA_CARDS: DevPersonaCard[] = [
     },
   },
   {
+    key: "neuling",
+    // Keine club_members-Zeile — profil-sub als Avatar-Toenungs-Seed.
+    memberId: "90000000-0000-4000-8000-000000000091",
+    displayName: "Nadja Neuling",
+    clubRole: null,
+    role: { de: "Ohne Verein", en: "No club" },
+    description: {
+      de: "Kennt noch keinen Verein — legt einen an oder tritt per Code bei.",
+      en: "Not in any club yet — registers one or joins with a code.",
+    },
+  },
+  {
     key: "platform",
     // Keine club_members-Zeile — profil-sub als Avatar-Tönungs-Seed.
     memberId: "90000000-0000-4000-8000-000000000090",

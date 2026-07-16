@@ -40,9 +40,14 @@ export function AnniversaryCard({ item }: { item: Anniversary }) {
         </span>
         <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-ink-soft">
           <Badge tone={style.chipTone}>{t(kindLabelKey(item.kind))}</Badge>
-          <span className="font-semibold text-ink-soft">
-            {t(milestoneLabelKey(item.kind), { years: item.years })}
-          </span>
+          {/* Nur Vereinsjubilaeen tragen eine Zahl. Bei Geburtstagen ist
+              years=null (das waere das Alter) — der Chip + das Datum rechts
+              sagen dort bereits alles. */}
+          {item.years !== null && (
+            <span className="font-semibold text-ink-soft">
+              {t(milestoneLabelKey(item.kind), { years: item.years })}
+            </span>
+          )}
         </span>
       </div>
 

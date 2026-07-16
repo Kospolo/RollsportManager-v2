@@ -18,6 +18,7 @@ export type DevPersonaKey =
   | "moderator"
   | "member"
   | "guest"
+  | "neuling"
   | "platform";
 
 export type DevClubRole =
@@ -120,4 +121,41 @@ export function clearSession(): void {
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
   cachedRaw = undefined;
   emit();
+}
+
+/**
+ * Setzt den aktiven Verein der laufenden Dev-Session.
+ *
+ * ### Warum es das braucht ###
+ * /dev/login liefert eine STATISCHE Persona-Momentaufnahme: fuer 'neuling' steht
+ * dort club_id: null, denn beim Anmelden hatte sie keinen Verein. Legt sie
+ * danach einen an, weiss ihr Token nichts davon — und activeClubId() (siehe
+ * lib/data/api/client.ts) faellt auf den Seed-Verein zurueck. Das Portal zeigte
+ * dann "Keine Mitgliedschaft in diesem Verein", direkt nach erfolgreicher
+ * Anlage: ein Formular, das funktioniert, und ein "Zum Portal", das ins Leere
+ * fuehrt.
+ *
+ * Das ist AUSDRUECKLICH kein Rechte-Trick: der Token bleibt unveraendert, und
+ * die Rechte kommen ohnehin aus der Datenbank (app.member_roles, 0025) und nie
+ * aus diesem Feld. Hier wird nur gemerkt, WELCHEN Verein die Oberflaeche
+ * anzeigen soll. Wer hier einen fremden Verein einträgt, sieht deshalb nichts —
+ * er bekommt vom Server 403/leere Listen.
+ *
+ * Mit GoTrue faellt das weg: der echte Token traegt die Vereinszugehoerigkeit.
+ */
+export function setSessionClub(
+  clubId: string,
+  clubRole: DevClubRole,
+  memberId: string,
+): void {
+  const current = readSession();
+  if (current === null) return;
+  // member_id MUSS mit: die Persona 'neuling' hat dort null (sie hatte beim
+  // Anmelden keine Mitgliedszeile). Ohne die neue Id liefert
+  // memberFromProfile() (lib/data/api/index.ts:65) weiter null, und das Portal
+  // wirft "Nicht angemeldet (Dev-Login fehlt)" — obwohl die Anlage geklappt hat.
+  writeSession({
+    ...current,
+    profile: { ...current.profile, club_id: clubId, club_role: clubRole, member_id: memberId },
+  });
 }

@@ -73,8 +73,14 @@ export interface Anniversary {
   kind: AnniversaryKind;
   /** ISO-Datum (YYYY-MM-DD) des nächsten Vorkommens. */
   date: string;
-  /** Erreichte Meilenstein-Zahl: Mitgliedsjahre bzw. neues Alter. */
-  years: number;
+  /**
+   * Erreichte Jahre — NUR bei kind="membership" ("10 Jahre dabei").
+   *
+   * Bei kind="birthday" IMMER null: dort waere es das ALTER, und `date` minus
+   * `years` ergaebe das exakte Geburtsdatum. Der Verein soll wissen, WANN
+   * jemand Geburtstag hat, nicht WIE ALT er wird (services/api reports.ts).
+   */
+  years: number | null;
   /** Ganze Tage ab heute bis zum Jubiläum (aufsteigend sortiert). */
   daysUntil: number;
 }

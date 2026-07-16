@@ -50,11 +50,12 @@ export function recordAuthEvent(c: Context<AuthEnv>, input: AuthEventInput): voi
   const ip = clientIp(c) ?? null;
   const route = c.req.path;
   const profileId = safeSub(c);
-  const detail = JSON.stringify(input.detail ?? {});
+  const detail = input.detail ?? {};
 
   void withServiceRole('security log (internal.auth_events)', (tx) =>
     tx`insert into internal.auth_events (event, status, route, ip, profile_id, detail)
-       values (${input.event}, ${input.status}, ${route}, ${ip}::inet, ${profileId}::uuid, ${detail}::jsonb)`,
+       values (${input.event}, ${input.status}, ${route}, ${ip}::inet, ${profileId}::uuid,
+               ${tx.json(detail as never)})`,
   ).catch((err: unknown) => {
     console.error(`[security-log] konnte ${input.event} nicht protokollieren:`, err);
   });

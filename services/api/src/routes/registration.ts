@@ -65,7 +65,7 @@ function invalidCode(): never {
   throw problem(
     404,
     'Not Found',
-    'Dieser Vereinscode ist nicht gueltig. / This club code is not valid.',
+    'Dieser Vereinscode ist nicht gültig. / This club code is not valid.',
   );
 }
 
@@ -186,7 +186,7 @@ registrationRouter.openapi(
             insert into app.consents
               (club_id, member_id, subject_profile_id, purpose, granted, granted_by_profile_id, evidence)
             values (${club.id}, ${member.id}, ${claims.sub}, ${purpose}, true, ${claims.sub},
-                    ${JSON.stringify({ surface: 'POST /clubs/join' })}::jsonb)`;
+                    ${tx.json({ surface: 'POST /clubs/join' })})`;
         }
 
         return { kind: 'created' as const, club, member };
