@@ -671,6 +671,180 @@ public struct ClubMember: Codable, Equatable, Sendable {
     }
 }
 
+public struct ClubRegistrationResult: Codable, Equatable, Sendable {
+    public var club: Club
+    public var member: ClubMember
+    public var joinCode: String
+    public var trialEndsAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case club
+        case member
+        case joinCode = "join_code"
+        case trialEndsAt = "trial_ends_at"
+    }
+
+    public init(
+        club: Club,
+        member: ClubMember,
+        joinCode: String,
+        trialEndsAt: String
+    ) {
+        self.club = club
+        self.member = member
+        self.joinCode = joinCode
+        self.trialEndsAt = trialEndsAt
+    }
+}
+
+public struct ClubRegistration: Codable, Equatable, Sendable {
+    public var name: String
+    public var city: String
+    public var shortName: String?
+    public var discipline: String?
+    public var acceptTerms: Bool
+    public var acceptPrivacy: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case city
+        case shortName = "short_name"
+        case discipline
+        case acceptTerms = "accept_terms"
+        case acceptPrivacy = "accept_privacy"
+    }
+
+    public init(
+        name: String,
+        city: String,
+        shortName: String? = nil,
+        discipline: String? = nil,
+        acceptTerms: Bool,
+        acceptPrivacy: Bool
+    ) {
+        self.name = name
+        self.city = city
+        self.shortName = shortName
+        self.discipline = discipline
+        self.acceptTerms = acceptTerms
+        self.acceptPrivacy = acceptPrivacy
+    }
+}
+
+public struct ClubJoinResult: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String
+    /// Format: uuid
+    public var memberId: String
+    public var status: MemberStatus
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case memberId = "member_id"
+        case status
+    }
+
+    public init(
+        clubId: String,
+        clubName: String,
+        memberId: String,
+        status: MemberStatus
+    ) {
+        self.clubId = clubId
+        self.clubName = clubName
+        self.memberId = memberId
+        self.status = status
+    }
+}
+
+public struct ClubJoinInput: Codable, Equatable, Sendable {
+    public var code: String
+    public var firstName: String
+    public var lastName: String
+    public var acceptTerms: Bool
+    public var acceptPrivacy: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case code
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case acceptTerms = "accept_terms"
+        case acceptPrivacy = "accept_privacy"
+    }
+
+    public init(
+        code: String,
+        firstName: String,
+        lastName: String,
+        acceptTerms: Bool,
+        acceptPrivacy: Bool
+    ) {
+        self.code = code
+        self.firstName = firstName
+        self.lastName = lastName
+        self.acceptTerms = acceptTerms
+        self.acceptPrivacy = acceptPrivacy
+    }
+}
+
+public struct ClubJoinCodeRotated: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var joinCode: String
+    public var joinCodeExpiresAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case joinCode = "join_code"
+        case joinCodeExpiresAt = "join_code_expires_at"
+    }
+
+    public init(
+        clubId: String,
+        joinCode: String,
+        joinCodeExpiresAt: String? = nil
+    ) {
+        self.clubId = clubId
+        self.joinCode = joinCode
+        self.joinCodeExpiresAt = joinCodeExpiresAt
+    }
+}
+
+public struct ClubJoinCodeRotateInput: Codable, Equatable, Sendable {
+    public var expiresInDays: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case expiresInDays = "expires_in_days"
+    }
+
+    public init(
+        expiresInDays: Int? = nil
+    ) {
+        self.expiresInDays = expiresInDays
+    }
+}
+
+public struct ClubJoinCodeRevoked: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var joinCodeRevokedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case joinCodeRevokedAt = "join_code_revoked_at"
+    }
+
+    public init(
+        clubId: String,
+        joinCodeRevokedAt: String
+    ) {
+        self.clubId = clubId
+        self.joinCodeRevokedAt = joinCodeRevokedAt
+    }
+}
+
 public struct ClubMemberCreate: Codable, Equatable, Sendable {
     public var firstName: String
     public var lastName: String

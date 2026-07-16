@@ -84,6 +84,28 @@ insert into app.profiles (id, display_name) values
   ('90000000-0000-4000-8000-000000000090', 'RSM Plattform-Admin');
 
 -- ----------------------------------------------------------------------------
+-- NEULING — eine ganz normale Person OHNE Verein und OHNE Sonderrechte.
+--
+-- Die fehlte bisher: die einzige Persona ohne club_members-Zeile war der
+-- Plattform-Admin (…090), und der ist das GEGENTEIL eines Neulings — er sieht
+-- per Bypass in JEDEN Verein (app.is_club_member, 0025:92).
+--
+-- Ohne diese Person ist die Registrierung nicht pruefbar: jeder andere Token
+-- gehoert schon zu RSV Neckarsulm. Sie traegt den Beweis, dass ein Neuling
+-- nichts sieht — und dass er nach dem Beitritt mit RICHTIGEM Code (pending)
+-- immer noch nichts sieht.
+--
+-- KEIN raw_app_meta_data: kein Flag, kein Bypass, keine Rolle. Genau das ist
+-- der Punkt.
+-- ----------------------------------------------------------------------------
+insert into auth.users (id, email) values
+  ('90000000-0000-4000-8000-000000000091', 'nadja.neuling@example.org')
+on conflict (id) do nothing;
+
+insert into app.profiles (id, display_name) values
+  ('90000000-0000-4000-8000-000000000091', 'Nadja Neuling');
+
+-- ----------------------------------------------------------------------------
 -- Club
 -- ----------------------------------------------------------------------------
 insert into app.clubs (id, name, short_name, city, discipline, founded_year, join_code) values

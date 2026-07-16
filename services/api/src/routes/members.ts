@@ -31,9 +31,9 @@ import {
   checkRoleChange,
   hasClubRole,
   isPlatformAdmin,
-  requireClubMember,
   requireClubRole,
 } from '../lib/guards.js';
+import { requireClubMemberDb } from '../lib/capabilities.js';
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 
 export const membersRouter = createRouter();
@@ -111,7 +111,7 @@ membersRouter.openapi(
   async (c) => {
     const { clubId } = c.req.valid('param');
     const claims = c.get('claims');
-    requireClubMember(claims, clubId);
+    await requireClubMemberDb(c, clubId);
     const privileged = maySeeFullRoster(claims, clubId);
     const rows = await withUser(claims, (tx) =>
       tx`select m.*,
@@ -223,7 +223,7 @@ membersRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    requireClubMember(c.get('claims'), clubId);
+    await requireClubMemberDb(c, clubId);
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`select * from app.guardianships
          where club_id = ${clubId} and deleted_at is null

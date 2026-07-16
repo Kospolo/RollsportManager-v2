@@ -400,6 +400,207 @@
           "updated_at"
         ]
       },
+      "ClubRegistrationResult": {
+        "type": "object",
+        "properties": {
+          "club": {
+            "$ref": "#/components/schemas/Club"
+          },
+          "member": {
+            "$ref": "#/components/schemas/ClubMember"
+          },
+          "join_code": {
+            "type": "string"
+          },
+          "trial_ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "club",
+          "member",
+          "join_code",
+          "trial_ends_at"
+        ]
+      },
+      "ClubRegistration": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "city": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "short_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "discipline": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "accept_terms": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "accept_privacy": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "city",
+          "accept_terms",
+          "accept_privacy"
+        ]
+      },
+      "ClubJoinResult": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MemberStatus"
+          }
+        },
+        "required": [
+          "club_id",
+          "club_name",
+          "member_id",
+          "status"
+        ]
+      },
+      "ClubJoinInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 40
+          },
+          "first_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "accept_terms": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "accept_privacy": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "first_name",
+          "last_name",
+          "accept_terms",
+          "accept_privacy"
+        ]
+      },
+      "ClubJoinCodeRotated": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "join_code": {
+            "type": "string"
+          },
+          "join_code_expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "club_id",
+          "join_code",
+          "join_code_expires_at"
+        ]
+      },
+      "ClubJoinCodeRotateInput": {
+        "type": "object",
+        "properties": {
+          "expires_in_days": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 365
+          }
+        }
+      },
+      "ClubJoinCodeRevoked": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "join_code_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "club_id",
+          "join_code_revoked_at"
+        ]
+      },
       "AssignableClubRole": {
         "type": "string",
         "enum": [
@@ -8324,6 +8525,90 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Verein selbst anlegen (Testphase) / Register a club (trial)",
+        "description": "Legt einen Verein an und macht die aufrufende Person zur Inhaberin (owner, active) - inklusive Rollenzuweisung, sonst haette sie im eigenen Verein NULL Rechte (app.member_role_keys, 0025:37-53). Setzt eine 30-Tage-Testphase (Entitlement club_license, metadata.status=trial) und erzeugt den ersten Vereinscode. Erfordert eine Anmeldung (fuer den Inhaber-Bezug), aber KEINE Vereinszugehoerigkeit.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubRegistration"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Verein angelegt, Aufrufer ist Inhaber",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubRegistrationResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Zu viele Versuche (RFC 7807 + Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/clubs/{clubId}": {
@@ -8439,6 +8724,438 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Club"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/join": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Beitritt beantragen (Vereinscode) / Request to join a club (club code)",
+        "description": "Ein RICHTIGER Code erzeugt einen ANTRAG (status=pending), keinen Zugang: app.member_role_keys (0025) filtert auf status=active, eine pending-Mitgliedschaft faellt damit durch jede Policy. Der Vorstand gibt frei (POST .../approve) - das wirkt sofort ohne Re-Login. Falscher/abgelaufener/widerrufener Code -> immer dieselbe 404 (keine Enumeration), zusaetzlich gedrosselt.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubJoinInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Antrag angelegt (status=pending)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubJoinResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Bereits Mitglied oder Antrag laeuft bereits",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Zu viele Versuche (RFC 7807 + Retry-After)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/members/{memberId}/approve": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Beitrittsantrag freigeben (pending -> active) / Approve a join request",
+        "description": "Setzt status=active. Wirkt SOFORT ohne Re-Login (0025 loest Rollen bei jeder Anfrage aus der DB auf). Erfordert die Faehigkeit members>=manage. Der Trigger protect_club_membership (0007:216-222) blockt zusaetzlich jede Selbst-Freigabe.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Freigegebenes Mitglied (status=active)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/members/{memberId}/reject": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Beitrittsantrag ablehnen / Reject a join request",
+        "description": "Soft-Delete des Antrags (deleted_at). Die Person kann danach erneut beantragen - eine Ablehnung ist keine Sperre. Erfordert members>=manage.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Abgelehnter Antrag (deleted_at gesetzt)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/join-code/rotate": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Vereinscode neu erzeugen / Rotate the club join code",
+        "description": "Erzeugt einen neuen Code (CSPRNG, Crockford-Base32) und macht den alten damit sofort wertlos. Noetig, weil der Code ein GETEILTES Geheimnis ist: er steht in WhatsApp-Gruppen und an Aushaengen. Ohne Rotation waere die einzige Reaktion auf einen geleakten Code die Neuanlage des Vereins. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubJoinCodeRotateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Neuer Code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubJoinCodeRotated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/join-code/revoke": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Vereinscode widerrufen / Revoke the club join code",
+        "description": "Macht den Code ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. Getrennt von rotate, weil \"niemand soll mehr beitreten\" etwas anderes ist als \"alle brauchen einen neuen Code\".",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Code widerrufen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubJoinCodeRevoked"
                 }
               }
             }

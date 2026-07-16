@@ -32,6 +32,13 @@ const API_DIR = join(REPO_ROOT, "services", "api");
 const BODYLESS_MUTATIONS = new Set([
   "POST /invoices/{invoiceId}/send-reminder",
   "PATCH /lockers/{lockerId}/release",
+  // Registrierung (0034). Alle drei sind reine Aktionen: WAS passiert, steht
+  // vollstaendig im Pfad (welcher Verein, welches Mitglied). Ein Rumpf haette
+  // hier nichts zu transportieren — er waere ein Feld, das der Server ignoriert,
+  // und damit eine Einladung, ihm spaeter doch Bedeutung zu geben.
+  "POST /clubs/{clubId}/members/{memberId}/approve",
+  "POST /clubs/{clubId}/members/{memberId}/reject",
+  "POST /clubs/{clubId}/join-code/revoke",
 ]);
 /** Routes that are public by design (no bearerAuth). */
 const PUBLIC_ROUTES = new Set([

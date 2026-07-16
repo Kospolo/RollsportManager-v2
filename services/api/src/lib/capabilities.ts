@@ -234,3 +234,41 @@ export async function requireClubRoleDb(
     );
   }
 }
+
+/**
+ * DB-aufgeloestes Gegenstueck zu guards.requireClubMember.
+ *
+ * ### Warum das gebraucht wird (Registrierung, 0034) ###
+ * guards.requireClubMember fragt den TOKEN (claims.club_roles[clubId]). Der
+ * Token entsteht bei der Anmeldung — er kann eine Mitgliedschaft, die SPAETER
+ * entsteht, unmoeglich kennen. Genau das ist bei der Registrierung der
+ * Normalfall:
+ *   * Wer einen Verein anlegt, ist Inhaber eines Vereins, den sein Token nicht
+ *     kennt.
+ *   * Wer nach dem Beitritt freigegeben wird (pending -> active), traegt einen
+ *     Token, der noch aus der Wartezeit stammt.
+ * In beiden Faellen sagte der Token-Guard 403, obwohl die DB die Person laengst
+ * als aktives Mitglied fuehrt — die Freigabe haette also doch einen Re-Login
+ * gebraucht, und das ist genau das, was 0025 abgeschafft hat.
+ *
+ * ### Warum das KEINE Lockerung ist ###
+ * Es ist der reine Mitgliedschafts-Gate, KEIN Tausch Rollenset -> Faehigkeit —
+ * die Warnung in guards.ts:32-38 (teams/events sind in der API strenger als
+ * ihre eigene Policy) betrifft diese Funktion nicht.
+ * Gegenueber dem Token ist die DB in beide Richtungen genauer:
+ *   * strenger, wo der Token UEBERbehauptet: geloescht/inaktiv/abgelaufen
+ *     liefert hier leer (der Gate aus 0025:37-53), der Token weiss davon nichts.
+ *   * treffend, wo der Token UNTERbehauptet: neue Mitgliedschaften wirken sofort.
+ * Und die eigentliche Schranke bleibt ohnehin RLS: die Aufrufer laufen alle
+ * ueber withUser, wo dieselbe Aufloesung nochmal in jeder Policy steckt. Der
+ * Guard ist nur dafuer da, ein ehrliches 403 zu liefern statt einer leeren Liste.
+ */
+export async function requireClubMemberDb(c: Context<AuthEnv>, clubId: string): Promise<void> {
+  if (!(await isClubMemberInDb(c, clubId))) {
+    throw problem(
+      403,
+      'Forbidden',
+      'Keine Mitgliedschaft in diesem Verein. / Not a member of this club.',
+    );
+  }
+}

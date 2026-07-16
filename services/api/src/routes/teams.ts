@@ -20,7 +20,8 @@ import {
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
-import { ADMIN_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { ADMIN_ROLES, requireClubRole } from '../lib/guards.js';
+import { requireClubMemberDb } from '../lib/capabilities.js';
 
 export const teamsRouter = createRouter();
 
@@ -63,7 +64,7 @@ teamsRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    requireClubMember(c.get('claims'), clubId);
+    await requireClubMemberDb(c, clubId);
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`select t.*,
            coalesce((select jsonb_agg(tm.member_id order by tm.created_at)

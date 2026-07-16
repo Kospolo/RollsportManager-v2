@@ -2447,3 +2447,135 @@ export const teamCoachesSetSchema = z
     member_ids: z.array(uuid),
   })
   .openapi('TeamCoachesSet');
+
+// ---------------------------------------------------------------------------
+// Registrierung (Migration 0034): Vereins-Selbstanlage + Beitritt per Code.
+//
+// NAMENSREGEL: Die Vertragsnamen landen 1:1 als Swift-Typen in
+// packages/contracts/generated/swift/RSMContracts.swift. Namen wie Task, Result,
+// Session, Date, Data, Group, Notification kollidieren dort mit Swift/Foundation
+// und verdecken das Original - RSMContracts.swift:3025 definiert bereits 'Task'
+// und verdeckt damit Swift.Task, was die iOS-App mit 91x '_Concurrency.Task'
+// bezahlt. Die Namen hier sind gegen den Bestand geprueft und frei.
+// ---------------------------------------------------------------------------
+
+/**
+ * Vereinsanlage. Nur Name + Ort - mehr wird NICHT gefragt.
+ *
+ * Registernummer, Rechtsform, Zahlungsdaten kommen erst beim Upgrade. Wer beim
+ * Ausprobieren nach dem Vereinsregister-Auszug fragt, bekommt niemanden zum
+ * Ausprobieren.
+ */
+export const clubRegistrationSchema = z
+  .object({
+    name: z.string().min(2).max(120),
+    city: z.string().min(2).max(120),
+    /** Optional - der Verein kann es spaeter im Profil nachtragen. */
+    short_name: z.string().min(1).max(32).optional(),
+    discipline: z.string().min(1).max(60).optional(),
+    /** Zustimmung zu Bedingungen/Datenschutz. Ohne sie keine Anlage. */
+    accept_terms: z.literal(true),
+    accept_privacy: z.literal(true),
+  })
+  .openapi('ClubRegistration');
+
+/**
+ * Ergebnis der Vereinsanlage: der Verein, die eigene Mitgliedschaft (owner,
+ * active) und der frisch erzeugte Einladungscode in Anzeigeform.
+ */
+export const clubRegistrationResultSchema = z
+  .object({
+    club: clubSchema,
+    member: memberSchema,
+    /** Anzeigeform XXXX-XXXX. Nur hier und fuer Code-Verwalter sichtbar. */
+    join_code: z.string(),
+    /** Ende der Testphase (Entitlement 'club_license', source='trial'). */
+    trial_ends_at: timestamp,
+  })
+  .openapi('ClubRegistrationResult');
+
+/** Beitritt per Code. Der Code ist tippfehler-tolerant (Crockford, 0034). */
+export const clubJoinInputSchema = z
+  .object({
+    code: z.string().min(4).max(40),
+    first_name: z.string().min(1).max(80),
+    last_name: z.string().min(1).max(80),
+    accept_terms: z.literal(true),
+    accept_privacy: z.literal(true),
+  })
+  .openapi('ClubJoinInput');
+
+/**
+ * Ergebnis eines Beitritts-ANTRAGS.
+ *
+ * status ist IMMER 'pending' - ein richtiger Code ist ein Antrag, kein Zutritt.
+ * Das Feld steht trotzdem im Vertrag, weil der Client die Wartelage anzeigen
+ * muss ("Dein Antrag liegt beim Vorstand") und nicht raten soll.
+ */
+export const clubJoinResultSchema = z
+  .object({
+    club_id: uuid,
+    club_name: z.string(),
+    member_id: uuid,
+    status: memberStatusSchema,
+  })
+  .openapi('ClubJoinResult');
+
+/** Antwort auf das Rotieren des Einladungscodes. */
+export const clubJoinCodeRotatedSchema = z
+  .object({
+    club_id: uuid,
+    join_code: z.string(),
+    join_code_expires_at: timestamp.nullable(),
+  })
+  .openapi('ClubJoinCodeRotated');
+
+/** Zwecke einer Einwilligung - EINZELN (Art. 7 Abs. 2 DSGVO). */
+export const consentPurposeSchema = z
+  .enum(['terms', 'privacy', 'photos_internal', 'photos_public', 'chat', 'newsletter'])
+  .openapi('ConsentPurpose');
+
+/** Eine Einwilligung (append-only: ein Widerruf ist eine neue Zeile). */
+export const memberConsentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid.nullable(),
+    subject_profile_id: uuid.nullable(),
+    purpose: consentPurposeSchema,
+    granted: z.boolean(),
+    /** WER hat erklaert - bei Kindern der Sorgeberechtigte (Art. 8 DSGVO). */
+    granted_by_profile_id: uuid,
+    legal_document_id: uuid.nullable(),
+    policy_version: z.string().nullable(),
+    recorded_at: timestamp,
+  })
+  .openapi('MemberConsent');
+
+/** Eine unveraenderliche Fassung eines Rechtstextes (internal.legal_documents). */
+export const legalDocumentVersionSchema = z
+  .object({
+    id: uuid,
+    kind: z.enum(['terms', 'privacy', 'imprint']),
+    version: z.number().int(),
+    locale: z.enum(['de', 'en']),
+    title: z.string(),
+    published_at: timestamp,
+  })
+  .openapi('LegalDocumentVersion');
+
+/**
+ * Antwort auf den Widerruf eines Vereinscodes.
+ *
+ * Ein 204 waere hier naheliegend gewesen, aber die Vertragspruefung
+ * (packages/contracts/codegen/check.mjs:107-112) verlangt von JEDER Operation
+ * ein 2xx MIT JSON-Schema — und das zu Recht: ein leeres 204 zwingt jeden
+ * Client zu raten, was passiert ist. Der Zeitpunkt des Widerrufs ist die
+ * Information, die die Oberflaeche danach anzeigen will ("Code gesperrt seit …").
+ */
+export const clubJoinCodeRevokedSchema = z
+  .object({
+    club_id: uuid,
+    join_code_revoked_at: timestamp,
+  })
+  .openapi('ClubJoinCodeRevoked');

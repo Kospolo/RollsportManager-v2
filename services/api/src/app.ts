@@ -12,6 +12,7 @@ import { getConfig } from './config.js';
 import { healthRouter } from './routes/health.js';
 import { createDevLoginRouter } from './routes/dev-login.js';
 import { clubsRouter } from './routes/clubs.js';
+import { registrationRouter } from './routes/registration.js';
 import { membersRouter } from './routes/members.js';
 import { familyRouter } from './routes/family.js';
 import { waitlistsRouter } from './routes/waitlists.js';
@@ -120,6 +121,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
 
   app.route('/', healthRouter);
   app.route('/', clubsRouter);
+  app.route('/', registrationRouter);
   app.route('/', membersRouter);
   app.route('/', familyRouter);
   app.route('/', waitlistsRouter);

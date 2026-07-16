@@ -485,6 +485,59 @@ data class ClubMember(
 )
 
 @Serializable
+data class ClubRegistrationResult(
+    val club: Club,
+    val member: ClubMember,
+    @SerialName("join_code") val joinCode: String,
+    @SerialName("trial_ends_at") val trialEndsAt: String
+)
+
+@Serializable
+data class ClubRegistration(
+    val name: String,
+    val city: String,
+    @SerialName("short_name") val shortName: String? = null,
+    val discipline: String? = null,
+    @SerialName("accept_terms") val acceptTerms: Boolean,
+    @SerialName("accept_privacy") val acceptPrivacy: Boolean
+)
+
+@Serializable
+data class ClubJoinResult(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("member_id") val memberId: String,
+    val status: MemberStatus
+)
+
+@Serializable
+data class ClubJoinInput(
+    val code: String,
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
+    @SerialName("accept_terms") val acceptTerms: Boolean,
+    @SerialName("accept_privacy") val acceptPrivacy: Boolean
+)
+
+@Serializable
+data class ClubJoinCodeRotated(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("join_code") val joinCode: String,
+    @SerialName("join_code_expires_at") val joinCodeExpiresAt: String?
+)
+
+@Serializable
+data class ClubJoinCodeRotateInput(
+    @SerialName("expires_in_days") val expiresInDays: Long? = null
+)
+
+@Serializable
+data class ClubJoinCodeRevoked(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("join_code_revoked_at") val joinCodeRevokedAt: String
+)
+
+@Serializable
 data class ClubMemberCreate(
     @SerialName("first_name") val firstName: String,
     @SerialName("last_name") val lastName: String,

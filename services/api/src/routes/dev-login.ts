@@ -91,6 +91,24 @@ export const DEV_PERSONAS = {
     email: 'milena.oeztuerk@example.org',
     clubRole: 'guest_coach',
   },
+  // NEULING - eine ganz normale Person OHNE Verein.
+  //
+  // Die gab es unter den bisherigen 8 Personas NICHT: 'platform' hat zwar
+  // clubRole:null, ist aber Plattform-Admin und damit das GEGENTEIL eines
+  // Neulings (app.is_club_member gibt ihm den Cross-Club-READ-Bypass, 0025:92).
+  // Ohne diese Persona ist die Registrierung nicht testbar - jeder vorhandene
+  // Token gehoert schon zu RSV Neckarsulm.
+  //
+  // Sie ist damit auch der Beweis-Traeger fuer die Kernaussage: ein Neuling
+  // sieht NICHTS, und nach dem Beitritt mit richtigem Code (status='pending')
+  // sieht er IMMER NOCH nichts.
+  neuling: {
+    sub: '90000000-0000-4000-8000-000000000091',
+    memberId: null,
+    displayName: 'Nadja Neuling',
+    email: 'nadja.neuling@example.org',
+    clubRole: null,
+  },
   // PLATFORM super-admin: no club_members row, no club role. Cross-club READ via
   // the app_metadata.is_platform_admin claim (seed profile ...090).
   platform: {

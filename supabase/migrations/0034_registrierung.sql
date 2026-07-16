@@ -300,7 +300,10 @@ $$;
 comment on function internal.purge_auth_events() is
   'Setzt die Loeschfrist des Sicherheitsprotokolls durch und raeumt abgelaufene Drossel-Fenster ab. Wird opportunistisch aus internal.rate_limit_hit aufgerufen (kein pg_cron in diesem Stack).';
 
+-- revoke from public + gezielter grant: ohne den grant verliert auch
+-- service_role das EXECUTE (es ist kein Superuser) und die API bekaeme 42501.
 revoke all on function internal.purge_auth_events() from public;
+grant execute on function internal.purge_auth_events() to service_role;
 
 -- ----------------------------------------------------------------------------
 -- Der Drossel-Zaehler. Festes Fenster (fixed window): einfach, keine
@@ -364,7 +367,10 @@ $$;
 comment on function internal.rate_limit_hit(text, text, integer, interval) is
   'Zaehlt einen Versuch auf einer Achse und sagt, ob er noch erlaubt ist. Festes Zeitfenster. Zaehlt auch im gesperrten Zustand weiter (sonst liesse sich die Sperre aussitzen). Liefert retry_after in Sekunden fuer den Retry-After-Header (RFC 7807 / RFC 9110).';
 
+-- Nur service_role zaehlt. authenticated/anon duerfen den Zaehler weder lesen
+-- noch hochtreiben: sonst koennte jeder fremde Konten in die Sperre schieben.
 revoke all on function internal.rate_limit_hit(text, text, integer, interval) from public;
+grant execute on function internal.rate_limit_hit(text, text, integer, interval) to service_role;
 
 -- ============================================================================
 -- 4. internal.legal_documents — versioniert und APPEND-ONLY
@@ -433,11 +439,20 @@ end;
 $$;
 
 comment on function app.deny_mutation() is
-  'Trigger-Wache fuer APPEND-ONLY-Tabellen. Wirft 42501 (insufficient_privilege) bei UPDATE/DELETE — gilt auch fuer service_role, im Gegensatz zu Grants.';
+  'Trigger-Wache fuer APPEND-ONLY-Tabellen. Wirft 42501 (insufficient_privilege) bei UPDATE/DELETE. STATEMENT-Ebene (siehe Trigger): gilt damit auch dann, wenn RLS die Zeilen schon weggefiltert hat, und auch fuer service_role — im Gegensatz zu Grants.';
 
+-- FOR EACH STATEMENT, nicht FOR EACH ROW — der Unterschied ist wesentlich:
+-- Ein ROW-Trigger feuert nur, wenn eine Zeile wirklich getroffen wird. Fuer
+-- eine Person, der RLS ohnehin alle Zeilen wegfiltert, waere ein UPDATE damit
+-- ein stiller Treffer ins Leere: 'UPDATE 0', kein Fehler, keine Aenderung. Die
+-- Daten waeren zwar sicher, aber die Zusage "append-only" waere unsichtbar —
+-- wer so einen UPDATE schreibt, bekaeme nie gesagt, dass die Tabelle das
+-- grundsaetzlich nicht kann, und suchte den Fehler woanders.
+-- Auf STATEMENT-Ebene ist die Regel absolut und laut: fuer jede Rolle, mit und
+-- ohne RLS, mit und ohne Treffer.
 create trigger legal_documents_append_only
   before update or delete on internal.legal_documents
-  for each row execute function app.deny_mutation();
+  for each statement execute function app.deny_mutation();
 
 alter table internal.legal_documents enable row level security;
 
@@ -519,9 +534,57 @@ create index consents_member_idx  on app.consents (member_id, purpose, recorded_
 create index consents_club_idx    on app.consents (club_id, purpose, recorded_at desc);
 create index consents_subject_idx on app.consents (subject_profile_id, purpose, recorded_at desc);
 
+-- ----------------------------------------------------------------------------
+-- Append-only fuer Einwilligungen — aber NICHT ganz so absolut wie bei den
+-- Rechtstexten, und das ist Absicht.
+--
+-- UPDATE: immer verboten. Der Inhalt einer abgegebenen Erklaerung darf sich
+--   niemals aendern; ein Widerruf ist eine NEUE Zeile (Art. 7 Abs. 3).
+--
+-- DELETE: fuer Endnutzer verboten, fuer privilegierte Pfade erlaubt. Ein
+--   absolutes DELETE-Verbot (wie bei legal_documents) waere hier ein FEHLER,
+--   und zwar ein doppelter:
+--     1. app.consents.club_id/member_id haengen an 'on delete cascade'. Ein
+--        absolutes Verbot machte das Loeschen eines Vereins UNMOEGLICH — die
+--        Kaskade liefe in den Trigger.
+--     2. Art. 17 DSGVO (Recht auf Loeschung) braucht einen Weg, der Daten
+--        einer Person wirklich zu entfernen. Eine Tabelle mit
+--        personenbezogenen Daten, aus der per Konstruktion nie etwas
+--        verschwinden kann, ist kein Nachweis — sie ist ein Problem.
+--   current_user ist hier der verlaesslichere Test als die Rolle im Claim: er
+--   ist das, was SET LOCAL ROLE (db.ts) tatsaechlich gesetzt hat.
+-- ----------------------------------------------------------------------------
+create or replace function app.deny_consent_mutation()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op = 'UPDATE' then
+    raise exception
+      'app.consents ist APPEND-ONLY: UPDATE ist nicht erlaubt. Ein Widerruf ist eine NEUE Zeile (Art. 7 Abs. 3 DSGVO).'
+      using errcode = '42501';
+  end if;
+
+  if current_user in ('authenticated', 'anon') then
+    raise exception
+      'app.consents: DELETE ist nicht erlaubt. Ein Widerruf ist eine NEUE Zeile (granted=false), kein Loeschen.'
+      using errcode = '42501';
+  end if;
+
+  return null;
+end;
+$$;
+
+comment on function app.deny_consent_mutation() is
+  'Append-only-Wache fuer app.consents. UPDATE: immer gesperrt. DELETE: fuer authenticated/anon gesperrt, fuer privilegierte Pfade offen — sonst waere weder ein Loeschersuchen (Art. 17) noch das Loeschen eines Vereins (on delete cascade) moeglich.';
+
+-- STATEMENT-Ebene, aus demselben Grund wie bei legal_documents: sonst waere
+-- ein UPDATE fuer normale Nutzer ein stilles 'UPDATE 0' (RLS filtert vorher)
+-- statt einer klaren Absage.
 create trigger consents_append_only
   before update or delete on app.consents
-  for each row execute function app.deny_mutation();
+  for each statement execute function app.deny_consent_mutation();
 
 alter table app.consents enable row level security;
 
