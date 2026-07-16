@@ -287,6 +287,17 @@ export const rsvpSchema = z
   })
   .openapi('EventRsvp');
 
+/**
+ * Zielgruppe eines Termins (app.event_audience, Migration 0050).
+ *   'teams' — nur die zugeordneten Teams (Vorgabe, fail-closed)
+ *   'club'  — ausdrueckliche Vereinsveranstaltung; jedes Mitglied sieht sie.
+ *             Setzen/Aendern verlangt die Faehigkeit club_events=manage.
+ * BEWUSST ein eigenes Feld und KEIN Rateschluss aus leeren team_ids: wer beim
+ * Anlegen das Team vergisst, soll nicht versehentlich vereinsweit
+ * veroeffentlichen — dahinter haengen Kinderdaten.
+ */
+export const eventAudienceSchema = z.enum(['teams', 'club']).openapi('EventAudience');
+
 export const eventSchema = z
   .object({
     id: uuid,
@@ -298,7 +309,8 @@ export const eventSchema = z
     starts_at: timestamp,
     ends_at: timestamp,
     competition_id: uuid.nullable(),
-    /** Linked teams (app.event_teams). */
+    audience: eventAudienceSchema,
+    /** Linked teams (app.event_teams). Always empty when audience = 'club'. */
     team_ids: z.array(uuid),
     /** Current RSVP state of the event (app.event_rsvps, soft-deleted excluded). */
     rsvps: z.array(rsvpSchema),
@@ -316,9 +328,29 @@ export const eventCreateSchema = z
     location: z.string().optional(),
     starts_at: z.string().datetime({ offset: true }),
     ends_at: z.string().datetime({ offset: true }),
+    audience: eventAudienceSchema.default('teams'),
     team_ids: z.array(uuid).default([]),
   })
   .refine((v) => new Date(v.ends_at) > new Date(v.starts_at), { message: 'ends_at must be after starts_at' })
+  // Zielgruppe 'club' UND Teams waere eine zweite Wahrheit neben der
+  // Zielgruppe: bei 'club' sieht ohnehin jedes Mitglied den Termin, die
+  // Team-Zeile begrenzt nichts mehr - ein Leser wuerde sie aber genau so
+  // deuten. Die Datenbank weist das ebenfalls ab (Trigger
+  // event_teams_audience_guard, 23514); hier faellt es als sauberes 400 mit
+  // Begruendung statt als Fehlschlag tief im Insert.
+  .refine((v) => !(v.audience === 'club' && v.team_ids.length > 0), {
+    message: 'audience=club: a club-wide event carries no team assignment (team_ids must be empty)',
+    path: ['team_ids'],
+  })
+  // BEWUSST KEIN Gegenstueck "'teams' verlangt mindestens ein Team": das waere
+  // eine Verschaerfung, die niemand bestellt hat, und sie braeche den
+  // bestehenden Contract (test/schemas.test.ts:85-89 haelt team_ids=[] als
+  // gueltige Vorgabe fest, POST /events kommt heute ohne Teams durch).
+  // Der Fall ist ohnehin harmlos, weil er FAIL-CLOSED faellt: ein 'teams'-
+  // Termin ohne Team-Zeile adressiert niemanden und ist deshalb fuer Mitglieder,
+  // Eltern und Trainer:innen unsichtbar - nur der Vorstand findet ihn noch
+  // (Grenzfall A in Migration 0050, belegt in 99g). Kein Leck, nur ein
+  // Schoenheitsfehler.
   .openapi('EventCreate');
 
 export const rsvpUpsertSchema = z

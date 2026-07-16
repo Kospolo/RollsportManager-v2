@@ -154,8 +154,19 @@ console.log('[smoke] tenant isolation');
 }
 
 console.log('[smoke] RSVP (parent mode via guardianship)');
+// 0050 (Zielgruppe): VERSCHAERFT von 15 auf 12. Katrin ist selbst in KEINEM
+// Team; sie sieht ab jetzt nur die Termine ihrer Kinder (a-07 in t-02, a-08 in
+// t-01) plus die beiden Vereinsveranstaltungen — nicht mehr die 4 Termine des
+// fremden Teams t-03. Die 16 im Seed (14 Team- + 2 Vereinstermine) sieht nur
+// noch der Vorstand. Die Zeile prueft also strenger als vorher, nicht laxer.
 const events = (await call('GET', `/events?club_id=${CLUB}`, { as: t.parent })).json;
-assertEq('parent sees 15 events', events.length, 15);
+assertEq('parent sees only her children\'s events + club-wide ones (12 of 16)', events.length, 12);
+assertEq('parent sees BOTH club-wide events', events.filter((e) => e.audience === 'club').length, 2);
+{
+  // Gegenprobe an derselben Stelle: der Vorstand sieht alle 16.
+  const all = (await call('GET', `/events?club_id=${CLUB}`, { as: t.owner })).json;
+  assertEq('owner sees all 16 events', all.length, 16);
+}
 const someEvent = events[events.length - 1];
 {
   const r = await call('PUT', `/events/${someEvent.id}/rsvp`, {
@@ -187,6 +198,47 @@ console.log('[smoke] attendance (guest_coach, server-side expiry check)');
     body: { member_id: MEMBER.linaChildOfParent, status: 'present' },
   });
   assertEq('plain member cannot record attendance (403)', r.status, 403);
+}
+
+console.log('[smoke] Vereinsveranstaltung: das Haekchen ist rechtepflichtig (0050)');
+{
+  const body = (audience, teamIds) => ({
+    club_id: CLUB,
+    type: 'other',
+    title: 'Smoke-Vereinsfest',
+    starts_at: new Date(Date.now() + 86400000).toISOString(),
+    ends_at: new Date(Date.now() + 90000000).toISOString(),
+    audience,
+    team_ids: teamIds,
+  });
+  // "ja verein — darf aber nicht jeder was eintragen": coach darf Termine
+  // anlegen, aber KEINE Vereinsveranstaltung.
+  const c = await call('POST', '/events', { as: t.coach, body: body('club', []) });
+  assertEq('coach cannot publish a club-wide event (403)', c.status, 403);
+  const m = await call('POST', '/events', { as: t.parent, body: body('club', []) });
+  assertEq('member cannot publish a club-wide event (403)', m.status, 403);
+  // Der Vorstand darf.
+  const o = await call('POST', '/events', { as: t.owner, body: body('club', []) });
+  assertEq('owner publishes a club-wide event (201)', o.status, 201);
+  assertEq('...and it is stored as club-wide', o.json?.audience, 'club');
+  // 'club' + Teams waere eine zweite Wahrheit -> 400 aus dem Contract.
+  const bad = await call('POST', '/events', {
+    as: t.owner,
+    body: body('club', ['b0000000-0000-4000-8000-000000000001']),
+  });
+  assertEq('club-wide event with team_ids rejected (400)', bad.status, 400);
+  // Eigenbefund: die Trainerin haengt Termine nur an IHRE Teams. Sandra
+  // betreut t-02/t-03, NICHT t-01 (Minis).
+  const foreign = await call('POST', '/events', {
+    as: t.coach,
+    body: body('teams', ['b0000000-0000-4000-8000-000000000001']),
+  });
+  assertEq('coach cannot create an event for a team she does not coach (403)', foreign.status, 403);
+  const own = await call('POST', '/events', {
+    as: t.coach,
+    body: body('teams', ['b0000000-0000-4000-8000-000000000002']),
+  });
+  assertEq('coach creates an event for her OWN team (201)', own.status, 201);
 }
 
 console.log('[smoke] role changes (v1 gap + last owner)');

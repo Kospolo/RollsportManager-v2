@@ -154,6 +154,11 @@ public enum EventType: String, Codable, CaseIterable, Sendable, Equatable {
     case other = "other"
 }
 
+public enum EventAudience: String, Codable, CaseIterable, Sendable, Equatable {
+    case teams = "teams"
+    case club = "club"
+}
+
 public enum RsvpStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case going = "going"
     case declined = "declined"
@@ -2995,6 +3000,7 @@ public struct Event: Codable, Equatable, Sendable {
     public var endsAt: String
     /// Format: uuid
     public var competitionId: String?
+    public var audience: EventAudience
     /// Format: [uuid]
     public var teamIds: [String]
     public var rsvps: [EventRsvp]
@@ -3011,6 +3017,7 @@ public struct Event: Codable, Equatable, Sendable {
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case competitionId = "competition_id"
+        case audience
         case teamIds = "team_ids"
         case rsvps
         case createdAt = "created_at"
@@ -3027,6 +3034,7 @@ public struct Event: Codable, Equatable, Sendable {
         startsAt: String,
         endsAt: String,
         competitionId: String? = nil,
+        audience: EventAudience,
         teamIds: [String],
         rsvps: [EventRsvp],
         createdAt: String,
@@ -3041,6 +3049,7 @@ public struct Event: Codable, Equatable, Sendable {
         self.startsAt = startsAt
         self.endsAt = endsAt
         self.competitionId = competitionId
+        self.audience = audience
         self.teamIds = teamIds
         self.rsvps = rsvps
         self.createdAt = createdAt
@@ -3059,6 +3068,7 @@ public struct EventCreate: Codable, Equatable, Sendable {
     public var startsAt: String
     /// Format: date-time
     public var endsAt: String
+    public var audience: EventAudience?
     /// Format: [uuid]
     public var teamIds: [String]?
 
@@ -3070,6 +3080,7 @@ public struct EventCreate: Codable, Equatable, Sendable {
         case location
         case startsAt = "starts_at"
         case endsAt = "ends_at"
+        case audience
         case teamIds = "team_ids"
     }
 
@@ -3081,6 +3092,7 @@ public struct EventCreate: Codable, Equatable, Sendable {
         location: String? = nil,
         startsAt: String,
         endsAt: String,
+        audience: EventAudience? = .teams,
         teamIds: [String]? = []
     ) {
         self.clubId = clubId
@@ -3090,6 +3102,7 @@ public struct EventCreate: Codable, Equatable, Sendable {
         self.location = location
         self.startsAt = startsAt
         self.endsAt = endsAt
+        self.audience = audience
         self.teamIds = teamIds
     }
 }

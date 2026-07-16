@@ -2913,6 +2913,13 @@
           "other"
         ]
       },
+      "EventAudience": {
+        "type": "string",
+        "enum": [
+          "teams",
+          "club"
+        ]
+      },
       "RsvpStatus": {
         "type": "string",
         "enum": [
@@ -3019,6 +3026,9 @@
             "nullable": true,
             "format": "uuid"
           },
+          "audience": {
+            "$ref": "#/components/schemas/EventAudience"
+          },
           "team_ids": {
             "type": "array",
             "items": {
@@ -3063,6 +3073,7 @@
           "starts_at",
           "ends_at",
           "competition_id",
+          "audience",
           "team_ids",
           "rsvps",
           "created_at",
@@ -3103,6 +3114,16 @@
           "ends_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "audience": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/EventAudience"
+              },
+              {
+                "default": "teams"
+              }
+            ]
           },
           "team_ids": {
             "type": "array",

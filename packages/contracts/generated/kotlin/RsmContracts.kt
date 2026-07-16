@@ -133,6 +133,12 @@ enum class EventType {
 }
 
 @Serializable
+enum class EventAudience {
+    @SerialName("teams") TEAMS,
+    @SerialName("club") CLUB;
+}
+
+@Serializable
 enum class RsvpStatus {
     @SerialName("going") GOING,
     @SerialName("declined") DECLINED,
@@ -1194,6 +1200,7 @@ data class Event(
     @SerialName("starts_at") val startsAt: String,
     @SerialName("ends_at") val endsAt: String,
     @SerialName("competition_id") val competitionId: String?,
+    val audience: EventAudience,
     @SerialName("team_ids") val teamIds: List<String>,
     val rsvps: List<EventRsvp>,
     @SerialName("created_at") val createdAt: String,
@@ -1209,6 +1216,7 @@ data class EventCreate(
     val location: String? = null,
     @SerialName("starts_at") val startsAt: String,
     @SerialName("ends_at") val endsAt: String,
+    val audience: EventAudience? = EventAudience.TEAMS,
     @SerialName("team_ids") val teamIds: List<String>? = emptyList()
 )
 

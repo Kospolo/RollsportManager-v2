@@ -685,6 +685,9 @@ export interface PlatformSystem {
 export type EventType = "training" | "competition" | "other";
 export const EventTypeValues: readonly EventType[] = ["training", "competition", "other"] as const;
 
+export type EventAudience = "teams" | "club";
+export const EventAudienceValues: readonly EventAudience[] = ["teams", "club"] as const;
+
 export type RsvpStatus = "going" | "declined" | "maybe" | "sick";
 export const RsvpStatusValues: readonly RsvpStatus[] = ["going", "declined", "maybe", "sick"] as const;
 
@@ -708,6 +711,7 @@ export interface Event {
   "starts_at": string;
   "ends_at": string;
   "competition_id": string | null;
+  "audience": EventAudience;
   "team_ids": string[];
   "rsvps": EventRsvp[];
   "created_at": string;
@@ -722,6 +726,7 @@ export interface EventCreate {
   "location"?: string;
   "starts_at": string;
   "ends_at": string;
+  "audience"?: EventAudience;
   "team_ids"?: string[];
 }
 

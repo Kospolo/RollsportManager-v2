@@ -29,9 +29,47 @@ import type { ClubRole } from '../middleware/auth.js';
 /** Structure changes (creating events) exclude guest_coach by design. */
 const EVENT_WRITE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'coach'];
 
+/**
+ * Wer Termine fuer BELIEBIGE Teams anlegen darf. Alle uebrigen aus
+ * EVENT_WRITE_ROLES (= coach) sind auf app.coached_team_ids zugeschnitten
+ * (Migration 0050): eine Trainerin legt Termine nur fuer die Teams an, die sie
+ * betreut - vorher durfte sie es fuer JEDES Team im Verein.
+ */
+const EVENT_WRITE_ANY_TEAM_ROLES: readonly ClubRole[] = ['owner', 'admin'];
+
+/**
+ * Wer eine VEREINSVERANSTALTUNG (audience='club') setzen darf - der
+ * ausdrueckliche Wunsch des Nutzers: "ja verein — darf aber nicht jeder was
+ * eintragen". Bewusst OHNE coach, obwohl der sonst Termine anlegen darf.
+ * Deckungsgleich mit dem DB-Trigger app.protect_event_audience (0050); zur
+ * Frage, warum das keine konfigurierbare Faehigkeit ist, siehe dort.
+ */
+const CLUB_AUDIENCE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
+
 export const eventsRouter = createRouter();
 
 const eventIdParam = z.object({ eventId: uuid.openapi({ param: { name: 'eventId', in: 'path' } }) });
+
+/**
+ * Einen Termin ueber den NORMALEN Lesepfad holen (RLS aktiv), in derselben
+ * Form wie GET /events. Genutzt zum Rueckenlesen nach dem Anlegen - siehe den
+ * RETURNING-Fallstrick in POST /events.
+ */
+async function selectEvent(tx: Tx, eventId: string): Promise<unknown | undefined> {
+  const rows = await tx`
+    select e.*,
+      coalesce((select jsonb_agg(et.team_id order by et.created_at)
+                from app.event_teams et
+                where et.event_id = e.id and et.deleted_at is null),
+               '[]'::jsonb) as team_ids,
+      coalesce((select jsonb_agg(to_jsonb(r) order by r.responded_at)
+                from app.event_rsvps_visible r
+                where r.event_id = e.id and r.deleted_at is null),
+               '[]'::jsonb) as rsvps
+    from app.events e
+    where e.id = ${eventId} and e.deleted_at is null`;
+  return rows[0];
+}
 
 async function loadEvent(tx: Tx, eventId: string): Promise<{ id: string; club_id: string }> {
   const rows = await tx`
@@ -108,22 +146,91 @@ eventsRouter.openapi(
   }),
   async (c) => {
     const body = c.req.valid('json');
-    requireClubRole(c.get('claims'), body.club_id, EVENT_WRITE_ROLES);
+    const claims = c.get('claims');
+    requireClubRole(claims, body.club_id, EVENT_WRITE_ROLES);
 
-    const created = await withUser(c.get('claims'), async (tx) => {
-      const rows = await tx`
-        insert into app.events (club_id, type, title, note, location, starts_at, ends_at)
-        values (${body.club_id}, ${body.type}, ${body.title}, ${body.note ?? null},
-                ${body.location ?? null}, ${body.starts_at}, ${body.ends_at})
-        returning *`;
-      const event = rows[0] as { id: string };
+    // "ja verein — darf aber nicht jeder was eintragen": das Haekchen
+    // 'Vereinsveranstaltung' ist rechtepflichtig. ERSTE Linie; die zweite ist
+    // der Trigger app.protect_event_audience (0050), der auch dann greift, wenn
+    // dieser Gate jemals umgangen oder vergessen wird. v1 hatte genau diese
+    // Pruefung NUR im Client - das war der Fehler dieses Projekts.
+    if (body.audience === 'club') {
+      requireClubRole(claims, body.club_id, CLUB_AUDIENCE_ROLES);
+    }
+
+    const created = await withUser(claims, async (tx) => {
+      // Eine Trainerin haengt Termine nur an IHRE Teams. Die Wahrheit dazu ist
+      // app.coached_team_ids - dieselbe Funktion, an der auch die Policy
+      // event_teams_insert (0050) haengt; kein zweites Regelwerk in TS. Die
+      // Policy wuerde ohnehin greifen (42501 -> 403), aber erst NACH dem
+      // events-Insert: ohne diesen Gate bliebe ein Termin OHNE Team zurueck,
+      // sobald der Insert der Zuordnung scheitert. Deshalb vorher fragen.
+      if (
+        body.team_ids.length > 0 &&
+        !hasClubRole(claims, body.club_id, EVENT_WRITE_ANY_TEAM_ROLES)
+      ) {
+        const coachedRows = await tx`select app.coached_team_ids(${body.club_id}) as ids`;
+        const coached = new Set((coachedRows[0] as { ids: string[] }).ids ?? []);
+        const foreign = body.team_ids.filter((id) => !coached.has(id));
+        if (foreign.length > 0) {
+          throw problem(
+            403,
+            'Forbidden',
+            `Termine nur fuer eigene Teams: ${foreign.join(', ')} wird von dir nicht betreut`,
+          );
+        }
+      }
+
+      // ---------------------------------------------------------------------
+      // KEIN `returning` — derselbe Fallstrick wie bei den Kueren (routines.ts:
+      // 128-145, Test 93f). `insert ... returning` zieht ZUSAETZLICH die
+      // SELECT-Policy heran. events_select haengt seit 0050 an
+      // app.can_read_event(id); die Funktion ist STABLE und liest app.events,
+      // sieht die eben eingefuegte Zeile im Snapshot des EIGENEN Statements
+      // also nicht -> false -> Postgres meldet das irrefuehrende "new row
+      // violates row-level security policy for table events" (42501), OBWOHL
+      // der INSERT selbst erlaubt ist. Live gegen die Harness belegt: ohne
+      // returning OK, mit `returning id` 42501 — sogar als owner.
+      // ACHTUNG: `returning id` genuegt NICHT als Ausweg, JEDES returning
+      // loest die SELECT-Policy aus.
+      //
+      // Der Weg (identisch zu routines.ts): id vorab ziehen (app.uuid_v7()
+      // erhaelt die Zeitordnung des Spalten-Defaults), OHNE returning
+      // einfuegen, die Team-Zuordnung schreiben und die Zeile DANACH in einem
+      // SEPARATEN Statement zurueckenlesen. Ein spaeteres Statement derselben
+      // Transaktion sieht die frueheren Schreibvorgaenge — und erst dann
+      // existieren die event_teams-Zeilen, an denen can_read_event haengt.
+      // Die SELECT-Policy bleibt unangetastet (keine Aufweichung).
+      // ---------------------------------------------------------------------
+      const idRows = await tx`select app.uuid_v7() as id`;
+      const eventId = (idRows[0] as { id: string }).id;
+
+      await tx`
+        insert into app.events (id, club_id, type, title, note, location, starts_at, ends_at, audience)
+        values (${eventId}, ${body.club_id}, ${body.type}, ${body.title}, ${body.note ?? null},
+                ${body.location ?? null}, ${body.starts_at}, ${body.ends_at}, ${body.audience})`;
       for (const teamId of body.team_ids) {
         await tx`
           insert into app.event_teams (club_id, event_id, team_id)
-          values (${body.club_id}, ${event.id}, ${teamId})`;
+          values (${body.club_id}, ${eventId}, ${teamId})`;
       }
-      // Fresh event: team links from the request body, no RSVPs yet.
-      return { ...rows[0], team_ids: body.team_ids, rsvps: [] };
+
+      // Rueckenlesen ueber den NORMALEN Lesepfad (RLS aktiv). Liefert er
+      // nichts, hat der Aufrufer einen Termin angelegt, den er selbst nicht
+      // sehen darf. Das ist kein theoretischer Fall: das Schreibrecht
+      // (owner/admin/coach) ist WEITER als das Leserecht (can_read_event) —
+      // eine Trainerin, die einen Termin OHNE Team anlegt, erzeugt genau so
+      // eine Zeile (Grenzfall A: nur der Vorstand saehe sie). Statt eine
+      // unsichtbare Geisterzeile zu hinterlassen, bricht die Transaktion ab.
+      const row = await selectEvent(tx, eventId);
+      if (row === undefined) {
+        throw problem(
+          422,
+          'Unprocessable Entity',
+          'You may only create an event you can also see: assign at least one team you coach, or mark it as a club-wide event.',
+        );
+      }
+      return row;
     });
     return c.json(eventSchema.parse(created), 201);
   },
