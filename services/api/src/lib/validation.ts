@@ -2586,3 +2586,57 @@ export const clubJoinCodeRevokedSchema = z
     join_code_revoked_at: timestamp,
   })
   .openapi('ClubJoinCodeRevoked');
+
+// ============================================================================
+// Modul-Schalter pro Verein (0044). Siehe die Abgrenzung im Kopf der Migration:
+//   gekauft (entitlement) -> eingeschaltet (dieses hier) -> erlaubt (capability)
+// ============================================================================
+
+/**
+ * Was der Modul-Schalter WIRKLICH bewirkt (app.module_enforcement, 0044).
+ * Muster aus 0033: ein Schalter, der nur das Menue versteckt, darf NICHT als
+ * "aus" beschriftet werden.
+ *
+ * - `enforced`  RLS. Aus = 0 Zeilen beim Lesen, 42501/403 beim Schreiben.
+ * - `partial`   RLS greift, aber ein Server-Pfad umgeht sie (service_role).
+ * - `menu_only` Versteckt nur die Kachel. Die Daten bleiben per API abrufbar.
+ * - `null`      Kernmodul — es gibt keinen Schalter.
+ */
+export const moduleEnforcementSchema = z.enum(['enforced', 'partial', 'menu_only']);
+
+/**
+ * Ein Modul samt Schalterstellung fuer EINEN Verein (app.club_module_states).
+ *
+ * `available` ist die UND-Kette OHNE die Faehigkeit: gekauft (pro_ok) UND
+ * eingeschaltet (enabled). Ob die aufrufende PERSON das Modul benutzen darf,
+ * ist die dritte, unabhaengige Frage (GET /me/capabilities) — bewusst nicht
+ * hier hineingemischt.
+ */
+export const clubModuleStateSchema = z
+  .object({
+    module_key: z.string(),
+    label_de: z.string(),
+    label_en: z.string(),
+    desc_de: z.string(),
+    desc_en: z.string(),
+    sort: z.number().int(),
+    /** Kernmodul: kein Schalter (Mitglieder / Finanzen-GoBD / Verwaltung). */
+    core: z.boolean(),
+    /** PRO-Modul: haengt zusaetzlich an app.is_club_pro (0012). */
+    requires_pro: z.boolean(),
+    /** null <=> core: bei einem Kernmodul stellt sich die Frage nicht. */
+    enforcement: moduleEnforcementSchema.nullable(),
+    enabled: z.boolean(),
+    /** Entitlement erfuellt? Bei requires_pro=false immer true. */
+    pro_ok: z.boolean(),
+    /** enabled AND pro_ok — der Schalter hebelt das PRO-Gate NICHT aus. */
+    available: z.boolean(),
+  })
+  .openapi('ClubModuleState');
+
+/** Einen Schalter stellen. Mehr gibt es nicht zu setzen — der Rest ist Katalog. */
+export const clubModuleSetSchema = z
+  .object({
+    enabled: z.boolean(),
+  })
+  .openapi('ClubModuleSet');

@@ -19,6 +19,7 @@ import { waitlistsRouter } from './routes/waitlists.js';
 import { budgetsRouter } from './routes/budgets.js';
 import { meRouter } from './routes/me.js';
 import { rolesRouter } from './routes/roles.js';
+import { modulesRouter } from './routes/modules.js';
 import { teamsRouter } from './routes/teams.js';
 import { platformRouter } from './routes/platform.js';
 import { platformSettingsRouter } from './routes/platform-settings.js';
@@ -128,6 +129,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', budgetsRouter);
   app.route('/', meRouter);
   app.route('/', rolesRouter);
+  app.route('/', modulesRouter);
   app.route('/', teamsRouter);
   app.route('/', platformRouter);
   app.route('/', platformSettingsRouter);

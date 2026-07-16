@@ -13,6 +13,7 @@ import { moduleApiRepositoryFinance } from "./modules-finance";
 import { moduleApiRepositoryFinanceB } from "./modules-financeb";
 import { moduleApiRepositoryFinanceC } from "./modules-financec";
 import { moduleApiRepositoryMe } from "./modules-me";
+import { moduleApiRepositoryClubModules } from "./modules-clubmodules";
 import { moduleApiRepositoryRbac } from "./modules-rbac";
 import { moduleApiRepositoryRegistrierung } from "./modules-registrierung";
 import { moduleApiRepositoryOrg } from "./modules-org";
@@ -335,6 +336,7 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
   ...moduleApiRepositoryMe,
+  ...moduleApiRepositoryClubModules,
   ...moduleApiRepositoryRbac,
   ...moduleApiRepositoryRegistrierung,
 

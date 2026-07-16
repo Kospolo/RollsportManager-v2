@@ -69,6 +69,7 @@ import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
 import type { MeRepository } from "./inputs-me";
+import type { ModuleRepository } from "./inputs-clubmodules";
 import type { RbacRepository } from "./inputs-rbac";
 import type { RegistrierungRepository } from "./inputs-registrierung";
 import type { OrgRepository } from "./inputs-org";
@@ -191,6 +192,7 @@ export interface UpdateClubSettingsInput {
 
 export interface DataRepository
   extends Batch4Repository,
+    ModuleRepository,
     Batch5Repository,
     Cluster6aRepository,
     FinanceRepository,

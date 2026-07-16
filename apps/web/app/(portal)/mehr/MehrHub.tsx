@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n";
-import { permissions } from "@/lib/data";
+import { permissions, type ClubModuleState } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -26,6 +26,24 @@ import { mehrDict, type MehrKey } from "./i18n";
  * Die Verwaltungs-Kachel erscheint nur für Vereins-Admins (analog zur Nav);
  * der echte Schutz bleibt serverseitig (RLS + API). Alle Lese-Bereiche sind
  * für Mitglieder sichtbar — Schreibrechte gaten die Fach-Screens selbst.
+ *
+ * ### MODUL-SCHALTER (Migration 0044) ###
+ * Abgeschaltete Module verschwinden hier ganz — nicht als „Bald"-Kachel, denn
+ * das wäre gelogen: das Modul ist nicht bald da, der Verein benutzt es nicht.
+ * Die Schalterstellung kommt vom Server (GET /clubs/{clubId}/modules); die
+ * Facade-Methode `listClubModules` bedient mock UND api.
+ *
+ * Gefiltert wird auf `available` = eingeschaltet UND gekauft (das PRO-Gate ist
+ * Teil der Und-Kette, 0044). Ein PRO-Modul ohne Entitlement fällt damit auch
+ * dann raus, wenn der Schalter an steht — genau wie serverseitig.
+ *
+ * ### DAS AUSBLENDEN IST KOSMETIK ###
+ * Die Durchsetzung sind die restriktiven RLS-Policies aus 0044, nicht dieser
+ * Filter. Ein Modul mit enforcement='menu_only' (Auswertung, Jubiläen) ist
+ * hier zwar weg, seine Daten bleiben aber per API abrufbar — deshalb sagt die
+ * Modul-Verwaltung das dort auch ausdrücklich dazu, statt „Aus" zu behaupten.
+ * Ein Tile-Key ohne Eintrag im Katalog (z. B. eine künftige Kachel) bleibt
+ * sichtbar: kein Schalter, kein Filter (fail-open wie app.module_enabled).
  */
 
 type Tone = "neutral" | "brand" | "info" | "success" | "warn";
@@ -125,8 +143,24 @@ export function MehrHub() {
   const t = useT(mehrDict);
   const me = useData((repo) => repo.getCurrentUser());
   const isClubAdmin = permissions(me.data ?? null).isClubAdmin;
+  const modules = useData((repo) => repo.listClubModules());
 
-  const available = AVAILABLE.filter((tile) => !tile.adminOnly || isClubAdmin);
+  /**
+   * moduleKey -> verfügbar? Solange die Liste lädt (oder nicht erreichbar ist),
+   * bleibt die Map leer und es wird NICHTS ausgeblendet: ein Ladefehler darf
+   * dem Verein nicht sein halbes Menü wegnehmen. Die Kachel führt im
+   * schlimmsten Fall auf eine leere Seite — das Gate sitzt ohnehin im Server.
+   */
+  const moduleAvailability = new Map<string, boolean>(
+    (modules.data ?? []).map((m: ClubModuleState) => [m.moduleKey, m.available]),
+  );
+
+  /** Unbekannter Key = kein Schalter = sichtbar (fail-open wie app.module_enabled). */
+  const isModuleVisible = (key: string) => moduleAvailability.get(key) ?? true;
+
+  const available = AVAILABLE.filter(
+    (tile) => (!tile.adminOnly || isClubAdmin) && isModuleVisible(tile.key),
+  );
 
   return (
     <div className="mx-auto grid w-full max-w-5xl gap-7">

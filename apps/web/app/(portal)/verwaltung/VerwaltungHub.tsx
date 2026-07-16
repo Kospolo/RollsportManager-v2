@@ -28,6 +28,7 @@ import { verwaltungDict, type VerwaltungKey } from "./i18n";
 const HREF = {
   members: "/verwaltung/mitglieder",
   roles: "/verwaltung/rollen",
+  modules: "/verwaltung/module",
   teams: "/verwaltung/teams",
   settings: "/verwaltung/verein",
   platform: "/super",
@@ -67,6 +68,15 @@ export function VerwaltungHub() {
       tone: "info",
       titleKey: "tileRolesTitle",
       descKey: "tileRolesDesc",
+    });
+    // Module: dasselbe Gate wie die Rollen (is_club_admin) — deckungsgleich mit
+    // der RLS auf app.club_modules (0044), nicht bloss aehnlich.
+    tiles.push({
+      href: HREF.modules,
+      icon: "sparkle",
+      tone: "warn",
+      titleKey: "tileModulesTitle",
+      descKey: "tileModulesDesc",
     });
     tiles.push({
       href: HREF.teams,
