@@ -124,6 +124,18 @@ export type {
   UpdateMyProfileInput,
 } from "./inputs-me";
 export type {
+  CapabilityEnforcement,
+  CapabilityLevel,
+  CapabilityResolution,
+  ClubRoleDef,
+  CreateClubRoleInput,
+  MemberRoleAssignment,
+  RbacRepository,
+  ResolvedCapability,
+  RolePermission,
+  UpdateClubRoleInput,
+} from "./inputs-rbac";
+export type {
   AssignLockerInput,
   CreateDepartmentInput,
   CreateLockerInput,

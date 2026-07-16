@@ -21,6 +21,7 @@ import { moduleRepositoryFinance } from "./modules-finance";
 import { moduleRepositoryFinanceB } from "./modules-financeb";
 import { moduleRepositoryFinanceC } from "./modules-financec";
 import { moduleRepositoryMe } from "./modules-me";
+import { moduleRepositoryRbac } from "./modules-rbac";
 import { moduleRepositoryOrg } from "./modules-org";
 import { moduleRepositoryPlatform } from "./modules-platform";
 import { moduleRepositoryWettkampf } from "./modules-wettkampf";
@@ -266,6 +267,7 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
   ...moduleRepositoryMe,
+  ...moduleRepositoryRbac,
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleRepositoryOrg,

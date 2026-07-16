@@ -69,6 +69,7 @@ import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
 import type { MeRepository } from "./inputs-me";
+import type { RbacRepository } from "./inputs-rbac";
 import type { OrgRepository } from "./inputs-org";
 import type { PlatformConsoleRepository } from "./inputs-platform";
 import type { WettkampfRepository } from "./inputs-wettkampf";
@@ -197,6 +198,7 @@ export interface DataRepository
     MeRepository,
     OrgRepository,
     PlatformConsoleRepository,
+    RbacRepository,
     WettkampfRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
