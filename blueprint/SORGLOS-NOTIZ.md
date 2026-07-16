@@ -30,13 +30,22 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md` — **BEIDE Korrektur-Blöcke oben zuerst
    lesen**, sie überschreiben den Rest). 4 Durchläufe: ~~Kern-Backend/RLS~~ ✅ → ~~API+Contracts (Phase 2)~~ ✅ →
-   **Web-Admin-UI (Phase 3, läuft)** →
-   Web-Admin-UI (editierbare Matrix, eigene Rollen, Mehrfachrollen, Trainer-Mehrfachteams) → Verifikation.
-   - **Von Marcel entschieden (2026-07-16):** (a) Austritt/Soft-Delete entzieht Rechte **sofort**, für alle Rollen — freigegeben.
-     (b) Küren-Split in `routines_read` + `routines_edit`, damit auch Bearbeiten konfigurierbar wird. (c) Phase 2 freigegeben.
-   - **Noch offen:** `none` sperrt bisher nur SCHREIBEN, nicht LESEN → das UI darf `none` **nicht als „abgeschaltet" anzeigen**,
-     solange die SELECT-Policies nicht umgestellt sind (0027+). Performance von `cap_rank` ungemessen (vor Prod `EXPLAIN ANALYZE`).
-     Der GoTrue-Hook, der `club_roles` in den Token schreibt, ist im Repo **nicht auffindbar** — für Prod klären.
+   **Web-Admin-UI (Phase 3, läuft als `wofh0duoj`)**: editierbare Matrix, eigene Rollen, Mehrfachrollen,
+   Trainer-Mehrfachteams → Verifikation.
+   - **Phase 2 ✅ (Migr. 0027–0029, `routes/roles.ts`, `lib/capabilities.ts`, 711/711 SQL-Tests):** Mehrfachrollen wirken
+     durch die API — live bewiesen mit **gleichem Token**: `403` → Zweitrolle → `200` → entzogen → `403`.
+     Dabei geschlossen: `team_coaches` war ein mandantenübergreifender Lese- **und Lösch**-Bypass (View ohne
+     `security_invoker`); `/reports/anniversaries` gab Kinder-Geburtsdaten heraus (`date − years` = exaktes Datum).
+   - **Von Marcel entschieden (2026-07-16):** (a) Austritt/Soft-Delete entzieht Rechte **sofort**, für alle Rollen.
+     (b) Küren-Split (Lesen/Bearbeiten getrennt einstellbar). (c) Jubiläen: **Tag+Monat ohne Jahre** statt 403.
+     (d) Trainerin darf sich **nicht selbst** fremde Teams geben. (e) **Geschützte Fähigkeiten** (lockers/member_contact/
+     finance) darf nur der Inhaber ändern — sonst hebelt ein Moderator die Schließfach-Privacy per Matrix selbst aus.
+   - **Noch offen:** `none` sperrt bisher nur SCHREIBEN, nicht LESEN → das UI darf `none` **nicht als „abgeschaltet"
+     anzeigen**, solange die SELECT-Policies nicht umgestellt sind. Performance von `cap_rank` ungemessen
+     (vor Prod `EXPLAIN ANALYZE`). ~81 `requireClubRole` in 29 Dateien hängen noch am Claim — **fail-closed**
+     (API strenger als die DB), aber dort wirken Mehrfachrollen noch nicht.
+     ⚠️ Ein blinder Tausch auf `has_cap` **lockert** bei `teams.ts`/`events.ts` — die API ist dort strenger als ihre
+     eigene Policy, und **kein Test prüft diese Strenge**.
 2. **Registrierung + DSGVO + Botschutz** (neu am 2026-07-16 von Marcel beauftragt, Recherche lief als `wcixbacpt`).
    Heute gibt es nur den Dev-Persona-Login — **es kann sich weder ein Verein noch ein Mitglied selbst anmelden.**
    - **ALLE ENTSCHEIDUNGEN GETROFFEN (2026-07-16) — der Bauplan kann direkt los:**
