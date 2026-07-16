@@ -40,6 +40,15 @@ export function useVisibleNavItems(): NavItem[] {
   const isClubAdmin = (resolution?.roleKeys ?? []).some((key) =>
     CLUB_ADMIN_ROLE_KEYS.includes(key),
   );
-  const base = isClubAdmin ? [...NAV_ITEMS, MANAGE_NAV_ITEM] : NAV_ITEMS;
+  // BETREIBER-EINSICHT: ein Plattform-Admin hat in KEINEM Verein eine Rolle —
+  // roleKeys ist für ihn immer leer, denn die Autorität kommt nicht aus
+  // app.member_roles, sondern aus dem Claim (den GET /me/capabilities hier als
+  // isPlatformAdmin ausdrücklich mitliefert). Ohne diese Zeile blieb ihm die
+  // Verwaltung verborgen, obwohl der Server sie ihm seit 0051 erlaubt — und die
+  // Betreiber-Konsole verweist ihn für Rollen/Module ausdrücklich DORTHIN.
+  // Fail-closed bleibt es trotzdem: ohne Auflösung keine Verwaltung, und der
+  // Schutz ist ohnehin der Server (RLS + API-DB-Check).
+  const isOperator = resolution?.isPlatformAdmin === true;
+  const base = isClubAdmin || isOperator ? [...NAV_ITEMS, MANAGE_NAV_ITEM] : NAV_ITEMS;
   return [...base, MORE_NAV_ITEM];
 }

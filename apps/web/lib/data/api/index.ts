@@ -1,6 +1,7 @@
 import type { Member, Routine } from "@/lib/types";
 import { ApiError } from "@/lib/api/generated";
 import { readSession } from "@/lib/auth/storage";
+import { readOperatorClub } from "../operator-club";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { activeClubId, apiClient } from "./client";
 import { moduleApiRepository } from "./modules";
@@ -58,12 +59,63 @@ function loadRoutineDetails(routineId: string) {
   ]);
 }
 
+/**
+ * BETREIBER-EINSICHT: die „aktuelle Person“, wenn ein Plattform-Admin einen
+ * Verein ansieht.
+ *
+ * ### Warum es das braucht — beim Durchklicken gefunden, nicht vermutet ###
+ * Der Betreiber hat in KEINEM Verein eine Mitgliedszeile (die Plattform-Persona
+ * trägt member_id/club_id/club_role = null). getCurrentUser() lief deshalb ins
+ * 401 „Nicht angemeldet (Dev-Login fehlt)“ — und zwar NACHDEM der Roster
+ * erfolgreich geladen war. Ergebnis: der Umschalter brachte ihn in den Verein,
+ * der Server lieferte die Daten, und die Seite zeigte trotzdem einen
+ * Anmeldefehler. Der Zugriff war repariert, die Oberfläche nicht.
+ *
+ * ### Warum 'owner' ###
+ * Kein geschönter Wert, sondern derselbe Begriff wie überall sonst:
+ * guards.ts:OPERATOR_CLUB_ROLE tritt bei eingeschalteter Einsicht als 'owner'
+ * auf, und app.cap_rank gibt ihm Rang 5 (nur owner bekommt den). Ein anderer
+ * Wert hier hieße: die Oberfläche blendet Knöpfe aus, die der Server erlaubt —
+ * oder zeigt welche, die er verweigert. Genau EIN Begriff von
+ * Betreiber-Autorität, in DB, API und Client.
+ *
+ * Das ist KEINE Rechte-Vergabe: `permissions()` steuert nur Sichtbarkeit, und
+ * readOperatorClub() ist fail-closed (ohne Plattform-Claim null). Wer diesen
+ * Zustand ohne Claim herstellt, sieht Knöpfe — und bekommt vom Server 403.
+ */
+function operatorMember(): Member | null {
+  const viewing = readOperatorClub();
+  if (viewing === null) return null;
+  const session = readSession();
+  if (!session) return null;
+  const parts = session.profile.display_name.trim().split(/\s+/);
+  const lastName = parts.length > 1 ? (parts.pop() as string) : "";
+  return {
+    // Es gibt keine Mitglieds-Id — der Betreiber IST kein Mitglied. Die
+    // Profil-Id ist der ehrlichste Wert: sie identifiziert ihn und stimmt mit
+    // dem überein, was im Protokoll als actor_profile_id steht.
+    id: session.profile.sub,
+    clubId: viewing.id,
+    firstName: parts.join(" ") || session.profile.display_name,
+    lastName,
+    role: "owner",
+    status: "active",
+    email: session.profile.email,
+    teamIds: [],
+    joinedAt: "",
+  };
+}
+
 /** Fallback: eingeloggte Person aus dem Dev-Login-Profil synthetisieren. */
 function memberFromProfile(): Member | null {
   const session = readSession();
   if (!session) return null;
   const { profile } = session;
-  // Plattform-Persona: keine club_members-Zeile, keine Club-Rolle → kein Member.
+  // Betreiber-Einsicht: keine Mitgliedszeile, aber sehr wohl eine Person.
+  const operator = operatorMember();
+  if (operator !== null) return operator;
+  // Plattform-Persona OHNE gewählten Verein: keine club_members-Zeile, keine
+  // Club-Rolle → kein Member. Sie gehört auf die Konsole, nicht ins Portal.
   if (!profile.member_id || !profile.club_id || !profile.club_role) return null;
   const parts = profile.display_name.trim().split(/\s+/);
   const lastName = parts.length > 1 ? (parts.pop() as string) : "";
