@@ -143,10 +143,48 @@ export const memberSchema = z
     avatar_url: z.string().nullable(),
     /** Teams (skater or coach) this member belongs to - from app.team_members. */
     team_ids: z.array(uuid),
+    // -----------------------------------------------------------------------
+    // Selbst-Profil (0045). NICHT redigiert: jedes aktive Vereinsmitglied darf
+    // das sehen — das ist der ganze Zweck ("mitglied darf ... wenn das mitglied
+    // was ueber sich eintraegt, dann das auch"). Geschrieben ausschliesslich von
+    // der Person selbst / ihren Erziehungsberechtigten
+    // (PATCH .../members/{memberId}/profile, Trigger app.protect_self_profile).
+    // Bewusst drei BENANNTE Felder statt eines offenen Freitexts — Begruendung
+    // im Kopf von 0045 (Publikum = ganzer Verein, ueberwiegend Kinder).
+    // -----------------------------------------------------------------------
+    profile_motto: z.string().nullable(),
+    profile_favorite_discipline: z.string().nullable(),
+    profile_skating_since: z.number().int().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
   .openapi('ClubMember');
+
+/**
+ * Das Selbst-Profil, geschrieben von der PERSON SELBST (oder ihren
+ * Erziehungsberechtigten bei Kindern ohne Konto).
+ *
+ * Die Grenzen stehen doppelt: hier (freundliche Fehlermeldung) und als
+ * CHECK-Constraint in 0045 (die eigentliche Durchsetzung — die API ist nur
+ * EIN Leser der Tabelle). `null` = Angabe loeschen.
+ *
+ * `.max(140)` / `.max(60)` sind deckungsgleich mit
+ * club_members_profile_motto_len_chk / _discipline_len_chk.
+ */
+export const memberSelfProfileUpdateSchema = z
+  .object({
+    motto: z.string().max(140).nullable().optional(),
+    favorite_discipline: z.string().max(60).nullable().optional(),
+    skating_since: z
+      .number()
+      .int()
+      .min(1900)
+      .max(new Date().getFullYear() + 1)
+      .nullable()
+      .optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ClubMemberSelfProfileUpdate');
 
 export const memberCreateSchema = z
   .object({

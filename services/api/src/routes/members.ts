@@ -16,6 +16,7 @@ import {
   inviteSchema,
   memberCreateSchema,
   memberSchema,
+  memberSelfProfileUpdateSchema,
   memberUpdateSchema,
   roleChangeSchema,
   uuid,
@@ -50,34 +51,78 @@ function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url
 }
 
 /**
- * Roster columns only visible to privileged viewers (can_manage_members or a
- * platform admin). Non-privileged viewers (plain member / guest_coach) get the
- * unkritischen Felder only: id/first_name/last_name/team_ids/role/status.
- * NO birth_date, email, valid_until, profile_id or joined_on — and never any
- * payment/Beitrags-Ampel (which is not part of this row at all).
+ * KONTAKT-/PII-Spalten. Sichtbar nur fuer can_manage_members oder Plattform-
+ * Admins. Nicht-privilegierte Betrachter (member / coach / guest_coach) sehen
+ * die unkritischen Felder: id/first_name/last_name/team_ids/role/status — plus
+ * seit 0045 das Selbst-Profil, das die Person freiwillig veroeffentlicht hat.
+ *
+ * ### 0045: joined_on ist HIER RAUS und hat ein eigenes Gate ###
+ * Der Nutzer will, dass "trainer und hoeher" das Beitrittsdatum sehen. Der
+ * bequeme Weg waere gewesen, dem coach maySeeFullRoster zu geben — dann hoerte
+ * er aber auch E-MAIL und GEBURTSDATUM der Kinder mit, und der Seed sagt fuer
+ * member_contact/coach ausdruecklich 'none' (0023:180). Das waere eine stille
+ * Ausweitung, die niemand bestellt hat: bestellt war ein Datum, geliefert
+ * waeren die Kontaktdaten von 17 Kindern.
+ * Deshalb zwei Gates statt einem. Ein Gate, das fuenf Spalten auf einmal
+ * freigibt, kann eine Anforderung wie "nur diese eine" gar nicht ausdruecken.
  */
-const SENSITIVE_MEMBER_FIELDS = [
-  'birth_date',
-  'email',
-  'valid_until',
-  'profile_id',
-  'joined_on',
-] as const;
+const CONTACT_MEMBER_FIELDS = ['birth_date', 'email', 'valid_until', 'profile_id'] as const;
 
-/** True when the viewer may see the full roster (finance/PII columns included). */
+/** Eigenes Gate, eigene Liste — siehe oben. */
+const JOINED_ON_FIELDS = ['joined_on'] as const;
+
+/**
+ * Rollen, die das Beitrittsdatum sehen duerfen = "Trainer und hoeher".
+ *
+ * MANAGE_MEMBER_ROLES (owner/admin/moderator/treasurer) + coach.
+ * BEWUSST OHNE guest_coach: ein Gast-Trainer ist eine vereinsEXTERNE Person auf
+ * Zeit (valid_until ist fuer ihn Pflicht, 0002:84-85). "Trainer und hoeher"
+ * meint die Trainerin des Vereins, nicht die Aushilfe vom Nachbarverein — und
+ * fuer den Gast ist "seit wann ist dieses Kind im Verein" ohne Aufgabe.
+ * Genau dieselbe Person war der belegte Leck-Fall bei /reports/anniversaries.
+ */
+const JOINED_ON_ROLES: readonly ClubRole[] = [...MANAGE_MEMBER_ROLES, 'coach'];
+
+/** True when the viewer may see the CONTACT columns (birth_date/email/…). */
 export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
   return isPlatformAdmin(claims) || hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
+}
+
+/**
+ * True when the viewer may see joined_on ("Trainer und hoeher").
+ *
+ * DIE REFERENZ FUER /reports/anniversaries: Jubilaeums-Zeilen erscheinen genau
+ * dann, wenn derselben Person der Roster joined_on zeigt (aus `date` minus
+ * `years` laesst sich joined_on exakt rekonstruieren). reports.ts ruft deshalb
+ * DIESE Funktion — nicht eine zweite, gleichbedeutend gemeinte Bedingung.
+ * Vorher stand dort `member_contact >= read_all`, was laut Kommentar "im Seed
+ * deckungsgleich" mit maySeeFullRoster war: zwei Mechanismen (DB-aufgeloeste
+ * Faehigkeit vs. Rollen-Claim), die nur solange gleich antworten, wie niemand
+ * member_contact im Admin-UI anfasst. Eine gemeinsame Funktion kann nicht
+ * auseinanderlaufen.
+ */
+export function maySeeJoinedOn(claims: AuthClaims, clubId: string): boolean {
+  return isPlatformAdmin(claims) || hasClubRole(claims, clubId, JOINED_ON_ROLES);
 }
 
 /**
  * Null out the sensitive columns of a roster row for a non-privileged viewer.
  * The keys stay present (memberSchema requires them, nullable) so the response
  * shape is unchanged — no contract break, just redacted values.
+ *
+ * `joinedOnVisible` defaults to `privileged`: der alte Zwei-Argument-Aufruf
+ * verhaelt sich damit exakt wie vorher (joined_on faellt mit den Kontaktdaten).
+ * Nur wer das dritte Argument setzt, bekommt die feinere Trennung.
  */
-export function redactMemberForViewer<T extends Record<string, unknown>>(row: T, privileged: boolean): T {
-  if (privileged) return row;
+export function redactMemberForViewer<T extends Record<string, unknown>>(
+  row: T,
+  privileged: boolean,
+  joinedOnVisible: boolean = privileged,
+): T {
+  if (privileged && joinedOnVisible) return row;
   const out: Record<string, unknown> = { ...row };
-  for (const field of SENSITIVE_MEMBER_FIELDS) out[field] = null;
+  if (!privileged) for (const field of CONTACT_MEMBER_FIELDS) out[field] = null;
+  if (!joinedOnVisible) for (const field of JOINED_ON_FIELDS) out[field] = null;
   return out as T;
 }
 
@@ -97,10 +142,13 @@ membersRouter.openapi(
     tags: ['members'],
     summary: 'List the club roster (sensitive columns redacted for non-managers)',
     description:
-      'Every club member sees the name list. For viewers WITHOUT can_manage_members ' +
-      '(plain member / guest_coach) the sensitive columns are nulled: birth_date, email, ' +
-      'valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) ' +
-      'and platform admins get the full rows.',
+      'Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das ' +
+      'Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — ' +
+      'letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ' +
+      'ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) ' +
+      'sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; ' +
+      'joined_on sieht zusaetzlich der coach ("Trainer und hoeher", ohne guest_coach). ' +
+      'Redigierte Spalten bleiben als null im Ergebnis.',
     security: [{ bearerAuth: [] }],
     request: { params: clubIdParam },
     responses: {
@@ -113,6 +161,7 @@ membersRouter.openapi(
     const claims = c.get('claims');
     await requireClubMemberDb(c, clubId);
     const privileged = maySeeFullRoster(claims, clubId);
+    const joinedOnVisible = maySeeJoinedOn(claims, clubId);
     const rows = await withUser(claims, (tx) =>
       tx`select m.*,
            coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
@@ -123,7 +172,7 @@ membersRouter.openapi(
          where m.club_id = ${clubId} and m.deleted_at is null
          order by m.last_name, m.first_name`,
     );
-    const mapped = rows.map((row) => redactMemberForViewer(withAvatar(row), privileged));
+    const mapped = rows.map((row) => redactMemberForViewer(withAvatar(row), privileged, joinedOnVisible));
     return c.json(z.array(memberSchema).parse(mapped), 200);
   },
 );
@@ -322,5 +371,95 @@ membersRouter.openapi(
     });
 
     return c.json(memberSchema.parse(updated), 200);
+  },
+);
+
+// ============================================================================
+// PATCH /clubs/{clubId}/members/{memberId}/profile — das Selbst-Profil (0045).
+//
+// Der Befund des Nutzers war "jetzt aktuell geht garnicht" — richtig: die
+// Spalten gab es nicht. Jetzt gibt es sie, und dies ist der einzige Weg, sie zu
+// beschreiben.
+//
+// ### WER ###
+// Die Person selbst — und bei KINDERN OHNE KONTO (profile_id is null) ihre
+// Erziehungsberechtigten. Beides = app.can_act_for_member. Bewusst KEIN
+// requireClubRole: das hier ist kein Verwaltungsrecht, sondern das Gegenteil
+// davon. Ein Administrator hat hier NICHTS zu suchen — er duerfte sonst einem
+// Kind Worte in den Mund legen, die der ganze Verein als dessen Aussage liest.
+// Loeschen (Moderation) kann er weiter ueber die normale Zeilen-Verwaltung; der
+// Trigger app.protect_self_profile trennt Leeren von Schreiben.
+//
+// ### WO DIE DURCHSETZUNG STEHT (nicht hier) ###
+// app.set_self_profile (0045) prueft can_act_for_member und kann per Bauart nur
+// die drei Profilspalten schreiben; der Trigger prueft zusaetzlich status=active
+// (der pending-Antragsteller ist noch kein Mitglied) und die Urheberschaft; die
+// CHECK-Constraints pruefen Laenge und die Kontaktdaten-Leitplanke.
+// Diese Route ist die Tuer, nicht das Schloss — die Fehler kommen aus der DB und
+// die Middleware uebersetzt sie (P0001 -> 403, 23514 -> 422).
+// ============================================================================
+membersRouter.openapi(
+  createRoute({
+    method: 'patch',
+    path: '/clubs/{clubId}/members/{memberId}/profile',
+    tags: ['members'],
+    summary: 'Edit the SELF profile (own row or own child; never by managers)',
+    description:
+      'Das Selbst-Profil pflegt die Person SELBST — bei Kindern ohne Konto ihre Erziehungsberechtigten ' +
+      '(app.guardianships). Schreibrecht ist ausdruecklich KEIN Verwaltungsrecht: owner/admin/moderator ' +
+      'koennen fremde Profile NICHT beschreiben (sie duerfen sie leeren — Moderation). ' +
+      'Felder: motto (max. 140), favorite_discipline (max. 60), skating_since (Jahreszahl). ' +
+      'Fehlender Schluessel = unveraendert, null oder "" = Angabe loeschen. ' +
+      'Die Inhalte sind fuer ALLE aktiven Mitglieder des Vereins sichtbar — serverseitig werden ' +
+      'hineinkopierte E-Mail-Adressen, Links und Telefonnummern am Stueck abgelehnt (422).',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: memberParams,
+      body: { content: { 'application/json': { schema: memberSelfProfileUpdateSchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(memberSchema, 'Updated membership'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId, memberId } = c.req.valid('param');
+    const body = c.req.valid('json');
+    const claims = c.get('claims');
+    await requireClubMemberDb(c, clubId);
+
+    const updated = await withUser(claims, async (tx) => {
+      // Die Rechtepruefung steckt in der Funktion (can_act_for_member) + im
+      // Trigger. Hier wird bewusst NICHT vorgeprueft: zwei Meinungen ueber
+      // dasselbe Recht laufen frueher oder spaeter auseinander, und die
+      // massgebliche ist die der Datenbank.
+      // tx.json(body) und NICHT JSON.stringify(body): postgres.js kodiert einen
+      // JS-STRING fuer ein jsonb-Ziel ein ZWEITES Mal. Aus dem Objekt wird dann
+      // ein jsonb-SKALAR vom Typ "string", `p_patch ? 'motto'` ist false, jedes
+      // Feld faellt in den else-Zweig ("unveraendert") — und die Route
+      // antwortete 200, ohne irgendetwas zu schreiben. Gemessen:
+      //   JSON.stringify(body)::jsonb -> jsonb_typeof = 'string', ? 'motto' = false
+      //   tx.json(body)::jsonb        -> jsonb_typeof = 'object', ? 'motto' = true
+      // Der Fehler war STILL (200 + null), nicht laut — gefunden hat ihn erst
+      // der Smoke ueber HTTP; die SQL-Tests liefen mit jsonb-Literalen daran
+      // vorbei. app.set_self_profile wirft seit diesem Befund bei allem, was
+      // kein jsonb-Objekt ist.
+      await tx`select app.set_self_profile(${clubId}::uuid, ${memberId}::uuid, ${tx.json(body)}::jsonb)`;
+      const rows = await tx`
+        select m.* from app.club_members m
+        where m.id = ${memberId} and m.club_id = ${clubId} and m.deleted_at is null`;
+      if (rows.length === 0) throw problem(404, 'Not Found', 'Membership not found');
+      return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
+    });
+
+    // Dieselbe Redigierung wie im Roster. Ein Elternteil sieht hier also nicht
+    // mehr, als es im Roster ohnehin saehe — die Antwort einer Schreib-Route
+    // darf kein zweiter Lese-Pfad an der eigenen Redigierung vorbei sein.
+    const redacted = redactMemberForViewer(
+      updated,
+      maySeeFullRoster(claims, clubId),
+      maySeeJoinedOn(claims, clubId),
+    );
+    return c.json(memberSchema.parse(redacted), 200);
   },
 );

@@ -138,8 +138,13 @@ set local role authenticated;
 
 do $$
 begin
-  perform testkit.is_eq('sofort-wirkung: Katrin startet ohne attendance-Recht (Rang 3 = read_all)',
-    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 3);
+  -- 0045: die Ausgangslage ist jetzt read_own (1) statt read_all (3) — der
+  -- Nutzer hat die Stufe fuer 'member' ausdruecklich gekappt ("trainer und
+  -- hoeher ... aber rest nicht"). Die ZUSAGE dieses Blocks ist unberuehrt: er
+  -- prueft, dass eine Zweitrolle OHNE Re-Login wirkt, nicht wie hoch der
+  -- Startwert ist. Der Startwert ist hier Kulisse.
+  perform testkit.is_eq('sofort-wirkung: Katrin startet ohne attendance-Schreibrecht (Rang 1 = read_own, seit 0045)',
+    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 1);
   perform testkit.throws('sofort-wirkung: Katrin darf VORHER keine Anwesenheit erfassen',
     $q$insert into app.attendance (club_id, event_id, member_id, status)
        values ('c1ab0000-0000-4000-8000-000000000001',
@@ -200,8 +205,11 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 do $$
 begin
-  perform testkit.is_eq('sofort-entzug: attendance faellt sofort auf read_all (3) zurueck',
-    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 3);
+  -- 0045: Rueckfall jetzt auf read_own (1) statt read_all (3). Die Zusage
+  -- dieses Blocks ist der SOFORTIGE Entzug ohne Re-Login, nicht die Hoehe des
+  -- Rueckfallwerts.
+  perform testkit.is_eq('sofort-entzug: attendance faellt sofort auf read_own (1) zurueck (seit 0045)',
+    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 1);
   perform testkit.throws('sofort-entzug: Katrin darf sofort wieder KEINE Anwesenheit erfassen',
     $q$insert into app.attendance (club_id, event_id, member_id, status)
        values ('c1ab0000-0000-4000-8000-000000000001',

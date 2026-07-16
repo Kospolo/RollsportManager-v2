@@ -29,9 +29,12 @@ set local role authenticated;
 
 do $$
 begin
-  perform testkit.is_eq('matrix: Katrin startet auf attendance = read_all (3)',
-    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 3);
-  perform testkit.throws('matrix: read_all reicht zum Erfassen NICHT (edit noetig)',
+  -- 0045: Startwert read_own (1) statt read_all (3) — die Stufe fuer 'member'
+  -- wurde auf Ansage des Nutzers gekappt. Die Zusage darunter ist unberuehrt:
+  -- eine LESE-Stufe reicht zum Erfassen nicht, egal welche.
+  perform testkit.is_eq('matrix: Katrin startet auf attendance = read_own (1, seit 0045)',
+    app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 1);
+  perform testkit.throws('matrix: eine Lese-Stufe reicht zum Erfassen NICHT (edit noetig)',
     $q$insert into app.attendance (club_id, event_id, member_id, status)
        values ('c1ab0000-0000-4000-8000-000000000001',
                'e0000000-0000-4000-8000-000000000004',
@@ -96,14 +99,25 @@ begin
        values ('c1ab0000-0000-4000-8000-000000000001',
                'e0000000-0000-4000-8000-000000000004',
                'a0000000-0000-4000-8000-000000000022', 'present')$q$, '42501');
-  -- EHRLICHE GRENZE VON PHASE 1: 'none' sperrt das SCHREIBEN, nicht das Lesen.
-  -- attendance_select ist weiterhin is_club_member (0026 stellt bewusst nur den
-  -- Schreibpfad um) -> die Liste bleibt sichtbar. Wer das aendern will, muss die
-  -- SELECT-Policy umstellen; dieser Test haelt den Ist-Zustand fest, damit die
-  -- Luecke nicht unbemerkt als "abgeschaltet" gilt.
-  perform testkit.is_eq('matrix: none sperrt SCHREIBEN — Lesen bleibt is_club_member (Phase-1-Grenze)',
-    (select count(*) from (values (1)) t
-     where (select count(*) from app.attendance) > 0), 1);
+  -- HIER STAND DIE GRENZE VON PHASE 1 — UND IHRE AUFLOESUNG IST 0045.
+  --
+  -- Der alte Text lautete: "'none' sperrt das SCHREIBEN, nicht das Lesen.
+  -- attendance_select ist weiterhin is_club_member ... Wer das aendern will,
+  -- muss die SELECT-Policy umstellen; dieser Test haelt den Ist-Zustand fest,
+  -- damit die Luecke nicht unbemerkt als 'abgeschaltet' gilt."
+  -- Er hat seine Aufgabe erfuellt: die Luecke ist nicht unbemerkt geblieben,
+  -- der Nutzer hat sie gefunden ("trainingsbeteiligung an anderen mitgliedern
+  -- als mitglied ... geht auch nicht") und 0045 hat die SELECT-Policy
+  -- umgestellt (app.can_read_attendance).
+  --
+  -- Diese Zeile wird deshalb UMGEDREHT und nicht geloescht: sie ist der einzige
+  -- Ort, an dem die Aussage "die Stufe wirkt auch auf das Lesen" gegen den
+  -- ECHTEN Datenbestand faellt, wenn jemand die Policy zurueckdreht. Aus dem
+  -- Waechter der Luecke wird der Waechter des Fixes — dieselbe Zeile, andere
+  -- Richtung. (Die Umkehrung ist der Grund, warum 93j Block A jetzt
+  -- enforced=4/write_only=8 zaehlt.)
+  perform testkit.is_eq('matrix: none sperrt jetzt AUCH das Lesen (Phase-1-Grenze aufgeloest, 0045)',
+    (select count(*) from app.attendance), 0);
 end;
 $$;
 rollback;
@@ -116,7 +130,7 @@ rollback;
 --    verlieren.
 --    Ausgangslage coach:     attendance=edit(4) finance=read_own(1)
 --                            lockers=read_own(1) members=read_all(3) routines=read_team(2)
---    Ausgangslage treasurer: attendance=read_all(3) finance=manage(5)
+--    Ausgangslage treasurer: attendance=read_own(1, seit 0045) finance=manage(5)
 --                            lockers=manage(5) members=manage(5) routines=read_own(1)
 -- ---------------------------------------------------------------------------
 begin;
@@ -182,7 +196,7 @@ begin
     app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'members')::bigint, 5);
 
   -- --- Was die Trainerin mitbrachte, ist NICHT verloren ---
-  perform testkit.is_eq('union: attendance BLEIBT edit (4) — treasurer/read_all senkt NICHT',
+  perform testkit.is_eq('union: attendance BLEIBT edit (4) — treasurer/read_own senkt NICHT',
     app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'attendance')::bigint, 4);
   perform testkit.succeeds('union: sie darf weiterhin Anwesenheit erfassen (Coach-Recht bleibt)',
     $q$insert into app.attendance (club_id, event_id, member_id, status)

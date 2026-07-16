@@ -1044,6 +1044,74 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 }
 
 // ============================================================================
+// Das SELBST-PROFIL (0045) durch die echte HTTP-Schicht.
+//
+// Der Befund des Nutzers war: "wenn das mitglied was ueber sich eintraegt, dann
+// das auch — jetzt aktuell geht garnicht". Es gab die Spalten nicht. Hier faehrt
+// der ganze Weg: schreiben, im Roster wiederfinden, und die drei Grenzen, an
+// denen es NICHT geht.
+//
+// Die scharfe Zusage, die dieser Block bewacht:
+//   Das Selbst-Profil ist das EINZIGE, was ein Mitglied ueber ein anderes
+//   Mitglied erfaehrt, das ueber Name/Foto/Rolle hinausgeht — und es steht dort
+//   NUR, weil die Person es selbst hingeschrieben hat.
+// ============================================================================
+{
+  console.log('\n[smoke] --- Selbst-Profil: die Person schreibt, der Verein liest ---');
+  const KATRIN_M = 'a0000000-0000-4000-8000-000000000009';
+  const prof = (as, memberId, body) =>
+    call('PATCH', `/clubs/${CLUB}/members/${memberId}/profile`, { as, body });
+  const rosterOf = async (as, memberId, field) => {
+    const r = await call('GET', `/clubs/${CLUB}/members`, { as });
+    return (r.json ?? []).find((m) => m.id === memberId)?.[field];
+  };
+
+  // 1. Die eigene Person.
+  const own = await prof(t.parent, KATRIN_M, {
+    motto: 'Immer mit Schwung', favorite_discipline: 'Solotanz', skating_since: 2005,
+  });
+  assertEq('Katrin pflegt ihr eigenes Profil -> 200', own.status, 200);
+  assertEq('...das Motto steht in der Antwort', own.json?.profile_motto, 'Immer mit Schwung');
+  assertEq('...die Jahreszahl auch', own.json?.profile_skating_since, 2005);
+
+  // 2. DAS KIND OHNE KONTO — der Fall, fuer den das Feature gebaut ist.
+  assertEq('die Mutter pflegt das Profil ihres KINDES (Lina) -> 200',
+    (await prof(t.parent, MEMBER.linaChildOfParent, { motto: 'Ich uebe den Flip' })).status, 200);
+
+  // 3. DIE GRENZEN.
+  assertEq('Katrin schreibt NICHT am fremden Kind (Sofia) -> 403',
+    (await prof(t.parent, MEMBER.sofiaNotHerChild, { motto: 'gekapert' })).status, 403);
+  // Der ADMIN darf die Zeile verwalten — die STIMME des Kindes ist trotzdem nicht seine.
+  assertEq('der ADMIN legt dem Kind KEIN Motto in den Mund -> 403',
+    (await prof(t.admin, MEMBER.linaChildOfParent, { motto: 'Ich liebe Rollkunstlauf!!' })).status, 403);
+  // Die Leitplanke: eine hineinkopierte Telefonnummer wird abgewiesen (CHECK -> 422).
+  assertEq('eine Telefonnummer im Motto eines Kindes -> 422',
+    (await prof(t.parent, MEMBER.linaChildOfParent, { motto: 'ruf mich an 01761234567' })).status, 422);
+  assertEq('eine E-Mail im Motto eines Kindes -> 422',
+    (await prof(t.parent, MEMBER.linaChildOfParent, { motto: 'schreib mir lina@example.org' })).status, 422);
+
+  // 4. DIE BESTELLUNG: andere Mitglieder sehen es. Geprueft als guest_coach —
+  //    die vereinsfremdeste Person mit Zugang, die es ueberhaupt gibt.
+  assertEq('ein anderes Mitglied (coach) liest Katrins Motto im Roster',
+    await rosterOf(t.coach, KATRIN_M, 'profile_motto'), 'Immer mit Schwung');
+  assertEq('auch die Gast-Trainerin liest Linas Motto (freiwillig veroeffentlicht)',
+    await rosterOf(t.guest, MEMBER.linaChildOfParent, 'profile_motto'), 'Ich uebe den Flip');
+
+  // 5. Und die Redigierung ringsum steht weiter: das Selbst-Profil ist sichtbar,
+  //    die KONTAKTdaten desselben Kindes sind es nicht. Sonst haette ich mit dem
+  //    Feature eine Spalte geoeffnet und daneben eine zweite mit aufgerissen.
+  assertEq('...waehrend birth_date desselben Kindes fuer den coach redigiert bleibt',
+    await rosterOf(t.coach, MEMBER.linaChildOfParent, 'birth_date'), null);
+  assertEq('...und die E-Mail von Katrin ebenso',
+    await rosterOf(t.coach, KATRIN_M, 'email'), null);
+
+  // 6. Moderation: leeren darf der Vorstand (nur schreiben nicht).
+  const cleared = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.linaChildOfParent}`,
+    { as: t.admin, body: { first_name: 'Lina' } });
+  assertEq('der ADMIN pflegt weiter normale Stammdaten -> 200', cleared.status, 200);
+}
+
+// ============================================================================
 // RBAC Phase 2 Schritt 6 — die Rollen-Admin-Endpoints (routes/roles.ts).
 //
 // Der KERNBEWEIS von Phase 2 steht hier: eine Zweitrolle wirkt SOFORT durch die
@@ -1118,8 +1186,12 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 
   assertEq('VORHER: Katrin (nur member) erfasst KEINE Anwesenheit -> 403',
     (await recordAttendance(t.parent)).status, 403);
-  assertEq('...ihr attendance-Rang ist read_all (3), nicht edit',
-    await capRank(t.parent, 'attendance'), 3);
+  // 0045: Ausgangslage ist jetzt read_own (1) statt read_all (3) — der Nutzer
+  // hat die Stufe fuer 'member' gekappt ("trainer und hoeher ... aber rest
+  // nicht"), und seit 0045 steuert sie auch das LESEN. Die Zusage dieses Blocks
+  // bleibt woertlich dieselbe: die Zweitrolle wirkt SOFORT, ohne neuen Token.
+  assertEq('...ihr attendance-Rang ist read_own (1, seit 0045), nicht edit',
+    await capRank(t.parent, 'attendance'), 1);
 
   const assign = await call('PUT', `/clubs/${CLUB}/members/${KATRIN}/roles`, {
     as: t.owner, body: { role_ids: [roleByKey.member?.id, roleByKey.coach?.id] },

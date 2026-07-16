@@ -36,12 +36,19 @@ begin
   perform testkit.is_eq('cap-enforcement: der Katalog hat 32 Faehigkeiten',
     (select count(*) from app.capabilities), 32);
 
-  perform testkit.is_eq('cap-enforcement: 3 x enforced (routines, lockers, anniversaries)',
-    (select count(*) from app.capabilities where enforcement = 'enforced'), 3);
+  -- 0045: 'attendance' ist von write_only nach enforced gewandert (9->8, 3->4).
+  -- Kein Rueckbau dieser Kontrolle, sondern ihr Zweck: attendance_select fragt
+  -- seit 0045 die Faehigkeit (app.can_read_attendance), also nimmt die Stufe
+  -- "keine" dort jetzt wirklich das LESEN weg. Haette man die Zahl gelassen,
+  -- waere Block C rot geworden ("write_only, aber SELECT-Policy vorhanden") —
+  -- die Nachrechnung hat den Wechsel also selbst gefunden. Die ZUSICHERUNGEN
+  -- (B/C/D) sind unveraendert; hier steht nur die Buchhaltung.
+  perform testkit.is_eq('cap-enforcement: 4 x enforced (routines, lockers, anniversaries, attendance)',
+    (select count(*) from app.capabilities where enforcement = 'enforced'), 4);
   perform testkit.is_eq('cap-enforcement: 2 x partial (finance, member_contact)',
     (select count(*) from app.capabilities where enforcement = 'partial'), 2);
-  perform testkit.is_eq('cap-enforcement: 9 x write_only',
-    (select count(*) from app.capabilities where enforcement = 'write_only'), 9);
+  perform testkit.is_eq('cap-enforcement: 8 x write_only',
+    (select count(*) from app.capabilities where enforcement = 'write_only'), 8);
   perform testkit.is_eq('cap-enforcement: 18 x unenforced',
     (select count(*) from app.capabilities where enforcement = 'unenforced'), 18);
 end;

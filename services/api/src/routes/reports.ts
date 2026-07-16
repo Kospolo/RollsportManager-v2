@@ -15,6 +15,9 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+// Die EINE Referenz fuer "darf joined_on sehen" — bewusst aus members.ts
+// importiert und hier nicht nachgebaut (siehe /reports/anniversaries unten).
+import { maySeeJoinedOn } from './members.js';
 import {
   capRankOf,
   rankOf,
@@ -365,7 +368,23 @@ reportsRouter.openapi(
     // Darf die aufrufende Person joined_on ueberhaupt sehen? Wenn nein, fallen die
     // Jubilaeums-Zeilen ganz weg (siehe Kopf) — pruefen ohne zu werfen, denn die
     // Geburtstage bleiben ja.
-    const maySeeJoinedOn = (await capRankOf(c, club_id, 'member_contact')) >= rankOf('read_all');
+    //
+    // ### 0045: DIESELBE FUNKTION WIE DER ROSTER, NICHT NUR DIESELBE ABSICHT ###
+    // Hier stand `capRankOf(member_contact) >= read_all` mit dem Kommentar "im
+    // Seed deckungsgleich mit maySeeFullRoster". Das war zwei Mal fragil:
+    //  1. Es waren ZWEI Mechanismen (DB-aufgeloeste Faehigkeit hier, Rollen-Claim
+    //     im Roster). "Deckungsgleich im SEED" heisst: sie laufen auseinander,
+    //     sobald ein Verein member_contact im Admin-UI anfasst — dann zeigt der
+    //     Roster joined_on und der Report verweigert das Jubilaeum (oder
+    //     umgekehrt, und dann ist es ein Leck).
+    //  2. Mit 0045 stimmt es ohnehin nicht mehr: der coach sieht joined_on im
+    //     Roster, hat aber member_contact = 'none' (0023:180, damit er E-Mail und
+    //     Geburtsdatum der Kinder NICHT sieht).
+    // Die Zusicherung ist unveraendert scharf ("Jubilaeum genau dann, wenn der
+    // Roster joined_on zeigt") — sie ist jetzt nur nicht mehr nachgebaut,
+    // sondern es ist woertlich dieselbe Funktion. Zwei Kopien einer Regel sind
+    // eine Kopie zu viel.
+    const joinedOnVisible = maySeeJoinedOn(claims, club_id);
 
     const rows = await withUser(claims, (tx) =>
       tx`
@@ -378,7 +397,7 @@ reportsRouter.openapi(
           -- 5/10/15/20/25 … Jahre Mitgliedschaft. 'years' bleibt: ohne die Zahl
           -- gibt es kein Jubilaeum.
           --
-          -- Der Filter ${maySeeJoinedOn} schaltet den ganzen Zweig ab, wenn die
+          -- Der Filter ${joinedOnVisible} schaltet den ganzen Zweig ab, wenn die
           -- aufrufende Person joined_on nicht sehen darf. Bewusst hier und nicht
           -- erst beim Serialisieren: was nicht selektiert wird, kann auch nicht
           -- ueber einen spaeteren Umweg (Sortierung, Anzahl, Timing) durchsickern.
@@ -386,7 +405,7 @@ reportsRouter.openapi(
                  (r.joined_on + (y * interval '1 year'))::date as date, y as years
           from roster r
           cross join generate_series(5, 80, 5) as y
-          where ${maySeeJoinedOn}
+          where ${joinedOnVisible}
             and r.joined_on is not null
             and (r.joined_on + (y * interval '1 year'))::date
                 between current_date and (current_date + interval '365 days')::date
