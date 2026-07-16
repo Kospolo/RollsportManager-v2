@@ -19,7 +19,18 @@ export const assignableRoleSchema = z
   .enum(['admin', 'moderator', 'treasurer', 'coach', 'member', 'guest_coach'])
   .openapi('AssignableClubRole');
 
-export const memberStatusSchema = z.enum(['pending', 'active', 'inactive', 'left']).openapi('MemberStatus');
+/**
+ * Lebenslauf einer Mitgliedschaft (app.member_status, 0002:25 + 0036).
+ *
+ * 'rejected' kam mit 0036 dazu: eine Ablehnung war vorher NICHT ausdrueckbar.
+ * Der Ausweg soft-delete liess den Vorgang verschwinden (der naechste Antrag
+ * traf auf einen Vorstand ohne Gedaechtnis), der Ausweg 'left' war semantisch
+ * falsch UND eine Sackgasse (der Eindeutigkeits-Index 0002:82-84 blockte jede
+ * weitere Bewerbung). Nur 'active' oeffnet Rechte (app.member_role_keys, 0025).
+ */
+export const memberStatusSchema = z
+  .enum(['pending', 'rejected', 'active', 'inactive', 'left'])
+  .openapi('MemberStatus');
 export const eventTypeSchema = z.enum(['training', 'competition', 'other']).openapi('EventType');
 export const rsvpStatusSchema = z.enum(['going', 'declined', 'maybe', 'sick']).openapi('RsvpStatus');
 export const attendanceStatusSchema = z.enum(['present', 'late', 'excused', 'absent']).openapi('AttendanceStatus');
@@ -2543,12 +2554,29 @@ export const clubRegistrationResultSchema = z
   })
   .openapi('ClubRegistrationResult');
 
+/**
+ * Ein Name, den ein FREMDER waehlt und der ungeprueft im Freigabe-Bildschirm
+ * des Vorstands landet.
+ *
+ * Steuerzeichen sind dort keine Formatierung, sondern eine Taeuschung: ein
+ * "Max\nVom Vorstand bereits geprueft" ist im Antrag eine zweite Zeile. Die
+ * Datenbank haelt dieselbe Zusage fuer JEDEN Schreiber (0037,
+ * club_members_name_sane) — hier steht sie nur frueher und mit einer
+ * verstaendlichen Meldung.
+ */
+const applicantName = z
+  .string()
+  .min(1)
+  .max(80)
+  // eslint-disable-next-line no-control-regex
+  .regex(/^[^\u0000-\u001F\u007F]+$/u, 'Steuerzeichen sind nicht erlaubt / control characters are not allowed');
+
 /** Beitritt per Code. Der Code ist tippfehler-tolerant (Crockford, 0034). */
 export const clubJoinInputSchema = z
   .object({
     code: z.string().min(4).max(40),
-    first_name: z.string().min(1).max(80),
-    last_name: z.string().min(1).max(80),
+    first_name: applicantName,
+    last_name: applicantName,
     accept_terms: z.literal(true),
     accept_privacy: z.literal(true),
   })
@@ -2570,12 +2598,22 @@ export const clubJoinResultSchema = z
   })
   .openapi('ClubJoinResult');
 
-/** Antwort auf das Rotieren des Einladungscodes. */
+/**
+ * Antwort auf das Rotieren des Einladungscodes.
+ *
+ * previous_code_valid_until ist seit 0037 der eigentliche Punkt: solange der
+ * Code eine SPALTE auf app.clubs war (0002:38), starb der alte Code in
+ * derselben Sekunde, in der der neue entstand — Aushang und WhatsApp-Gruppe
+ * sofort tot. Genau deshalb rotierte niemand. Mit app.club_join_codes gelten N
+ * Codes gleichzeitig, und dieses Feld sagt der Oberflaeche, bis wann der alte
+ * noch traegt (null = er ist sofort tot, das ist die Vorgabe).
+ */
 export const clubJoinCodeRotatedSchema = z
   .object({
     club_id: uuid,
     join_code: z.string(),
     join_code_expires_at: timestamp.nullable(),
+    previous_code_valid_until: timestamp.nullable(),
   })
   .openapi('ClubJoinCodeRotated');
 

@@ -23,6 +23,25 @@
 // muesste jedem Fremden INSERT auf den Roster jedes Vereins erlauben). Der
 // Einloese-Pfad autorisiert sich deshalb SELBST: gueltiger Code + Drosselung.
 // Genau das verlangt db.ts von jedem Service-Mode-Aufruf.
+//
+// ### WAS 0037 HIER GEAENDERT HAT ###
+// 1. DER CODE IST EINE TABELLE, KEINE SPALTE (app.club_join_codes).
+//    Vorher lag er als app.clubs.join_code (0002:38) + _expires_at/_revoked_at
+//    (0034:58-61) auf dem Verein - also EIN Code. Die Rotation unten war damit
+//    ein UPDATE auf diese Spalte: in dem Moment, in dem der neue Code entstand,
+//    war der alte UEBERSCHRIEBEN. Aushang, Eltern-WhatsApp, Screenshot: sofort
+//    tot. Ein Ueberlappungsfenster ("der alte gilt noch 24h") war im Schema
+//    nicht darstellbar - und eine Rotation, die alle aussperrt, benutzt
+//    niemand. Der Einloeser liest jetzt NUR app.club_join_codes.
+// 2. ABLEHNEN HEISST 'rejected', NICHT LOESCHEN (0036/0037).
+//    Der Soft-Delete von vorher liess den Vorgang verschwinden; die naechste
+//    Bewerbung derselben Person traf auf einen Vorstand ohne Gedaechtnis.
+// 3. DER WIEDERANTRAG DREHT DIE ZEILE, ER LEGT KEINE ZWEITE AN.
+//    Der Eindeutigkeits-Index (0002:82-84) laesst pro (club, profile) nur eine
+//    Zeile zu - was 'left'/'inactive'/'rejected' zur Sackgasse machte: die
+//    Person konnte NIE wieder beitreten und es nicht einmal signalisieren (den
+//    eigenen Status haelt 0007:216-222 fest). Der Service-Mode-Pfad hier ist
+//    die einzige Stelle, die das darf, weil er ohne auth.uid() laeuft.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
@@ -68,6 +87,23 @@ function invalidCode(): never {
     'Dieser Vereinscode ist nicht gültig. / This club code is not valid.',
   );
 }
+
+/**
+ * Sperrfrist nach einer ABLEHNUNG, bevor dieselbe Person erneut beantragen darf.
+ *
+ * Ohne sie waere 'rejected' (0036) nur Dekoration: der Abgelehnte stellte
+ * denselben Antrag sofort wieder, und der Vorstand muesste ihn erneut ablehnen —
+ * beliebig oft. Die Drosselung aus 0034 hilft hier NICHT: sie begrenzt Versuche
+ * pro Stunde, nicht Hartnaeckigkeit ueber Wochen. Sieben Tage: lang genug, dass
+ * sich Belaestigung nicht lohnt, kurz genug, dass eine versehentliche Ablehnung
+ * ("falsche Zeile erwischt") keine Beziehung zerstoert — und der Vorstand kann
+ * eine Ablehnung ohnehin sofort selbst zuruecknehmen (POST .../approve nimmt
+ * auch 'rejected').
+ */
+const REAPPLY_COOLDOWN_DAYS = 7;
+
+/** Ueberlappung: hoechstens 7 Tage. Wer laenger zwei Codes fuehrt, rotiert nicht — er sammelt. */
+const MAX_OVERLAP_HOURS = 168;
 
 // ---------------------------------------------------------------------------
 // POST /clubs/join - Beitrittsantrag per Code
@@ -139,48 +175,109 @@ registrationRouter.openapi(
     const result = await withServiceRole(
       'club join by code (authorized by the code itself + rate limit)',
       async (tx) => {
-        const clubs = await tx<
+        // DIE WAHRHEIT IST app.club_join_codes (0037), nicht mehr die Spalte
+        // app.clubs.join_code: ein Verein kann MEHRERE Codes gleichzeitig
+        // gueltig haben (Rotation mit Ueberlappungsfenster). Der Verein steht
+        // ueber den Kindsatz fest - ein Code gehoert per Eindeutigkeits-Index
+        // (0037, club_join_codes_normalized_uq) immer genau einem Verein.
+        const codes = await tx<
           {
-            id: string;
-            name: string;
-            join_code_expires_at: Date | null;
-            join_code_revoked_at: Date | null;
+            club_id: string;
+            club_name: string;
+            expires_at: Date | null;
+            revoked_at: Date | null;
           }[]
         >`
-          select id, name, join_code_expires_at, join_code_revoked_at
-          from app.clubs
-          where join_code_normalized = ${normalized}
-            and deleted_at is null`;
+          select jc.club_id, c.name as club_name, jc.expires_at, jc.revoked_at
+          from app.club_join_codes jc
+          join app.clubs c on c.id = jc.club_id
+          where jc.code_normalized = ${normalized}
+            and c.deleted_at is null`;
 
-        const club = clubs[0];
-        if (club === undefined) return { kind: 'invalid' as const };
-        if (club.join_code_revoked_at !== null) return { kind: 'revoked' as const };
-        if (club.join_code_expires_at !== null && club.join_code_expires_at.getTime() <= Date.now()) {
+        const code = codes[0];
+        if (code === undefined) return { kind: 'invalid' as const };
+        if (code.revoked_at !== null) return { kind: 'revoked' as const };
+        if (code.expires_at !== null && code.expires_at.getTime() <= Date.now()) {
           return { kind: 'expired' as const };
         }
+        const club = { id: code.club_id, name: code.club_name };
 
         // Schon drin (oder schon beantragt)? Dann NICHT still eine zweite Zeile
         // anlegen - der unique index club_members(club_id, profile_id) wuerde
         // ohnehin 23505 werfen, aber eine klare Auskunft ist hier ungefaehrlich:
         // wer bis hierher kommt, kennt den Code bereits.
-        const existing = await tx<{ id: string; status: string }[]>`
-          select id, status from app.club_members
+        const existing = await tx<
+          { id: string; status: string; rejected_at: Date | null; rejection_count: number }[]
+        >`
+          select id, status, rejected_at, rejection_count from app.club_members
           where club_id = ${club.id} and profile_id = ${claims.sub} and deleted_at is null`;
-        if (existing[0] !== undefined) {
-          return { kind: 'exists' as const, club, member: existing[0] };
+
+        const prior = existing[0];
+        let member: { id: string; status: string } | undefined;
+
+        if (prior === undefined) {
+          // status='pending' ist der Antrag. role='member' ist die niedrigste
+          // Rolle - und sie ist folgenlos, solange status<>'active'.
+          const inserted = await tx<{ id: string; status: string }[]>`
+            insert into app.club_members (club_id, profile_id, first_name, last_name, role, status)
+            values (${club.id}, ${claims.sub}, ${body.first_name}, ${body.last_name}, 'member', 'pending')
+            returning id, status`;
+          member = inserted[0];
+        } else if (prior.status === 'active') {
+          return { kind: 'exists' as const, club, member: prior };
+        } else if (prior.status === 'pending') {
+          return { kind: 'exists' as const, club, member: prior };
+        } else if (
+          prior.status === 'rejected' &&
+          prior.rejected_at !== null &&
+          prior.rejected_at.getTime() + REAPPLY_COOLDOWN_DAYS * 86_400_000 > Date.now()
+        ) {
+          return { kind: 'cooldown' as const, club, member: prior };
+        } else {
+          // WIEDERANTRAG - rejected (nach Ablauf der Sperrfrist), left oder
+          // inactive. Bis 0037 war das eine SACKGASSE: der Eindeutigkeits-Index
+          // (0002:82-84) laesst pro (club, profile) nur eine Zeile zu, also
+          // scheiterte jeder neue INSERT - und den eigenen status darf niemand
+          // aendern (0007:216-222). Wer einmal ausgetreten war, konnte NIE
+          // wieder beitreten und es nicht einmal signalisieren.
+          //
+          // Deshalb dreht der Wiederantrag DIESELBE Zeile zurueck auf 'pending'
+          // (kein zweiter Datensatz -> der Index bleibt scharf, und
+          // app.own_member_id mit 'order by created_at limit 1' muss nie
+          // zwischen zwei Zeilen raten).
+          //
+          // role = 'member' ist hier KEINE Kosmetik, sondern der Kern:
+          // app.member_roles ueberlebt einen Austritt (nur der status-Gate in
+          // member_role_keys, 0025:47-49, neutralisiert die Rollen). Ohne diesen
+          // Reset kaeme ein ausgetretener ADMIN nach der naechsten Freigabe als
+          // ADMIN zurueck - der Vorstand haette nur "Beitrittsantrag freigeben"
+          // gelesen. Der Spiegel-Trigger (0024:129-140) zieht member_roles beim
+          // Rollenwechsel nach; Zweitrollen raeumt der DELETE darunter weg.
+          const revived = await tx<{ id: string; status: string }[]>`
+            update app.club_members
+               set status      = 'pending',
+                   role        = 'member',
+                   first_name  = ${body.first_name},
+                   last_name   = ${body.last_name},
+                   valid_until = null,
+                   joined_on   = null
+             where id = ${prior.id}
+             returning id, status`;
+          member = revived[0];
+
+          await tx`
+            delete from app.member_roles mr
+             using app.roles r
+             where mr.member_id = ${prior.id}
+               and r.id = mr.role_id
+               and r.key <> 'member'`;
         }
 
-        // status='pending' ist der Antrag. role='member' ist die niedrigste
-        // Rolle - und sie ist folgenlos, solange status<>'active'.
-        const inserted = await tx<{ id: string; status: string }[]>`
-          insert into app.club_members (club_id, profile_id, first_name, last_name, role, status)
-          values (${club.id}, ${claims.sub}, ${body.first_name}, ${body.last_name}, 'member', 'pending')
-          returning id, status`;
-
-        const member = inserted[0];
         if (member === undefined) throw problem(500, 'Internal Server Error', 'insert failed');
 
-        // Einwilligungen: getrennt je Zweck (Art. 7 Abs. 2 DSGVO).
+        // Einwilligungen: getrennt je Zweck (Art. 7 Abs. 2 DSGVO). Auch beim
+        // Wiederantrag - eine Einwilligung von vor dem Austritt traegt den
+        // neuen Antrag nicht.
         for (const purpose of ['terms', 'privacy'] as const) {
           await tx`
             insert into app.consents
@@ -220,6 +317,29 @@ registrationRouter.openapi(
             ? 'Dein Antrag liegt bereits vor. / Your request is already pending.'
             : 'Du bist bereits Mitglied dieses Vereins. / You are already a member of this club.',
         );
+      case 'cooldown': {
+        // Die Ablehnung wird BENANNT, nicht verschleiert. Wer bis hierher kommt,
+        // kennt den Code und hat schon einmal beantragt - "irgendetwas ging
+        // schief" waere hier keine Sicherheit, sondern nur Ratlosigkeit.
+        const until = new Date(
+          (result.member.rejected_at?.getTime() ?? Date.now()) + REAPPLY_COOLDOWN_DAYS * 86_400_000,
+        );
+        recordAuthEvent(c, {
+          event: 'join_rejected_cooldown',
+          status: 409,
+          detail: {
+            club_id: result.club.id,
+            rejection_count: result.member.rejection_count,
+            retry_at: until.toISOString(),
+          },
+        });
+        throw problem(
+          409,
+          'Conflict',
+          `Dein Antrag wurde abgelehnt. Ein neuer Antrag ist ab dem ${until.toLocaleDateString('de-DE')} möglich. ` +
+            `/ Your request was rejected. You may re-apply from ${until.toLocaleDateString('en-GB')}.`,
+        );
+      }
       case 'created':
         return c.json(
           clubJoinResultSchema.parse({
@@ -263,19 +383,24 @@ registrationRouter.openapi(
     // nicht). guards.requireClubRole wuerde ihn im EIGENEN Verein aussperren.
     await requireCap(c, clubId, 'members', 'manage');
 
+    // 'rejected' ist hier bewusst mit dabei: eine Ablehnung ist eine
+    // Entscheidung DESSELBEN Gremiums (beides members>=manage), und ein
+    // Fehlklick auf "Ablehnen" darf die Person nicht sieben Tage lang
+    // (REAPPLY_COOLDOWN_DAYS) aussperren. Das Gedaechtnis bleibt trotzdem
+    // stehen: rejected_at/rejection_count werden NICHT zurueckgesetzt.
     const rows = await withUser(claims, (tx) =>
       tx`update app.club_members
             set status = 'active',
                 joined_on = coalesce(joined_on, current_date)
           where id = ${memberId}
             and club_id = ${clubId}
-            and status = 'pending'
+            and status in ('pending', 'rejected')
             and deleted_at is null
           returning *`,
     );
     if (rows.length === 0) {
-      // Kein pending-Antrag (oder RLS hat gefiltert). Keine Auskunft darueber,
-      // welcher der beiden Faelle es war.
+      // Kein offener/abgelehnter Antrag (oder RLS hat gefiltert). Keine
+      // Auskunft darueber, welcher der Faelle es war.
       throw problem(404, 'Not Found', 'Kein offener Antrag. / No pending request.');
     }
     return c.json(memberSchema.parse({ ...rows[0], avatar_url: null, team_ids: [] }), 200);
@@ -292,12 +417,15 @@ registrationRouter.openapi(
     tags: ['registration'],
     summary: 'Beitrittsantrag ablehnen / Reject a join request',
     description:
-      'Soft-Delete des Antrags (deleted_at). Die Person kann danach erneut beantragen - eine Ablehnung ist ' +
-      'keine Sperre. Erfordert members>=manage.',
+      'Setzt status=rejected und schreibt das Gedaechtnis fort (rejected_at, rejected_by, rejection_count). ' +
+      'Die Zeile BLEIBT stehen - vorher war eine Ablehnung ein Soft-Delete, der den Vorgang verschwinden liess: ' +
+      'der naechste Antrag derselben Person traf auf einen Vorstand ohne Gedaechtnis. Ein Wiederantrag ist nach ' +
+      'einer Sperrfrist moeglich (POST /clubs/join dreht die Zeile zurueck auf pending); eine versehentliche ' +
+      'Ablehnung nimmt POST .../approve sofort zurueck. Erfordert members>=manage.',
     security: [{ bearerAuth: [] }],
     request: { params: memberIdParam },
     responses: {
-      200: jsonContent(memberSchema, 'Abgelehnter Antrag (deleted_at gesetzt)'),
+      200: jsonContent(memberSchema, 'Abgelehnter Antrag (status=rejected)'),
       ...errorResponses,
     },
   }),
@@ -305,9 +433,15 @@ registrationRouter.openapi(
     const { clubId, memberId } = c.req.valid('param');
     await requireCap(c, clubId, 'members', 'manage');
 
+    // rejected_by = app.own_member_id (0021, security definer): eine Ablehnung
+    // ist eine Entscheidung mit Folgen und braucht einen Namen. NULL bleibt
+    // moeglich - ein Plattform-Admin hat keine Mitgliedszeile im Verein.
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`update app.club_members
-            set deleted_at = now(), status = 'left'
+            set status                = 'rejected',
+                rejected_at           = now(),
+                rejected_by_member_id = app.own_member_id(${clubId}),
+                rejection_count       = rejection_count + 1
           where id = ${memberId}
             and club_id = ${clubId}
             and status = 'pending'
@@ -329,9 +463,11 @@ registrationRouter.openapi(
     tags: ['registration'],
     summary: 'Vereinscode neu erzeugen / Rotate the club join code',
     description:
-      'Erzeugt einen neuen Code (CSPRNG, Crockford-Base32) und macht den alten damit sofort wertlos. ' +
-      'Noetig, weil der Code ein GETEILTES Geheimnis ist: er steht in WhatsApp-Gruppen und an Aushaengen. ' +
-      'Ohne Rotation waere die einzige Reaktion auf einen geleakten Code die Neuanlage des Vereins. ' +
+      'Erzeugt einen neuen Code (CSPRNG, Crockford-Base32). Mit overlap_hours bleibt der ALTE Code noch eine ' +
+      'Weile gueltig - das war bis 0037 im Schema unmoeglich (der Code war eine SPALTE auf app.clubs, ' +
+      'Rotieren hiess Ueberschreiben, der alte starb in derselben Sekunde). Genau deshalb rotierte niemand: ' +
+      'ein Wechsel sperrte Aushang, WhatsApp-Gruppe und Anmeldeformular sofort aus. Ohne overlap_hours ' +
+      '(Vorgabe) ist der alte Code sofort tot - das ist der richtige Weg bei einem GELEAKTEN Code. ' +
       'Erfordert owner/admin/moderator (wie clubs_update, 0007:253).',
     security: [{ bearerAuth: [] }],
     request: {
@@ -343,6 +479,12 @@ registrationRouter.openapi(
               .object({
                 /** Tage bis zum Ablauf. null/weggelassen = laeuft nie ab. */
                 expires_in_days: z.number().int().min(1).max(365).nullable().optional(),
+                /**
+                 * Wie lange der ALTE Code noch traegt. 0/weggelassen = sofort
+                 * tot (bei einem Leak die einzig richtige Antwort). > 0 = das
+                 * Uebergangsfenster fuer alle, die den alten Code schon haben.
+                 */
+                overlap_hours: z.number().int().min(0).max(MAX_OVERLAP_HOURS).optional(),
               })
               .openapi('ClubJoinCodeRotateInput'),
           },
@@ -359,29 +501,78 @@ registrationRouter.openapi(
     const { clubId } = c.req.valid('param');
     const body = c.req.valid('json') ?? {};
     const days = body.expires_in_days ?? null;
+    const overlap = body.overlap_hours ?? 0;
 
     await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator']);
 
-    // withUser: clubs_update (is_club_admin) ist die zweite Verteidigungslinie.
+    // withUser: clubs_update (is_club_admin) und club_join_codes_update
+    // (owner/admin/moderator, 0037) sind die zweite Verteidigungslinie.
     // Der Code selbst kommt aus der DB-Funktion - der Zufall darf nicht aus
     // Node kommen (Math.random ist kein CSPRNG) und muss dort erzeugt werden,
     // wo auch der Eindeutigkeits-Index sitzt.
-    const rows = await withUser(c.get('claims'), (tx) =>
-      tx`update app.clubs
-            set join_code            = app.generate_join_code(),
-                join_code_revoked_at = null,
-                join_code_expires_at = ${days === null ? null : tx`now() + (${days} || ' days')::interval`}
-          where id = ${clubId} and deleted_at is null
-          returning id, join_code, join_code_expires_at`,
-    );
-    if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
+    const result = await withUser(c.get('claims'), async (tx) => {
+      // 1. ZUERST die alten Codes. Diese Reihenfolge ist zwingend: liefe sie
+      //    nach Schritt 2, traefe sie den frisch erzeugten Code gleich mit.
+      let previousValidUntil: Date | null = null;
+      if (overlap > 0) {
+        // least(): eine Rotation darf ein Ueberlappungsfenster nur SETZEN oder
+        // VERKUERZEN, nie verlaengern. Ein Code, der in einer Stunde ablaeuft,
+        // bekommt durch 'rotieren mit 24h Uebergang' keine 24 Stunden geschenkt.
+        const old = await tx<{ expires_at: Date }[]>`
+          update app.club_join_codes
+             set expires_at = least(
+                   coalesce(expires_at, 'infinity'::timestamptz),
+                   now() + (${overlap} || ' hours')::interval
+                 )
+           where club_id = ${clubId}
+             and revoked_at is null
+             and (expires_at is null or expires_at > now())
+          returning expires_at`;
+        for (const row of old) {
+          if (previousValidUntil === null || row.expires_at.getTime() > previousValidUntil.getTime()) {
+            previousValidUntil = row.expires_at;
+          }
+        }
+      } else {
+        await tx`
+          update app.club_join_codes set revoked_at = now()
+           where club_id = ${clubId} and revoked_at is null`;
+      }
 
-    const row = rows[0] as { id: string; join_code: string; join_code_expires_at: Date | null };
+      // 2. Der neue Code entsteht weiterhin auf app.clubs - der Trigger
+      //    clubs_mirror_join_code (0037) legt den Kindsatz an. Damit bleibt
+      //    POST /clubs (clubs.ts:213, fremde Spur) unveraendert gueltig: wer
+      //    die Spalte schreibt, bekommt den Kindsatz geschenkt.
+      const rows = await tx`
+        update app.clubs
+           set join_code            = app.generate_join_code(),
+               join_code_revoked_at = null,
+               join_code_expires_at = ${days === null ? null : tx`now() + (${days} || ' days')::interval`}
+         where id = ${clubId} and deleted_at is null
+        returning id, join_code, join_code_expires_at`;
+      const row = rows[0] as
+        | { id: string; join_code: string; join_code_expires_at: Date | null }
+        | undefined;
+      if (row === undefined) return undefined;
+
+      // 3. Wer rotiert hat. Ohne diese Zeile weiss der Verein spaeter nicht,
+      //    wer den Code in Umlauf gebracht hat.
+      await tx`
+        update app.club_join_codes
+           set created_by_member_id = app.own_member_id(${clubId})
+         where club_id = ${clubId}
+           and code_normalized = app.normalize_join_code(${row.join_code})`;
+
+      return { row, previousValidUntil };
+    });
+    if (result === undefined) throw problem(404, 'Not Found', 'Club not found');
+
     return c.json(
       clubJoinCodeRotatedSchema.parse({
-        club_id: row.id,
-        join_code: row.join_code,
-        join_code_expires_at: row.join_code_expires_at,
+        club_id: result.row.id,
+        join_code: result.row.join_code,
+        join_code_expires_at: result.row.join_code_expires_at,
+        previous_code_valid_until: result.previousValidUntil,
       }),
       200,
     );
@@ -398,7 +589,9 @@ registrationRouter.openapi(
     tags: ['registration'],
     summary: 'Vereinscode widerrufen / Revoke the club join code',
     description:
-      'Macht den Code ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. ' +
+      'Macht ALLE Codes des Vereins ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine ' +
+      'Antraege mehr an. "Alle" ist woertlich - seit 0037 kann ein Verein mehrere Codes gleichzeitig fuehren ' +
+      '(Ueberlappungsfenster einer Rotation), und ein Widerruf, der einen davon uebersieht, ist keiner. ' +
       'Getrennt von rotate, weil "niemand soll mehr beitreten" etwas anderes ist als "alle brauchen einen neuen Code".',
     security: [{ bearerAuth: [] }],
     request: { params: clubIdParam },
@@ -410,11 +603,17 @@ registrationRouter.openapi(
   async (c) => {
     const { clubId } = c.req.valid('param');
     await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator']);
-    const rows = await withUser(c.get('claims'), (tx) =>
-      tx`update app.clubs set join_code_revoked_at = now()
-          where id = ${clubId} and deleted_at is null
-          returning id, join_code_revoked_at`,
-    );
+    const rows = await withUser(c.get('claims'), async (tx) => {
+      // Erst die Kindtabelle (die Wahrheit): ein noch ueberlappender ALTER Code
+      // haengt nicht mehr an der Spalte und wuerde vom UPDATE unten nicht
+      // erfasst. Genau er ist aber der, der nach einem Leak noch traegt.
+      await tx`
+        update app.club_join_codes set revoked_at = now()
+         where club_id = ${clubId} and revoked_at is null`;
+      return tx`update app.clubs set join_code_revoked_at = now()
+                 where id = ${clubId} and deleted_at is null
+                 returning id, join_code_revoked_at`;
+    });
     const row = rows[0] as { id: string; join_code_revoked_at: Date } | undefined;
     if (row === undefined) throw problem(404, 'Not Found', 'Club not found');
     return c.json(

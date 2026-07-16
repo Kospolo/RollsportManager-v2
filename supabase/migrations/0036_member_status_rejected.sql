@@ -1,0 +1,41 @@
+-- ============================================================================
+-- 0036_member_status_rejected.sql — NUR der Enum-Wert. Nichts sonst.
+--
+-- WARUM EINE EIGENE MIGRATION FUER EINE EINZIGE ZEILE:
+-- Postgres laesst einen frisch per 'ALTER TYPE ... ADD VALUE' hinzugefuegten
+-- Enum-Wert in DERSELBEN Transaktion nicht BENUTZEN (unsafe_use_of_new_enum_
+-- value_in_transaction, SQLSTATE 55P04). Der Wert existiert im Katalog, aber
+-- solange die Transaktion nicht committet ist, kann kein anderer Backend-
+-- Prozess ihn aufloesen — Postgres verbietet die Nutzung deshalb rundheraus.
+-- 0037 BENUTZT 'rejected' (Kommentare, Constraint, Policy-Ausdruck) und muesste
+-- sonst scheitern. Zwei Dateien = zwei Transaktionen = der Wert ist committet,
+-- bevor ihn jemand anfasst.
+--
+-- KEIN 'begin;/commit;' HIER, und das ist Absicht:
+-- Seit PG12 ist ADD VALUE zwar auch in einem Transaktionsblock erlaubt (ausser
+-- der Typ wurde darin erst erzeugt), aber der Nutzen waere null — die Datei hat
+-- genau eine Anweisung, psql fuehrt sie ohnehin in einer eigenen impliziten
+-- Transaktion aus. Ein 'begin' hier wuerde nur den Eindruck erwecken, man
+-- koenne noch etwas dazupacken. Man kann nicht.
+--
+-- WARUM 'rejected' UEBERHAUPT (der Befund):
+-- app.member_status kannte ('pending','active','inactive','left'). Eine
+-- ABLEHNUNG war damit nicht ausdrueckbar, und beide Auswege waren schlecht:
+--   * soft-delete (deleted_at) -> der Vorgang verschwindet. Die naechste
+--     Bewerbung derselben Person trifft auf einen Vorstand ohne Gedaechtnis.
+--   * 'left'/'inactive' -> semantisch falsch (die Person war nie drin) und der
+--     Eindeutigkeits-Index (0002:82-84) blockt jede weitere Bewerbung.
+-- 'rejected' benennt den Vorgang und laesst ihn in der Zeile stehen. Der
+-- Wiederantrag ist ab 0037 ein Zustandswechsel derselben Zeile — kein zweiter
+-- Datensatz, damit der Index nicht ausgehebelt werden muss und own_member_id
+-- (0021:38-44, 'order by created_at limit 1') nie zwischen zwei Zeilen raten
+-- muss.
+--
+-- POSITION IM ENUM: direkt nach 'pending'. Die Reihenfolge ist heute nirgends
+-- als Rangfolge ausgewertet (anders als app.club_member_role, dessen min() in
+-- app.can_change_member_role 0025:110 den hoechsten Rang bestimmt) — sie ist
+-- reine Lesbarkeit: der Lebenslauf einer Mitgliedschaft lautet
+-- pending -> rejected | active -> inactive -> left.
+-- ============================================================================
+
+alter type app.member_status add value if not exists 'rejected' after 'pending';
