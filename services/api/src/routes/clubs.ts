@@ -6,13 +6,18 @@
 // "club creation is an API operation" und liess deshalb bewusst JEDE
 // INSERT-Policy auf app.clubs weg - die Route hat nur bis hierher gefehlt.
 //
-// join_code-REDIGIERUNG (siehe unten): der Code ist ab 0034 die Eintrittskarte
-// in die Warteschlange und darf nicht mehr an jedes Mitglied gehen.
+// join_code: NICHT MEHR HIER (0035). Der Code hat eine eigene Route
+// (GET /clubs/{clubId}/join-code, gated auf members:manage) und ein
+// Spaltenrecht in der Datenbank. Die frueher hier stehende Redigierung
+// (JOIN_CODE_VISIBLE) schuetzte nur diese eine Abfrage - das Recht schuetzt die
+// Spalte. Deshalb stehen die SELECTs hier ab jetzt auf Spaltenlisten: `*` ist
+// unter withUser seit 0035 ein 42501.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
+  clubJoinCodeSchema,
   clubRegistrationResultSchema,
   clubRegistrationSchema,
   clubSchema,
@@ -24,7 +29,7 @@ import {
 import { withServiceRole, withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { ADMIN_ROLES } from '../lib/guards.js';
-import { requireClubRoleDb } from '../lib/capabilities.js';
+import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
 import { clientIp, enforceRateLimits } from '../lib/rate-limit.js';
 
 export const clubsRouter = createRouter();
@@ -41,23 +46,26 @@ const clubIdParam = z.object({ clubId: uuid.openapi({ param: { name: 'clubId', i
 const TRIAL_DAYS = 30;
 
 /**
- * SQL-Ausdruck, der join_code NUR fuer Code-Verwalter liefert, sonst NULL.
+ * Die Spalten eines Vereins, die JEDES Mitglied lesen darf - exakt clubSchema.
  *
- * ### Warum das eine Verschaerfung ist, die hierher gehoert ###
- * clubSchema hat join_code schon immer (validation.ts:58), und GET /clubs machte
- * 'select *' - jedes Mitglied, bis hinunter zum guest_coach, konnte den
- * Vereinscode auslesen. Solange den Code niemand einloesen konnte (0002:38: eine
- * Spalte ohne Leser), war das folgenlos. Ab 0034 ist er die Eintrittskarte in
- * die Warteschlange: wer ihn hat, kann Antraege ausloesen. Ein ausgetretener
- * guest_coach mit altem Screenshot koennte den Verein sonst mit Antraegen
- * fluten.
+ * ### Warum hier eine Liste steht und kein `*` ###
+ * Zwei unabhaengige Gruende, und jeder allein wuerde genuegen:
+ *   1. SEIT 0035 IST `select *` HIER EIN LAUFZEITFEHLER. Das Leserecht auf
+ *      app.clubs.join_code / join_code_normalized ist der Rolle `authenticated`
+ *      entzogen; ein `*` verlangt ALLE Spalten und quittiert unter withUser mit
+ *      42501 -> 403. Das gilt auch fuer `returning *`.
+ *   2. `select *` auf eine Tabelle mit einer Geheimnis-Spalte ist der Fehler
+ *      selbst, nicht nur sein Symptom. Eine Liste sagt, was hinausgeht; ein `*`
+ *      liefert aus, was morgen jemand danebenlegt.
  *
- * Kein Vertragsbruch: join_code ist bereits nullable. Der Wert wird redigiert,
- * nicht das Feld entfernt - iOS/Android brauchen kein Update.
- * app.has_club_role loest aus der DB auf (0025), nicht aus dem Token.
+ * Vorgaenger war JOIN_CODE_VISIBLE - ein `case when has_club_role(...)`, das den
+ * Code je Leser auf NULL redigierte. Gut gemeint und wirkungslos: es war eine
+ * Bitte an DIESE Abfrage. Wer per PostgREST, psql oder einer zweiten Route an
+ * app.clubs ging, bekam den Code weiterhin. Ein Geheimnis wird nicht dort
+ * verteidigt, wo es gelesen wird, sondern dort, wo es liegt (0035).
  */
-const JOIN_CODE_VISIBLE = `case when app.has_club_role(app.clubs.id, array['owner','admin','moderator'])
-                                then app.clubs.join_code else null end`;
+const CLUB_COLUMNS = `id, name, short_name, city, discipline, founded_year,
+                      settings, created_at, updated_at`;
 
 clubsRouter.openapi(
   createRoute({
@@ -73,8 +81,7 @@ clubsRouter.openapi(
   }),
   async (c) => {
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select app.clubs.*, ${tx.unsafe(JOIN_CODE_VISIBLE)} as join_code
-           from app.clubs where deleted_at is null order by name`,
+      tx`select ${tx.unsafe(CLUB_COLUMNS)} from app.clubs where deleted_at is null order by name`,
     );
     return c.json(z.array(clubSchema).parse(rows), 200);
   },
@@ -100,11 +107,65 @@ clubsRouter.openapi(
     // RLS (clubs_select = app.is_club_member, DB-aufgeloest seit 0025) ist die
     // Autorisierung - ein Nicht-Mitglied bekommt 0 Zeilen und damit 404.
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select app.clubs.*, ${tx.unsafe(JOIN_CODE_VISIBLE)} as join_code
-           from app.clubs where id = ${clubId} and deleted_at is null`,
+      tx`select ${tx.unsafe(CLUB_COLUMNS)} from app.clubs where id = ${clubId} and deleted_at is null`,
     );
     if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
     return c.json(clubSchema.parse(rows[0]), 200);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// GET /clubs/{clubId}/join-code - der Vereinscode, fuer die, die ihn brauchen.
+//
+// Die Gegenbuchung zum Entfernen von join_code aus clubSchema (0035): der Code
+// verschwindet nicht, er bekommt eine eigene Adresse. Das ist der eigentliche
+// Gewinn - ein Geheimnis, das in jeder Vereinsantwort mitfaehrt, kann niemand
+// bewachen; eines mit eigener Route hat einen Aufrufer, einen Gate und eine
+// Zeile im Zugriffslog.
+//
+// ZWEI Schranken, und die zweite ist die, die zaehlt:
+//   * requireCap (hier) liefert ein ehrliches 403 mit lesbarem Text.
+//   * app.club_join_code() prueft has_cap NOCHMAL in der Datenbank. Faellt diese
+//     Route weg, wird sie umgangen oder vergisst jemand den Guard, bleibt der
+//     Code trotzdem verschlossen (42501 -> 403). Ohne diese zweite Schranke
+//     waere das Spaltenrecht aus 0035 fuer die Berechtigten nur ein
+//     Service-Mode-Schluessel unter der Fussmatte.
+// ---------------------------------------------------------------------------
+clubsRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/clubs/{clubId}/join-code',
+    tags: ['clubs'],
+    summary: 'Vereinscode lesen (nur Mitglieder-Verwaltung) / Read the club join code (members:manage)',
+    description:
+      'Liefert den Einladungscode des Vereins. Erfordert die Faehigkeit "members" auf Stufe "manage" - ' +
+      'wer den Roster verwaltet, verwaltet auch die Eintrittskarte. Der Code steht seit 0035 NICHT mehr ' +
+      'am Club-Objekt (GET /clubs lieferte ihn bis dahin an jedes Mitglied, auch an Kinder); das Leserecht ' +
+      'auf die Spalte ist der Rolle authenticated in der Datenbank entzogen. / Returns the club invite code. ' +
+      'Requires capability "members" at level "manage".',
+    security: [{ bearerAuth: [] }],
+    request: { params: clubIdParam },
+    responses: {
+      200: jsonContent(clubJoinCodeSchema, 'Der Vereinscode / The club join code'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId } = c.req.valid('param');
+    await requireCap(c, clubId, 'members', 'manage');
+
+    // withUser, NICHT withServiceRole: app.club_join_code ist security definer
+    // und liest has_cap aus der aufrufenden Sitzung. Im Service-Mode gaebe es
+    // keinen `sub` - has_cap waere false und die Funktion wuerde den eigenen
+    // Aufrufer aussperren. Der Gate lebt von der Impersonation.
+    const rows = await withUser(c.get('claims'), (tx) =>
+      tx`select club_id, join_code, join_code_expires_at, join_code_revoked_at
+           from app.club_join_code(${clubId})`,
+    );
+    // 0 Zeilen = Verein weg oder soft-deleted. Wer nicht darf, ist hier nie
+    // angekommen (requireCap 403, sonst 42501 aus der Funktion).
+    if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
+    return c.json(clubJoinCodeSchema.parse(rows[0]), 200);
   },
 );
 
@@ -135,10 +196,13 @@ clubsRouter.openapi(
     const patch: Record<string, unknown> = { ...body };
     if (patch['settings'] !== undefined) patch['settings'] = JSON.stringify(patch['settings']);
 
+    // `returning *` waere hier seit 0035 ein 42501: RETURNING verlangt das
+    // Leserecht auf JEDE genannte Spalte, und join_code ist fuer authenticated
+    // keine mehr. Die Liste ist nicht Kosmetik, sie ist die Bedingung.
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`update app.clubs set ${tx(patch)}
          where id = ${clubId} and deleted_at is null
-         returning *`,
+         returning ${tx.unsafe(CLUB_COLUMNS)}`,
     );
     if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
     return c.json(clubSchema.parse(rows[0]), 200);
@@ -264,8 +328,15 @@ clubsRouter.openapi(
                     ${tx.json({ surface: 'POST /clubs' })})`;
         }
 
+        // Spaltenliste, obwohl hier service_role laeuft und `*` durchginge:
+        // der Code steht schon in `club.join_code` (aus dem INSERT-RETURNING)
+        // und geht von dort gezielt als `join_code` der Registrierungs-Antwort
+        // hinaus. Ihn hier ein zweites Mal einzusammeln, hiesse, ihn in ein
+        // Objekt zu legen, das clubSchema heisst - und genau diese Vermischung
+        // war der Befund. Der Verein und sein Geheimnis werden ab 0035
+        // getrennt gefuehrt, auch wo es "eh nicht auffiele".
         const clubRow = await tx<Record<string, unknown>[]>`
-          select * from app.clubs where id = ${club.id}`;
+          select ${tx.unsafe(CLUB_COLUMNS)} from app.clubs where id = ${club.id}`;
 
         return {
           club: clubRow[0],

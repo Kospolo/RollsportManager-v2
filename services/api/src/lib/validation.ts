@@ -47,6 +47,30 @@ export const problemSchema = z
 // Entities (wire shape = DB shape; snake_case)
 // ---------------------------------------------------------------------------
 
+/**
+ * Ein Verein - OHNE join_code.
+ *
+ * ### BREAKING CHANGE, und zwar ein gewollter (0035) ###
+ * join_code stand hier bis 0035 als `z.string().nullable()`. Das war nicht
+ * neutral: ein Feld im Response-Schema ist eine ZUSAGE, es auszuliefern. Zod
+ * strippt nur, was NICHT im Schema steht - was drinsteht, wird publiziert. Der
+ * Vereinscode ging damit ueber GET /clubs an jedes Mitglied, bis hinunter zu
+ * den Kindern, und ueber die Codegen bis in die iOS-/Android-/Web-Typen.
+ *
+ * Eine Redigierung auf `null` (der Wert bleibt weg, das Feld bleibt stehen) waere
+ * nicht-brechend gewesen und war der erste Versuch. Sie ist trotzdem falsch:
+ *   * Sie laesst das Versprechen im Vertrag stehen. Jeder Client sieht ein
+ *     `join_code`-Feld an Club und darf annehmen, dass es manchmal gefuellt ist -
+ *     die naechste Route, die einen Club-Datensatz zurueckgibt, fuellt es
+ *     gutglaeubig wieder.
+ *   * Sie ist an EINE Abfrage geheftet. Das Spaltenrecht aus 0035 gilt fuer die
+ *     ganze Datenbank; der Vertrag muss dasselbe sagen, sonst widersprechen sich
+ *     Vertrag und Datenbank - und dann gewinnt die Datenbank mit einem
+ *     Laufzeitfehler statt mit einem Compile-Fehler.
+ * Der Code hat jetzt eine eigene Adresse: GET /clubs/{clubId}/join-code, gated
+ * auf members:manage. Wer ihn braucht, holt ihn dort - sichtbar im Vertrag,
+ * pruefbar im Zugriffslog, statt beilaeufig in jeder Vereinsantwort.
+ */
 export const clubSchema = z
   .object({
     id: uuid,
@@ -55,12 +79,30 @@ export const clubSchema = z
     city: z.string().nullable(),
     discipline: z.string().nullable(),
     founded_year: z.number().int().nullable(),
-    join_code: z.string().nullable(),
     settings: z.record(z.unknown()),
     created_at: timestamp,
     updated_at: timestamp,
   })
   .openapi('Club');
+
+/**
+ * Der Vereinscode fuer Code-Verwalter - die Antwort von
+ * GET /clubs/{clubId}/join-code (0035).
+ *
+ * join_code ist nullable, weil ein Verein keinen Code haben MUSS: die Spalte ist
+ * seit 0002:38 nullable, und ein Widerruf ohne Rotation (POST .../join-code/revoke)
+ * ist der Normalfall "wir nehmen gerade niemanden auf". Die Zeitstempel
+ * begleiten ihn, damit die Oberflaeche "gesperrt seit …" / "laeuft ab am …"
+ * anzeigen kann, ohne den Verein ein zweites Mal zu laden.
+ */
+export const clubJoinCodeSchema = z
+  .object({
+    club_id: uuid,
+    join_code: z.string().nullable(),
+    join_code_expires_at: timestamp.nullable(),
+    join_code_revoked_at: timestamp.nullable(),
+  })
+  .openapi('ClubJoinCode');
 
 export const clubUpdateSchema = z
   .object({
