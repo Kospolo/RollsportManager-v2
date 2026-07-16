@@ -18,10 +18,21 @@ export const registrierenDict = {
     disciplineLabel: "Sportart (optional)",
     disciplinePlaceholder: "Rollkunstlauf",
 
-    consentTerms: "Ich akzeptiere die Nutzungsbedingungen.",
-    consentPrivacy: "Ich habe die Datenschutzerklärung gelesen.",
-    consentHint:
-      "Wir fragen beides einzeln — ein Sammel-Haken wäre keine wirksame Einwilligung.",
+    // KENNTNISNAHME, KEINE EINWILLIGUNG.
+    // Der alte Hinweis lautete: "Wir fragen beides einzeln — ein Sammel-Haken
+    // waere keine wirksame Einwilligung." Der Satz wandte Art. 7 Abs. 2 DSGVO
+    // (Trennung nach Zweck) auf zwei Dinge an, die gar keine Einwilligung sind:
+    // die Nutzungsbedingungen anzunehmen IST der Vertragsschluss
+    // (Art. 6 Abs. 1 lit. b), die Datenschutzerklaerung ist eine
+    // Informationspflicht (Art. 13). Beides ist Pflicht und beides ist nicht
+    // widerruflich — eine "Einwilligung", die man nicht verweigern kann, ist
+    // keine. Getrennt gefragt wird trotzdem, aber aus einem anderen Grund: es
+    // sind zwei verschiedene Texte.
+    ackTitle: "Bedingungen und Datenschutz",
+    ackTerms: "Ich nehme die Nutzungsbedingungen an.",
+    ackPrivacy: "Ich habe die Datenschutzerklärung zur Kenntnis genommen.",
+    ackHint:
+      "Beides ist zum Anlegen nötig und ist keine Einwilligung: die Bedingungen sind der Vertrag, die Datenschutzerklärung ist eine Information an dich. Freiwillige Einwilligungen — etwa für Fotos — fragen wir getrennt davon im Vereinsbereich.",
 
     submit: "Verein anlegen",
     submitting: "Wird angelegt …",
@@ -60,9 +71,11 @@ export const registrierenDict = {
     disciplineLabel: "Discipline (optional)",
     disciplinePlaceholder: "Artistic roller skating",
 
-    consentTerms: "I accept the terms of use.",
-    consentPrivacy: "I have read the privacy policy.",
-    consentHint: "We ask separately — one blanket tick would not be valid consent.",
+    ackTitle: "Terms and privacy",
+    ackTerms: "I accept the terms of use.",
+    ackPrivacy: "I have read and noted the privacy policy.",
+    ackHint:
+      "Both are required to create the club and neither is a consent: the terms are the contract, the privacy policy is information for you. Voluntary consents — photos, for example — are asked separately inside the club area.",
 
     submit: "Register club",
     submitting: "Creating …",

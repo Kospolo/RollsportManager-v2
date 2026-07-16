@@ -166,7 +166,19 @@ export function JoinClubCard() {
                   />
                 </div>
 
+                {/*
+                  KENNTNISNAHME — bewusst als eigenes fieldset mit eigener
+                  Legende. Es sind Pflicht-Haken (Vertrag + Information), und
+                  sie stehen hier ALLEIN: keine freiwillige Einwilligung
+                  daneben. Das ist kein Layout-Geschmack, sondern das
+                  Kopplungsverbot (Art. 7 Abs. 4 DSGVO) — Pflichtiges neben
+                  Freiwilligem laesst das Freiwillige wie Pflicht wirken und
+                  macht es unwirksam.
+                */}
                 <fieldset className="grid gap-2.5">
+                  <legend className="mb-1 text-[13px] font-semibold text-ink">
+                    {t("ackTitle")}
+                  </legend>
                   <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
                     <input
                       type="checkbox"
@@ -174,7 +186,7 @@ export function JoinClubCard() {
                       onChange={(e) => setTerms(e.target.checked)}
                       className="mt-0.5 h-4 w-4 flex-none accent-[var(--brand)]"
                     />
-                    <span>{t("consentTerms")}</span>
+                    <span>{t("ackTerms")}</span>
                   </label>
                   <label className="flex items-start gap-2.5 text-[13px] text-ink-soft">
                     <input
@@ -183,9 +195,14 @@ export function JoinClubCard() {
                       onChange={(e) => setPrivacy(e.target.checked)}
                       className="mt-0.5 h-4 w-4 flex-none accent-[var(--brand)]"
                     />
-                    <span>{t("consentPrivacy")}</span>
+                    <span>{t("ackPrivacy")}</span>
                   </label>
+                  <p className="text-[12px] leading-relaxed text-ink-faint">{t("ackHint")}</p>
                 </fieldset>
+
+                <p className="text-[12px] leading-relaxed text-ink-faint">
+                  {t("consentLaterNote")}
+                </p>
 
                 {error ? (
                   <p role="alert" className="text-[13px] font-semibold text-danger-ink">
