@@ -15,7 +15,13 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
-import { requireCap, requireClubMemberDb, requireClubRoleDb } from '../lib/capabilities.js';
+import {
+  capRankOf,
+  rankOf,
+  requireCap,
+  requireClubMemberDb,
+  requireClubRoleDb,
+} from '../lib/capabilities.js';
 
 export const reportsRouter = createRouter();
 
@@ -301,20 +307,29 @@ reportsRouter.openapi(
 // Es bleibt EIN Gate: anniversaries >= read_team (die Faehigkeit selbst, im
 // Admin abschaltbar).
 //
-// OFFEN BENANNT, damit es niemand spaeter "entdeckt": bei kind='membership' ist
-// `date` minus `years` weiterhin exakt joined_on, und joined_on steht in
-// SENSITIVE_MEMBER_FIELDS (members.ts:59-70). Fuer die Personen mit einem
-// 5-Jahres-Schritt im naechsten Jahr wird joined_on also ableitbar, obwohl der
-// Roster es fuer dieselbe Person redigiert. Das ist eine bewusste Entscheidung
-// des Betreibers, keine Unachtsamkeit: ein Vereinsjubilaeum IST die oeffentliche
-// Bekanntgabe eines Eintrittsdatums — wer es geheim halten will, muss die
-// Faehigkeit 'anniversaries' abschalten, dann ist der Report ganz weg. Es
-// betrifft ausserdem nur die wenigen Personen mit einem Jubilaeum im
-// Jahresfenster, nicht den Roster.
+// JUBILAEEN SIND DESHALB AN member_contact >= read_all GEBUNDEN, Geburtstage nicht.
+// Ein frueherer Stand liess die Jubilaeums-Zeilen fuer alle stehen und nannte das
+// im Kommentar "eine bewusste Entscheidung des Betreibers". Das war es nicht — es
+// war ein Leck, und zwar ein gemessenes: aus `date` minus `years` wurde joined_on
+// fuer 5 Personen TAGESGENAU rekonstruiert, waehrend GET /clubs/{id}/members
+// denselben Aufrufern fuer dieselben Personen joined_on=null lieferte.
+// Betroffen war auch guest_coach — eine vereinsexterne Person.
 //
-// VERHALTENSAENDERUNG: coach/member/guest_coach bekommen 403 -> 200, sehen aber
-// bei Geburtstagen years=null. Gegenueber dem URSPRUNG (vor der Haertung) ist
-// das strenger: dort stand years=10 in der Antwort.
+// Warum die Zeile nicht reicht, nur `years` zu nullen: bei einem 5-Jahres-Raster
+// erscheint eine Person UEBERHAUPT NUR, wenn joined_on ein Vielfaches von 5 zurueck
+// liegt. Die blosse Anwesenheit in der Liste engt joined_on damit auf eine Handvoll
+// Jahrgaenge ein — dieselbe Rundheits-Falle, die bei den Geburtstagen erkannt und
+// durch "ALLE statt nur runde" geschlossen wurde. Bei Jubilaeen geht das nicht, denn
+// ein Jubilaeum IST das 5-Jahres-Raster. Also: ganze Zeilen weg statt Zahl weg.
+//
+// Die Regel ist dieselbe wie ueberall sonst hier:
+//   Die API darf ihren eigenen Spaltenschutz nicht hintergehen.
+// member_contact >= read_all ist im Seed deckungsgleich mit maySeeFullRoster
+// (members.ts:67-70) — wer joined_on im Roster sehen darf, sieht es auch hier.
+//
+// VERHALTEN: coach/member/guest_coach sehen ALLE Geburtstage (Tag+Monat, years=null)
+// und KEINE Jubilaeen. Vorstand/Kasse sehen beides inkl. "10 Jahre dabei" — also
+// genau die, die das Jubilaeum ohnehin ausrichten.
 // ============================================================================
 reportsRouter.openapi(
   createRoute({
@@ -327,8 +342,10 @@ reportsRouter.openapi(
       'kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN ' +
       'jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und ' +
       'nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. ' +
-      'kind=membership liefert years ("10 Jahre dabei") — dort ist die Zahl der ganze Sinn. ' +
-      'Sichtbar fuer jedes Mitglied; abschaltbar ueber die Faehigkeit `anniversaries` im Admin.',
+      'kind=membership ("10 Jahre dabei") erscheint NUR fuer Aufrufer mit member_contact >= read_all: ' +
+      'aus dem Jubilaeumsdatum laesst sich joined_on rekonstruieren, und joined_on ist eine redigierte ' +
+      'Roster-Spalte. Alle anderen bekommen ausschliesslich Geburtstage. ' +
+      'Abschaltbar ueber die Faehigkeit `anniversaries` im Admin.',
     security: [{ bearerAuth: [] }],
     request: { query: z.object({ club_id: uuid }) },
     responses: {
@@ -345,6 +362,11 @@ reportsRouter.openapi(
     await requireClubMemberDb(c, club_id);
     await requireCap(c, club_id, 'anniversaries', 'read_team');
 
+    // Darf die aufrufende Person joined_on ueberhaupt sehen? Wenn nein, fallen die
+    // Jubilaeums-Zeilen ganz weg (siehe Kopf) — pruefen ohne zu werfen, denn die
+    // Geburtstage bleiben ja.
+    const maySeeJoinedOn = (await capRankOf(c, club_id, 'member_contact')) >= rankOf('read_all');
+
     const rows = await withUser(claims, (tx) =>
       tx`
         with roster as (
@@ -355,11 +377,17 @@ reportsRouter.openapi(
         membership as (
           -- 5/10/15/20/25 … Jahre Mitgliedschaft. 'years' bleibt: ohne die Zahl
           -- gibt es kein Jubilaeum.
+          --
+          -- Der Filter ${maySeeJoinedOn} schaltet den ganzen Zweig ab, wenn die
+          -- aufrufende Person joined_on nicht sehen darf. Bewusst hier und nicht
+          -- erst beim Serialisieren: was nicht selektiert wird, kann auch nicht
+          -- ueber einen spaeteren Umweg (Sortierung, Anzahl, Timing) durchsickern.
           select r.id as member_id, r.member_name, 'membership'::text as kind,
                  (r.joined_on + (y * interval '1 year'))::date as date, y as years
           from roster r
           cross join generate_series(5, 80, 5) as y
-          where r.joined_on is not null
+          where ${maySeeJoinedOn}
+            and r.joined_on is not null
             and (r.joined_on + (y * interval '1 year'))::date
                 between current_date and (current_date + interval '365 days')::date
         ),

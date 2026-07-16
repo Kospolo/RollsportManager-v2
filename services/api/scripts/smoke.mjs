@@ -913,31 +913,65 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
     }
   }
 
-  // Vereinsjubilaeen sind das GEGENTEIL: dort ist `years` der ganze Sinn und
-  // muss dableiben ("10 Jahre dabei"). Ein Report ohne die Zahl waere kaputt.
-  {
-    const rows = (await ann(t.coach)).json ?? [];
-    const memberships = rows.filter((r) => r.kind === 'membership');
-    if (memberships.length > 0 && memberships.every((r) => typeof r.years === 'number')) {
-      ok(`...Vereinsjubilaeen behalten ihre Jahre (${memberships.length} Eintraege, z.B. ${memberships[0].years} Jahre)`);
+  // Vereinsjubilaeen sind das GEGENTEIL der Geburtstage: dort ist `years` der ganze
+  // Sinn ("10 Jahre dabei") und laesst sich deshalb NICHT wegnullen, ohne den Report
+  // kaputtzumachen. Damit ist `date` minus `years` aber exakt joined_on — eine
+  // Spalte, die derselbe Server im Roster redigiert (SENSITIVE_MEMBER_FIELDS).
+  //
+  // Hier stand vorher die Zusicherung "Jubilaeen behalten ihre Jahre" — geprueft
+  // ausgerechnet als coach. Sie war GRUEN, waehrend eine vereinsfremde Gast-Trainerin
+  // joined_on fuer 5 Personen tagesgenau rekonstruieren konnte. Der Test bewachte
+  // das Leck, statt es zu finden.
+  //
+  // Auch "nur `years` nullen" reicht nicht: bei einem 5-Jahres-Raster erscheint eine
+  // Person ueberhaupt nur, wenn joined_on ein Vielfaches von 5 zurueckliegt — die
+  // blosse Anwesenheit engt das Jahr schon ein. Bei Geburtstagen ist diese
+  // Rundheits-Falle durch "ALLE statt nur runde" geschlossen; bei Jubilaeen geht das
+  // nicht, denn ein Jubilaeum IST das Raster. Also: ganze Zeilen weg.
+  //
+  // DIE REGEL, gegen die richtige Referenz geprueft (nicht gegen eine Wunschliste):
+  // Jubilaeums-Zeilen erscheinen GENAU DANN, wenn derselben Person der Roster
+  // joined_on zeigt. Report und Roster muessen dieselbe Antwort geben — sonst ist
+  // der Report wieder ein Umgehungspfad um die eigene Redigierung.
+  const rosterShows = async (as, field) => {
+    const r = await call('GET', `/clubs/${CLUB}/members`, { as });
+    return (r.json ?? []).some((m) => m[field] !== null && m[field] !== undefined);
+  };
+  for (const [name, tok] of [
+    ['owner', t.owner], ['admin', t.admin], ['moderator', t.moderator],
+    ['treasurer', t.treasurer], ['coach', t.coach], ['member', t.parent],
+    ['guest_coach', t.guest],
+  ]) {
+    const memberships = ((await ann(tok)).json ?? []).filter((r) => r.kind === 'membership');
+    const rosterJoinedOn = await rosterShows(tok, 'joined_on');
+    if ((memberships.length > 0) !== rosterJoinedOn) {
+      fail(
+        `${name}: Report widerspricht dem Roster`,
+        `${memberships.length} Jubilaeums-Zeile(n), aber Roster zeigt joined_on=${rosterJoinedOn}` +
+          (memberships.length ? ` — z.B. ${JSON.stringify(memberships[0])} => joined_on ableitbar` : ''),
+      );
+    } else if (rosterJoinedOn) {
+      // Wer joined_on ohnehin sieht, MUSS die Zahl bekommen — sonst ist der Report
+      // fuer die, die das Jubilaeum ausrichten, wertlos.
+      if (memberships.every((r) => typeof r.years === 'number')) {
+        ok(`...${name}: darf joined_on sehen -> ${memberships.length} Jubilaeum/Jubilaeen MIT Jahren`);
+      } else {
+        fail(`${name}: Jubilaeum ohne Jahre`, `got ${JSON.stringify(memberships[0])}`);
+      }
     } else {
-      fail('Jubilaeums-Jahre', `got ${JSON.stringify(memberships)}`);
+      ok(`...${name}: joined_on redigiert -> 0 Jubilaeen, nichts zu rekonstruieren`);
     }
   }
 
-  // Die Redigierung im Roster bleibt davon unberuehrt — der Report ist KEIN
-  // Umgehungspfad geworden, er leitet die geschuetzte Spalte nur nicht mehr ab.
-  const rosterShowsBirthDate = async (as) => {
-    const r = await call('GET', `/clubs/${CLUB}/members`, { as });
-    return (r.json ?? []).some((m) => m.birth_date !== null && m.birth_date !== undefined);
-  };
+  // Die Redigierung im Roster selbst bleibt unberuehrt — Gegenprobe, damit obiges
+  // nicht deshalb "stimmig" ist, weil der Roster kaputt ist und allen alles zeigt.
   for (const [name, tok, expected] of [
     ['treasurer', t.treasurer, true],
     ['coach', t.coach, false],
     ['member', t.parent, false],
     ['guest_coach', t.guest, false],
   ]) {
-    const rosterOk = await rosterShowsBirthDate(tok);
+    const rosterOk = await rosterShows(tok, 'birth_date');
     if (rosterOk === expected) ok(`...${name}: Roster-Redigierung von birth_date unveraendert (${rosterOk ? 'sichtbar' : 'redigiert'})`);
     else fail(`${name} roster redaction`, `roster_birth_date=${rosterOk}, expected ${expected}`);
   }

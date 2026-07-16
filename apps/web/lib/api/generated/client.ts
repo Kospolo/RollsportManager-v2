@@ -1390,7 +1390,7 @@ export class ApiClient {
 
   /**
    * Jubilaeen & Geburtstage / Upcoming anniversaries & birthdays (anniversaries)
-   * Zwei verschiedene Dinge in einer Liste: kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. kind=membership liefert years ("10 Jahre dabei") — dort ist die Zahl der ganze Sinn. Sichtbar fuer jedes Mitglied; abschaltbar ueber die Faehigkeit `anniversaries` im Admin.
+   * Zwei verschiedene Dinge in einer Liste: kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. kind=membership ("10 Jahre dabei") erscheint NUR fuer Aufrufer mit member_contact >= read_all: aus dem Jubilaeumsdatum laesst sich joined_on rekonstruieren, und joined_on ist eine redigierte Roster-Spalte. Alle anderen bekommen ausschliesslich Geburtstage. Abschaltbar ueber die Faehigkeit `anniversaries` im Admin.
    * 
    * `GET /reports/anniversaries`
    */
