@@ -156,6 +156,13 @@ export type {
 } from "./inputs-platform";
 export type { SaveRoutineScoreInput, WettkampfRepository } from "./inputs-wettkampf";
 export type { DataSourceName } from "./config";
+/** Modul-Schalter pro Verein (0044): gekauft -> EINGESCHALTET -> erlaubt. */
+export type {
+  ClubModuleState,
+  ModuleEnforcement,
+  ModuleRepository,
+} from "./inputs-clubmodules";
+
 export { permissions, type Permissions } from "./permissions";
 export {
   ApiError,
