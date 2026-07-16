@@ -1238,6 +1238,9 @@
           },
           "level": {
             "$ref": "#/components/schemas/CapabilityLevel"
+          },
+          "owner_only": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1247,7 +1250,8 @@
           "allowed_levels",
           "sort",
           "rank",
-          "level"
+          "level",
+          "owner_only"
         ]
       },
       "CapabilityResolution": {
@@ -10886,6 +10890,17 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Die Inhaber-Rolle ist geschuetzt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
                 }
               }
             }

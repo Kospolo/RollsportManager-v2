@@ -1410,6 +1410,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
     public var sort: Int
     public var rank: Int
     public var level: CapabilityLevel
+    public var ownerOnly: Bool
 
     enum CodingKeys: String, CodingKey {
         case capabilityKey = "capability_key"
@@ -1419,6 +1420,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         case sort
         case rank
         case level
+        case ownerOnly = "owner_only"
     }
 
     public init(
@@ -1428,7 +1430,8 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         allowedLevels: [CapabilityLevel],
         sort: Int,
         rank: Int,
-        level: CapabilityLevel
+        level: CapabilityLevel,
+        ownerOnly: Bool
     ) {
         self.capabilityKey = capabilityKey
         self.labelDe = labelDe
@@ -1437,6 +1440,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         self.sort = sort
         self.rank = rank
         self.level = level
+        self.ownerOnly = ownerOnly
     }
 }
 

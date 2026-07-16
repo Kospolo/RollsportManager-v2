@@ -76,6 +76,8 @@ export interface ResolvedCap {
   sort: number;
   rank: number;
   level: CapabilityLevel;
+  /** Geschuetzte Faehigkeit (0032): nur der Vereinsinhaber darf sie aendern. */
+  owner_only: boolean;
 }
 
 /** Die aufgeloesten Rechte einer Person in EINEM Verein. */
@@ -95,7 +97,7 @@ export interface ClubCaps {
  */
 export async function loadCaps(tx: Tx, clubId: string): Promise<ClubCaps> {
   const rows = await tx`
-    select capability_key, label_de, label_en, allowed_levels, sort, rank, level
+    select capability_key, label_de, label_en, allowed_levels, sort, rank, level, owner_only
     from app.cap_ranks(${clubId})`;
   const roleRows = await tx`select app.member_role_keys(${clubId}) as keys`;
 
@@ -107,6 +109,7 @@ export async function loadCaps(tx: Tx, clubId: string): Promise<ClubCaps> {
     sort: r['sort'] as number,
     rank: r['rank'] as number,
     level: r['level'] as CapabilityLevel,
+    owner_only: r['owner_only'] as boolean,
   }));
 
   return {

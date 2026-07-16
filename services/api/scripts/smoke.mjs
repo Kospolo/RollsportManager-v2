@@ -596,16 +596,42 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   assertEq('owner reads /me/capabilities -> 200', ownerCaps.status, 200);
   assertEq('...owner role_keys aus der DB', JSON.stringify(ownerCaps.json?.role_keys), '["owner"]');
   // owner ist protected -> cap_rank schliesst ueberall auf 5 kurz (0025:232).
+  // Unveraendert auch nach 0032: die Durchsetzung bleibt 5, nur die gemeldete
+  // STUFE wird auf die Skala ausgedrueckt. Genau das friert auch
+  // 93e_rbac_resolution.sql:96-113 als "harte Garantie" ein.
   const ownerNot5 = (ownerCaps.json?.capabilities ?? []).filter((c) => c.rank !== 5);
   if (ownerNot5.length === 0) ok('...owner hat auf JEDER Faehigkeit Rang 5 (protected)');
   else fail('owner ranks', `nicht 5: ${ownerNot5.map((c) => c.capability_key).join(',')}`);
 
-  // DIE Skalen-Kontrolle (siehe oben).
-  const scaleMismatch = (ownerCaps.json?.capabilities ?? []).filter(
+  // NEU (0032): die gemeldete Stufe liegt bei JEDER Faehigkeit in allowed_levels.
+  // Vorher meldete der owner z. B. member_contact=manage, obwohl die Skala nur
+  // {none,read_all} kennt — ein Admin-Dropdown aus allowed_levels fand den Wert
+  // nicht. Das galt bei 17 von 32 Faehigkeiten (alle mit max(allowed) < 5).
+  const offScale = (ownerCaps.json?.capabilities ?? []).filter(
+    (c) => !c.allowed_levels.includes(c.level),
+  );
+  if (offScale.length === 0) {
+    ok('...owner: die gemeldete Stufe liegt bei JEDER Faehigkeit in allowed_levels');
+  } else {
+    fail('owner level ausserhalb allowed_levels',
+      JSON.stringify(offScale.map((c) => ({ k: c.capability_key, level: c.level, allowed: c.allowed_levels }))));
+  }
+  assertEq('...owner member_contact meldet read_all (nicht das erfundene manage)',
+    ownerCaps.json?.capabilities?.find((c) => c.capability_key === 'member_contact')?.level,
+    'read_all');
+
+  // DIE Skalen-Kontrolle (siehe oben) — bewusst an einer NICHT geschuetzten
+  // Persona. Beim protected owner gilt indexOf(level) === rank seit 0032
+  // ABSICHTLICH nicht mehr: rank ist die Durchsetzung (5, auch ueber der
+  // Skala), level dieselbe Berechtigung AUF der Skala. Die Invariante hier an
+  // ihm zu messen, hiesse den einen Sonderfall zu pruefen statt der Skala.
+  const coachScaleCaps = await caps(t.coach);
+  assertEq('coach reads /me/capabilities -> 200 (fuer die Skalen-Kontrolle)', coachScaleCaps.status, 200);
+  const scaleMismatch = (coachScaleCaps.json?.capabilities ?? []).filter(
     (c) => CAPABILITY_LEVELS.indexOf(c.level) !== c.rank,
   );
   if (scaleMismatch.length === 0) {
-    ok('...TS-Skala deckt sich mit app.level_rank (indexOf(level) === rank)');
+    ok('...TS-Skala deckt sich mit app.level_rank (indexOf(level) === rank, ohne Kurzschluss)');
   } else {
     fail('TS-Skala vs. app.level_rank', JSON.stringify(scaleMismatch.slice(0, 3)));
   }
@@ -646,6 +672,84 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   // --- Gegenprobe: kein Mitglied, keine Aufloesung --------------------------
   assertEq('Fremde bekommt KEINE Aufloesung fuer diesen Verein -> 403',
     (await caps(t.foreign)).status, 403);
+
+  // --- GESCHUETZTE FAEHIGKEITEN (0032) --------------------------------------
+  // Der Katalog muss owner_only mitliefern, sonst baut das Admin-UI ein
+  // Dropdown, das beim Speichern 403 liefert.
+  const ownerOnlyKeys = (ownerCaps.json?.capabilities ?? [])
+    .filter((c) => c.owner_only === true)
+    .map((c) => c.capability_key)
+    .sort();
+  assertEq('...der Katalog meldet owner_only fuer genau lockers/member_contact/finance',
+    JSON.stringify(ownerOnlyKeys), JSON.stringify(['finance', 'lockers', 'member_contact']));
+}
+
+// ============================================================================
+// Geschuetzte Faehigkeiten + die Inhaber-Rolle (0032) ueber HTTP.
+//
+// Belegt war: eine Moderatorin hob per PUT .../roles/{ihreRolleId}/permissions
+// ihre EIGENE Rolle bei 'lockers' von read_own auf manage (200) und sah danach
+// alle 8 Schliessfaecher statt 0 — quer zur Privacy-Entscheidung 0021. Und die
+// protected owner-Rolle liess sich in "Putzkraft" umbenennen (200).
+// ============================================================================
+{
+  console.log('\n[smoke] --- geschuetzte Faehigkeiten + Inhaber-Rolle (0032) ---');
+  const roles = await call('GET', `/clubs/${CLUB}/roles`, { as: t.owner });
+  const roleId = (key) => roles.json?.find((r) => r.key === key)?.id;
+  const modRole = roleId('moderator');
+  const ownerRole = roleId('owner');
+  if (modRole && ownerRole) ok('Rollen-Ids gefunden (moderator + owner)');
+  else fail('roles lookup', JSON.stringify(roles.json)?.slice(0, 200));
+
+  const setPerms = (as, rid, permissions) =>
+    call('PUT', `/clubs/${CLUB}/roles/${rid}/permissions`, { as, body: { permissions } });
+
+  // Die Moderatorin HAT roles:manage — sonst belegt der Test nichts.
+  const modCaps = await call('GET', `/me/capabilities?club_id=${CLUB}`, { as: t.moderator });
+  assertEq('Vorbedingung: die Moderatorin hat roles = manage (5)',
+    modCaps.json?.capabilities?.find((c) => c.capability_key === 'roles')?.rank, 5);
+
+  // ... und kommt trotzdem nicht an die geschuetzten Faehigkeiten.
+  assertEq('Moderatorin hebt ihre EIGENE Rolle bei lockers NICHT auf manage -> 403',
+    (await setPerms(t.moderator, modRole, [{ capability_key: 'lockers', level: 'manage' }])).status, 403);
+  assertEq('...member_contact ebenso wenig -> 403',
+    (await setPerms(t.moderator, modRole, [{ capability_key: 'member_contact', level: 'read_all' }])).status, 403);
+  assertEq('...finance ebenso wenig -> 403',
+    (await setPerms(t.moderator, modRole, [{ capability_key: 'finance', level: 'manage' }])).status, 403);
+
+  // Und der Schaden ist ausgeblieben: sie sieht weiterhin KEINE Schliessfaecher.
+  const modLockers = await call('GET', `/lockers?club_id=${CLUB}`, { as: t.moderator });
+  assertEq('...und sie sieht weiterhin 0 Schliessfaecher (der eigentliche Schaden)',
+    (modLockers.json ?? []).length, 0);
+
+  // Gegenprobe 1: NICHT geschuetzte Faehigkeiten darf sie weiterhin setzen —
+  // sonst waere der Rollen-Admin insgesamt entmachtet statt gezielt begrenzt.
+  assertEq('Moderatorin setzt eine NICHT geschuetzte Faehigkeit weiterhin (news) -> 200',
+    (await setPerms(t.moderator, modRole, [{ capability_key: 'news', level: 'read_all' }])).status, 200);
+
+  // Gegenprobe 2: der Inhaber darf die geschuetzte Faehigkeit vergeben.
+  assertEq('der Inhaber DARF lockers vergeben -> 200',
+    (await setPerms(t.owner, modRole, [{ capability_key: 'lockers', level: 'manage' }])).status, 200);
+  // ... und das wirkt sofort (Mehrfachrollen/Aufloesung ohne neuen Token).
+  const modLockers2 = await call('GET', `/lockers?club_id=${CLUB}`, { as: t.moderator });
+  assertEq('...und die Moderatorin sieht danach sofort alle 8 (gleicher Token)',
+    (modLockers2.json ?? []).length, 8);
+  // Aufraeumen: zurueck auf den Seed-Stand.
+  assertEq('zurueckgesetzt auf read_own -> 200',
+    (await setPerms(t.owner, modRole, [{ capability_key: 'lockers', level: 'read_own' }])).status, 200);
+
+  // Die Inhaber-Rolle: Rechte UND Name sind unantastbar.
+  assertEq('die Rechte der Inhaber-Rolle bleiben geschuetzt -> 409',
+    (await setPerms(t.owner, ownerRole, [{ capability_key: 'news', level: 'none' }])).status, 409);
+  assertEq('die Inhaber-Rolle laesst sich NICHT umbenennen (war "Putzkraft") -> 409',
+    (await call('PATCH', `/clubs/${CLUB}/roles/${ownerRole}`, {
+      as: t.owner, body: { name_de: 'Putzkraft', name_en: 'Cleaner' },
+    })).status, 409);
+  // Gegenprobe: jede ANDERE Systemrolle bleibt frei benennbar.
+  assertEq('eine andere Systemrolle bleibt frei benennbar -> 200',
+    (await call('PATCH', `/clubs/${CLUB}/roles/${roleId('coach')}`, {
+      as: t.owner, body: { name_de: 'Uebungsleitung', name_en: 'Head coach' },
+    })).status, 200);
 }
 
 // ============================================================================

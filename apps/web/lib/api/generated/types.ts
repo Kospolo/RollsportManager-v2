@@ -283,6 +283,7 @@ export interface ResolvedCapability {
   "sort": number;
   "rank": number;
   "level": CapabilityLevel;
+  "owner_only": boolean;
 }
 
 export interface CapabilityResolution {

@@ -695,7 +695,8 @@ data class ResolvedCapability(
     @SerialName("allowed_levels") val allowedLevels: List<CapabilityLevel>,
     val sort: Long,
     val rank: Long,
-    val level: CapabilityLevel
+    val level: CapabilityLevel,
+    @SerialName("owner_only") val ownerOnly: Boolean
 )
 
 @Serializable

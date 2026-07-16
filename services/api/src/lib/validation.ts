@@ -2284,6 +2284,13 @@ export const resolvedCapabilitySchema = z
     /** Numerischer Rang 0..5 (= app.level_rank). Inline: kein benannter Skalar. */
     rank: z.number().int(),
     level: capabilityLevelSchema,
+    /**
+     * true = GESCHUETZTE Faehigkeit (0032): nur der Vereinsinhaber darf sie in
+     * der Rollen-Matrix aendern, nicht jeder mit roles:manage. Das Admin-UI
+     * MUSS die Zeile sonst sperren — sonst baut es ein Dropdown, das beim
+     * Speichern 403 liefert. Inline: kein benannter Skalar.
+     */
+    owner_only: z.boolean(),
   })
   .openapi('ResolvedCapability');
 

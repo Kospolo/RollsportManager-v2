@@ -211,6 +211,16 @@ rolesRouter.openapi(
 // Auch Systemrollen duerfen umbenannt werden (protect_roles erlaubt name_de/
 // name_en ausdruecklich, 0024:256-258) - nur ihr key ist unveraenderlich, und
 // der steht gar nicht im Body-Schema.
+//
+// AUSNAHME seit 0032: die GESCHUETZTE Inhaber-Rolle. Sie liess sich bis dahin
+// umbenennen (belegt: name_de := 'Putzkraft' -> 200), weil protect_roles
+// club_id/key/is_system/protected schuetzte, die NAMEN aber nicht. Sie ist der
+// Anker des Rechtesystems (cap_rank-Kurzschluss, is_club_owner), nicht
+// Dekoration. Die DB haelt das jetzt ebenfalls (protect_roles, 0032) — der
+// Vorab-Check hier existiert nur, damit die Antwort ein sauberer, zweisprachiger
+// 409 ist statt eines P0001, das die Middleware zu einem 403 mit englischem
+// Trigger-Text macht (403 waere hier irrefuehrend: es ist kein Rechte-, sondern
+// ein Zustandskonflikt — dieselbe Begruendung wie bei DELETE weiter unten).
 // ---------------------------------------------------------------------------
 rolesRouter.openapi(
   createRoute({
@@ -225,6 +235,7 @@ rolesRouter.openapi(
     },
     responses: {
       200: jsonContent(clubRoleDefSchema, 'Die geaenderte Rolle'),
+      409: jsonContent(z.object({}).passthrough(), 'Die Inhaber-Rolle ist geschuetzt'),
       ...errorResponses,
     },
   }),
@@ -236,7 +247,20 @@ rolesRouter.openapi(
     await requireCap(c, clubId, 'roles', 'manage');
 
     const role = await withUser(claims, async (tx) => {
-      await loadRole(tx, clubId, roleId);
+      const existing = await loadRole(tx, clubId, roleId);
+      if (
+        existing['protected'] === true &&
+        ((body.name_de !== undefined && body.name_de !== existing['name_de']) ||
+          (body.name_en !== undefined && body.name_en !== existing['name_en']))
+      ) {
+        throw problem(
+          409,
+          'Conflict',
+          'Die Inhaber-Rolle ist geschuetzt — ihr Name laesst sich nicht aendern (sie ist der Anker ' +
+            'des Rechtesystems). / The owner role is protected — its name cannot be changed (it is ' +
+            'the anchor of the permission system).',
+        );
+      }
       const rows = await tx`
         update app.roles set ${tx(body)}
         where id = ${roleId} and club_id = ${clubId}
@@ -359,10 +383,37 @@ rolesRouter.openapi(
       }
 
       // Stufe gegen allowed_levels pruefen, BEVOR der Trigger P0001 wirft.
-      const catalog = await tx`select key, allowed_levels from app.capabilities`;
+      const catalog = await tx`select key, allowed_levels, owner_only from app.capabilities`;
       const allowed = new Map(
         catalog.map((r) => [r['key'] as string, r['allowed_levels'] as string[]]),
       );
+      const ownerOnly = new Set(
+        catalog.filter((r) => r['owner_only'] === true).map((r) => r['key'] as string),
+      );
+
+      // GESCHUETZTE FAEHIGKEITEN (0032). 'roles:manage' allein genuegt hier
+      // NICHT — sonst gibt sich, wer Rollen verwaltet, alles selbst. Belegt:
+      // eine Moderatorin hob ihre EIGENE Rolle bei 'lockers' auf manage (200)
+      // und sah danach alle 8 Schliessfaecher statt 0 — quer zur ausdrueck-
+      // lichen Privacy-Entscheidung (0021, guards.ts:49-50).
+      // Die DB haelt dasselbe unabhaengig davon (protect_role_permissions):
+      // das hier ist die erste, nicht die einzige Linie.
+      const touchedOwnerOnly = permissions
+        .map((p) => p.capability_key)
+        .filter((k) => ownerOnly.has(k));
+      if (touchedOwnerOnly.length > 0) {
+        const isOwner = await tx`select app.is_club_owner(${clubId}) as ok`;
+        if ((isOwner[0] as { ok: boolean } | undefined)?.ok !== true) {
+          throw problem(
+            403,
+            'Forbidden',
+            `Geschuetzte Faehigkeit: "${[...new Set(touchedOwnerOnly)].join(', ')}" darf nur die ` +
+              `Vereinsinhaberin oder der Vereinsinhaber aendern. / Protected capability: only the ` +
+              `club owner may change "${[...new Set(touchedOwnerOnly)].join(', ')}".`,
+          );
+        }
+      }
+
       for (const p of permissions) {
         const levels = allowed.get(p.capability_key);
         if (!levels) {
