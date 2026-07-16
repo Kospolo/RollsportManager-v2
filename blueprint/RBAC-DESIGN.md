@@ -34,15 +34,63 @@ konfigurierbares, **serverseitig durchgesetztes** RBAC. Vom Nutzer genehmigt (20
 > - **`none` sperrt bisher nur SCHREIBEN, nicht LESEN** (z. B. `attendance_select` ist weiterhin
 >   `is_club_member`). Das UI darf `none` deshalb **nicht als „abgeschaltet" verkaufen**, solange die
 >   SELECT-Policies nicht umgestellt sind — sonst täuscht die Oberfläche den Nutzer.
-> - **`guards.ts:104` ist laxer als die DB** (treasurer dürfte dort `targetRole='member'` setzen;
->   `app.can_change_member_role` sagt nein — heute nur vom Trigger abgefangen).
->   In Phase 2 die **API an die DB** angleichen, NICHT die DB lockern.
-> - **API liest die Primärrolle noch aus dem Claim** (210 Guard-Aufrufe in 40 Dateien) → Mehrfachrollen
->   wirken erst voll, wenn die Guards auf `has_cap`/`/me/capabilities` stehen. Heute fail-closed.
+> - ~~**`guards.ts:104` ist laxer als die DB**~~ → **FALSCH, in Phase 2 widerlegt** (siehe Korrekturen
+>   nach Phase 2 unten).
+> - **API liest die Primärrolle noch aus dem Claim** (~183 Guard-Aufrufe in 45 Dateien; die „210 in 40"
+>   waren falsch gezählt) → Mehrfachrollen wirken erst voll, wenn die Guards auf `has_cap` stehen.
+>   Heute fail-closed. In Phase 2 teilweise umgestellt (siehe unten).
 > - **Performance ungemessen** — `cap_rank` ist ein 3er-Join pro Policy (STABLE, pro Statement gecacht),
 >   Indizes liegen. Vor Prod-Rollout `EXPLAIN ANALYZE` mit realistischem Volumen.
 > - **Betrieb:** `supabase/tests/run-tests.sh` und `services/api/scripts/api-db-test.sh` brauchen
 >   `HARNESS_HOST_PORT=55434`, solange der fremde Container `rapportmanager-postgres-1` Port 55432 hält.
+
+> ## ⚠️ KORREKTUREN NACH PHASE 2 (2026-07-16) — gelten VOR dem Rest, auch vor dem Block oben
+> Phase 2 ist gebaut (Migrationen 0027–0029, `routes/roles.ts`, `lib/capabilities.ts`; SQL 711/711).
+> Beim Bau ist an mehreren Stellen herausgekommen, dass **dieses Dokument** falsch lag. Wo Spec und
+> Code sich widersprechen, **gilt der Code**.
+>
+> 1. **`guards.ts:104` ist KEIN Loch — die Behauptung oben ist widerlegt.**
+>    `protect_club_membership` (`0007:203-207`) nimmt `role='member'` beim INSERT **ausdrücklich aus**
+>    (`and new.role <> 'member'`). Der Kassenwart **darf** einfache Mitglieder anlegen; API und DB
+>    stimmen Ende-zu-Ende überein. Empirisch gegen `rsm2-pg-dev` geprüft, und
+>    `90_roles_matrix.sql:98` („treasurer: MAY add a plain member") friert es als **Sollverhalten** ein.
+>    Ein „Angleichen an `can_change_member_role`" wäre eine **Regression** und bräche diesen Test.
+>    → `canAssignRole` bleibt unverändert; der Kommentar in `guards.ts` ist richtiggestellt.
+> 2. **Der Küren-Split behält den Key `routines` für das LESEN** (statt ihn in `routines_read`
+>    umzubenennen). `routines` **ist** bereits die Lese-Fähigkeit (`0026:117-151`); der Key steht in
+>    22 Assertions in 6 Bestands-Testdateien, die nicht verändert werden dürfen. Neu ist nur
+>    `routines_edit` (`{none,edit,manage}`). Geschärft wurden die **Labels** („Küren – Ansehen" /
+>    „Küren – Bearbeiten", DE+EN) — die sieht der Nutzer, den Key nicht.
+>    Preis, ehrlich benannt: `manage` bleibt in `routines.allowed_levels` **ohne eigene Wirkung**
+>    (kein Prädikat prüft > `read_all`); entfernen bricht `93a:172-178`.
+> 3. **`app.team_coaches` war ein RLS-Bypass** (0025 legte die View ohne `security_invoker` an, und
+>    `0001:41-43` grantet `authenticated` automatisch DML **auch auf Views**). Jeder authentifizierte
+>    Nutzer konnte fremde Trainer-Zuordnungen **lesen UND hart löschen** — reproduziert mit einer
+>    Person ohne jede Mitgliedschaft. Geschlossen in `0027`; `93c` prüft es, und ein Stolperdraht
+>    (Migration + Test) lässt **jede künftige View in `app` ohne `security_invoker`** scheitern.
+> 4. **`/reports/anniversaries` war ein Datenleck** (`date - years` rekonstruiert `birth_date`/
+>    `joined_on` exakt — Spalten, die `members.ts` redigiert). Gated seit Phase 2 auf
+>    `member_contact >= read_all`. **Verhaltensänderung:** coach/member/guest_coach 200 → 403.
+>    Die Regel ist nicht „API an die DB angleichen" (die DB schützt hier gar nichts), sondern:
+>    *die API darf ihren eigenen Spaltenschutz nicht hintergehen.*
+> 5. **§6 „Contracts neu generieren" braucht eine Namensregel.** `check.mjs` vergleicht nur Bytes —
+>    es **kompiliert nichts** und sieht Namenskollisionen nicht (`[contracts-check] all green`,
+>    während `swiftc -typecheck` auf das Generat allein fehlschlägt). Deshalb ab Phase 2 Pflicht-Gate:
+>    `swiftc -typecheck packages/contracts/generated/swift/RSMContracts.swift
+>    apps/ios/App/Networking/ContractCodegenShim.swift`.
+>    Verboten: ein Schema-Name gleich `<AnderesSchema><PropInPascalCase>` (hoistet doppelt) und
+>    **benannte Skalare** (fallen stumm aus den Generatoren — Beleg: `Weekday`).
+> 6. **`npm run check` liegt in `packages/contracts/codegen/check.mjs`**, nicht in `check.mjs`.
+> 7. **Ein blinder Tausch Rollenset → `has_cap` LOCKERT an zwei Stellen.** Der Seed hat den Stand der
+>    DB-**Policies** eingefroren, nicht den der API — und die API ist dort **strenger** als ihre eigene
+>    Policy: `teams.ts` (ADMIN_ROLES vs. `teams:manage` = +coach) und `events.ts`
+>    (EVENT_WRITE_ROLES ohne moderator vs. `events:manage` = +moderator). Beide brauchen einen Split
+>    wie bei den Küren oder eine ausdrückliche Entscheidung. **Kein Test prüft diese Strenge.**
+> 8. **`platform_admin` bleibt ein Claim.** `cap_rank` hat bewusst keinen Bypass (`0025:219-222`,
+>    fixiert durch `90_roles_matrix.sql:148`); eine Fähigkeit dafür wäre eine Aufweichung.
+> 9. **Offen und benannt:** `lib/ownership.ts:15-20` (`ownMemberId`) prüft nur `deleted_at` —
+>    **nicht** `status`/`valid_until`. Der Mitgliedschafts-Gate aus 0025 greift auf dem
+>    Self-Service-Pfad also **nicht**. Eigener Befund, eigene Entscheidung, nicht in Phase 2 gefixt.
 
 ## 1. Anforderungen (vom Nutzer)
 1. **Stufen statt on/off** pro Bereich: keine / (lesen mit Umfang) / bearbeiten / verwalten.

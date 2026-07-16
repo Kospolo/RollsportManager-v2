@@ -148,7 +148,12 @@ describe('checkRoleChange (last-owner + self-change rules)', () => {
   });
 });
 
-describe('canAssignRole (INSERT/invite - mirrors can_change_member_role)', () => {
+// RICHTIGSTELLUNG (Phase 2): hier stand "mirrors can_change_member_role" — das
+// ist belegt falsch. can_change_member_role (0025:107-142) liefert fuer treasurer
+// IMMER false; die treasurer->'member'-Regel spiegelt die INSERT-Ausnahme in
+// protect_club_membership (0007:203-207, "and new.role <> 'member'"). Nur die
+// Assertions unten sind unveraendert — sie waren immer richtig, das Etikett nicht.
+describe("canAssignRole (INSERT/invite - spiegelt protect_club_membership 0007:203-207)", () => {
   it('owner may assign anything except owner is owner-only', () => {
     for (const role of ['admin', 'moderator', 'treasurer', 'coach', 'member', 'guest_coach'] as const) {
       expect(canAssignRole('owner', role)).toBe(true);

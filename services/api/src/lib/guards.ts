@@ -15,6 +15,26 @@ import { problem } from '../middleware/error.js';
 // (app.is_club_admin / is_club_trainer / can_manage_finance / can_manage_members
 // in migration 0007). moderator counts as admin-near; treasurer manages
 // members+finance but never roles.
+//
+// ### STATUS nach RBAC Phase 2 ###
+// Diese Sets lesen die EINE Rolle aus dem TOKEN. Sie sind damit blind fuer
+// Mehrfachrollen (die DB kennt seit 0022 beliebig viele) und bis zu einer
+// Token-Lebensdauer veraltet. Der Ersatz steht in lib/capabilities.ts
+// (requireCap / requireClubRoleDb — beide loesen aus app.member_roles auf).
+// Umgestellt sind bisher: die 5 Service-Mode-Routen (dort ist der Guard die
+// ALLEINIGE Autorisierung, RLS ist aus) + events.ts attendance.
+// Der Rest ist FAIL-CLOSED, nicht falsch: der Claim kann eine Rolle nur
+// UNTERbehaupten (eine Zweitrolle fehlt) — die Person bekommt also zu wenig
+// Rechte, nie zu viele. Wo er sie UEBERbehauptet, faengt RLS es ab (42501).
+//
+// ACHTUNG bei der weiteren Umstellung: ein blinder Tausch Rollenset -> has_cap
+// LOCKERT an zwei Stellen, weil der Seed den Stand der DB-POLICIES eingefroren
+// hat, nicht den der API — und die API ist dort STRENGER als ihre eigene Policy:
+//   * teams.ts     ADMIN_ROLES, aber teams >= manage = +coach  (0007:276)
+//   * events.ts    EVENT_WRITE_ROLES ohne moderator,
+//                  aber events >= manage = +moderator          (0007:286)
+// Beide brauchen einen Split wie bei den Kueren (0028) oder eine ausdrueckliche
+// Entscheidung — kein Suchen-und-Ersetzen. Kein Test prueft diese Strenge.
 // ---------------------------------------------------------------------------
 
 /** is_club_admin - club settings, teams, structure (moderator counts as admin). */
@@ -90,12 +110,37 @@ export function requirePlatformAdmin(claims: AuthClaims): void {
 }
 
 // ---------------------------------------------------------------------------
-// Role ASSIGNMENT rule (INSERT / invite) - mirrors app.can_change_member_role.
+// Role ASSIGNMENT rule (INSERT / invite).
 //   owner     -> any role (incl. owner)
 //   admin     -> any role except owner
 //   moderator -> only ranks below moderator (member/coach/treasurer/guest_coach)
 //   treasurer -> only 'member'
 //   everyone else -> nothing
+//
+// ### RICHTIGSTELLUNG (Phase 2) — der alte Kommentar war belegt falsch ###
+// Hier stand "mirrors app.can_change_member_role". Das stimmt so nicht:
+// can_change_member_role (0025:107-142) liefert fuer treasurer IMMER false.
+// Die treasurer -> 'member'-Zeile unten spiegelt nicht diese Funktion, sondern
+// die AUSNAHME in protect_club_membership (0007:203-207):
+//     if app.can_manage_members(new.club_id)
+//        and new.role <> 'member'                    <- genau diese Zeile
+//        and not app.can_change_member_role(...)
+// Beim INSERT ist role='member' also ausdruecklich ausgenommen -> der
+// Kassenwart DARF einfache Mitglieder anlegen. API und DB stimmen hier
+// Ende-zu-Ende ueberein; empirisch gegen rsm2-pg-dev geprueft, und
+// 90_roles_matrix.sql:98 ("treasurer: MAY add a plain member") friert es als
+// SOLLVERHALTEN ein.
+//
+// Der Korrekturblock in blueprint/RBAC-DESIGN.md behauptete, guards.ts sei hier
+// "laxer als die DB" und muesse in Phase 2 angeglichen werden. Ein solches
+// "Angleichen" waere eine REGRESSION (der Kassenwart koennte kein Mitglied mehr
+// anlegen) und braeche 90_roles_matrix.sql:98. Deshalb bleibt der Code, wie er
+// ist; der Blueprint ist korrigiert.
+//
+// Die Hierarchie hier ist ausserdem bewusst NICHT auf has_cap umgestellt: sie
+// ist eine RANG-Ordnung zwischen Rollen, keine Stufen-Skala je Faehigkeit.
+// cap_rank kennt keinen Rang ZWISCHEN Rollen — die beiden Modelle passen nicht
+// aufeinander. Das Netz bleibt der Trigger protect_member_roles (0024:158).
 // ---------------------------------------------------------------------------
 export function canAssignRole(callerRole: ClubRole, targetRole: ClubRole): boolean {
   if (targetRole === 'owner') return callerRole === 'owner';
