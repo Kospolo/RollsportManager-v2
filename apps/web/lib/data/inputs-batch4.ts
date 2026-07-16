@@ -5,6 +5,7 @@ import type {
   Checkin,
   CheckinMethod,
   Id,
+  Member,
   RegionalEvent,
 } from "@/lib/types";
 
@@ -107,6 +108,16 @@ export interface Batch4Repository {
   /* ---------- Chat ---------- */
   /** Meine Kanäle: alle Team-Kanäle (auch leere) + je Direkt-Peer die letzte Nachricht, lastMessageAt desc (nulls last). */
   listChatChannels(): Promise<ChatChannel[]>;
+  /**
+   * Wen ich NEU direkt anschreiben darf (Auswahl hinter „Neue Nachricht an …").
+   * Serverseitig gefiltert (GET /chat/recipients, app.chat_dm_allowed aus
+   * Migration 0043) — dasselbe Prädikat, das die RLS beim Senden prüft:
+   * Erwachsene erreichen Minderjährige NUR als deren Sorgeberechtigte oder als
+   * Trainer:in eines ihrer Teams (und umgekehrt genauso). Die Zeilen laufen
+   * durch dieselbe Redaktion wie die Mitgliederliste — ohne can_manage_members
+   * nur Namen, KEINE Geburtsdaten/E-Mail. Ich selbst bin nicht enthalten.
+   */
+  listChatRecipients(): Promise<Member[]>;
   /** Nachrichten eines Kanals, chronologisch aufsteigend (Team: Mitglied/Trainer; Direkt: nur Sender+Empfänger). */
   listChatMessages(query: ChatMessageQuery): Promise<ChatMessage[]>;
   /** Nachricht senden (Team-Kanal posten = NUR Team-Mitglied; Sender wird serverseitig abgeleitet, kein senderMemberId). */

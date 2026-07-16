@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useT } from "@/lib/i18n";
 import { errorMessage, fullName } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
-import type { ChatChannel, Id } from "@/lib/types";
+import type { ChatChannel, Id, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -13,6 +13,7 @@ import { chatDict } from "./i18n";
 import { channelKey } from "./helpers";
 import { ChannelList } from "./ChannelList";
 import { MessageThread } from "./MessageThread";
+import { NewMessageDialog } from "./NewMessageDialog";
 
 /**
  * Chat-Screen (Nachrichten): Zwei-Spalten-Layout. Links die Kanalliste (meine
@@ -20,6 +21,20 @@ import { MessageThread } from "./MessageThread";
  * Eingabefeld. Mobil wird immer nur EINE Spalte gezeigt (Liste → Thread mit
  * Zurück-Knopf). Alle Datenpfade laufen über die Facade (lib/data); die Rechte
  * sind serverseitig (RLS, Referenz 1.3) — die UI zeigt nur an.
+ *
+ * ZWEI DINGE, DIE HIER GEFEHLT HABEN:
+ * (1) Wer in KEINEM Team ist (typisch: der Vorstand) und noch keine
+ *     Direktnachricht hat, sah einen komplett leeren Bildschirm und hielt den
+ *     Chat für kaputt. Fachlich ist die Liste richtig leer — aber sie muss das
+ *     ERKLÄREN und den Weg zeigen, statt nur leer zu sein.
+ * (2) Es gab keinen Weg, jemanden NEU anzuschreiben (nur bestehende Fäden).
+ *     Dafür der „Neue Nachricht"-Knopf + NewMessageDialog. Die ausgewählte
+ *     Person wird als ENTWURF-Kanal geöffnet (noch kein Fadeb in der DB); erst
+ *     die erste gesendete Nachricht legt den Faden an — danach taucht er bei
+ *     beiden Seiten regulär in /chat/channels auf.
+ * Der Vorstand bekommt hier bewusst NICHT alle Team-Kanäle zu sehen: in denen
+ * schreiben Kinder, und Mitlesen ohne Anlass ist keine Vorstandsaufgabe. Wer
+ * einen Team-Kanal lesen soll, gehört sichtbar ins Team.
  */
 export function ChatClient() {
   const t = useT(chatDict);
@@ -37,7 +52,27 @@ export function ChatClient() {
   const currentMemberId: Id = me.data?.id ?? "";
 
   const [selected, setSelected] = useState<ChatChannel | null>(null);
+  const [composing, setComposing] = useState(false);
   const selectedKey = selected ? channelKey(selected) : null;
+
+  /**
+   * Empfänger gewählt → Entwurfs-Kanal öffnen. Existiert der Faden schon, wird
+   * der BESTEHENDE Kanal genommen (samt Vorschau), sonst ein leerer Direkt-
+   * Kanal ohne lastMessage — MessageThread zeigt dafür bereits „Schreib die
+   * erste Nachricht an {name}." und lädt die (leere) Historie.
+   */
+  const startThread = (member: Member) => {
+    const existing = (channels.data ?? []).find(
+      (ch) => ch.channelType === "direct" && ch.peerMemberId === member.id,
+    );
+    setSelected(
+      existing ?? {
+        channelType: "direct",
+        peerMemberId: member.id,
+        peerName: fullName(member),
+      },
+    );
+  };
 
   let listBody: ReactNode;
   if (channels.status === "loading") {
@@ -60,9 +95,18 @@ export function ChatClient() {
       </div>
     );
   } else if (channels.data.length === 0) {
+    // Leer ist hier fachlich RICHTIG (keine Team-Mitgliedschaft, keine DM) —
+    // aber ein leerer Bildschirm ohne Erklärung ist trotzdem ein Fehler. Wer in
+    // keinem Team ist, bekommt den Grund genannt UND den Weg raus.
+    const noTeam = (members.data ?? []).find((m) => m.id === currentMemberId)?.teamIds.length === 0;
     listBody = (
       <div className="grid h-full place-items-center p-4">
-        <EmptyState icon="mail" title={t("listEmptyTitle")} body={t("listEmptyBody")} />
+        <EmptyState
+          icon="mail"
+          title={noTeam ? t("listEmptyNoTeamTitle") : t("listEmptyTitle")}
+          body={noTeam ? t("listEmptyNoTeamBody") : t("listEmptyBody")}
+          action={<Button onClick={() => setComposing(true)}>{t("newMessage")}</Button>}
+        />
       </div>
     );
   } else {
@@ -96,10 +140,13 @@ export function ChatClient() {
             selected ? "hidden lg:flex" : "flex w-full"
           }`}
         >
-          <header className="flex items-center justify-between border-b border-line px-4 py-3">
+          <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
             <b className="font-display text-[14px] font-bold tracking-[-0.01em] text-ink">
               {t("channelsHeading")}
             </b>
+            <Button size="sm" onClick={() => setComposing(true)}>
+              {t("newMessage")}
+            </Button>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto p-2">{listBody}</div>
         </aside>
@@ -123,6 +170,12 @@ export function ChatClient() {
           )}
         </section>
       </div>
+
+      <NewMessageDialog
+        open={composing}
+        onClose={() => setComposing(false)}
+        onPick={startThread}
+      />
     </div>
   );
 }

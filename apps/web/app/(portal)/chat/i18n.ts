@@ -24,9 +24,31 @@ export const chatDict = {
     listEmptyTitle: "Keine Unterhaltungen",
     listEmptyBody:
       "Sobald du einem Team angehörst oder eine Direktnachricht bekommst, erscheinen deine Unterhaltungen hier.",
+    // Leer, weil in KEINEM Team — der häufigste Fall beim Vorstand. Erklärt den
+    // Grund und zeigt den Weg, statt nur leer zu sein.
+    listEmptyNoTeamTitle: "Du bist in keinem Team",
+    listEmptyNoTeamBody:
+      "Team-Kanäle siehst du, sobald du selbst zu einem Team gehörst — den Chat deiner Teams liest du also nur als Teil davon. Direktnachrichten kannst du jederzeit anfangen.",
     channelsErrorTitle: "Unterhaltungen konnten nicht geladen werden",
     channelsErrorBody:
       "Deine Unterhaltungen ließen sich gerade nicht laden — bitte erneut versuchen.",
+
+    // Neue Direktnachricht (Empfängerauswahl)
+    newMessage: "Neue Nachricht",
+    newMessageTitle: "Neue Nachricht an …",
+    newMessageEyebrow: "Direktnachricht",
+    searchLabel: "Person suchen",
+    searchPlaceholder: "Name suchen …",
+    recipientsLoadError: "Die Auswahl ließ sich gerade nicht laden — bitte erneut versuchen.",
+    recipientsEmptyTitle: "Niemand zum Anschreiben",
+    recipientsEmptyBody: "Aktuell kannst du niemanden neu anschreiben.",
+    recipientsNoHitTitle: "Kein Treffer",
+    recipientsNoHitBody: "Zu „{query}“ passt niemand aus deiner Auswahl.",
+    // Erklärt, WARUM die Liste kürzer ist als die Mitgliederliste. Ohne diesen
+    // Satz wirkt die Kinderschutz-Regel wie ein Fehler.
+    recipientsChildProtectionNote:
+      "Minderjährige kannst du nur anschreiben, wenn du sie betreust — als Sorgeberechtigte:r oder als Trainer:in ihres Teams.",
+    draftBadge: "Neuer Entwurf",
 
     // Thread (rechts)
     pickChannelTitle: "Unterhaltung wählen",
@@ -85,8 +107,26 @@ export const chatDict = {
     listEmptyTitle: "No conversations",
     listEmptyBody:
       "As soon as you belong to a team or receive a direct message, your conversations appear here.",
+    listEmptyNoTeamTitle: "You are not in any team",
+    listEmptyNoTeamBody:
+      "Team channels appear once you belong to a team yourself — you read a team's chat as part of it. You can start a direct message any time.",
     channelsErrorTitle: "Conversations could not be loaded",
     channelsErrorBody: "Your conversations could not be loaded right now — please try again.",
+
+    // New direct message (recipient picker)
+    newMessage: "New message",
+    newMessageTitle: "New message to …",
+    newMessageEyebrow: "Direct message",
+    searchLabel: "Search for a person",
+    searchPlaceholder: "Search by name …",
+    recipientsLoadError: "The list could not be loaded right now — please try again.",
+    recipientsEmptyTitle: "Nobody to write to",
+    recipientsEmptyBody: "There is currently nobody you can start a message with.",
+    recipientsNoHitTitle: "No match",
+    recipientsNoHitBody: "Nobody in your list matches “{query}”.",
+    recipientsChildProtectionNote:
+      "You can only message minors you look after — as their guardian or as a coach of their team.",
+    draftBadge: "New draft",
 
     pickChannelTitle: "Choose a conversation",
     pickChannelBody: "Pick a conversation on the left to read its messages.",
