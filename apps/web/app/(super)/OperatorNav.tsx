@@ -18,6 +18,9 @@ import { OPERATOR_NAV } from "./nav";
 /** Label-Keys der Betreiber-Nav — von anderen Sektionen erweiterbar. */
 export type OperatorNavKey =
   | "navOverview"
+  | "navClubs"
+  | "navRoutines"
+  | "navSupport"
   | "navLicenses"
   | "navPayments"
   | "navSystem"
@@ -27,6 +30,9 @@ const operatorNavDict = {
   de: {
     navLabel: "Betreiber-Navigation",
     navOverview: "Übersicht",
+    navClubs: "Vereine & Nutzer",
+    navRoutines: "Küren-Moderation",
+    navSupport: "Support",
     navLicenses: "Lizenzen",
     navPayments: "Zahlungen",
     navSystem: "System",
@@ -35,6 +41,9 @@ const operatorNavDict = {
   en: {
     navLabel: "Operator navigation",
     navOverview: "Overview",
+    navClubs: "Clubs & users",
+    navRoutines: "Routine moderation",
+    navSupport: "Support",
     navLicenses: "Licences",
     navPayments: "Payments",
     navSystem: "System",

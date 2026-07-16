@@ -4,6 +4,8 @@ import type {
   PlatformEntitlementStatus,
   PlatformPaymentsResult,
   PlatformProduct,
+  PlatformRoutineModeration,
+  PlatformRoutineStatus,
   PlatformSettings,
   PlatformSystemInfo,
   PlatformTier,
@@ -64,6 +66,24 @@ export interface UpdateProductInput {
   active?: boolean;
   name?: string;
   description?: string | null;
+}
+
+/* ---------- Küren-Moderation ---------- */
+
+/**
+ * Filter der Küren-Moderation (GET /platform/routines). Ohne clubId geht die
+ * Sicht über ALLE Vereine — das ist der Punkt der Moderation.
+ */
+export interface PlatformRoutinesQuery {
+  /** Auf einen Verein einschränken; weglassen = alle. */
+  clubId?: Id;
+  status?: PlatformRoutineStatus;
+  /** Freitext über Titel / Musiktitel / Interpret. */
+  q?: string;
+  /** Default 100, Maximum 200 (serverseitig gekappt). */
+  limit?: number;
+  /** Offset für Paging, Default 0. */
+  offset?: number;
 }
 
 /* ---------- Plattform-Einstellungen ---------- */
@@ -136,6 +156,14 @@ export interface PlatformConsoleRepository {
   platformListProducts(): Promise<PlatformProduct[]>;
   /** Produkt ändern (Preis in Cents, aktiv/Name/Beschreibung). */
   platformUpdateProduct(id: Id, patch: UpdateProductInput): Promise<PlatformProduct>;
+
+  /* ---------- Küren-Moderation (reine Lesesicht über alle Vereine) ---------- */
+  /**
+   * Küren ALLER Vereine für die Moderation (Titel/Musik sichten). Ohne Filter
+   * vereinsübergreifend. Läufer:innen-Namen liefert der Server bewusst nicht —
+   * nur ihre Anzahl (siehe PlatformRoutineModeration).
+   */
+  platformListRoutines(query?: PlatformRoutinesQuery): Promise<PlatformRoutineModeration[]>;
 
   /* ---------- System-Info (reine Lesesicht) ---------- */
   /** App-Version, Auth-Modus, DB-Kennzahlen, Migrationsstand, Health. */

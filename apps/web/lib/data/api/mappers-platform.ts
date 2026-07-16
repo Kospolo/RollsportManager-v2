@@ -6,10 +6,12 @@ import type {
   PlatformPayment,
   PlatformPaymentsResult,
   PlatformProduct,
+  PlatformRoutineModeration,
   PlatformSettings,
   PlatformSystemInfo,
   PlatformTier,
 } from "@/lib/types";
+import type { PlatformRoutineWire } from "./modules-platform";
 
 /**
  * Mapper der Betreiber-/Plattform-Konsole: API-Wire-Format (snake_case) →
@@ -140,6 +142,34 @@ export function mapPlatformSettings(w: M.PlatformSettings): PlatformSettings {
       seoKeywords: w.content.seo_keywords,
     },
     featureFlags: toBoolFlags(w.feature_flags),
+    updatedAt: w.updated_at,
+  };
+}
+
+/**
+ * Küren-Moderation (GET /platform/routines) → View-Typ.
+ *
+ * Der Wire-Typ kommt aus ./modules-platform (von Hand getippt), nicht aus dem
+ * Generat: die Route ist neu, und der Codegen läuft erst beim Zusammenführen.
+ * Nach `npm run generate` wird daraus M.PlatformRoutineRow — die Zuweisungen
+ * unten bleiben, wie sie sind.
+ */
+export function mapPlatformRoutine(w: PlatformRoutineWire): PlatformRoutineModeration {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    clubName: w.club_name,
+    title: w.title,
+    status: w.status,
+    ...(w.category !== null ? { category: w.category } : {}),
+    ...(w.music_title !== null ? { musicTitle: w.music_title } : {}),
+    ...(w.music_artist !== null ? { musicArtist: w.music_artist } : {}),
+    ...(w.music_duration_ms !== null ? { musicDurationMs: w.music_duration_ms } : {}),
+    ...(w.audio_asset_id !== null ? { audioAssetId: w.audio_asset_id } : {}),
+    ...(w.audio_mime_type !== null ? { audioMimeType: w.audio_mime_type } : {}),
+    ...(w.audio_size_bytes !== null ? { audioSizeBytes: w.audio_size_bytes } : {}),
+    skaterCount: w.skater_count,
+    createdAt: w.created_at,
     updatedAt: w.updated_at,
   };
 }

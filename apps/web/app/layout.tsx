@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AuthProvider } from "@/lib/auth";
+import { OperatorBanner } from "@/components/shell/OperatorBanner";
 import { PreferencesBoot } from "@/lib/boot/PreferencesBoot";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
@@ -34,6 +35,12 @@ export default function RootLayout({
             <AuthProvider>
               {/* Zieht nach dem Login Theme/Locale aus /me/preferences (api). */}
               <PreferencesBoot />
+              {/* DAS BETREIBER-BAND — bewusst im ROOT-Layout, nicht in der
+                  Portal-Shell: die Betreiber-Einsicht gilt für JEDE Seite, die
+                  der Betreiber danach aufruft, und sie muss überall sichtbar
+                  bleiben (auch auf der Konsole selbst). Rendert für alle
+                  anderen null. */}
+              <OperatorBanner />
               {children}
             </AuthProvider>
           </I18nProvider>

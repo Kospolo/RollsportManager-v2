@@ -1,8 +1,9 @@
-import { club, members } from "@/lib/mock";
+import { club, members, routines } from "@/lib/mock";
 import type {
   PlatformEntitlement,
   PlatformPayment,
   PlatformProduct,
+  PlatformRoutineModeration,
   PlatformSettings,
 } from "@/lib/types";
 import type { PlatformConsoleRepository } from "../inputs-platform";
@@ -21,6 +22,95 @@ import type { PlatformConsoleRepository } from "../inputs-platform";
 const nowIso = (): string => new Date().toISOString();
 const daysFromNow = (days: number): string =>
   new Date(Date.now() + days * 86_400_000).toISOString();
+
+/* ---------- Küren-Moderation ---------- */
+
+/**
+ * Küren über alle drei Demo-Vereine. Die des eigenen Vereins stammen aus dem
+ * echten Mock-Seed (lib/mock/routines.ts), die der beiden anderen sind hier
+ * ergänzt — sonst zeigte eine „Sicht über ALLE Vereine" genau einen Verein und
+ * bewiese nichts.
+ *
+ * KEINE Läufer:innen-Namen, nur ihre Anzahl — der Mock spiegelt damit exakt,
+ * was der Server liefert (platformRoutineRowSchema). Ein Mock, der mehr zeigt
+ * als die echte Antwort, erzieht zu einer Oberfläche, die es nicht gibt.
+ */
+const routineStore: PlatformRoutineModeration[] = [
+  ...routines.map((r) => ({
+    id: r.id,
+    clubId: club.id,
+    clubName: club.name,
+    title: r.title,
+    status: r.status,
+    ...(r.category !== undefined ? { category: r.category } : {}),
+    ...(r.music?.title !== undefined ? { musicTitle: r.music.title } : {}),
+    ...(r.music?.artist !== undefined ? { musicArtist: r.music.artist } : {}),
+    ...(r.music?.durationMs !== undefined ? { musicDurationMs: r.music.durationMs } : {}),
+    skaterCount: r.memberIds.length,
+    createdAt: daysFromNow(-200),
+    updatedAt: daysFromNow(-14),
+  })),
+  {
+    id: "r-esc-01",
+    clubId: "club-esc-heilbronn",
+    clubName: "ESC Heilbronn",
+    title: "Bohemian Rhapsody",
+    status: "ready",
+    category: "Jugend Kür B",
+    musicTitle: "Bohemian Rhapsody",
+    musicArtist: "Queen",
+    musicDurationMs: 174_000,
+    audioAssetId: "ma-esc-01",
+    audioMimeType: "audio/mpeg",
+    audioSizeBytes: 4_180_000,
+    skaterCount: 1,
+    createdAt: daysFromNow(-64),
+    updatedAt: daysFromNow(-3),
+  },
+  {
+    id: "r-esc-02",
+    clubId: "club-esc-heilbronn",
+    clubName: "ESC Heilbronn",
+    title: "Winterreise",
+    status: "draft",
+    musicTitle: "Der Lindenbaum",
+    musicArtist: "Franz Schubert",
+    musicDurationMs: 141_000,
+    skaterCount: 2,
+    createdAt: daysFromNow(-11),
+    updatedAt: daysFromNow(-11),
+  },
+  {
+    id: "r-rrc-01",
+    clubId: "club-rrc-stuttgart",
+    clubName: "RRC Stuttgart",
+    title: "Tanz der Ritter",
+    status: "competition",
+    category: "Junioren Kür",
+    musicTitle: "Romeo und Julia — Tanz der Ritter",
+    musicArtist: "Sergei Prokofjew",
+    musicDurationMs: 188_000,
+    audioAssetId: "ma-rrc-01",
+    audioMimeType: "audio/mpeg",
+    audioSizeBytes: 5_020_000,
+    skaterCount: 4,
+    createdAt: daysFromNow(-120),
+    updatedAt: daysFromNow(-30),
+  },
+  {
+    id: "r-rrc-02",
+    clubId: "club-rrc-stuttgart",
+    clubName: "RRC Stuttgart",
+    title: "Archiv 2023 — Nordlicht",
+    status: "archived",
+    musicTitle: "Aurora",
+    musicArtist: "Ludovico Einaudi",
+    musicDurationMs: 156_000,
+    skaterCount: 1,
+    createdAt: daysFromNow(-420),
+    updatedAt: daysFromNow(-380),
+  },
+];
 
 /* ---------- Lizenzen ---------- */
 
@@ -330,6 +420,21 @@ export const moduleRepositoryPlatform: PlatformConsoleRepository = {
     }
     hit.updatedAt = nowIso();
     return { ...hit };
+  },
+
+  /* ---------- Küren-Moderation ---------- */
+  async platformListRoutines(query) {
+    const q = query?.q?.trim().toLowerCase();
+    let rows = routineStore;
+    if (query?.clubId) rows = rows.filter((r) => r.clubId === query.clubId);
+    if (query?.status) rows = rows.filter((r) => r.status === query.status);
+    if (q) {
+      rows = rows.filter((r) =>
+        [r.title, r.musicTitle, r.musicArtist].some((v) => (v ?? "").toLowerCase().includes(q)),
+      );
+    }
+    const offset = query?.offset ?? 0;
+    return rows.slice(offset, offset + (query?.limit ?? 100)).map((r) => ({ ...r }));
   },
 
   /* ---------- System-Info ---------- */

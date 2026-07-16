@@ -27,6 +27,7 @@ import { platformRouter } from './routes/platform.js';
 import { platformSettingsRouter } from './routes/platform-settings.js';
 import { platformLicensesRouter } from './routes/platform-licenses.js';
 import { platformBillingRouter } from './routes/platform-billing.js';
+import { platformRoutinesRouter } from './routes/platform-routines.js';
 import { platformSystemRouter } from './routes/platform-system.js';
 import { eventsRouter } from './routes/events.js';
 import { routinesRouter } from './routes/routines.js';
@@ -146,6 +147,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', platformSettingsRouter);
   app.route('/', platformLicensesRouter);
   app.route('/', platformBillingRouter);
+  app.route('/', platformRoutinesRouter);
   app.route('/', platformSystemRouter);
   app.route('/', eventsRouter);
   app.route('/', routinesRouter);

@@ -212,3 +212,43 @@ export interface PlatformSettings {
   featureFlags: Record<string, boolean>;
   updatedAt: string;
 }
+
+/* ---------- Küren-Moderation (Betreiber-Sicht über alle Vereine) ---------- */
+
+/** Bearbeitungsstand einer Kür (app.routine_status). */
+export type PlatformRoutineStatus = "draft" | "ready" | "competition" | "archived";
+
+/**
+ * Eine Kür in der Moderations-Sicht (GET /platform/routines) — vereins-
+ * übergreifend, inklusive Vereinsname.
+ *
+ * ### Was hier bewusst FEHLT ###
+ * Die Namen der Läufer:innen. Es sind fast immer Kinder, und für die
+ * Moderationsfrage („ist Titel/Musik in Ordnung?") sind sie nicht nötig; nur
+ * ihre ANZAHL steht drin. Wer die Menschen wirklich braucht, geht über den
+ * Vereins-Umschalter in den Verein — und genau dieser Schritt steht dann als
+ * eigene Zeile im Protokoll. Datensparsamkeit als Voreinstellung.
+ */
+export interface PlatformRoutineModeration {
+  id: Id;
+  clubId: Id;
+  clubName: string;
+  title: string;
+  status: PlatformRoutineStatus;
+  /** Kategorie, z. B. „Jugend Kür A" — undefined wenn nicht gepflegt. */
+  category?: string;
+  musicTitle?: string;
+  musicArtist?: string;
+  /** Dauer der Musik in Millisekunden — undefined wenn nicht gepflegt. */
+  musicDurationMs?: number;
+  /** Verknüpfte Audio-Datei — undefined, wenn keine hinterlegt ist. */
+  audioAssetId?: Id;
+  /** MIME-Typ der Audio-Datei (z. B. "audio/mpeg") — undefined ohne Datei. */
+  audioMimeType?: string;
+  /** Größe der Audio-Datei in Bytes — undefined ohne Datei. */
+  audioSizeBytes?: number;
+  /** Anzahl der Läufer:innen (die Zahl, nicht die Menschen — s. o.). */
+  skaterCount: number;
+  createdAt: string;
+  updatedAt: string;
+}

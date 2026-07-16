@@ -11,6 +11,14 @@ import type { OperatorNavKey } from "./OperatorNav";
  * ((portal)). Die Betreiber-Einstellungen brauchen einen eigenen Pfad (z. B.
  * /plattform-einstellungen), sonst kollidiert `next build` (zwei page.tsx auf
  * denselben URL). Route-Gruppen ((super)/(portal)) verändern die URL NICHT.
+ * Aus demselben Grund heißt die Moderation /kueren-moderation und nicht
+ * /kueren (das ist die Vereins-Seite) — sie sieht auch etwas anderes: alle
+ * Vereine statt einen.
+ *
+ * EINSTIEG: diese Navigation war vollständig, aber von der laufenden App aus
+ * unerreichbar — niemand verlinkte /super. Der Eingang sitzt jetzt im
+ * Avatar-Menü der Portal-Topbar (components/shell/UserMenu.tsx), sichtbar nur
+ * für Plattform-Admins.
  */
 
 export interface OperatorNavItem {
@@ -20,7 +28,10 @@ export interface OperatorNavItem {
 }
 
 export const OPERATOR_NAV: OperatorNavItem[] = [
-  { key: "navOverview", href: "/super", icon: "monitor" },
+  { key: "navOverview", href: "/super", icon: "dashboard" },
+  { key: "navClubs", href: "/vereine", icon: "teams" },
+  { key: "navRoutines", href: "/kueren-moderation", icon: "routines" },
+  { key: "navSupport", href: "/support-tickets", icon: "mail" },
   { key: "navLicenses", href: "/lizenzen", icon: "shield" },
   { key: "navPayments", href: "/zahlungen", icon: "bank" },
   { key: "navSystem", href: "/system", icon: "zap" },

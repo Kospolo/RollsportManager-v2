@@ -260,3 +260,49 @@ export const platformSettingsPatchSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('PlatformSettingsPatch');
+
+// ---------------------------------------------------------------------------
+// Küren-Moderation — GET /platform/routines
+//
+// Warum es diesen Endpoint gibt: der Betreiber muss die Küren ALLER Vereine
+// sichten koennen ("nicht damit da illegale Sachen gemacht werden"). Ueber die
+// vorhandene Route ginge das nur als /routines?club_id=… je Verein — also N
+// Requests, N Protokollzeilen und keine vereinsuebergreifende Sortierung. Diese
+// Sicht ist EIN Request, EINE Protokollzeile (die Audit-Middleware aus 0051
+// greift, wie bei jedem /platform/*-Aufruf) und club-uebergreifend sortierbar.
+// ---------------------------------------------------------------------------
+
+/**
+ * Eine Kür in der Moderations-Sicht: die fachlichen Felder plus der Verein, zu
+ * dem sie gehoert (der Betreiber sieht mandantenuebergreifend).
+ *
+ * Bewusst NICHT enthalten: die Namen der Laeufer:innen. Es sind fast immer
+ * KINDER, und fuer die Moderationsfrage ("ist die Musik/der Titel in Ordnung?")
+ * sind sie nicht noetig. Wer sie wirklich braucht, geht ueber den
+ * Vereins-Umschalter in den Verein — und genau dieser Schritt steht dann
+ * einzeln im Protokoll. Datensparsamkeit als Voreinstellung (Art. 25 Abs. 2
+ * DSGVO), nicht als Nachgedanke.
+ */
+export const platformRoutineRowSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    club_name: z.string(),
+    title: z.string(),
+    status: z.enum(['draft', 'ready', 'competition', 'archived']),
+    category: z.string().nullable(),
+    music_title: z.string().nullable(),
+    music_artist: z.string().nullable(),
+    music_duration_ms: z.coerce.number().int().nullable(),
+    /** Die verknuepfte Audio-Datei — null, wenn keine hinterlegt ist. */
+    audio_asset_id: uuid.nullable(),
+    /** MIME-Typ der Audio-Datei (aus app.media_assets) — null ohne Datei. */
+    audio_mime_type: z.string().nullable(),
+    /** Groesse der Audio-Datei in Bytes — null ohne Datei. */
+    audio_size_bytes: z.coerce.number().int().nullable(),
+    /** Anzahl der Laeufer:innen — die Zahl, nicht die Menschen (s. o.). */
+    skater_count: z.coerce.number().int(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('PlatformRoutineRow');

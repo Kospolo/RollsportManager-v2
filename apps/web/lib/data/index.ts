@@ -153,6 +153,7 @@ export type {
 export type {
   PlatformConsoleRepository,
   PlatformPaymentsQuery,
+  PlatformRoutinesQuery,
   SetEntitlementInput,
   UpdatePlatformContentInput,
   UpdatePlatformLegalInput,

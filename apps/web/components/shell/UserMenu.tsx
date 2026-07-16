@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useLocale, useT } from "@/lib/i18n";
+import { useLocale, useT, type Dict } from "@/lib/i18n";
 import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
 import { data, dataSource } from "@/lib/data";
@@ -12,6 +12,25 @@ import { AVATAR_CHANGED_EVENT } from "./avatar-events";
 import { Icon, type IconName } from "./icons";
 
 /**
+ * Der EINSTIEG in die Betreiber-Konsole — bis hierher gab es keinen.
+ *
+ * Die Konsole unter /super, /lizenzen, /zahlungen … existierte, war aus der
+ * laufenden App aber von NIRGENDWO erreichbar: weder NAV_ITEMS (shell/nav.ts)
+ * noch dieses Menü noch der Feature-Hub verlinkten sie. Man musste die URL
+ * kennen. Genau das meinte der Nutzer mit „kein Superadmin-Menü" — die
+ * Navigation war da, nur ihr Eingang nicht.
+ *
+ * Sichtbar allein für Plattform-Admins (Token-Claim app_metadata.
+ * is_platform_admin, gespiegelt in der Dev-Session). Das ist reine Sichtbarkeit:
+ * jeder /platform/*-Endpoint prüft den Claim selbst (requirePlatformAdmin), und
+ * wer die URL errät, bekommt trotzdem die Sperr-Seite bzw. 403.
+ */
+const operatorEntryDict = {
+  de: { console: "Betreiber-Konsole" },
+  en: { console: "Operator console" },
+} satisfies Dict;
+
+/**
  * Avatar-Menü der Topbar.
  * mock-Modus: Demo-Persona „Sandra Vogel — Trainerin" (wie bisher).
  * api-Modus: echte Persona aus dem Dev-Login (rsm.dev.auth); „Abmelden"
@@ -19,6 +38,7 @@ import { Icon, type IconName } from "./icons";
  */
 export function UserMenu() {
   const t = useT(shellDict);
+  const tOperator = useT(operatorEntryDict);
   const { locale } = useLocale();
   const { session, signOut } = useAuth();
   const router = useRouter();
@@ -92,9 +112,28 @@ export function UserMenu() {
     router.push(href);
   }
 
+  // Betreiber-Einstieg: aus der Session (useAuth → useSyncExternalStore), NICHT
+  // per readSession()/permissions() — das läse localStorage direkt und ergäbe
+  // beim SSR false, beim ersten Client-Render true: ein Hydration-Mismatch.
+  //
+  // Im mock-Modus (keine Dev-Session, Demo-Persona ist Trainerin) bleibt der
+  // Punkt bewusst aus: die Demo soll das Portal zeigen, wie eine Trainerin es
+  // sieht. Die Konsole gatet sich dort ohnehin selbst frei (siehe
+  // PlatformConsoleClient) — ein Menüpunkt hier hätte gelogen, wer sie ist.
+  const isPlatformAdmin = apiSession?.profile.is_platform_admin === true;
+
   const items: { icon: IconName; label: string; onSelect: () => void }[] = [
     { icon: "user", label: t("profile"), onSelect: () => navigateTo("/profil") },
     { icon: "settings", label: t("settings"), onSelect: () => navigateTo("/einstellungen") },
+    ...(isPlatformAdmin
+      ? [
+          {
+            icon: "monitor" as const,
+            label: tOperator("console"),
+            onSelect: () => navigateTo("/super"),
+          },
+        ]
+      : []),
     { icon: "signout", label: t("signOut"), onSelect: handleSignOut },
   ];
 
