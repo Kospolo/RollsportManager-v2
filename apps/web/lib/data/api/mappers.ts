@@ -102,6 +102,7 @@ export function mapEvent(w: M.Event): Event {
     location: w.location ?? "",
     startsAt: w.starts_at,
     endsAt: w.ends_at,
+    audience: w.audience,
     teamIds: w.team_ids,
     rsvps: w.rsvps.map(mapRsvp),
     note: w.note ?? undefined,

@@ -96,6 +96,11 @@ export const termineDict = {
     fLocationPh: "z. B. Ballei-Sporthalle, Neckarsulm",
     fTeams: "Teams",
     fTeamsHint: "Alle Mitglieder der gewählten Teams werden eingeladen.",
+    fAudience: "Vereinsveranstaltung",
+    fAudienceHint:
+      "Jedes Vereinsmitglied sieht diesen Termin — unabhängig vom Team. Für Jahreshauptversammlung, Sommerfest und Ähnliches.",
+    audienceBadge: "Verein",
+    audienceBadgeAria: "Vereinsveranstaltung — für alle Mitglieder sichtbar",
     fNote: "Notiz (optional)",
     fNotePh: "z. B. Schwerpunkt, Treffpunkt, Mitbringliste …",
     errTitle: "Bitte gib einen Titel an.",
@@ -196,6 +201,11 @@ export const termineDict = {
     fLocationPh: "e.g. Ballei sports hall, Neckarsulm",
     fTeams: "Teams",
     fTeamsHint: "All members of the selected teams will be invited.",
+    fAudience: "Club-wide event",
+    fAudienceHint:
+      "Every club member sees this event, regardless of team. For the annual general meeting, summer party and the like.",
+    audienceBadge: "Club",
+    audienceBadgeAria: "Club-wide event — visible to all members",
     fNote: "Note (optional)",
     fNotePh: "e.g. focus, meeting point, what to bring …",
     errTitle: "Please enter a title.",

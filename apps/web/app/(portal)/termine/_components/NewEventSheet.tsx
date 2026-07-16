@@ -7,7 +7,7 @@ import { Sheet } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { data, errorMessage, isForbidden } from "@/lib/data";
 import { useT } from "@/lib/i18n";
-import type { Event, EventType, Team } from "@/lib/types";
+import type { Event, EventAudience, EventType, Team } from "@/lib/types";
 import { termineDict } from "../i18n";
 
 const FORM_ID = "new-event-form";
@@ -20,12 +20,19 @@ type FieldErrors = Partial<Record<"title" | "location" | "date" | "end" | "teams
  * Termin (mit echter ID) fließt via onCreate zurück in die Liste.
  * Verein/Teams kommen als Props aus der Facade; sind Teams im api-Modus
  * nicht lesbar (NotImplemented), entfällt die Team-Pflicht mit Hinweis.
+ *
+ * `canPublishToClub` blendet NUR das Häkchen „Vereinsveranstaltung“ ein bzw.
+ * aus (Anzeige). Die verbindliche Prüfung sitzt serverseitig — im API-Gate
+ * (events.ts) UND im RLS-Trigger app.protect_event_audience (Migration 0050).
+ * v1 hatte die Rechte NUR hier im Client; genau das war der Fehler dieses
+ * Projekts. Wer das Häkchen per DevTools erzwingt, bekommt ein 403.
  */
 export function NewEventSheet({
   open,
   onClose,
   teams,
   teamsUnavailable = false,
+  canPublishToClub = false,
   onCreate,
 }: {
   open: boolean;
@@ -33,6 +40,8 @@ export function NewEventSheet({
   teams: Team[];
   /** api-Modus: kein Teams-Endpoint — Hinweis statt Chips, keine Team-Pflicht */
   teamsUnavailable?: boolean;
+  /** Vorstand (owner/admin/moderator)? Nur dann ist das Häkchen sichtbar. */
+  canPublishToClub?: boolean;
   onCreate: (event: Event) => void;
 }) {
   const t = useT(termineDict);
@@ -47,6 +56,7 @@ export function NewEventSheet({
   const [end, setEnd] = useState("18:30");
   const [location, setLocation] = useState("");
   const [teamIds, setTeamIds] = useState<string[]>([]);
+  const [audience, setAudience] = useState<EventAudience>("teams");
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
 
@@ -58,6 +68,7 @@ export function NewEventSheet({
     setEnd("18:30");
     setLocation("");
     setTeamIds([]);
+    setAudience("teams");
     setNote("");
     setErrors({});
   }
@@ -80,7 +91,11 @@ export function NewEventSheet({
     if (!date) nextErrors.date = t("errDate");
     if (start && end && end <= start) nextErrors.end = t("errEnd");
     // Team-Pflicht nur, wenn Teams überhaupt wählbar sind (api: NotImplemented)
-    if (teams.length > 0 && teamIds.length === 0) nextErrors.teams = t("errTeams");
+    // — und NICHT bei einer Vereinsveranstaltung: die kennt per Definition
+    // keine Teams (Server: 400 bzw. 23514, Migration 0050).
+    if (audience === "teams" && teams.length > 0 && teamIds.length === 0) {
+      nextErrors.teams = t("errTeams");
+    }
     setErrors(nextErrors);
     if (Object.values(nextErrors).some(Boolean)) return;
 
@@ -92,7 +107,10 @@ export function NewEventSheet({
         location: location.trim(),
         startsAt: new Date(`${date}T${start}`).toISOString(),
         endsAt: new Date(`${date}T${end}`).toISOString(),
-        teamIds,
+        audience,
+        // Eine Vereinsveranstaltung trägt KEINE Teams — sonst stünden zwei
+        // Wahrheiten nebeneinander, und der Server lehnt ab.
+        teamIds: audience === "club" ? [] : teamIds,
         note: note.trim() || undefined,
       });
       onCreate(created);
@@ -188,7 +206,34 @@ export function NewEventSheet({
           }}
         />
 
-        {/* Team-Mehrfachauswahl als Chips (aria-pressed) */}
+        {/*
+          „Vereinsveranstaltung“ — nur für den Vorstand sichtbar. Ein Mitglied
+          oder eine Trainerin sieht das Häkchen gar nicht erst; erzwingt es
+          jemand trotzdem, antwortet der Server mit 403 (siehe Kopfkommentar).
+        */}
+        {canPublishToClub && (
+          <label className="flex items-start gap-3 rounded-md border border-line-strong bg-surface px-3 py-3">
+            <input
+              type="checkbox"
+              checked={audience === "club"}
+              onChange={(changeEvent) => {
+                setAudience(changeEvent.target.checked ? "club" : "teams");
+                setErrors((previous) => ({ ...previous, teams: undefined }));
+              }}
+              className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--brand)]"
+            />
+            <span className="grid gap-0.5">
+              <span className="text-[13px] font-bold text-ink">{t("fAudience")}</span>
+              <span className="text-caption leading-[18px] text-ink-faint">
+                {t("fAudienceHint")}
+              </span>
+            </span>
+          </label>
+        )}
+
+        {/* Team-Mehrfachauswahl als Chips (aria-pressed).
+            Bei einer Vereinsveranstaltung entfällt sie: alle sehen den Termin. */}
+        {audience === "teams" && (
         <div className="grid gap-1.5">
           <span id={teamsLabelId} className="text-[13px] font-bold text-ink">
             {t("fTeams")}
@@ -227,6 +272,7 @@ export function NewEventSheet({
             teams.length > 0 && <p className="text-caption text-ink-faint">{t("fTeamsHint")}</p>
           )}
         </div>
+        )}
 
         <Textarea
           label={t("fNote")}

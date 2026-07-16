@@ -226,6 +226,7 @@ export const apiRepository: DataRepository = {
       location: input.location,
       starts_at: input.startsAt,
       ends_at: input.endsAt,
+      audience: input.audience ?? "teams",
       team_ids: input.teamIds,
       note: input.note,
     });

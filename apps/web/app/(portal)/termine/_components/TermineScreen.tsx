@@ -13,6 +13,7 @@ import { useLocale, useT, type Locale } from "@/lib/i18n";
 import { dayDiff, formatDate, relativeDays } from "@/lib/format";
 import { data, errorMessage, isForbidden, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { permissions } from "@/lib/data/permissions";
 import type { AttendanceStatus, Event, Rsvp, RsvpStatus } from "@/lib/types";
 import { termineDict } from "../i18n";
 import {
@@ -392,6 +393,11 @@ export function TermineScreen() {
         onClose={() => setFormOpen(false)}
         teams={teams}
         teamsUnavailable={teamsUnavailable}
+        // Nur der Vorstand (owner/admin/moderator) sieht das Häkchen
+        // „Vereinsveranstaltung“ — deckungsgleich mit CLUB_AUDIENCE_ROLES in
+        // services/api/src/routes/events.ts und dem RLS-Trigger (0050).
+        // Reine Anzeige: durchgesetzt wird es serverseitig.
+        canPublishToClub={permissions(currentUser).isClubAdmin}
         onCreate={(event) => setCreated((previous) => [...previous, event])}
       />
     </div>

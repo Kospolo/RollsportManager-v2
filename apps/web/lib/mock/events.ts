@@ -15,31 +15,31 @@ export const events: Event[] = [
     id: "e-01", clubId: c, type: "training", title: "Training Nachwuchs Pflicht",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(-7, 17, 0), endsAt: daysFromNow(-7, 18, 30),
-    teamIds: ["t-02"], rsvps: [],
+    audience: "teams", teamIds: ["t-02"], rsvps: [],
   },
   {
     id: "e-02", clubId: c, type: "training", title: "Training Kürgruppe Leistung",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(-6, 18, 30), endsAt: daysFromNow(-6, 20, 30),
-    teamIds: ["t-03"], rsvps: [],
+    audience: "teams", teamIds: ["t-03"], rsvps: [],
   },
   {
     id: "e-03", clubId: c, type: "training", title: "Training Minis & Anfänger",
     location: "Pichterichhalle, Neckarsulm",
     startsAt: daysFromNow(-5, 16, 0), endsAt: daysFromNow(-5, 17, 0),
-    teamIds: ["t-01"], rsvps: [],
+    audience: "teams", teamIds: ["t-01"], rsvps: [],
   },
   {
     id: "e-04", clubId: c, type: "training", title: "Training Nachwuchs Pflicht",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(-3, 17, 0), endsAt: daysFromNow(-3, 18, 30),
-    teamIds: ["t-02"], rsvps: [],
+    audience: "teams", teamIds: ["t-02"], rsvps: [],
   },
   {
     id: "e-05", clubId: c, type: "training", title: "Kür-Feinschliff Leistung",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(-1, 18, 30), endsAt: daysFromNow(-1, 20, 30),
-    teamIds: ["t-03"], rsvps: [],
+    audience: "teams", teamIds: ["t-03"], rsvps: [],
     note: "Schwerpunkt: Sprungkombinationen für die Bezirksmeisterschaft",
   },
 
@@ -48,7 +48,7 @@ export const events: Event[] = [
     id: "e-06", clubId: c, type: "training", title: "Training Minis & Anfänger",
     location: "Pichterichhalle, Neckarsulm",
     startsAt: daysFromNow(0, 16, 0), endsAt: daysFromNow(0, 17, 0),
-    teamIds: ["t-01"],
+    audience: "teams", teamIds: ["t-01"],
     rsvps: [
       { memberId: "m-08", status: "going", respondedAt: daysFromNow(-1, 9, 12) },
       { memberId: "m-11", status: "going", respondedAt: daysFromNow(-1, 12, 40) },
@@ -60,7 +60,7 @@ export const events: Event[] = [
     id: "e-07", clubId: c, type: "training", title: "Training Nachwuchs Pflicht",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(1, 17, 0), endsAt: daysFromNow(1, 18, 30),
-    teamIds: ["t-02"],
+    audience: "teams", teamIds: ["t-02"],
     rsvps: [
       { memberId: "m-07", status: "going", respondedAt: daysFromNow(-1, 19, 2) },
       { memberId: "m-10", status: "going", respondedAt: daysFromNow(-1, 20, 15) },
@@ -73,7 +73,7 @@ export const events: Event[] = [
     id: "e-08", clubId: c, type: "training", title: "Training Kürgruppe Leistung",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(2, 18, 30), endsAt: daysFromNow(2, 20, 30),
-    teamIds: ["t-03"],
+    audience: "teams", teamIds: ["t-03"],
     rsvps: [
       { memberId: "m-16", status: "going", respondedAt: daysFromNow(0, 9, 0) },
       { memberId: "m-17", status: "going", respondedAt: daysFromNow(0, 9, 5) },
@@ -87,7 +87,7 @@ export const events: Event[] = [
     id: "e-09", clubId: c, type: "other", title: "Elternabend: Saisonplanung",
     location: "Vereinsheim RSV Neckarsulm",
     startsAt: daysFromNow(3, 19, 0), endsAt: daysFromNow(3, 20, 30),
-    teamIds: ["t-01", "t-02", "t-03"],
+    audience: "teams", teamIds: ["t-01", "t-02", "t-03"],
     rsvps: [
       { memberId: "m-09", status: "going", respondedAt: daysFromNow(-1, 21, 0) },
       { memberId: "m-12", status: "going", respondedAt: daysFromNow(-1, 21, 30) },
@@ -98,13 +98,13 @@ export const events: Event[] = [
     id: "e-10", clubId: c, type: "training", title: "Training Minis & Anfänger",
     location: "Pichterichhalle, Neckarsulm",
     startsAt: daysFromNow(4, 16, 0), endsAt: daysFromNow(4, 17, 0),
-    teamIds: ["t-01"], rsvps: [],
+    audience: "teams", teamIds: ["t-01"], rsvps: [],
   },
   {
     id: "e-11", clubId: c, type: "training", title: "Generalprobe Küren",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(6, 18, 0), endsAt: daysFromNow(6, 20, 30),
-    teamIds: ["t-02", "t-03"],
+    audience: "teams", teamIds: ["t-02", "t-03"],
     rsvps: [
       { memberId: "m-16", status: "going", respondedAt: daysFromNow(0, 15, 0) },
       { memberId: "m-17", status: "going", respondedAt: daysFromNow(0, 15, 3) },
@@ -116,7 +116,7 @@ export const events: Event[] = [
     id: "e-12", clubId: c, type: "competition", title: "Bezirksmeisterschaft Rollkunstlauf",
     location: "Rundsporthalle Ludwigsburg",
     startsAt: daysFromNow(9, 8, 30), endsAt: daysFromNow(9, 18, 0),
-    teamIds: ["t-02", "t-03"], competitionId: "c-01",
+    audience: "teams", teamIds: ["t-02", "t-03"], competitionId: "c-01",
     rsvps: [
       { memberId: "m-16", status: "going", respondedAt: daysFromNow(-4, 18, 0) },
       { memberId: "m-17", status: "going", respondedAt: daysFromNow(-4, 18, 30) },
@@ -132,20 +132,33 @@ export const events: Event[] = [
     id: "e-13", clubId: c, type: "training", title: "Training Nachwuchs Pflicht",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(11, 17, 0), endsAt: daysFromNow(11, 18, 30),
-    teamIds: ["t-02"], rsvps: [],
+    audience: "teams", teamIds: ["t-02"], rsvps: [],
   },
   {
     id: "e-14", clubId: c, type: "other", title: "Sommerfest mit Schnupperlaufen",
     location: "Vereinsgelände RSV Neckarsulm",
     startsAt: daysFromNow(23, 14, 0), endsAt: daysFromNow(23, 20, 0),
-    teamIds: ["t-01", "t-02", "t-03"], rsvps: [],
+    // Vereinsveranstaltung (audience "club") — deshalb OHNE teamIds, exakt wie
+    // im Seed (supabase/seed/seed.sql). Eine Vereinsveranstaltung MIT Teams
+    // weist die Datenbank mit 23514 zurück (Migration 0050).
+    audience: "club", teamIds: [], rsvps: [],
     note: "Kuchen-Slots werden im Vereinsleben-Board verteilt",
   },
   {
     id: "e-15", clubId: c, type: "training", title: "Training Kürgruppe Leistung",
     location: "Ballei-Sporthalle, Neckarsulm",
     startsAt: daysFromNow(13, 18, 30), endsAt: daysFromNow(13, 20, 30),
-    teamIds: ["t-03"], rsvps: [],
+    audience: "teams", teamIds: ["t-03"], rsvps: [],
+  },
+  {
+    // e-16: die zweite Vereinsveranstaltung — spiegelt supabase/seed/seed.sql.
+    // Ohne sie sähe der Mock-Modus (und damit JEDER Production-Build, siehe
+    // lib/data/config.ts:16-17) eine andere Welt als die Datenbank.
+    id: "e-16", clubId: c, type: "other", title: "Jahreshauptversammlung",
+    location: "Vereinsheim RSV Neckarsulm",
+    startsAt: daysFromNow(17, 19, 0), endsAt: daysFromNow(17, 21, 30),
+    audience: "club", teamIds: [], rsvps: [],
+    note: "Mit Vorstandswahl — stimmberechtigt sind alle Mitglieder ab 16 Jahren",
   },
 ];
 

@@ -90,11 +90,23 @@ export function EventCard({
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-[15.5px] font-bold text-ink">{event.title}</h3>
           <Badge tone={TYPE_TONE[event.type]}>{t(TYPE_LABEL_KEY[event.type])}</Badge>
-          {teamsOf(event, teams).map((team) => (
-            <Badge key={team.id} tone="neutral">
-              {team.name}
+          {/*
+            Vereinsveranstaltung: statt der Team-Chips ein eigener Marker — der
+            Termin gilt fuer den ganzen Verein und traegt deshalb per Definition
+            keine Teams (Migration 0050). Ohne diesen Marker sähe eine
+            Vereinsveranstaltung wie ein Termin ohne Zuordnung aus.
+          */}
+          {event.audience === "club" ? (
+            <Badge tone="brand" aria-label={t("audienceBadgeAria")}>
+              {t("audienceBadge")}
             </Badge>
-          ))}
+          ) : (
+            teamsOf(event, teams).map((team) => (
+              <Badge key={team.id} tone="neutral">
+                {team.name}
+              </Badge>
+            ))
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-ink-soft">

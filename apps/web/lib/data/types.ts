@@ -9,6 +9,7 @@ import type {
   Equipment,
   EquipmentReservation,
   Event,
+  EventAudience,
   EventType,
   Exercise,
   ExerciseCategory,
@@ -126,6 +127,8 @@ export interface CreateEventInput {
   /** ISO-Zeitstempel */
   startsAt: string;
   endsAt: string;
+  /** Vorgabe "teams". "club" darf nur der Vorstand — der Server prüft es. */
+  audience?: EventAudience;
   teamIds?: Id[];
   note?: string;
 }

@@ -158,6 +158,16 @@ export interface Rsvp {
   respondedAt?: string;
 }
 
+/**
+ * Zielgruppe eines Termins (Migration 0050).
+ *   "teams" — nur die zugeordneten Teams sehen ihn (Vorgabe, fail-closed)
+ *   "club"  — ausdrückliche Vereinsveranstaltung: jedes Mitglied sieht sie.
+ *             Setzen darf das nur der Vorstand (owner/admin/moderator) —
+ *             durchgesetzt wird das SERVERSEITIG (API + RLS-Trigger), das
+ *             Ausblenden des Häkchens ist reine Anzeige.
+ */
+export type EventAudience = "teams" | "club";
+
 export interface Event {
   id: Id;
   clubId: Id;
@@ -167,6 +177,8 @@ export interface Event {
   /** ISO-Zeitstempel */
   startsAt: string;
   endsAt: string;
+  audience: EventAudience;
+  /** Leer, wenn audience === "club" (eine Vereinsveranstaltung kennt keine Teams). */
   teamIds: Id[];
   rsvps: Rsvp[];
   note?: string;

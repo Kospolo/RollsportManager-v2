@@ -150,6 +150,7 @@ export const mockRepository: DataRepository = {
       location: input.location ?? "",
       startsAt: input.startsAt,
       endsAt: input.endsAt,
+      audience: input.audience ?? "teams",
       teamIds: input.teamIds ?? [],
       rsvps: [],
       note: input.note,
