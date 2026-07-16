@@ -123,6 +123,17 @@ export interface Member {
    * kein Foto hinterlegt → der Avatar fällt auf die farbigen Initialen zurück.
    */
   avatarUrl?: string;
+  /**
+   * Selbst-Profil („Über mich") — der EINZIGE Text, den ein Mitglied frei über
+   * sich einträgt. Bewusst NICHT in SENSITIVE_MEMBER_FIELDS: er ist für jedes
+   * Vereinsmitglied sichtbar, weil ihn die Person selbst und freiwillig
+   * verfasst hat (Gegenteil von Geburtsdatum/E-Mail, die erhoben werden).
+   *
+   * Fehlt/leer = nichts eingetragen → die Karte zeigt dann schlicht nichts,
+   * NIE „—" oder „unbekannt" (das würde eine Redaktion vortäuschen).
+   * Schreibweg: NUR updateMyProfile (PATCH /me, member_id = self).
+   */
+  aboutMe?: string;
 }
 
 /** Familienmodell: Erziehungsberechtigte:r ↔ Kind (beide sind Members). */

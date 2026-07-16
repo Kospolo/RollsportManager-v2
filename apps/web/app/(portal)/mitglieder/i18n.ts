@@ -137,6 +137,53 @@ export const mitgliederDict = {
     notFoundTitle: "Mitglied nicht gefunden",
     notFoundBody: "Unter dieser Adresse gibt es kein Mitglied — vielleicht wurde der Link falsch kopiert oder das Profil entfernt.",
     notFoundBack: "Zur Mitgliederliste",
+
+    /* ---------- Verzeichnis (Karten-Ansicht) ---------- */
+    dirCount: "{n} Menschen",
+    dirCountOne: "1 Mensch",
+    groupLabel: "Gruppierung",
+    groupNone: "Alle zusammen",
+    groupTeam: "Nach Team",
+    groupTeamless: "Ohne Team",
+    groupCount: "{n}",
+    showMore: "Weitere {n} anzeigen",
+    showingOf: "{shown} von {total}",
+    cardOpen: "Profil von {name} öffnen",
+    photoOf: "Foto von {name}",
+    monogramOf: "{name} — kein Foto hinterlegt",
+
+    /* ---------- Selbst-Profil („Über mich") ---------- */
+    aboutEyebrow: "Über mich",
+    aboutTitle: "Das schreibt {name} über sich",
+    aboutTitleSelf: "Das schreibst du über dich",
+    aboutEmptySelf: "Du hast noch nichts über dich eingetragen. Ein, zwei Sätze helfen den anderen im Verein, dich einzuordnen.",
+    aboutEditCta: "Über mich bearbeiten",
+    aboutAddCta: "Etwas über dich schreiben",
+    aboutSheetEyebrow: "Dein Profil",
+    aboutSheetTitle: "Über mich",
+    aboutField: "Was möchtest du über dich erzählen?",
+    aboutFieldPh: "z. B. Seit wann du dabei bist, welche Gruppe du läufst, worauf du hinarbeitest …",
+    aboutFieldHint: "Sichtbar für alle Mitglieder deines Vereins. Schreib nichts, was nicht jede:r lesen soll — keine Adresse, keine Telefonnummer.",
+    aboutRemaining: "noch {n} Zeichen",
+    aboutTooLong: "Bitte kürze auf höchstens {max} Zeichen.",
+    aboutCancel: "Abbrechen",
+    aboutSave: "Speichern",
+    aboutSavedToast: "Dein Profil ist aktualisiert.",
+    aboutSavedToastMock: "Dein Profil ist aktualisiert — Demo.",
+    aboutClearedToast: "Dein Text wurde entfernt.",
+    aboutNoChanges: "Nichts geändert.",
+    aboutForbidden: "Keine Berechtigung — dein Profil wurde nicht gespeichert.",
+    youBadge: "Du",
+
+    /* ---------- Direktnachricht ---------- */
+    messageCta: "Nachricht",
+    messageCtaLong: "Nachricht schreiben",
+    messageAria: "Nachricht an {name} schreiben",
+    messageSelfHint: "Das bist du.",
+
+    /* ---------- Rollenabhängige Bereiche ---------- */
+    restrictedEyebrow: "Nur für Trainerteam & Vorstand",
+    trainerOnlyHint: "Trainingsbeteiligung und Beitrittsdatum sehen nur Trainer:innen und der Vorstand.",
   },
   en: {
     title: "Members",
@@ -268,6 +315,53 @@ export const mitgliederDict = {
     notFoundTitle: "Member not found",
     notFoundBody: "There is no member at this address — the link may have been copied incorrectly or the profile removed.",
     notFoundBack: "Back to member list",
+
+    /* ---------- Directory (card view) ---------- */
+    dirCount: "{n} people",
+    dirCountOne: "1 person",
+    groupLabel: "Grouping",
+    groupNone: "All together",
+    groupTeam: "By team",
+    groupTeamless: "No team",
+    groupCount: "{n}",
+    showMore: "Show {n} more",
+    showingOf: "{shown} of {total}",
+    cardOpen: "Open profile of {name}",
+    photoOf: "Photo of {name}",
+    monogramOf: "{name} — no photo on file",
+
+    /* ---------- Self profile (“About me”) ---------- */
+    aboutEyebrow: "About me",
+    aboutTitle: "What {name} says about themselves",
+    aboutTitleSelf: "What you say about yourself",
+    aboutEmptySelf: "You haven’t written anything about yourself yet. A sentence or two helps others in the club place you.",
+    aboutEditCta: "Edit about me",
+    aboutAddCta: "Write something about yourself",
+    aboutSheetEyebrow: "Your profile",
+    aboutSheetTitle: "About me",
+    aboutField: "What would you like to share about yourself?",
+    aboutFieldPh: "e.g. how long you’ve been here, which group you skate in, what you’re working towards …",
+    aboutFieldHint: "Visible to every member of your club. Don’t write anything not everyone should read — no address, no phone number.",
+    aboutRemaining: "{n} characters left",
+    aboutTooLong: "Please shorten to {max} characters at most.",
+    aboutCancel: "Cancel",
+    aboutSave: "Save",
+    aboutSavedToast: "Your profile has been updated.",
+    aboutSavedToastMock: "Your profile has been updated — demo.",
+    aboutClearedToast: "Your text has been removed.",
+    aboutNoChanges: "Nothing changed.",
+    aboutForbidden: "No permission — your profile was not saved.",
+    youBadge: "You",
+
+    /* ---------- Direct message ---------- */
+    messageCta: "Message",
+    messageCtaLong: "Send a message",
+    messageAria: "Write a message to {name}",
+    messageSelfHint: "That’s you.",
+
+    /* ---------- Role-dependent areas ---------- */
+    restrictedEyebrow: "Coaches & board only",
+    trainerOnlyHint: "Only coaches and the board can see training attendance and the joining date.",
   },
 } satisfies Dict;
 

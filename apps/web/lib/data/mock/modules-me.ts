@@ -1,6 +1,7 @@
 import * as mock from "@/lib/mock";
 import type { MyProfile, NotificationPrefs, UserPreferences } from "@/lib/types";
 import type { MeRepository } from "../inputs-me";
+import { selfMember } from "./member-store";
 import { MOCK_SELF_PROFILE } from "./seed";
 
 /**
@@ -24,6 +25,8 @@ const profileStore = {
   birthDate: self.birthDate as string | undefined,
   // Profilfoto der eingeloggten Persona — removeMyPhoto leert es (→ Initialen).
   avatarUrl: self.avatarUrl as string | undefined,
+  // Selbst-Profil („Über mich") der eingeloggten Persona.
+  aboutMe: self.aboutMe as string | undefined,
 };
 
 /** Präferenz-Store der eingeloggten Persona (Default: DE, System-Theme, alles an). */
@@ -56,6 +59,7 @@ function buildProfile(): MyProfile {
         joinedOn: self.joinedAt || undefined,
         validUntil: self.guestAccessUntil,
         avatarUrl: profileStore.avatarUrl,
+        aboutMe: profileStore.aboutMe,
         createdAt: `${self.joinedAt || "2015-01-01"}T00:00:00.000Z`,
         updatedAt: preferencesStore.updatedAt,
       },
@@ -72,6 +76,20 @@ export const moduleRepositoryMe: MeRepository = {
     if (patch.lastName !== undefined) profileStore.lastName = patch.lastName;
     if (patch.email !== undefined) profileStore.email = patch.email ?? undefined;
     if (patch.birthDate !== undefined) profileStore.birthDate = patch.birthDate ?? undefined;
+    if (patch.aboutMe !== undefined) {
+      const trimmed = patch.aboutMe?.trim();
+      profileStore.aboutMe = trimmed ? trimmed : undefined;
+    }
+    // DURCHSCHREIBEN in den Verzeichnis-Store: sonst zeigt der Toast Erfolg,
+    // die eigene Mitglieder-Karte bleibt aber unverändert (serverseitig ist
+    // /me dieselbe Zeile in app.club_members — das muss der Mock spiegeln).
+    const me = selfMember();
+    me.firstName = profileStore.firstName;
+    me.lastName = profileStore.lastName;
+    me.email = profileStore.email;
+    me.birthDate = profileStore.birthDate;
+    me.aboutMe = profileStore.aboutMe;
+    me.avatarUrl = profileStore.avatarUrl;
     preferencesStore.updatedAt = nowIso();
     return buildProfile();
   },
@@ -103,6 +121,8 @@ export const moduleRepositoryMe: MeRepository = {
     // der Avatar fällt auf die Initialen zurück. Kein echter Blob → 0 entfernt.
     const had = profileStore.avatarUrl !== undefined;
     profileStore.avatarUrl = undefined;
+    // Auch hier durchschreiben — sonst zeigt das Verzeichnis das Foto weiter.
+    selfMember().avatarUrl = undefined;
     preferencesStore.updatedAt = nowIso();
     return { updatedMembers: had ? 1 : 0, removedBlobs: 0 };
   },

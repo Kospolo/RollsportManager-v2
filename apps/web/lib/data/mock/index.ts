@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { openInvoices } from "../derive";
+import { memberStore } from "./member-store";
 import { moduleRepository } from "./modules";
 import { moduleRepositoryBatch2 } from "./modules-batch2";
 import { moduleRepositoryBatch3 } from "./modules-batch3";
@@ -36,7 +37,6 @@ import { moduleRepositoryWettkampf } from "./modules-wettkampf";
  * sichtbar, bis die Seite neu geladen wird.
  */
 const createdEvents: Event[] = [];
-const memberStore: Member[] = mock.members.map((m) => ({ ...m, teamIds: [...m.teamIds] }));
 const teamStore: Team[] = mock.teams.map((t) => ({
   ...t,
   coachIds: [...t.coachIds],

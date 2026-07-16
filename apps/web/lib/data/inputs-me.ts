@@ -12,9 +12,9 @@ import type { MyProfile, NotificationPrefs, PreferenceTheme, UserPreferences } f
  */
 
 /**
- * Patch des EIGENEN Profils. Editierbar sind ausschließlich diese vier Felder;
+ * Patch des EIGENEN Profils. Editierbar sind ausschließlich diese fünf Felder;
  * Rolle/Status/Gültigkeit sind serverseitig gesperrt (Trigger P0001). null
- * leert E-Mail bzw. Geburtsdatum.
+ * leert E-Mail, Geburtsdatum bzw. das Selbst-Profil.
  */
 export interface UpdateMyProfileInput {
   firstName?: string;
@@ -22,7 +22,16 @@ export interface UpdateMyProfileInput {
   email?: string | null;
   /** ISO-Datum (YYYY-MM-DD) */
   birthDate?: string | null;
+  /**
+   * Selbst-Profil („Über mich") — freiwilliger Freitext, den JEDES
+   * Vereinsmitglied sehen darf. null/"" leert den Eintrag wieder.
+   * Wire-Feld: about_me (PATCH /me).
+   */
+  aboutMe?: string | null;
 }
+
+/** Max. Länge des Selbst-Profils — Client-Guard, der Server ist die Wahrheit. */
+export const ABOUT_ME_MAX = 280;
 
 /**
  * Patch der eigenen Präferenzen. notifications wird serverseitig PARTIELL

@@ -59,6 +59,11 @@ export interface MyProfileMembership {
    * API-Basis präfixiert). Fehlt = kein Foto → Avatar zeigt die Initialen.
    */
   avatarUrl?: string;
+  /**
+   * Selbst-Profil („Über mich") dieser Mitgliedschaft — freiwilliger Freitext,
+   * für alle Vereinsmitglieder sichtbar. Editierbar über updateMyProfile.
+   */
+  aboutMe?: string;
   createdAt: string;
   updatedAt: string;
 }

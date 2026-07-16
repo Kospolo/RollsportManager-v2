@@ -38,19 +38,24 @@ export const teams: Team[] = [
   { id: "t-03", clubId: c, name: "Kürgruppe Leistung", ageGroup: "U15+", coachIds: ["m-01", "m-06"], skaterIds: [] },
 ];
 
+/**
+ * Selbst-Profile („Über mich") — bewusst nur bei WENIGEN Personen gesetzt.
+ * Der Normalfall im echten Verein ist: nichts eingetragen. Die Karte muss
+ * genau so gut aussehen — deshalb darf der Seed das nicht schönfärben.
+ */
 export const members: Member[] = [
   // Vorstand, Verwaltung & Trainerteam
-  { id: "m-01", clubId: c, firstName: "Sandra", lastName: "Vogel", role: "coach", status: "active", email: "sandra.vogel@example.org", teamIds: ["t-02", "t-03"], joinedAt: "2015-09-01", avatarUrl: demoAvatar(210) },
-  { id: "m-02", clubId: c, firstName: "Jürgen", lastName: "Häberle", role: "owner", status: "active", email: "juergen.haeberle@example.org", teamIds: [], joinedAt: "1998-03-15" },
+  { id: "m-01", clubId: c, firstName: "Sandra", lastName: "Vogel", role: "coach", status: "active", email: "sandra.vogel@example.org", teamIds: ["t-02", "t-03"], joinedAt: "2015-09-01", avatarUrl: demoAvatar(210), aboutMe: "Trainerin für Pflicht und Kür. Seit 2015 dabei, selbst früher Kürläuferin. Sprecht mich jederzeit an — auch zwischen den Einheiten." },
+  { id: "m-02", clubId: c, firstName: "Jürgen", lastName: "Häberle", role: "owner", status: "active", email: "juergen.haeberle@example.org", teamIds: [], joinedAt: "1998-03-15", aboutMe: "Erster Vorsitzender. Kümmert sich um Halle, Verband und alles, was sonst niemand machen will." },
   { id: "m-03", clubId: c, firstName: "Beate", lastName: "Schäfer", role: "treasurer", status: "active", email: "beate.schaefer@example.org", teamIds: [], joinedAt: "2006-01-10" },
   { id: "m-04", clubId: c, firstName: "Thomas", lastName: "Krüger", role: "admin", status: "active", email: "thomas.krueger@example.org", teamIds: [], joinedAt: "2011-05-02" },
-  { id: "m-05", clubId: c, firstName: "Anna-Lena", lastName: "Böhm", role: "coach", status: "active", email: "annalena.boehm@example.org", teamIds: ["t-01", "t-02"], joinedAt: "2019-08-20" },
+  { id: "m-05", clubId: c, firstName: "Anna-Lena", lastName: "Böhm", role: "coach", status: "active", email: "annalena.boehm@example.org", teamIds: ["t-01", "t-02"], joinedAt: "2019-08-20", aboutMe: "Trainerin der Minis. Ich bringe den Kleinen das Fallen bei — und das Wiederaufstehen." },
   { id: "m-06", clubId: c, firstName: "Milena", lastName: "Öztürk", role: "guest_coach", status: "active", email: "milena.oeztuerk@example.org", teamIds: ["t-03"], joinedAt: dateFromNow(-14), guestAccessUntil: dateFromNow(30) },
 
   // Familie Grünewald
-  { id: "m-07", clubId: c, firstName: "Lina", lastName: "Grünewald", role: "member", status: "active", birthDate: "2014-04-12", teamIds: ["t-02"], joinedAt: "2021-09-01", avatarUrl: demoAvatar(320) },
+  { id: "m-07", clubId: c, firstName: "Lina", lastName: "Grünewald", role: "member", status: "active", birthDate: "2014-04-12", teamIds: ["t-02"], joinedAt: "2021-09-01", avatarUrl: demoAvatar(320), aboutMe: "Ich laufe am liebsten Kür zu Filmmusik. Mein Ziel: der Doppel-Rittberger." },
   { id: "m-08", clubId: c, firstName: "Emma", lastName: "Grünewald", role: "member", status: "active", birthDate: "2016-11-03", teamIds: ["t-01"], joinedAt: "2023-03-01" },
-  { id: "m-09", clubId: c, firstName: "Katrin", lastName: "Grünewald", role: "member", status: "active", email: "katrin.gruenewald@example.org", teamIds: [], joinedAt: "2021-09-01" },
+  { id: "m-09", clubId: c, firstName: "Katrin", lastName: "Grünewald", role: "member", status: "active", email: "katrin.gruenewald@example.org", teamIds: [], joinedAt: "2021-09-01", aboutMe: "Mama von Lina und Emma. Helfe beim Kuchenverkauf und fahre gern zu Wettkämpfen mit." },
 
   // Familie Müller
   { id: "m-10", clubId: c, firstName: "Sofia", lastName: "Müller", role: "member", status: "active", birthDate: "2013-02-27", teamIds: ["t-02"], joinedAt: "2020-01-15" },
@@ -63,7 +68,7 @@ export const members: Member[] = [
 
   // Läuferinnen und Läufer
   { id: "m-15", clubId: c, firstName: "Leonie", lastName: "Schröder", role: "member", status: "active", birthDate: "2012-05-30", teamIds: ["t-02"], joinedAt: "2019-09-01" },
-  { id: "m-16", clubId: c, firstName: "Maja", lastName: "Weiß", role: "member", status: "active", birthDate: "2011-01-22", teamIds: ["t-03"], joinedAt: "2018-09-01" },
+  { id: "m-16", clubId: c, firstName: "Maja", lastName: "Weiß", role: "member", status: "active", birthDate: "2011-01-22", teamIds: ["t-03"], joinedAt: "2018-09-01", aboutMe: "Kürgruppe. Lieblingselement: die Standwaage." },
   { id: "m-17", clubId: c, firstName: "Johanna", lastName: "Bär", role: "member", status: "active", birthDate: "2010-10-14", teamIds: ["t-03"], joinedAt: "2017-04-01" },
   { id: "m-18", clubId: c, firstName: "Charlotte", lastName: "Vogler", role: "member", status: "active", birthDate: "2009-06-05", teamIds: ["t-03"], joinedAt: "2016-09-01" },
   { id: "m-19", clubId: c, firstName: "Amelie", lastName: "Jäger", role: "member", status: "active", birthDate: "2012-12-01", teamIds: ["t-02"], joinedAt: "2020-09-01" },

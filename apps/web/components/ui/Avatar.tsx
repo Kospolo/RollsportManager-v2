@@ -4,10 +4,17 @@ import { useEffect, useState } from "react";
 import { data } from "@/lib/data";
 import { AVATAR_BG_CLASS, avatarInkClass, avatarTone, initials } from "@/lib/avatar";
 
+/**
+ * Größen. xl/2xl sind additiv für das Mitglieder-Verzeichnis („Menschen zuerst"
+ * groß gedacht): Bei 22 von 24 Demo-Mitgliedern gibt es KEIN Foto — in dieser
+ * Größe trägt deshalb das farbige Monogramm die Karte, nicht das Bild.
+ */
 const SIZE_CLASS = {
   s: "h-7 w-7 text-[10.5px]",
   m: "h-9 w-9 text-[12.5px]",
   l: "h-12 w-12 text-[16px]",
+  xl: "h-20 w-20 text-[26px]",
+  "2xl": "h-28 w-28 text-[38px]",
 } as const;
 
 /**

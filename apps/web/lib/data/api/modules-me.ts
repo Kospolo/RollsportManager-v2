@@ -20,12 +20,17 @@ export const moduleApiRepositoryMe: MeRepository = {
     return mapMyProfile(await apiClient.getMe());
   },
   async updateMyProfile(patch) {
-    const updated = await apiClient.patchMe({
+    // about_me ergänzt gerade der Backend-Trupp; die GENERIERTEN Contract-Typen
+    // (MeUpdate) kennen das Feld noch nicht, deshalb der eng gefasste Cast.
+    // ⚠️ NACH der Contract-Regenerierung: Cast entfernen, Feld direkt setzen.
+    const body = {
       first_name: patch.firstName,
       last_name: patch.lastName,
       email: patch.email,
       birth_date: patch.birthDate,
-    });
+      ...(patch.aboutMe !== undefined ? { about_me: patch.aboutMe } : {}),
+    };
+    const updated = await apiClient.patchMe(body as Parameters<typeof apiClient.patchMe>[0]);
     return mapMyProfile(updated);
   },
   async getMyPreferences() {

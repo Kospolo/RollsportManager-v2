@@ -11,28 +11,42 @@ import {
   fullName,
   isForbidden,
   isNotImplemented,
+  permissions,
   type AssignableRole,
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import type { MemberRole, MemberStatus } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge, StatusPill, type BadgeTone } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Select } from "@/components/ui/Field";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
+import { AboutMeSheet } from "../AboutMeSheet";
 import { mitgliederDict, roleKey, type MitgliederKey } from "../i18n";
-import { ageYears, ROLE_TONE, softNotImplemented, teamNames } from "../derive";
+import { ageYears, canSeeTrainerData, chatHref, ROLE_TONE, softNotImplemented, teamNames } from "../derive";
 import { AttendanceCard, DuesCard, FamilyCard } from "./DetailCards";
 
 /**
- * Mitglieder-Profil: Brotkrumen + Kopf mit Avatar/Rolle, Stammdaten-Karte
- * (inkl. Rolle-ändern-Select über die Facade: optimistisch + Rollback bei
- * Fehler, 403 als Klartext-Toast), Familien-Karte, Beitrags-Historie und
- * Anwesenheits-Quote. Alle Daten laden async über lib/data.
+ * Der Steckbrief. Oben der Mensch (großes Porträt, Name, Rolle, Team), dann
+ * das, was die Person SELBST über sich erzählt — und erst danach das, was der
+ * Verein über sie verwaltet.
+ *
+ * ROLLENABHÄNGIG, OHNE LÖCHER: Was jemand nicht sehen darf, wird nicht als
+ * gesperrte Zeile gezeigt, sondern gar nicht gebaut. Die API liefert die
+ * redigierten Felder ohnehin als null (SENSITIVE_MEMBER_FIELDS) — die Gates
+ * hier verhindern nur, dass daraus eine Karte voller „—" wird.
+ *
+ *   jedes Mitglied  → Porträt, Name, Rolle, Team(s), „Über mich", Nachricht
+ *   Trainer & höher → zusätzlich Beitritt und Trainingsbeteiligung
+ *   Verwaltung      → zusätzlich Stammdaten (E-Mail/Geburtstag) und Beiträge
+ *
+ * ⚠️ Kosmetik über der echten Durchsetzung, nicht statt ihr: ein 403 bleibt
+ * jederzeit möglich (Rollenwechsel → Toast + Rollback).
  */
 
 /** owner ist nie zuweisbar (Facade-Vertrag) — bleibt nur als Anzeige-Option. */
@@ -70,8 +84,8 @@ function DetailSkeleton() {
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5" aria-hidden="true">
       <Skeleton className="h-5 w-44" />
-      <div className="flex flex-wrap items-center gap-4">
-        <Skeleton className="h-14 w-14 rounded-full" />
+      <div className="flex flex-wrap items-center gap-5">
+        <Skeleton className="h-24 w-24 rounded-full" />
         <div className="grid gap-2">
           <Skeleton className="h-8 w-56" />
           <Skeleton className="h-4 w-72 max-w-full" />
@@ -95,19 +109,25 @@ export function MemberDetail({ id }: { id: string }) {
   const t = useT(mitgliederDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+  const { hasCap } = useCapabilities();
 
   const state = useData(
-    (repo) => Promise.all([repo.getMemberById(id), softNotImplemented(repo.getTeams())] as const),
+    (repo) =>
+      Promise.all([
+        repo.getMemberById(id),
+        softNotImplemented(repo.getTeams()),
+        repo.getCurrentUser(),
+      ] as const),
     [id],
   );
 
   /**
    * Optimistische Rollen-Anzeige — an die Mitglieds-ID gebunden, damit beim
    * Profilwechsel (Familien-Links) kein alter Override mitwandert.
-   * null = Server-Stand des geladenen Mitglieds.
    */
   const [override, setOverride] = useState<{ id: string; role: MemberRole } | null>(null);
   const [savingRole, setSavingRole] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const roleOverride = override !== null && override.id === id ? override.role : null;
 
   if (state.status === "loading") return <DetailSkeleton />;
@@ -129,7 +149,7 @@ export function MemberDetail({ id }: { id: string }) {
     );
   }
 
-  const [member, teams] = state.data;
+  const [member, teams, currentUser] = state.data;
 
   if (!member) {
     return (
@@ -146,9 +166,55 @@ export function MemberDetail({ id }: { id: string }) {
   }
 
   const name = fullName(member);
-  /** null ⇒ Teams in der aktiven Datenquelle nicht angebunden (Anzeige „—"). */
-  const memberTeams = teams === null ? null : teamNames(member, teams);
+  const memberTeams = teams === null ? [] : teamNames(member, teams);
   const role = roleOverride ?? member.role;
+
+  const perms = permissions(currentUser);
+  const isSelf = member.id === currentUser?.id;
+
+  /**
+   * Trainingsbeteiligung ANDERER: zwei Gates, beide müssen halten.
+   *
+   *  1. canSeeTrainerData — die ausdrückliche Ansage des Nutzers
+   *     („das kann Trainer und höher sehen, aber Rest nicht").
+   *  2. hasCap("attendance", "read_all") — die Fähigkeit aus
+   *     GET /me/capabilities, fail-closed (Ladefehler ⇒ Rang 0 ⇒ nichts).
+   *
+   * ⚠️ Warum BEIDE: app.role_permissions gibt `member` bis heute
+   * attendance = read_all (live nachgemessen, im Mock-Seed identisch). Gate 2
+   * allein würde die Beteiligung also weiterhin JEDEM Mitglied zeigen. Gate 1
+   * allein würde brechen, sobald jemand die Fähigkeit korrekt herabstuft.
+   * Zusammen: heute richtig, später automatisch strenger.
+   *
+   * Und beides bleibt Kosmetik — die Daten liefert die API einem `member`
+   * weiterhin aus, wenn er den Endpoint direkt ruft. Der echte Fix gehört in
+   * app.role_permissions (siehe Bericht).
+   */
+  const seeTrainerData = canSeeTrainerData(perms) && hasCap("attendance", "read_all");
+  const canManage = perms.canManageMembers || perms.isPlatformAdmin;
+  const canEditRole = perms.canChangeRole(member.role) && !isSelf;
+  const about = member.aboutMe?.trim();
+
+  /**
+   * PII (E-Mail/Geburtsdatum) spiegelt serverseitig maySeeFullRoster
+   * (SENSITIVE_MEMBER_FIELDS): nur Verwaltungs-/Finanz-Rollen — ein coach
+   * bekommt die Felder im api-Modus als null.
+   *
+   * ⚠️ Das Gate ist hier NICHT nur Kosmetik, sondern Mock-Treue: der Mock
+   * redigiert NICHT (lib/mock hat alle Geburtsdaten im Klartext). Ohne dieses
+   * Gate zeigt die Demo — die der Nutzer anklickt — die Geburtsdaten von
+   * Kindern an Rollen, denen die echte API sie verweigert. Der Screen sähe im
+   * Mock also freizügiger aus als in Produktion. Das eigene Profil ist
+   * ausgenommen: die eigenen Daten darf man immer sehen.
+   */
+  const showPii = canManage || isSelf;
+
+  /**
+   * Stammdaten-Karte NUR bauen, wenn wirklich etwas drin steht. Für ein plain
+   * member bliebe sonst eine Karte aus lauter „—", die wie ein Fehler aussieht.
+   */
+  const hasMaster = showPii && Boolean(member.email || member.birthDate);
+  const showMasterCard = hasMaster || canEditRole || (seeTrainerData && member.joinedAt);
 
   const changeRole = async (next: MemberRole) => {
     if (next === role || next === "owner" || savingRole) return;
@@ -162,7 +228,6 @@ export function MemberDetail({ id }: { id: string }) {
         { tone: "success" },
       );
     } catch (error) {
-      // Rollback auf den vorherigen Stand + verständlicher Fehler-Toast (403 = keine Berechtigung).
       setOverride(previous === member.role ? null : { id, role: previous });
       showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
         tone: "danger",
@@ -190,111 +255,181 @@ export function MemberDetail({ id }: { id: string }) {
         </span>
       </nav>
 
-      {/* Kopf: Mensch zuerst */}
-      <header className="flex flex-wrap items-center gap-4">
-        <Avatar personId={member.id} firstName={member.firstName} lastName={member.lastName} size="l" />
-        <div className="grid min-w-0 gap-1.5">
-          <h1 className="font-display text-display tracking-tight text-ink">{name}</h1>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <StatusPill tone={ROLE_TONE[role]}>{t(roleKey(role))}</StatusPill>
-            <Badge tone={STATUS_TONE[member.status]}>{t(STATUS_KEY[member.status])}</Badge>
-            {member.role === "guest_coach" && member.guestAccessUntil && (
-              <Badge tone="warn" icon="clock">
-                {t("guestUntil", { date: formatDateShort(member.guestAccessUntil, locale) })}
-              </Badge>
+      {/* DER STECKBRIEF — Mensch, Einordnung und Selbst-Gesagtes in EINER Karte.
+          Bewusst nicht als nackter Seitenkopf: Für ein plain member ist das oft
+          ALLES, was es zu sehen gibt (kein Beitritt, keine Stammdaten, keine
+          Beteiligung). Als Karte ist diese Ansicht dann eine vollständige,
+          ruhige Visitenkarte — als Kopfzeile wäre sie eine Überschrift über
+          einer leeren Seite. Gleiche Daten, völlig anderer Eindruck. */}
+      <Card>
+        <div className="flex flex-wrap items-center gap-5">
+          <Avatar
+            personId={member.id}
+            firstName={member.firstName}
+            lastName={member.lastName}
+            avatarUrl={member.avatarUrl}
+            size="2xl"
+          />
+          <div className="grid min-w-0 flex-1 gap-2">
+            <h1 className="font-display text-display tracking-tight text-ink">{name}</h1>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <StatusPill tone={ROLE_TONE[role]}>{t(roleKey(role))}</StatusPill>
+              {isSelf && <Badge tone="brand">{t("youBadge")}</Badge>}
+              <Badge tone={STATUS_TONE[member.status]}>{t(STATUS_KEY[member.status])}</Badge>
+              {member.role === "guest_coach" && member.guestAccessUntil && (
+                <Badge tone="warn" icon="clock">
+                  {t("guestUntil", { date: formatDateShort(member.guestAccessUntil, locale) })}
+                </Badge>
+              )}
+            </div>
+            {/* Teams als Badges; Beitritt NUR Trainer & höher. Sonst steht hier
+                schlicht nichts — nie „—", das wäre eine vorgetäuschte Lücke. */}
+            {(memberTeams.length > 0 || (seeTrainerData && member.joinedAt)) && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {memberTeams.map((team) => (
+                  <Badge key={team} tone="neutral">
+                    {team}
+                  </Badge>
+                ))}
+                {seeTrainerData && member.joinedAt && (
+                  <span className="text-caption text-ink-faint">
+                    {t("metaJoined", { date: formatDateShort(member.joinedAt, locale) })}
+                  </span>
+                )}
+              </div>
             )}
-            <span className="text-caption text-ink-faint">
-              {t("metaJoined", { date: formatDateShort(member.joinedAt, locale) })}
-              {" · "}
-              {memberTeams === null ? "—" : memberTeams.length > 0 ? memberTeams.join(" · ") : t("noTeam")}
-            </span>
+          </div>
+          {/* Genau EINE Beere-Aktion pro Sichtbereich (DESIGN-SYSTEM §3.1). */}
+          <div className="flex flex-none flex-wrap items-center gap-2.5">
+            {isSelf ? (
+              <Button icon="edit" onClick={() => setAboutOpen(true)}>
+                {about ? t("aboutEditCta") : t("aboutAddCta")}
+              </Button>
+            ) : (
+              <ButtonLink href={chatHref(member.id)} aria-label={t("messageAria", { name })}>
+                {t("messageCtaLong")}
+              </ButtonLink>
+            )}
           </div>
         </div>
-      </header>
+
+        {/* „Über mich" — der einzige Text, den die Person selbst schreibt, und
+            für ein Mitglied der einzige Inhalt über den Namen hinaus. Fehlt er
+            bei Fremden: nichts (kein leeres Versprechen). Bei einem selbst:
+            eine Einladung, etwas zu schreiben. */}
+        {about ? (
+          <div className="mt-5 border-t border-line pt-5">
+            <h2 className="eyebrow mb-1.5">
+              {isSelf ? t("aboutTitleSelf") : t("aboutTitle", { name: member.firstName })}
+            </h2>
+            <p className="whitespace-pre-line text-body text-ink">{about}</p>
+          </div>
+        ) : (
+          isSelf && (
+            <div className="mt-5 border-t border-line pt-5">
+              <h2 className="eyebrow mb-1.5">{t("aboutTitleSelf")}</h2>
+              <p className="text-body text-ink-soft">{t("aboutEmptySelf")}</p>
+            </div>
+          )
+        )}
+      </Card>
 
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        {/* Linke Spalte: Stammdaten + Familie */}
         <div className="grid gap-5">
-          <Card>
-            <CardHeader eyebrow={t("masterEyebrow")} title={t("masterTitle", { name: member.firstName })} />
-            <dl className="grid">
-              <DetailRow label={t("lblEmail")}>
-                {member.email ? (
-                  <span className="truncate">{member.email}</span>
-                ) : (
-                  <span className="text-ink-faint">{t("noEmail")}</span>
+          {showMasterCard && (
+            <Card>
+              <CardHeader eyebrow={t("masterEyebrow")} title={t("masterTitle", { name: member.firstName })} />
+              <dl className="grid">
+                {/* Jede Zeile erscheint NUR mit echtem Wert. Fehlt das Feld,
+                    weil die API es redigiert hat, gibt es keine Zeile — und
+                    damit auch keinen falschen Eindruck von „nicht gepflegt". */}
+                {showPii && member.email && (
+                  <DetailRow label={t("lblEmail")}>
+                    <span className="truncate">{member.email}</span>
+                  </DetailRow>
                 )}
-              </DetailRow>
-              <DetailRow label={t("lblBirth")}>
-                {member.birthDate ? (
-                  <>
+                {showPii && member.birthDate && (
+                  <DetailRow label={t("lblBirth")}>
                     <span className="tabular-nums">{formatDateShort(member.birthDate, locale)}</span>
                     <span className="text-caption text-ink-faint">
                       {t("ageYears", { age: ageYears(member.birthDate) })}
                     </span>
-                  </>
-                ) : (
-                  <span className="text-ink-faint">—</span>
+                  </DetailRow>
                 )}
-              </DetailRow>
-              <DetailRow label={t("lblJoined")}>
-                <span className="tabular-nums">{formatDateShort(member.joinedAt, locale)}</span>
-              </DetailRow>
-              <DetailRow label={t("lblTeams")}>
-                {memberTeams === null ? (
-                  <span className="text-ink-faint">—</span>
-                ) : memberTeams.length > 0 ? (
-                  memberTeams.map((team) => (
-                    <Badge key={team} tone="neutral">
-                      {team}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-ink-faint">{t("noTeam")}</span>
+                {seeTrainerData && member.joinedAt && (
+                  <DetailRow label={t("lblJoined")}>
+                    <span className="tabular-nums">{formatDateShort(member.joinedAt, locale)}</span>
+                  </DetailRow>
                 )}
-              </DetailRow>
-              <DetailRow label={t("lblStatus")}>
-                <Badge tone={STATUS_TONE[member.status]}>{t(STATUS_KEY[member.status])}</Badge>
-              </DetailRow>
-              {member.role === "guest_coach" && member.guestAccessUntil && (
-                <DetailRow label={t("lblAccess")}>
-                  <Badge tone="warn" icon="clock">
-                    {t("guestUntil", { date: formatDateShort(member.guestAccessUntil, locale) })}
-                  </Badge>
+                {memberTeams.length > 0 && (
+                  <DetailRow label={t("lblTeams")}>
+                    {memberTeams.map((team) => (
+                      <Badge key={team} tone="neutral">
+                        {team}
+                      </Badge>
+                    ))}
+                  </DetailRow>
+                )}
+                <DetailRow label={t("lblStatus")}>
+                  <Badge tone={STATUS_TONE[member.status]}>{t(STATUS_KEY[member.status])}</Badge>
                 </DetailRow>
+                {member.role === "guest_coach" && member.guestAccessUntil && (
+                  <DetailRow label={t("lblAccess")}>
+                    <Badge tone="warn" icon="clock">
+                      {t("guestUntil", { date: formatDateShort(member.guestAccessUntil, locale) })}
+                    </Badge>
+                  </DetailRow>
+                )}
+              </dl>
+
+              {/* Rolle ändern nur, wer es darf — sonst kein toter Select. */}
+              {canEditRole && (
+                <div className="mt-5">
+                  <Select
+                    label={t("roleSelect")}
+                    hint={dataSource === "api" ? t("roleHintApi") : t("roleHint")}
+                    value={role}
+                    disabled={savingRole}
+                    onChange={(event) => void changeRole(event.target.value as MemberRole)}
+                  >
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {t(roleKey(option))}
+                      </option>
+                    ))}
+                    <option value="owner" disabled>
+                      {t(roleKey("owner"))}
+                    </option>
+                  </Select>
+                </div>
               )}
-            </dl>
+            </Card>
+          )}
 
-            <div className="mt-5">
-              <Select
-                label={t("roleSelect")}
-                hint={dataSource === "api" ? t("roleHintApi") : t("roleHint")}
-                value={role}
-                disabled={savingRole}
-                onChange={(event) => void changeRole(event.target.value as MemberRole)}
-              >
-                {ROLE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {t(roleKey(option))}
-                  </option>
-                ))}
-                {/* Anzeige-Option: owner kann Bestand sein, ist aber nie zuweisbar. */}
-                <option value="owner" disabled>
-                  {t(roleKey("owner"))}
-                </option>
-              </Select>
-            </div>
-          </Card>
-
-          <FamilyCard memberId={member.id} />
+          {/* Familie: Verknüpfungen sind Verwaltungssicht. */}
+          {canManage && <FamilyCard memberId={member.id} />}
         </div>
 
-        {/* Rechte Spalte: Beiträge + Anwesenheit */}
         <div className="grid gap-5">
-          <DuesCard member={member} />
-          <AttendanceCard member={member} />
+          {/* Beiträge = Seriositätszone, strikt Finanz-Rollen. */}
+          {perms.canManageFinance || perms.isPlatformAdmin ? <DuesCard member={member} /> : null}
+
+          {/* Trainingsbeteiligung: Trainer & höher — bisher sah sie JEDES
+              Mitglied (role_permissions attendance=read_all für member).
+              Der Nutzer hat das ausdrücklich korrigiert. */}
+          {seeTrainerData && <AttendanceCard member={member} />}
         </div>
       </div>
+
+      {isSelf && aboutOpen && (
+        <AboutMeSheet
+          key={about ?? ""}
+          open={aboutOpen}
+          initial={about ?? ""}
+          onClose={() => setAboutOpen(false)}
+          onSaved={state.reload}
+        />
+      )}
     </div>
   );
 }

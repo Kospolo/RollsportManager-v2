@@ -129,6 +129,7 @@ export type {
   UpdateMyPreferencesInput,
   UpdateMyProfileInput,
 } from "./inputs-me";
+export { ABOUT_ME_MAX } from "./inputs-me";
 export type {
   CapabilityEnforcement,
   CapabilityLevel,

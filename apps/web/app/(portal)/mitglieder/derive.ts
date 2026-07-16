@@ -1,4 +1,4 @@
-import { isNotImplemented, memberById } from "@/lib/data";
+import { isNotImplemented, memberById, type Permissions } from "@/lib/data";
 import type { BadgeTone } from "@/components/ui/Badge";
 import type {
   Attendance,
@@ -63,12 +63,99 @@ export const ROLE_TONE: Record<MemberRole, BadgeTone> = {
   member: "neutral",
 };
 
+/* ---------- Sichtbarkeit ---------- */
+
+/**
+ * „Trainer und höher" — wer Trainingsbeteiligung und Beitrittsdatum ANDERER
+ * sehen darf (ausdrückliche Ansage des Nutzers). permissions.isTrainer deckt
+ * coach/moderator/admin/owner ab; treasurer kommt über canManageMembers dazu
+ * (er sieht joined_on serverseitig ohnehin schon).
+ *
+ * ⚠️ NUR Kosmetik: die verbindliche Durchsetzung ist serverseitig (RLS +
+ * SENSITIVE_MEMBER_FIELDS). Ein plain member bekommt die Felder gar nicht
+ * erst geliefert — dieses Gate verhindert nur, dass wir ihm leere Bereiche
+ * mit „—" hinstellen, wo in Wahrheit „du darfst das nicht sehen" gilt.
+ */
+export function canSeeTrainerData(perms: Permissions): boolean {
+  return perms.isTrainer || perms.canManageMembers || perms.isPlatformAdmin;
+}
+
+/**
+ * Zeigt dieses Mitglied irgendein serverseitig redigiertes Feld? Wird NICHT
+ * benutzt, um „gesperrt"-Hinweise zu rendern — sondern nur, um zu entscheiden,
+ * ob eine Karte/Sektion überhaupt gebaut wird. Ein null-Feld ist KEIN Fehler,
+ * es ist schlicht nicht da (siehe MemberCard/MemberDetail).
+ */
+export function hasAnyMasterData(member: Member): boolean {
+  return Boolean(member.email || member.birthDate);
+}
+
+/**
+ * Weg zur Direktnachricht. Es gibt bewusst KEINEN zweiten Nachrichtenweg im
+ * Mitglieder-Bereich — wir verlinken in den Chat und lassen den dortigen
+ * „neue Nachricht an …"-Flow die Arbeit machen.
+ *
+ * Erwartete Schnittstelle: /chat?to=<memberId> öffnet (bzw. erstellt) den
+ * Direktkanal mit dieser Person. Kennt der Chat den Parameter noch nicht,
+ * landet man schlicht im Chat — ein Klick mehr, aber nie eine Sackgasse.
+ */
+export function chatHref(memberId: string): string {
+  return `/chat?to=${encodeURIComponent(memberId)}`;
+}
+
 /* ---------- Teams ---------- */
 
 export function teamNames(member: Member, teams: Team[]): string[] {
   return member.teamIds
     .map((id) => teams.find((team) => team.id === id)?.name)
     .filter((name): name is string => Boolean(name));
+}
+
+/* ---------- Gruppierung (24 Mitglieder heute, 300 morgen) ---------- */
+
+export type GroupMode = "none" | "team";
+
+export type MemberGroup = {
+  /**
+   * Stabiler Schlüssel — Team-Id, "teamless" oder "all".
+   * "all" ⇒ ungruppiert (keine Überschrift), "teamless" ⇒ der Screen setzt die
+   * übersetzte Überschrift („Ohne Team"), weil derive.ts keine i18n kennt.
+   */
+  key: string;
+  /** Team-Name; null bei "all" und "teamless". */
+  title: string | null;
+  members: Member[];
+};
+
+/**
+ * Mitglieder nach Team gruppieren. Personen in mehreren Teams erscheinen in
+ * JEDER ihrer Gruppen (das ist im Verein die erwartete Lesart: „wer läuft in
+ * der Kürgruppe?"), Personen ohne Team sammeln sich am Ende.
+ *
+ * teams === null (Contract-Lücke im api-Modus) ⇒ es wird NICHT gruppiert,
+ * statt eine falsche „Ohne Team"-Sammelgruppe zu behaupten.
+ */
+export function groupMembers(
+  members: Member[],
+  teams: Team[] | null,
+  mode: GroupMode,
+): MemberGroup[] {
+  if (mode === "none" || teams === null) {
+    return [{ key: "all", title: null, members }];
+  }
+  const groups: MemberGroup[] = teams
+    .map((team) => ({
+      key: team.id,
+      title: team.name,
+      members: members.filter((member) => member.teamIds.includes(team.id)),
+    }))
+    .filter((group) => group.members.length > 0);
+
+  const teamless = members.filter(
+    (member) => !member.teamIds.some((id) => teams.some((team) => team.id === id)),
+  );
+  if (teamless.length > 0) groups.push({ key: "teamless", title: null, members: teamless });
+  return groups;
 }
 
 /* ---------- Beitragsstatus (Ampel) ---------- */
