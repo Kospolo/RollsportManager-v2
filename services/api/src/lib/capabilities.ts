@@ -31,6 +31,7 @@ import type { Tx } from '../db.js';
 import { withUser } from '../db.js';
 import type { AuthEnv } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
+import { hasOperatorOverride } from './operator-context.js';
 
 /**
  * Die Stufen-Skala (RBAC-DESIGN §2), in der Reihenfolge des DB-Enums
@@ -198,6 +199,17 @@ export async function requireCap(
  * Mitgliedschafts-Gate aus 0025 (deleted_at/status/valid_until).
  */
 export async function isClubMemberInDb(c: Context<AuthEnv>, clubId: string): Promise<boolean> {
+  // BETREIBER-EINSICHT (0051). Das ist KEINE Zutat, sondern das Einholen eines
+  // Rueckstands: app.is_club_member (0025:85-94) sagt fuer den eingeschalteten
+  // Betreiber laengst true — die API sagte hier bisher false und lieferte 403,
+  // waehrend die Policy daneben durchliess. Genau dieser Widerspruch war der
+  // gemeldete Befund. Fuer JEDEN anderen Aufrufer ist der Ausdruck unveraendert.
+  //
+  // roleKeys bleibt bewusst leer: der Betreiber IST kein Mitglied. Die
+  // Mitgliedschaft ist eine Tatsache, die Einsicht eine Befugnis — die beiden
+  // zu vermischen (also member_role_keys eine Rolle erfinden zu lassen) haette
+  // stillschweigend auch die Auswertungen und Zaehlungen verfaelscht.
+  if (hasOperatorOverride(c.get('claims'))) return true;
   const caps = await capsFor(c, clubId);
   return caps.roleKeys.length > 0;
 }
@@ -225,6 +237,12 @@ export async function requireClubRoleDb(
   clubId: string,
   roles: readonly string[],
 ): Promise<void> {
+  // BETREIBER-EINSICHT (0051) — owner-gleich, wie ueberall sonst auch. Die
+  // Aufrufer sind /reports/summary (COACH_ROLES) und clubs.ts (ADMIN_ROLES);
+  // beide Mengen enthalten 'owner'. Deckungsgleich mit der DB: app.has_club_role
+  // liefert bei eingeschaltetem Override ebenfalls true, die Policies dahinter
+  // lassen also genauso durch — kein Gate, das durchlaesst, wo RLS sperrt.
+  if (hasOperatorOverride(c.get('claims'))) return;
   const caps = await capsFor(c, clubId);
   if (!caps.roleKeys.some((k) => roles.includes(k))) {
     throw problem(

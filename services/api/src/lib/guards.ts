@@ -9,6 +9,7 @@
 
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
+import { hasOperatorOverride } from './operator-context.js';
 
 // ---------------------------------------------------------------------------
 // Role sets = the Referenz 1.3 capability matrix, mirrored from the DB helpers
@@ -62,11 +63,32 @@ export function clubRole(claims: AuthClaims, clubId: string): ClubRole | undefin
   return claims.club_roles[clubId];
 }
 
+/**
+ * BETREIBER-EINSICHT (Migration 0051) — die Rolle, mit der ein eingeschalteter
+ * Plattform-Admin in einem Verein auftritt.
+ *
+ * 'owner' ist hier keine Notluege, sondern die genaue Entsprechung dessen, was
+ * die Datenbank in derselben Lage tut: app.cap_rank liefert bei
+ * app.operator_override() den Rang 5 — exakt den Wert, den sonst nur die
+ * geschuetzte owner-Rolle bekommt (0025:225-243 / 0051), und
+ * app.can_change_member_role laesst ihn wie einen owner Rollen vergeben.
+ * Genau EIN Begriff von Betreiber-Autoritaet, in API und DB derselbe.
+ *
+ * Die drei Stellen, die den Rueckgabewert von requireClubRole auswerten
+ * (members.ts:155/198/294 -> canAssignRole/checkRoleChange), bekommen damit die
+ * richtige Antwort: der Betreiber darf jede Rolle vergeben. Die
+ * Selbstschutz-Regel dort greift trotzdem nie versehentlich — sie vergleicht
+ * target.profile_id mit claims.sub, und der Betreiber hat in keinem Verein eine
+ * Mitgliedszeile.
+ */
+const OPERATOR_CLUB_ROLE: ClubRole = 'owner';
+
 export function isClubMember(claims: AuthClaims, clubId: string): boolean {
-  return clubRole(claims, clubId) !== undefined;
+  return hasOperatorOverride(claims) || clubRole(claims, clubId) !== undefined;
 }
 
 export function hasClubRole(claims: AuthClaims, clubId: string, roles: readonly ClubRole[]): boolean {
+  if (hasOperatorOverride(claims)) return true;
   const role = clubRole(claims, clubId);
   return role !== undefined && roles.includes(role);
 }
@@ -74,8 +96,12 @@ export function hasClubRole(claims: AuthClaims, clubId: string, roles: readonly 
 /** Throw 403 unless the caller is a member of the club (any role). */
 export function requireClubMember(claims: AuthClaims, clubId: string): ClubRole {
   const role = clubRole(claims, clubId);
-  if (role === undefined) throw problem(403, 'Forbidden', 'Not a member of this club');
-  return role;
+  if (role !== undefined) return role;
+  // Betreiber-Einsicht: nur, wenn die Audit-Middleware sie eingeschaltet hat
+  // (und das tut sie nur mit Protokollzeile). Der blosse Plattform-Admin-Claim
+  // fuehrt weiterhin hierher ins 403 — 0051 haengt den Zugriff an den Nachweis.
+  if (hasOperatorOverride(claims)) return OPERATOR_CLUB_ROLE;
+  throw problem(403, 'Forbidden', 'Not a member of this club');
 }
 
 /** Throw 403 unless the caller holds one of the given roles in the club. */

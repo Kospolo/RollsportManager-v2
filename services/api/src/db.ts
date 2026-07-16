@@ -26,6 +26,7 @@
 import postgres from 'postgres';
 import type { Sql, TransactionSql } from 'postgres';
 import { getConfig } from './config.js';
+import { hasOperatorOverride } from './lib/operator-context.js';
 import type { AuthClaims } from './middleware/auth.js';
 
 let pool: Sql | undefined;
@@ -123,7 +124,21 @@ export async function withUser<T>(claims: AuthClaims, fn: (tx: Tx) => Promise<T>
   const sql = getPool();
   return sql.begin(async (tx) => {
     // set_config(..., true) = SET LOCAL: scoped to this transaction.
+    // JSON.stringify laesst die Betreiber-Markierung (Symbol, siehe
+    // lib/operator-context.ts) automatisch fallen -> die Zusage oben ("die
+    // Datenbank sieht EXAKT das, was das Token gesagt hat") bleibt woertlich wahr.
     await tx`select set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`;
+    // Die BETREIBER-EINSICHT (Migration 0051). Bewusst KEIN Claim, sondern eine
+    // eigene Sitzungsvariable: app.operator_override() verlangt sie ZUSAETZLICH
+    // zum signierten Plattform-Admin-Claim. Gesetzt wird sie nur, wenn
+    // middleware/operator-access.ts den Zugriff markiert hat — und die schreibt
+    // dafuer eine Protokollzeile. Ohne Markierung bleibt die Variable ungesetzt
+    // und der Plattform-Admin ist in Vereinen genau so gestellt wie vor 0051.
+    // Noch VOR dem Rollenwechsel, also als Pool-Rolle: so haengt der Schalter an
+    // keiner Berechtigung der Rolle `authenticated`.
+    if (hasOperatorOverride(claims)) {
+      await tx`select set_config('app.operator_override', 'on', true)`;
+    }
     await tx`select set_config('role', 'authenticated', true)`;
     return fn(tx);
   }) as Promise<T>;

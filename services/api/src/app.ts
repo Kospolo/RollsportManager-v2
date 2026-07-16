@@ -7,6 +7,7 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { cors } from 'hono/cors';
 import type { AuthEnv } from './middleware/auth.js';
 import { requireAuth } from './middleware/auth.js';
+import { operatorAccess } from './middleware/operator-access.js';
 import { onError, onNotFound, requestId } from './middleware/error.js';
 import { getConfig } from './config.js';
 import { healthRouter } from './routes/health.js';
@@ -118,6 +119,13 @@ export function createApp(): OpenAPIHono<AuthEnv> {
     if (PUBLIC_PREFIXES.some((p) => c.req.path.startsWith(p))) return next();
     return requireAuth(c, next);
   });
+  // DER BETREIBER-ZUGRIFF UND SEIN PROTOKOLL (Migration 0051). Muss NACH
+  // requireAuth stehen: die Middleware entscheidet anhand der VERIFIZIERTEN
+  // Claims. Fuer jeden Nicht-Plattform-Admin ist sie ein reiner Durchreicher.
+  // Sie steht bewusst hier und nicht in einzelnen Routen — sie ist zugleich der
+  // Schalter, der den Betreiber-Zugriff ueberhaupt erst einschaltet, und die
+  // Stelle, die ihn protokolliert. Beides ist untrennbar (siehe Dateikopf).
+  app.use('*', operatorAccess);
   app.onError(onError);
   app.notFound(onNotFound);
 
