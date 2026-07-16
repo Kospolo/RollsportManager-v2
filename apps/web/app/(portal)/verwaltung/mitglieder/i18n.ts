@@ -34,6 +34,7 @@ export const mitgliederVerwaltungDict = {
     stActive: "Aktiv",
     stInactive: "Inaktiv",
     stPending: "Ausstehend",
+    stRejected: "Abgelehnt",
 
     listEyebrow: "Übersicht",
     listTitle: "Alle im Verein",
@@ -63,6 +64,7 @@ export const mitgliederVerwaltungDict = {
     statusActive: "Aktiv",
     statusInactive: "Inaktiv",
     statusPending: "Ausstehend",
+    statusRejected: "Abgelehnt",
 
     readOnlyNote:
       "Nur-Lese-Ansicht: Zum Bearbeiten von Stammdaten und Rollen brauchst du Mitglieder-Verwaltungsrechte (Kassenwart, Moderation, Verwaltung oder Vorstand).",
@@ -135,6 +137,7 @@ export const mitgliederVerwaltungDict = {
     stActive: "Active",
     stInactive: "Inactive",
     stPending: "Pending",
+    stRejected: "Rejected",
 
     listEyebrow: "Overview",
     listTitle: "Everyone in the club",
@@ -164,6 +167,7 @@ export const mitgliederVerwaltungDict = {
     statusActive: "Active",
     statusInactive: "Inactive",
     statusPending: "Pending",
+    statusRejected: "Rejected",
 
     readOnlyNote:
       "Read-only view: editing records and roles needs member-management rights (treasurer, moderation, admin or board).",
@@ -241,6 +245,11 @@ export function statusKey(status: MemberStatus): MitgliederVerwaltungKey {
       return "statusActive";
     case "inactive":
       return "statusInactive";
+    case "rejected":
+      // Eigener Fall, KEIN default. Hier war der Fehler am teuersten: das
+      // `default` haette "rejected" als "Ausstehend" beschriftet — ein
+      // abgelehnter Antrag saehe fuer den Vorstand aus wie ein offener.
+      return "statusRejected";
     default:
       return "statusPending";
   }

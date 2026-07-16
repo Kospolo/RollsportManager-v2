@@ -29,8 +29,9 @@ import {
 import { withServiceRole, withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { ADMIN_ROLES } from '../lib/guards.js';
-import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
+import { requireClubRoleDb } from '../lib/capabilities.js';
 import { clientIp, enforceRateLimits } from '../lib/rate-limit.js';
+import { recordAcknowledgements } from '../lib/consent.js';
 
 export const clubsRouter = createRouter();
 
@@ -124,25 +125,33 @@ clubsRouter.openapi(
 // Zeile im Zugriffslog.
 //
 // ZWEI Schranken, und die zweite ist die, die zaehlt:
-//   * requireCap (hier) liefert ein ehrliches 403 mit lesbarem Text.
-//   * app.club_join_code() prueft has_cap NOCHMAL in der Datenbank. Faellt diese
-//     Route weg, wird sie umgangen oder vergisst jemand den Guard, bleibt der
-//     Code trotzdem verschlossen (42501 -> 403). Ohne diese zweite Schranke
+//   * requireClubRoleDb (hier) liefert ein ehrliches 403 mit lesbarem Text.
+//   * app.club_join_code() prueft die Rolle NOCHMAL in der Datenbank. Faellt
+//     diese Route weg, wird sie umgangen oder vergisst jemand den Guard, bleibt
+//     der Code trotzdem verschlossen (42501 -> 403). Ohne diese zweite Schranke
 //     waere das Spaltenrecht aus 0035 fuer die Berechtigten nur ein
 //     Service-Mode-Schluessel unter der Fussmatte.
+//
+// DAS GATE IST owner/admin/moderator, NICHT members:manage (0041). 0035 fragte
+// den Katalog (has_cap('members','manage')) und liess damit auch den treasurer
+// durch - begruendet mit "wer Mitglieder anlegen darf, ...". Das stimmt nicht:
+// club_members_insert ist owner/admin (0002:321-323), der treasurer darf es
+// NICHT. Fuer ihn waere der Code der einzige Weg, Menschen in den Verein zu
+// bringen. Die Regel steht genau einmal - in app.can_read_join_code() (0041),
+// die auch die RLS auf app.club_join_codes fahrt.
 // ---------------------------------------------------------------------------
 clubsRouter.openapi(
   createRoute({
     method: 'get',
     path: '/clubs/{clubId}/join-code',
     tags: ['clubs'],
-    summary: 'Vereinscode lesen (nur Mitglieder-Verwaltung) / Read the club join code (members:manage)',
+    summary: 'Vereinscode lesen (owner/admin/moderator) / Read the club join code',
     description:
-      'Liefert den Einladungscode des Vereins. Erfordert die Faehigkeit "members" auf Stufe "manage" - ' +
-      'wer den Roster verwaltet, verwaltet auch die Eintrittskarte. Der Code steht seit 0035 NICHT mehr ' +
-      'am Club-Objekt (GET /clubs lieferte ihn bis dahin an jedes Mitglied, auch an Kinder); das Leserecht ' +
-      'auf die Spalte ist der Rolle authenticated in der Datenbank entzogen. / Returns the club invite code. ' +
-      'Requires capability "members" at level "manage".',
+      'Liefert den juengsten Einladungscode des Vereins. Erfordert owner, admin oder moderator - ' +
+      'dieselbe Rollenliste, die den Code rotieren und widerrufen darf: wer ihn sieht, kann ihn auch ' +
+      'einziehen. Der Code steht seit 0035 NICHT mehr am Club-Objekt (GET /clubs lieferte ihn bis dahin ' +
+      'an jedes Mitglied, auch an Kinder); das Leserecht auf die Spalte ist der Rolle authenticated in ' +
+      'der Datenbank entzogen. / Returns the club\'s most recent invite code. Requires owner, admin or moderator.',
     security: [{ bearerAuth: [] }],
     request: { params: clubIdParam },
     responses: {
@@ -152,18 +161,18 @@ clubsRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    await requireCap(c, clubId, 'members', 'manage');
+    await requireClubRoleDb(c, clubId, ADMIN_ROLES);
 
     // withUser, NICHT withServiceRole: app.club_join_code ist security definer
-    // und liest has_cap aus der aufrufenden Sitzung. Im Service-Mode gaebe es
-    // keinen `sub` - has_cap waere false und die Funktion wuerde den eigenen
-    // Aufrufer aussperren. Der Gate lebt von der Impersonation.
+    // und liest die Rolle aus der aufrufenden Sitzung. Im Service-Mode gaebe es
+    // keinen `sub` - can_read_join_code waere false und die Funktion wuerde den
+    // eigenen Aufrufer aussperren. Der Gate lebt von der Impersonation.
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`select club_id, join_code, join_code_expires_at, join_code_revoked_at
            from app.club_join_code(${clubId})`,
     );
     // 0 Zeilen = Verein weg oder soft-deleted. Wer nicht darf, ist hier nie
-    // angekommen (requireCap 403, sonst 42501 aus der Funktion).
+    // angekommen (requireClubRoleDb 403, sonst 42501 aus der Funktion).
     if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
     return c.json(clubJoinCodeSchema.parse(rows[0]), 200);
   },
@@ -319,14 +328,26 @@ clubsRouter.openapi(
                   ${tx.json({ tier: 'pro', status: 'trial' })})
           returning valid_until`;
 
-        // Einwilligungen - je Zweck eine Zeile (Art. 7 Abs. 2 DSGVO).
-        for (const purpose of ['terms', 'privacy'] as const) {
-          await tx`
-            insert into app.consents
-              (club_id, member_id, subject_profile_id, purpose, granted, granted_by_profile_id, evidence)
-            values (${club.id}, ${member['id'] as string}, ${claims.sub}, ${purpose}, true, ${claims.sub},
-                    ${tx.json({ surface: 'POST /clubs' })})`;
-        }
+        // KENNTNISNAHME, nicht Einwilligung (0039).
+        //
+        // Bis hier landeten terms/privacy als Zeilen in app.consents mit
+        // granted=true. Das war aus zwei Gruenden falsch, und 0039 weist es
+        // jetzt per CHECK ab - diese Schleife WAERE zur Laufzeit gebrochen
+        // (kein vitest faehrt sie, deshalb waeren die Gates gruen geblieben):
+        //   * terms = Vertragsschluss (Art. 6 Abs. 1 lit. b), privacy =
+        //     Informationspflicht (Art. 13). In beides willigt man nicht ein,
+        //     und beides ist nicht frei widerruflich (Art. 7 Abs. 3).
+        //   * Pflichthaken in einer Tabelle namens "consents" faerben auf das
+        //     daneben stehende Freiwillige ab (Kopplungsverbot, Art. 7 Abs. 4).
+        // Der Nachweis zeigt jetzt auf eine unveraenderliche Fassung
+        // (internal.legal_documents) - ohne die gibt es ein ehrliches 409
+        // statt einer Anmeldung, die hinterher nichts belegt.
+        await recordAcknowledgements(tx, {
+          profileId: claims.sub,
+          clubId: club.id,
+          kinds: ['terms', 'privacy'],
+          surface: 'POST /clubs',
+        });
 
         // Spaltenliste, obwohl hier service_role laeuft und `*` durchginge:
         // der Code steht schon in `club.join_code` (aus dem INSERT-RETURNING)

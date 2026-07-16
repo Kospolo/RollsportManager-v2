@@ -23,6 +23,7 @@ export const STATUS_TONE: Record<MemberStatus, BadgeTone> = {
   active: "success",
   pending: "info",
   inactive: "neutral",
+  rejected: "warn",
 };
 
 /** Vollständige Jahre aus einem ISO-Geburtsdatum (lokale Zeit). */

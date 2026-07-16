@@ -63,6 +63,7 @@ public enum ClubRole: String, Codable, CaseIterable, Sendable, Equatable {
 
 public enum MemberStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case pending = "pending"
+    case rejected = "rejected"
     case active = "active"
     case inactive = "inactive"
     case left = "left"
@@ -75,6 +76,22 @@ public enum AssignableClubRole: String, Codable, CaseIterable, Sendable, Equatab
     case coach = "coach"
     case member = "member"
     case guestCoach = "guest_coach"
+}
+
+public enum ConsentPurpose: String, Codable, CaseIterable, Sendable, Equatable {
+    case terms = "terms"
+    case privacy = "privacy"
+    case photosInternal = "photos_internal"
+    case photosPublic = "photos_public"
+    case chat = "chat"
+    case newsletter = "newsletter"
+}
+
+public enum RealConsentPurpose: String, Codable, CaseIterable, Sendable, Equatable {
+    case photosInternal = "photos_internal"
+    case photosPublic = "photos_public"
+    case chat = "chat"
+    case newsletter = "newsletter"
 }
 
 public enum WaitlistKind: String, Codable, CaseIterable, Sendable, Equatable {
@@ -315,6 +332,20 @@ public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case deleted = "deleted"
 }
 
+/// Inline enum of EffectiveConsent.state (hoisted by codegen).
+public enum EffectiveConsentState: String, Codable, CaseIterable, Sendable, Equatable {
+    case valid = "valid"
+    case revoked = "revoked"
+    case expiredAge16 = "expired_age_16"
+}
+
+/// Inline enum of ClubModuleState.enforcement (hoisted by codegen).
+public enum ClubModuleStateEnforcement: String, Codable, CaseIterable, Sendable, Equatable {
+    case enforced = "enforced"
+    case partial = "partial"
+    case menuOnly = "menu_only"
+}
+
 /// Inline enum of PlatformEntitlementRow.source (hoisted by codegen).
 public enum PlatformEntitlementRowSource: String, Codable, CaseIterable, Sendable, Equatable {
     case stripe = "stripe"
@@ -490,7 +521,6 @@ public struct Club: Codable, Equatable, Sendable {
     public var city: String?
     public var discipline: String?
     public var foundedYear: Int?
-    public var joinCode: String?
     public var settings: [String: JSONValue]
     public var createdAt: String
     public var updatedAt: String
@@ -502,7 +532,6 @@ public struct Club: Codable, Equatable, Sendable {
         case city
         case discipline
         case foundedYear = "founded_year"
-        case joinCode = "join_code"
         case settings
         case createdAt = "created_at"
         case updatedAt = "updated_at"
@@ -515,7 +544,6 @@ public struct Club: Codable, Equatable, Sendable {
         city: String? = nil,
         discipline: String? = nil,
         foundedYear: Int? = nil,
-        joinCode: String? = nil,
         settings: [String: JSONValue],
         createdAt: String,
         updatedAt: String
@@ -526,7 +554,6 @@ public struct Club: Codable, Equatable, Sendable {
         self.city = city
         self.discipline = discipline
         self.foundedYear = foundedYear
-        self.joinCode = joinCode
         self.settings = settings
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -564,6 +591,33 @@ public struct Problem: Codable, Equatable, Sendable {
         self.detail = detail
         self.instance = instance
         self.requestId = requestId
+    }
+}
+
+public struct ClubJoinCode: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var joinCode: String?
+    public var joinCodeExpiresAt: String?
+    public var joinCodeRevokedAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case joinCode = "join_code"
+        case joinCodeExpiresAt = "join_code_expires_at"
+        case joinCodeRevokedAt = "join_code_revoked_at"
+    }
+
+    public init(
+        clubId: String,
+        joinCode: String? = nil,
+        joinCodeExpiresAt: String? = nil,
+        joinCodeRevokedAt: String? = nil
+    ) {
+        self.clubId = clubId
+        self.joinCode = joinCode
+        self.joinCodeExpiresAt = joinCodeExpiresAt
+        self.joinCodeRevokedAt = joinCodeRevokedAt
     }
 }
 
@@ -794,35 +848,43 @@ public struct ClubJoinCodeRotated: Codable, Equatable, Sendable {
     public var clubId: String
     public var joinCode: String
     public var joinCodeExpiresAt: String?
+    public var previousCodeValidUntil: String?
 
     enum CodingKeys: String, CodingKey {
         case clubId = "club_id"
         case joinCode = "join_code"
         case joinCodeExpiresAt = "join_code_expires_at"
+        case previousCodeValidUntil = "previous_code_valid_until"
     }
 
     public init(
         clubId: String,
         joinCode: String,
-        joinCodeExpiresAt: String? = nil
+        joinCodeExpiresAt: String? = nil,
+        previousCodeValidUntil: String? = nil
     ) {
         self.clubId = clubId
         self.joinCode = joinCode
         self.joinCodeExpiresAt = joinCodeExpiresAt
+        self.previousCodeValidUntil = previousCodeValidUntil
     }
 }
 
 public struct ClubJoinCodeRotateInput: Codable, Equatable, Sendable {
     public var expiresInDays: Int?
+    public var overlapHours: Int?
 
     enum CodingKeys: String, CodingKey {
         case expiresInDays = "expires_in_days"
+        case overlapHours = "overlap_hours"
     }
 
     public init(
-        expiresInDays: Int? = nil
+        expiresInDays: Int? = nil,
+        overlapHours: Int? = nil
     ) {
         self.expiresInDays = expiresInDays
+        self.overlapHours = overlapHours
     }
 }
 
@@ -1108,6 +1170,101 @@ public struct Deleted: Codable, Equatable, Sendable {
     ) {
         self.status = status
         self.id = id
+    }
+}
+
+public struct EffectiveConsent: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String?
+    /// Format: uuid
+    public var subjectProfileId: String?
+    public var purpose: ConsentPurpose
+    /// Format: uuid
+    public var grantedByProfileId: String
+    /// Format: uuid
+    public var legalDocumentId: String?
+    public var policyVersion: String?
+    public var recordedAt: String
+    public var effective: Bool
+    public var recordedGranted: Bool
+    public var grantedByGuardian: Bool
+    public var state: EffectiveConsentState
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case subjectProfileId = "subject_profile_id"
+        case purpose
+        case grantedByProfileId = "granted_by_profile_id"
+        case legalDocumentId = "legal_document_id"
+        case policyVersion = "policy_version"
+        case recordedAt = "recorded_at"
+        case effective
+        case recordedGranted = "recorded_granted"
+        case grantedByGuardian = "granted_by_guardian"
+        case state
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        memberId: String? = nil,
+        subjectProfileId: String? = nil,
+        purpose: ConsentPurpose,
+        grantedByProfileId: String,
+        legalDocumentId: String? = nil,
+        policyVersion: String? = nil,
+        recordedAt: String,
+        effective: Bool,
+        recordedGranted: Bool,
+        grantedByGuardian: Bool,
+        state: EffectiveConsentState
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.memberId = memberId
+        self.subjectProfileId = subjectProfileId
+        self.purpose = purpose
+        self.grantedByProfileId = grantedByProfileId
+        self.legalDocumentId = legalDocumentId
+        self.policyVersion = policyVersion
+        self.recordedAt = recordedAt
+        self.effective = effective
+        self.recordedGranted = recordedGranted
+        self.grantedByGuardian = grantedByGuardian
+        self.state = state
+    }
+}
+
+public struct ConsentDeclare: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var memberId: String
+    public var purpose: RealConsentPurpose
+    public var granted: Bool
+    public var policyVersion: String?
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+        case purpose
+        case granted
+        case policyVersion = "policy_version"
+    }
+
+    public init(
+        memberId: String,
+        purpose: RealConsentPurpose,
+        granted: Bool,
+        policyVersion: String? = nil
+    ) {
+        self.memberId = memberId
+        self.purpose = purpose
+        self.granted = granted
+        self.policyVersion = policyVersion
     }
 }
 
@@ -1873,6 +2030,78 @@ public struct TeamCoachesSet: Codable, Equatable, Sendable {
         memberIds: [String]
     ) {
         self.memberIds = memberIds
+    }
+}
+
+public struct ClubModuleState: Codable, Equatable, Sendable {
+    public var moduleKey: String
+    public var labelDe: String
+    public var labelEn: String
+    public var descDe: String
+    public var descEn: String
+    public var sort: Int
+    public var core: Bool
+    public var requiresPro: Bool
+    public var enforcement: ClubModuleStateEnforcement?
+    public var enabled: Bool
+    public var proOk: Bool
+    public var available: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case moduleKey = "module_key"
+        case labelDe = "label_de"
+        case labelEn = "label_en"
+        case descDe = "desc_de"
+        case descEn = "desc_en"
+        case sort
+        case core
+        case requiresPro = "requires_pro"
+        case enforcement
+        case enabled
+        case proOk = "pro_ok"
+        case available
+    }
+
+    public init(
+        moduleKey: String,
+        labelDe: String,
+        labelEn: String,
+        descDe: String,
+        descEn: String,
+        sort: Int,
+        core: Bool,
+        requiresPro: Bool,
+        enforcement: ClubModuleStateEnforcement? = nil,
+        enabled: Bool,
+        proOk: Bool,
+        available: Bool
+    ) {
+        self.moduleKey = moduleKey
+        self.labelDe = labelDe
+        self.labelEn = labelEn
+        self.descDe = descDe
+        self.descEn = descEn
+        self.sort = sort
+        self.core = core
+        self.requiresPro = requiresPro
+        self.enforcement = enforcement
+        self.enabled = enabled
+        self.proOk = proOk
+        self.available = available
+    }
+}
+
+public struct ClubModuleSet: Codable, Equatable, Sendable {
+    public var enabled: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case enabled
+    }
+
+    public init(
+        enabled: Bool
+    ) {
+        self.enabled = enabled
     }
 }
 

@@ -23,7 +23,6 @@ export interface Club {
   "city": string | null;
   "discipline": string | null;
   "founded_year": number | null;
-  "join_code": string | null;
   "settings": Record<string, unknown>;
   "created_at": string;
   "updated_at": string;
@@ -38,6 +37,13 @@ export interface Problem {
   "request_id"?: string;
 }
 
+export interface ClubJoinCode {
+  "club_id": string;
+  "join_code": string | null;
+  "join_code_expires_at": string | null;
+  "join_code_revoked_at": string | null;
+}
+
 export interface ClubUpdate {
   "name"?: string;
   "short_name"?: string | null;
@@ -49,8 +55,8 @@ export interface ClubUpdate {
 export type ClubRole = "owner" | "admin" | "moderator" | "treasurer" | "coach" | "member" | "guest_coach";
 export const ClubRoleValues: readonly ClubRole[] = ["owner", "admin", "moderator", "treasurer", "coach", "member", "guest_coach"] as const;
 
-export type MemberStatus = "pending" | "active" | "inactive" | "left";
-export const MemberStatusValues: readonly MemberStatus[] = ["pending", "active", "inactive", "left"] as const;
+export type MemberStatus = "pending" | "rejected" | "active" | "inactive" | "left";
+export const MemberStatusValues: readonly MemberStatus[] = ["pending", "rejected", "active", "inactive", "left"] as const;
 
 export interface ClubMember {
   "id": string;
@@ -105,10 +111,12 @@ export interface ClubJoinCodeRotated {
   "club_id": string;
   "join_code": string;
   "join_code_expires_at": string | null;
+  "previous_code_valid_until": string | null;
 }
 
 export interface ClubJoinCodeRotateInput {
   "expires_in_days"?: number | null;
+  "overlap_hours"?: number;
 }
 
 export interface ClubJoinCodeRevoked {
@@ -184,6 +192,35 @@ export interface GuardianshipCreate {
 export interface Deleted {
   "status": "deleted";
   "id": string;
+}
+
+export type ConsentPurpose = "terms" | "privacy" | "photos_internal" | "photos_public" | "chat" | "newsletter";
+export const ConsentPurposeValues: readonly ConsentPurpose[] = ["terms", "privacy", "photos_internal", "photos_public", "chat", "newsletter"] as const;
+
+export interface EffectiveConsent {
+  "id": string;
+  "club_id": string;
+  "member_id": string | null;
+  "subject_profile_id": string | null;
+  "purpose": ConsentPurpose;
+  "granted_by_profile_id": string;
+  "legal_document_id": string | null;
+  "policy_version": string | null;
+  "recorded_at": string;
+  "effective": boolean;
+  "recorded_granted": boolean;
+  "granted_by_guardian": boolean;
+  "state": "valid" | "revoked" | "expired_age_16";
+}
+
+export type RealConsentPurpose = "photos_internal" | "photos_public" | "chat" | "newsletter";
+export const RealConsentPurposeValues: readonly RealConsentPurpose[] = ["photos_internal", "photos_public", "chat", "newsletter"] as const;
+
+export interface ConsentDeclare {
+  "member_id": string;
+  "purpose": RealConsentPurpose;
+  "granted": boolean;
+  "policy_version"?: string;
 }
 
 export type WaitlistKind = "facility" | "equipment" | "team" | "event";
@@ -399,6 +436,25 @@ export interface MemberRolesSet {
 
 export interface TeamCoachesSet {
   "member_ids": string[];
+}
+
+export interface ClubModuleState {
+  "module_key": string;
+  "label_de": string;
+  "label_en": string;
+  "desc_de": string;
+  "desc_en": string;
+  "sort": number;
+  "core": boolean;
+  "requires_pro": boolean;
+  "enforcement": "enforced" | "partial" | "menu_only" | null;
+  "enabled": boolean;
+  "pro_ok": boolean;
+  "available": boolean;
+}
+
+export interface ClubModuleSet {
+  "enabled": boolean;
 }
 
 export interface Team {

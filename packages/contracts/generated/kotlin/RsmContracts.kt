@@ -29,6 +29,7 @@ enum class ClubRole {
 @Serializable
 enum class MemberStatus {
     @SerialName("pending") PENDING,
+    @SerialName("rejected") REJECTED,
     @SerialName("active") ACTIVE,
     @SerialName("inactive") INACTIVE,
     @SerialName("left") LEFT;
@@ -42,6 +43,24 @@ enum class AssignableClubRole {
     @SerialName("coach") COACH,
     @SerialName("member") MEMBER,
     @SerialName("guest_coach") GUEST_COACH;
+}
+
+@Serializable
+enum class ConsentPurpose {
+    @SerialName("terms") TERMS,
+    @SerialName("privacy") PRIVACY,
+    @SerialName("photos_internal") PHOTOS_INTERNAL,
+    @SerialName("photos_public") PHOTOS_PUBLIC,
+    @SerialName("chat") CHAT,
+    @SerialName("newsletter") NEWSLETTER;
+}
+
+@Serializable
+enum class RealConsentPurpose {
+    @SerialName("photos_internal") PHOTOS_INTERNAL,
+    @SerialName("photos_public") PHOTOS_PUBLIC,
+    @SerialName("chat") CHAT,
+    @SerialName("newsletter") NEWSLETTER;
 }
 
 @Serializable
@@ -320,6 +339,22 @@ enum class DeletedStatus {
     @SerialName("deleted") DELETED;
 }
 
+/** Inline enum of EffectiveConsent.state (hoisted by codegen). */
+@Serializable
+enum class EffectiveConsentState {
+    @SerialName("valid") VALID,
+    @SerialName("revoked") REVOKED,
+    @SerialName("expired_age_16") EXPIRED_AGE_16;
+}
+
+/** Inline enum of ClubModuleState.enforcement (hoisted by codegen). */
+@Serializable
+enum class ClubModuleStateEnforcement {
+    @SerialName("enforced") ENFORCED,
+    @SerialName("partial") PARTIAL,
+    @SerialName("menu_only") MENU_ONLY;
+}
+
 /** Inline enum of PlatformEntitlementRow.source (hoisted by codegen). */
 @Serializable
 enum class PlatformEntitlementRowSource {
@@ -440,7 +475,6 @@ data class Club(
     val city: String?,
     val discipline: String?,
     @SerialName("founded_year") val foundedYear: Long?,
-    @SerialName("join_code") val joinCode: String?,
     val settings: JsonObject,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
@@ -454,6 +488,14 @@ data class Problem(
     val detail: String? = null,
     val instance: String? = null,
     @SerialName("request_id") val requestId: String? = null
+)
+
+@Serializable
+data class ClubJoinCode(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("join_code") val joinCode: String?,
+    @SerialName("join_code_expires_at") val joinCodeExpiresAt: String?,
+    @SerialName("join_code_revoked_at") val joinCodeRevokedAt: String?
 )
 
 @Serializable
@@ -523,12 +565,14 @@ data class ClubJoinInput(
 data class ClubJoinCodeRotated(
     @SerialName("club_id") val clubId: String,
     @SerialName("join_code") val joinCode: String,
-    @SerialName("join_code_expires_at") val joinCodeExpiresAt: String?
+    @SerialName("join_code_expires_at") val joinCodeExpiresAt: String?,
+    @SerialName("previous_code_valid_until") val previousCodeValidUntil: String?
 )
 
 @Serializable
 data class ClubJoinCodeRotateInput(
-    @SerialName("expires_in_days") val expiresInDays: Long? = null
+    @SerialName("expires_in_days") val expiresInDays: Long? = null,
+    @SerialName("overlap_hours") val overlapHours: Long? = null
 )
 
 @Serializable
@@ -612,6 +656,31 @@ data class GuardianshipCreate(
 data class Deleted(
     val status: DeletedStatus,
     val id: String
+)
+
+@Serializable
+data class EffectiveConsent(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("subject_profile_id") val subjectProfileId: String?,
+    val purpose: ConsentPurpose,
+    @SerialName("granted_by_profile_id") val grantedByProfileId: String,
+    @SerialName("legal_document_id") val legalDocumentId: String?,
+    @SerialName("policy_version") val policyVersion: String?,
+    @SerialName("recorded_at") val recordedAt: String,
+    val effective: Boolean,
+    @SerialName("recorded_granted") val recordedGranted: Boolean,
+    @SerialName("granted_by_guardian") val grantedByGuardian: Boolean,
+    val state: EffectiveConsentState
+)
+
+@Serializable
+data class ConsentDeclare(
+    @SerialName("member_id") val memberId: String,
+    val purpose: RealConsentPurpose,
+    val granted: Boolean,
+    @SerialName("policy_version") val policyVersion: String? = null
 )
 
 @Serializable
@@ -834,6 +903,27 @@ data class MemberRolesSet(
 @Serializable
 data class TeamCoachesSet(
     @SerialName("member_ids") val memberIds: List<String>
+)
+
+@Serializable
+data class ClubModuleState(
+    @SerialName("module_key") val moduleKey: String,
+    @SerialName("label_de") val labelDe: String,
+    @SerialName("label_en") val labelEn: String,
+    @SerialName("desc_de") val descDe: String,
+    @SerialName("desc_en") val descEn: String,
+    val sort: Long,
+    val core: Boolean,
+    @SerialName("requires_pro") val requiresPro: Boolean,
+    val enforcement: ClubModuleStateEnforcement?,
+    val enabled: Boolean,
+    @SerialName("pro_ok") val proOk: Boolean,
+    val available: Boolean
+)
+
+@Serializable
+data class ClubModuleSet(
+    val enabled: Boolean
 )
 
 @Serializable

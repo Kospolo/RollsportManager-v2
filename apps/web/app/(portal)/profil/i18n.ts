@@ -32,6 +32,7 @@ export const profilDict = {
     statusActive: "Aktiv",
     statusPending: "Ausstehend",
     statusInactive: "Inaktiv",
+    statusRejected: "Abgelehnt",
 
     /* Bearbeiten-Formular */
     editEyebrow: "Bearbeiten",
@@ -133,6 +134,7 @@ export const profilDict = {
     statusActive: "Active",
     statusPending: "Pending",
     statusInactive: "Inactive",
+    statusRejected: "Rejected",
 
     /* Edit form */
     editEyebrow: "Edit",
@@ -242,6 +244,11 @@ export function statusKey(status: MemberStatus): ProfilKey {
       return "statusActive";
     case "pending":
       return "statusPending";
+    case "rejected":
+      // Eigener Fall, KEIN default. Ueber das `default` waere "rejected" hier
+      // still als "Inaktiv" gelandet — ein falsches Wort, das kein Typ und
+      // kein Test bemerkt haette (das `default` faengt jeden neuen Wert ab).
+      return "statusRejected";
     default:
       return "statusInactive";
   }

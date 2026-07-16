@@ -85,14 +85,21 @@ export const moduleApiRepositoryRegistrierung: RegistrierungRepository = {
   },
 
   async getJoinCodeState(): Promise<JoinCodeState> {
-    const club = await apiClient.getClubsByClubId(activeClubId());
-    // join_code ist null, wenn die Person ihn nicht sehen darf — der Server
-    // redigiert (clubs.ts JOIN_CODE_VISIBLE). Der Client entscheidet das nicht.
+    // Eigene Adresse statt Feld am Club-Objekt (0035/0041): der Code fuhr bis
+    // dahin in JEDER Vereinsantwort mit und wurde nur von der API redigiert.
+    // Das Leserecht auf app.clubs.join_code ist der Rolle `authenticated`
+    // inzwischen in der Datenbank entzogen — `Club.join_code` gibt es nicht
+    // mehr, weder im Vertrag noch in der Spalte.
+    //
+    // Wer nicht darf (nicht owner/admin/moderator), bekommt hier ein 403 —
+    // KEIN stilles null. Das ist Absicht: ein null haette der Oberflaeche
+    // erlaubt, so zu tun, als gaebe es keinen Code.
+    const res = await apiClient.getClubsByClubIdJoinCode(activeClubId());
     return {
-      clubId: club.id,
-      joinCode: club.join_code,
-      expiresAt: null,
-      revokedAt: null,
+      clubId: res.club_id,
+      joinCode: res.join_code,
+      expiresAt: res.join_code_expires_at,
+      revokedAt: res.join_code_revoked_at,
     };
   },
 

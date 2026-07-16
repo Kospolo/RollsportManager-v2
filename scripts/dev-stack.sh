@@ -85,7 +85,12 @@ start_api() {
     return 0
   fi
   # Port belegt, aber kein von uns verwalteter Prozess? Nicht anfassen.
-  if ! api_pid >/dev/null && lsof -ti ":$API_PORT" >/dev/null 2>&1; then
+  #
+  # -sTCP:LISTEN ist Pflicht. Ohne den Filter trifft `lsof -ti :3022` AUCH die
+  # CLIENT-Sockets fremder Prozesse — ein Browser, der das Portal offen hatte,
+  # hinterlässt (CLOSED)-Einträge auf 127.0.0.1:3022, und die API startete dann
+  # nie wieder ("Port belegt", obwohl kein Listener existiert).
+  if ! api_pid >/dev/null && lsof -ti ":$API_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     fail "Port $API_PORT ist belegt, aber nicht von dev-stack (kein .dev/api.pid). Bitte manuell prüfen."
   fi
   ensure_secret
@@ -117,8 +122,13 @@ stop_api() {
     log "stoppe API (PID $pid) ..."
     kill "$pid" 2>/dev/null || true
   fi
-  # tsx/npx lässt u. U. einen node-Enkelprozess zurück — zusätzlich über den Port
-  lsof -ti ":$API_PORT" 2>/dev/null | xargs kill 2>/dev/null || true
+  # tsx/npx lässt u. U. einen node-Enkelprozess zurück — zusätzlich über den Port.
+  #
+  # -sTCP:LISTEN ist hier SICHERHEITSRELEVANT, nicht Kosmetik: ohne den Filter
+  # listet lsof auch fremde CLIENT-Sockets auf 127.0.0.1:3022 — `dev-stack.sh
+  # down` hätte damit den Browser des Nutzers abgeschossen, der das Portal
+  # offen hatte. Getötet wird nur, wer auf dem Port LAUSCHT.
+  lsof -ti ":$API_PORT" -sTCP:LISTEN 2>/dev/null | xargs kill 2>/dev/null || true
   rm -f "$API_PID_FILE"
 }
 
@@ -128,6 +138,14 @@ cmd_up() {
   if db_is_empty; then
     log "DB ist leer — spiele Migrations + Seed ein ..."
     harness_apply_migrations_and_seed
+    # Rechtstext-Fassungen NUR für den Dev-Stack. Ohne mindestens eine Fassung
+    # je Rechtstext antworten POST /clubs und POST /clubs/join seit 0039 mit
+    # 409 (eine Kenntnisnahme ohne Wortlaut wäre kein Nachweis). Bewusst NICHT
+    # in seed/seed.sql: das bräche den Bestands-Test 99d, der privacy/de selbst
+    # anlegt und danach GENAU 2 Fassungen erwartet (99d:295-298). Begründung
+    # steht ausführlich in der Datei.
+    log "Dev-Rechtstexte einspielen (seed/dev-legal-texts.sql) ..."
+    pgexec < "$SUPABASE_DIR/seed/dev-legal-texts.sql"
   else
     log "DB enthält bereits das app-Schema — Migrations/Seed übersprungen"
   fi

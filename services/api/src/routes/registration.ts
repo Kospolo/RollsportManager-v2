@@ -60,6 +60,7 @@ import { problem } from '../middleware/error.js';
 import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
 import { checkRateLimits, clientIp } from '../lib/rate-limit.js';
 import { recordAuthEvent } from '../lib/security-log.js';
+import { recordAcknowledgements } from '../lib/consent.js';
 
 export const registrationRouter = createRouter();
 
@@ -275,16 +276,21 @@ registrationRouter.openapi(
 
         if (member === undefined) throw problem(500, 'Internal Server Error', 'insert failed');
 
-        // Einwilligungen: getrennt je Zweck (Art. 7 Abs. 2 DSGVO). Auch beim
-        // Wiederantrag - eine Einwilligung von vor dem Austritt traegt den
-        // neuen Antrag nicht.
-        for (const purpose of ['terms', 'privacy'] as const) {
-          await tx`
-            insert into app.consents
-              (club_id, member_id, subject_profile_id, purpose, granted, granted_by_profile_id, evidence)
-            values (${club.id}, ${member.id}, ${claims.sub}, ${purpose}, true, ${claims.sub},
-                    ${tx.json({ surface: 'POST /clubs/join' })})`;
-        }
+        // KENNTNISNAHME, nicht Einwilligung (0039). Auch beim Wiederantrag -
+        // eine Kenntnisnahme von vor dem Austritt traegt den neuen Antrag
+        // nicht, und die Fassung kann sich inzwischen geaendert haben.
+        //
+        // Bis hier landeten terms/privacy als app.consents-Zeilen mit
+        // granted=true; 0039 weist das per CHECK ab - diese Schleife WAERE zur
+        // Laufzeit gebrochen und kein Test haette es gesehen. terms ist
+        // Vertragsschluss (Art. 6 Abs. 1 lit. b), privacy eine
+        // Informationspflicht (Art. 13): in beides willigt man nicht ein.
+        await recordAcknowledgements(tx, {
+          profileId: claims.sub,
+          clubId: club.id,
+          kinds: ['terms', 'privacy'],
+          surface: 'POST /clubs/join',
+        });
 
         return { kind: 'created' as const, club, member };
       },
@@ -539,39 +545,60 @@ registrationRouter.openapi(
            where club_id = ${clubId} and revoked_at is null`;
       }
 
-      // 2. Der neue Code entsteht weiterhin auf app.clubs - der Trigger
-      //    clubs_mirror_join_code (0037) legt den Kindsatz an. Damit bleibt
-      //    POST /clubs (clubs.ts:213, fremde Spur) unveraendert gueltig: wer
-      //    die Spalte schreibt, bekommt den Kindsatz geschenkt.
-      const rows = await tx`
+      // 2. Der neue Code entsteht ZUERST als eigene Abfrage - und NICHT per
+      //    `returning join_code`. Das ist keine Kosmetik, sondern die Naht
+      //    0035/0037: seit 0035 ist der Rolle `authenticated` das SELECT-Recht
+      //    auf app.clubs.join_code entzogen, und RETURNING verlangt SELECT auf
+      //    JEDE genannte Spalte. `returning id, join_code, ...` unter withUser
+      //    war ein hartes 42501 -> 403: Rotieren waere fuer JEDE Rolle kaputt
+      //    gewesen, und KEIN SQL-Test haette es gesehen - hier laufen zwei
+      //    Migrationen zusammen, ueber die nur die API faehrt.
+      //
+      //    Der Zufall bleibt trotzdem in der Datenbank (app.generate_join_code,
+      //    CSPRNG): Node erfaehrt den Wert nur, es wuerfelt ihn nicht.
+      //    Ein Uniqueness-Loop geht dabei nicht verloren - generate_join_code
+      //    hat keinen; die Eindeutigkeit haelt allein der Index
+      //    club_join_codes_normalized_uq (0037), und der greift unveraendert.
+      const [generated] = await tx<{ code: string }[]>`
+        select app.generate_join_code() as code`;
+      const newCode = generated!.code;
+
+      // 3. Geschrieben wird weiterhin die SPALTE auf app.clubs - der Trigger
+      //    clubs_mirror_join_code (0037) legt den Kindsatz in der
+      //    Wahrheitstabelle an. Damit bleibt POST /clubs (clubs.ts, fremde
+      //    Spur) unveraendert gueltig: wer die Spalte schreibt, bekommt den
+      //    Kindsatz geschenkt.
+      const rows = await tx<{ id: string }[]>`
         update app.clubs
-           set join_code            = app.generate_join_code(),
+           set join_code            = ${newCode},
                join_code_revoked_at = null,
                join_code_expires_at = ${days === null ? null : tx`now() + (${days} || ' days')::interval`}
          where id = ${clubId} and deleted_at is null
-        returning id, join_code, join_code_expires_at`;
-      const row = rows[0] as
-        | { id: string; join_code: string; join_code_expires_at: Date | null }
-        | undefined;
+        returning id`;
+      const row = rows[0];
       if (row === undefined) return undefined;
 
-      // 3. Wer rotiert hat. Ohne diese Zeile weiss der Verein spaeter nicht,
-      //    wer den Code in Umlauf gebracht hat.
-      await tx`
+      // 4. Wer rotiert hat. Ohne diese Zeile weiss der Verein spaeter nicht,
+      //    wer den Code in Umlauf gebracht hat. Zugleich holen wir den
+      //    Ablaufzeitpunkt aus der WAHRHEIT zurueck (app.club_join_codes) -
+      //    lesbar, weil rotieren owner/admin/moderator verlangt und das
+      //    exakt app.can_read_join_code() ist (0041).
+      const [mirrored] = await tx<{ expires_at: Date | null }[]>`
         update app.club_join_codes
            set created_by_member_id = app.own_member_id(${clubId})
          where club_id = ${clubId}
-           and code_normalized = app.normalize_join_code(${row.join_code})`;
+           and code_normalized = app.normalize_join_code(${newCode})
+        returning expires_at`;
 
-      return { row, previousValidUntil };
+      return { id: row.id, joinCode: newCode, expiresAt: mirrored?.expires_at ?? null, previousValidUntil };
     });
     if (result === undefined) throw problem(404, 'Not Found', 'Club not found');
 
     return c.json(
       clubJoinCodeRotatedSchema.parse({
-        club_id: result.row.id,
-        join_code: result.row.join_code,
-        join_code_expires_at: result.row.join_code_expires_at,
+        club_id: result.id,
+        join_code: result.joinCode,
+        join_code_expires_at: result.expiresAt,
         previous_code_valid_until: result.previousValidUntil,
       }),
       200,

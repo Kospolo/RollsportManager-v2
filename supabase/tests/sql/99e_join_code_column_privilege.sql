@@ -20,7 +20,7 @@
 -- Aufbau:
 --   (a) Das Spaltenrecht    — niemand mit `authenticated` liest den Code. NIEMAND.
 --   (b) Der Rest der Zeile  — der Verein bleibt lesbar (sonst waere es Sabotage)
---   (c) Der Funktions-Gate  — members:manage bekommt den Code, sonst 42501
+--   (c) Der Funktions-Gate  — owner/admin/moderator bekommt den Code, sonst 42501
 --   (d) service_role        — der Beitritt per Code darf NICHT brechen
 --   (e) Die Positivliste    — die Falle fuer den naechsten Autor schnappt laut zu
 --
@@ -150,8 +150,8 @@ rollback;
 -- (c) DER FUNKTIONS-GATE — app.club_join_code()
 --
 -- Der einzige Weg fuer authenticated an den Code. Der Gate sitzt IN der
--- Funktion (has_cap), nicht in der Route: er gilt damit auch fuer den, der die
--- API umgeht.
+-- Funktion (app.can_read_join_code, 0041), nicht in der Route: er gilt damit
+-- auch fuer den, der die API umgeht.
 -- ===========================================================================
 
 -- Wer Mitglieder verwaltet, bekommt den Code — und zwar den echten Wert.
@@ -184,20 +184,34 @@ select testkit.is_eq('Gate: moderator bekommt den Code',
     where join_code = 'RSV-DEMO-2026'), 1);
 rollback;
 
--- TREASURER: eine echte AUSWEITUNG gegenueber der alten API-Redigierung
--- (JOIN_CODE_VISIBLE liess nur owner/admin/moderator durch). Sie ist die Folge
--- davon, dass der Gate den KATALOG fragt statt einer handgeschriebenen
--- Rollenliste: members:manage = app.can_manage_members (0007:125) und das
--- schliesst den treasurer ein. Wer Mitglieder anlegen darf, vor dem ist der
--- Beitrittscode kein sinnvolles Geheimnis. Dieser Test steht hier, damit die
--- Entscheidung sichtbar ist und nicht aus Versehen wieder kippt.
+-- TREASURER: bekommt den Code NICHT.
+--
+-- Dieser Test stand hier bis 0041 andersherum. 0035 gab dem treasurer den Code
+-- und begruendete es mit "members:manage = can_manage_members (0007:125), und
+-- wer Mitglieder anlegen darf, vor dem ist der Beitrittscode kein sinnvolles
+-- Geheimnis". Die Praemisse war falsch — nachgelesen:
+--
+--   0002:321-323  create policy club_members_insert on app.club_members
+--                   with check (app.has_club_role(club_id, array['owner','admin']));
+--
+-- Mitglieder anlegen darf owner/admin, NICHT der treasurer. Der irrefuehrende
+-- Satz stand in einem KOMMENTAR des Katalogs (0023:171), nicht in der Policy.
+-- Damit dreht sich das Argument um: der Code waere fuer den treasurer der
+-- EINZIGE Weg, Menschen in den Verein zu bringen — also sehr wohl ein
+-- sinnvolles Geheimnis, und ihn zu geben waere eine Rechteausweitung.
+-- Gate ab 0041: app.can_read_join_code() = owner/admin/moderator, dieselbe
+-- Liste, die rotieren/widerrufen darf (registration.ts). Dieser Test steht
+-- hier, damit die Entscheidung sichtbar ist und nicht aus Versehen wieder kippt.
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000003","role":"authenticated","club_roles":{}}', true);
 set local role authenticated;
-select testkit.is_eq('Gate: treasurer bekommt den Code (members:manage schliesst ihn ein — bewusst, siehe 0035)',
-  (select count(*) from app.club_join_code('c1ab0000-0000-4000-8000-000000000001')
-    where join_code = 'RSV-DEMO-2026'), 1);
+select testkit.throws('Gate: treasurer bekommt den Code NICHT (0041 — er darf keine Mitglieder anlegen)',
+  $sql$select count(*) from app.club_join_code('c1ab0000-0000-4000-8000-000000000001')$sql$, '42501');
+-- Und auch nicht auf der Wahrheitstabelle vorbei an der Funktion (RLS, 0041).
+select testkit.is_eq('Gate: treasurer sieht auch app.club_join_codes nicht (dieselbe Regel, ein Regelwerk)',
+  (select count(*) from app.club_join_codes
+    where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 0);
 rollback;
 
 -- Und die, die nicht duerfen.

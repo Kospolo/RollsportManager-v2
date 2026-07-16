@@ -42,12 +42,17 @@ const STATUS_KEY: Record<MemberStatus, MitgliederKey> = {
   active: "statusActive",
   pending: "statusPending",
   inactive: "statusInactive",
+  rejected: "statusRejected",
 };
 
 const STATUS_TONE: Record<MemberStatus, BadgeTone> = {
   active: "success",
   pending: "info",
   inactive: "neutral",
+  // "danger" waere zu laut: abgelehnt ist kein Alarm, sondern ein
+  // abgeschlossener Vorgang. "warn" trennt ihn sichtbar von "inaktiv" —
+  // ein abgelehnter Antrag ist keine ruhende Mitgliedschaft.
+  rejected: "warn",
 };
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {

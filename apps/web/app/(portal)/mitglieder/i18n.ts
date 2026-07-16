@@ -61,6 +61,7 @@ export const mitgliederDict = {
     statusActive: "Aktiv",
     statusPending: "Ausstehend",
     statusInactive: "Inaktiv",
+    statusRejected: "Abgelehnt",
 
     invEyebrow: "Einladung",
     invTitle: "Mitglied einladen",
@@ -191,6 +192,7 @@ export const mitgliederDict = {
     statusActive: "Active",
     statusPending: "Pending",
     statusInactive: "Inactive",
+    statusRejected: "Rejected",
 
     invEyebrow: "Invitation",
     invTitle: "Invite member",

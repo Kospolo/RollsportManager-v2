@@ -140,6 +140,16 @@ export class ApiClient {
   }
 
   /**
+   * Vereinscode lesen (owner/admin/moderator) / Read the club join code
+   * Liefert den juengsten Einladungscode des Vereins. Erfordert owner, admin oder moderator - dieselbe Rollenliste, die den Code rotieren und widerrufen darf: wer ihn sieht, kann ihn auch einziehen. Der Code steht seit 0035 NICHT mehr am Club-Objekt (GET /clubs lieferte ihn bis dahin an jedes Mitglied, auch an Kinder); das Leserecht auf die Spalte ist der Rolle authenticated in der Datenbank entzogen. / Returns the club's most recent invite code. Requires owner, admin or moderator.
+   * 
+   * `GET /clubs/{clubId}/join-code`
+   */
+  async getClubsByClubIdJoinCode(clubId: string, options?: RequestOptions): Promise<M.ClubJoinCode> {
+    return this.request<M.ClubJoinCode>("GET", `/clubs/${encodeURIComponent(clubId)}/join-code`, { auth: true, options });
+  }
+
+  /**
    * Beitritt beantragen (Vereinscode) / Request to join a club (club code)
    * Ein RICHTIGER Code erzeugt einen ANTRAG (status=pending), keinen Zugang: app.member_role_keys (0025) filtert auf status=active, eine pending-Mitgliedschaft faellt damit durch jede Policy. Der Vorstand gibt frei (POST .../approve) - das wirkt sofort ohne Re-Login. Falscher/abgelaufener/widerrufener Code -> immer dieselbe 404 (keine Enumeration), zusaetzlich gedrosselt.
    * 
@@ -161,7 +171,7 @@ export class ApiClient {
 
   /**
    * Beitrittsantrag ablehnen / Reject a join request
-   * Soft-Delete des Antrags (deleted_at). Die Person kann danach erneut beantragen - eine Ablehnung ist keine Sperre. Erfordert members>=manage.
+   * Setzt status=rejected und schreibt das Gedaechtnis fort (rejected_at, rejected_by, rejection_count). Die Zeile BLEIBT stehen - vorher war eine Ablehnung ein Soft-Delete, der den Vorgang verschwinden liess: der naechste Antrag derselben Person traf auf einen Vorstand ohne Gedaechtnis. Ein Wiederantrag ist nach einer Sperrfrist moeglich (POST /clubs/join dreht die Zeile zurueck auf pending); eine versehentliche Ablehnung nimmt POST .../approve sofort zurueck. Erfordert members>=manage.
    * 
    * `POST /clubs/{clubId}/members/{memberId}/reject`
    */
@@ -171,7 +181,7 @@ export class ApiClient {
 
   /**
    * Vereinscode neu erzeugen / Rotate the club join code
-   * Erzeugt einen neuen Code (CSPRNG, Crockford-Base32) und macht den alten damit sofort wertlos. Noetig, weil der Code ein GETEILTES Geheimnis ist: er steht in WhatsApp-Gruppen und an Aushaengen. Ohne Rotation waere die einzige Reaktion auf einen geleakten Code die Neuanlage des Vereins. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).
+   * Erzeugt einen neuen Code (CSPRNG, Crockford-Base32). Mit overlap_hours bleibt der ALTE Code noch eine Weile gueltig - das war bis 0037 im Schema unmoeglich (der Code war eine SPALTE auf app.clubs, Rotieren hiess Ueberschreiben, der alte starb in derselben Sekunde). Genau deshalb rotierte niemand: ein Wechsel sperrte Aushang, WhatsApp-Gruppe und Anmeldeformular sofort aus. Ohne overlap_hours (Vorgabe) ist der alte Code sofort tot - das ist der richtige Weg bei einem GELEAKTEN Code. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).
    * 
    * `POST /clubs/{clubId}/join-code/rotate`
    */
@@ -181,7 +191,7 @@ export class ApiClient {
 
   /**
    * Vereinscode widerrufen / Revoke the club join code
-   * Macht den Code ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. Getrennt von rotate, weil "niemand soll mehr beitreten" etwas anderes ist als "alle brauchen einen neuen Code".
+   * Macht ALLE Codes des Vereins ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. "Alle" ist woertlich - seit 0037 kann ein Verein mehrere Codes gleichzeitig fuehren (Ueberlappungsfenster einer Rotation), und ein Widerruf, der einen davon uebersieht, ist keiner. Getrennt von rotate, weil "niemand soll mehr beitreten" etwas anderes ist als "alle brauchen einen neuen Code".
    * 
    * `POST /clubs/{clubId}/join-code/revoke`
    */
@@ -275,6 +285,26 @@ export class ApiClient {
    */
   async deleteClubsByClubIdGuardianshipsByGuardianshipId(clubId: string, guardianshipId: string, options?: RequestOptions): Promise<M.Deleted> {
     return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/guardianships/${encodeURIComponent(guardianshipId)}`, { auth: true, options });
+  }
+
+  /**
+   * Wirksamer Einwilligungsstand / Effective consent state
+   * Liefert je (Person, Zweck) die WIRKSAME Einwilligung aus app.effective_consents — nicht das rohe Journal. state=revoked (Art. 7 Abs. 3) und state=expired_age_16 (die Erklärung einer erziehungsberechtigten Person erlischt mit dem 16. Geburtstag) sind beide effective=false. RLS entscheidet, wer was sieht: die betroffene Person, wer erklärt hat, und die Mitglieder-Verwaltung.
+   * 
+   * `GET /clubs/{clubId}/consents`
+   */
+  async getClubsByClubIdConsents(clubId: string, query?: { "member_id"?: string }, options?: RequestOptions): Promise<M.EffectiveConsent[]> {
+    return this.request<M.EffectiveConsent[]>("GET", `/clubs/${encodeURIComponent(clubId)}/consents`, { query, auth: true, options });
+  }
+
+  /**
+   * Einwilligung erteilen oder widerrufen / Grant or withdraw a consent
+   * Erteilt (granted=true) oder widerruft (granted=false) eine Einwilligung für EINEN Zweck. Der Widerruf ist derselbe Aufruf mit granted=false — genauso einfach wie die Erteilung (Art. 7 Abs. 3 Satz 4) — und legt eine NEUE Zeile an; die frühere bleibt als Nachweis erhalten. Bei Minderjährigen erklärt eine erziehungsberechtigte Person (Art. 8); ab 16 nur noch die betroffene Person selbst. terms/privacy sind hier NICHT zulässig: das ist Kenntnisnahme, keine Einwilligung.
+   * 
+   * `POST /clubs/{clubId}/consents`
+   */
+  async postClubsByClubIdConsents(clubId: string, body: M.ConsentDeclare, options?: RequestOptions): Promise<M.EffectiveConsent> {
+    return this.request<M.EffectiveConsent>("POST", `/clubs/${encodeURIComponent(clubId)}/consents`, { body, auth: true, options });
   }
 
   /**
@@ -499,6 +529,24 @@ export class ApiClient {
    */
   async putClubsByClubIdTeamsByTeamIdCoaches(clubId: string, teamId: string, body: M.TeamCoachesSet, options?: RequestOptions): Promise<string[]> {
     return this.request<string[]>("PUT", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}/coaches`, { body, auth: true, options });
+  }
+
+  /**
+   * Modul-Katalog + Schalterstellung des Vereins (is_club_member)
+   * 
+   * `GET /clubs/{clubId}/modules`
+   */
+  async getClubsByClubIdModules(clubId: string, options?: RequestOptions): Promise<M.ClubModuleState[]> {
+    return this.request<M.ClubModuleState[]>("GET", `/clubs/${encodeURIComponent(clubId)}/modules`, { auth: true, options });
+  }
+
+  /**
+   * Modul ein-/ausschalten (is_club_admin; Kernmodule sind gesperrt)
+   * 
+   * `PUT /clubs/{clubId}/modules/{moduleKey}`
+   */
+  async putClubsByClubIdModulesByModuleKey(clubId: string, moduleKey: string, body: M.ClubModuleSet, options?: RequestOptions): Promise<M.ClubModuleState> {
+    return this.request<M.ClubModuleState>("PUT", `/clubs/${encodeURIComponent(clubId)}/modules/${encodeURIComponent(moduleKey)}`, { body, auth: true, options });
   }
 
   /**
@@ -1224,6 +1272,16 @@ export class ApiClient {
    */
   async getChatChannels(query: { "club_id": string }, options?: RequestOptions): Promise<M.ChatChannel[]> {
     return this.request<M.ChatChannel[]>("GET", "/chat/channels", { query, auth: true, options });
+  }
+
+  /**
+   * People I may start a direct message with (child protection applied)
+   * The picker behind "New message to ...". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint is deliberately not a second, wider way into the roster.
+   * 
+   * `GET /chat/recipients`
+   */
+  async getChatRecipients(query: { "club_id": string }, options?: RequestOptions): Promise<M.ClubMember[]> {
+    return this.request<M.ClubMember[]>("GET", "/chat/recipients", { query, auth: true, options });
   }
 
   /**

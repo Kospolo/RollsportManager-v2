@@ -93,7 +93,15 @@ export type MemberRole =
   | "member"
   | "guest_coach";
 
-export type MemberStatus = "active" | "inactive" | "pending";
+/**
+ * "rejected" kam mit 0036/0037 dazu (API: MemberStatus).
+ *
+ * Es NICHT aufzunehmen und wie "left" auf "inactive" abzubilden waere bequem
+ * gewesen, aber unwahr: "inaktives Mitglied" behauptet eine Mitgliedschaft,
+ * die es nie gab — abgelehnt wurde ein ANTRAG. Vorher verschwand der Vorgang
+ * per Soft-Delete; genau dieses Vergessen hat 0037 abgeschafft.
+ */
+export type MemberStatus = "active" | "inactive" | "pending" | "rejected";
 
 export interface Member {
   id: Id;

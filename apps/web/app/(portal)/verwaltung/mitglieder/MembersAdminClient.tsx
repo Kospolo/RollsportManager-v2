@@ -57,6 +57,7 @@ const STATUS_FILTER_LABEL: Record<StatusFilter, MitgliederVerwaltungKey> = {
   active: "stActive",
   inactive: "stInactive",
   pending: "stPending",
+  rejected: "stRejected",
 };
 
 const NO_MEMBERS: Member[] = [];

@@ -40,7 +40,11 @@ export function matchesRoleFilter(member: Member, filter: RoleFilter): boolean {
 
 export type StatusFilter = "all" | MemberStatus;
 
-export const STATUS_FILTERS: StatusFilter[] = ["all", "active", "inactive", "pending"];
+// "rejected" gehoert in die Liste, seit 0037 eine Ablehnung ein Gedaechtnis
+// hat (vorher: Soft-Delete, der Vorgang war weg). Ohne den Filter waere die
+// abgelehnte Person zwar gespeichert, aber fuer den Vorstand unauffindbar —
+// und genau das Vergessen sollte 0037 beenden.
+export const STATUS_FILTERS: StatusFilter[] = ["all", "active", "inactive", "pending", "rejected"];
 
 export function matchesStatusFilter(member: Member, filter: StatusFilter): boolean {
   return filter === "all" || member.status === filter;
@@ -62,6 +66,7 @@ export const STATUS_TONE: Record<MemberStatus, BadgeTone> = {
   active: "success",
   pending: "info",
   inactive: "neutral",
+  rejected: "warn",
 };
 
 /* ---------- Auswahllisten für das Sheet ---------- */

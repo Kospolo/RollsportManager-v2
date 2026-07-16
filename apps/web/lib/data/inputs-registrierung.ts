@@ -57,7 +57,14 @@ export interface PendingJoinRequest {
 
 export interface JoinCodeState {
   clubId: string;
-  /** null = die Person darf den Code nicht sehen (nur owner/admin/moderator). */
+  /**
+   * null = fuer diesen Verein ist kein Code hinterlegt.
+   *
+   * NICHT mehr "darf nicht sehen": wer nicht owner/admin/moderator ist, laeuft
+   * seit 0035/0041 in ein 403 (GET /clubs/{id}/join-code) statt ein redigiertes
+   * null zu bekommen. Der Code hat eine eigene Adresse und einen Gate in der
+   * Datenbank; die Oberflaeche redigiert nichts mehr.
+   */
   joinCode: string | null;
   expiresAt: string | null;
   revokedAt: string | null;
