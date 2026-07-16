@@ -2221,8 +2221,15 @@ export const anniversarySchema = z
     kind: anniversaryKindSchema,
     /** ISO date of the upcoming milestone (YYYY-MM-DD). */
     date: z.string(),
-    /** Milestone reached on `date`: years of membership, or age turned. */
-    years: z.number().int(),
+    /**
+     * Erreichte Jahre — NUR bei kind='membership' ("10 Jahre dabei").
+     *
+     * Bei kind='birthday' IMMER null, und das ist der ganze Punkt: dort waere
+     * `years` das ALTER, und `date` minus `years` ergaebe das exakte
+     * Geburtsdatum. Der Verein soll wissen, dass Emma am 3. November Geburtstag
+     * hat — nicht, wie alt sie wird.
+     */
+    years: z.number().int().nullable(),
     /** Whole days from today until `date` (>= 0; sort ascending). */
     days_until: z.number().int(),
   })

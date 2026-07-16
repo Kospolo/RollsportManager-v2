@@ -5791,7 +5791,7 @@ public struct Anniversary: Codable, Equatable, Sendable {
     public var memberName: String
     public var kind: AnniversaryKind
     public var date: String
-    public var years: Int
+    public var years: Int?
     public var daysUntil: Int
 
     enum CodingKeys: String, CodingKey {
@@ -5808,7 +5808,7 @@ public struct Anniversary: Codable, Equatable, Sendable {
         memberName: String,
         kind: AnniversaryKind,
         date: String,
-        years: Int,
+        years: Int? = nil,
         daysUntil: Int
     ) {
         self.memberId = memberId

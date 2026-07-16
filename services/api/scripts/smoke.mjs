@@ -844,20 +844,33 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 }
 
 // ============================================================================
-// RBAC Phase 2 Schritt 5 — /reports/anniversaries war ein Datenleck.
+// /reports/anniversaries — das Datenleck ist zu, das FEATURE ist wieder da.
 //
-// Der Report leitet aus birth_date/joined_on ab und gibt `date` + `years`
-// zurueck; `date - years` rekonstruiert das Original EXAKT. Beide Spalten sind
-// im Roster nur fuer Mitglieder-Verwalter sichtbar (SENSITIVE_MEMBER_FIELDS) —
-// der Report gab sie vorher JEDEM Mitglied. Belegt: das Geburtsdatum eines
-// 10-jaehrigen Kindes an eine familienfremde Gast-Trainerin.
-// Jetzt gilt member_contact >= read_all, deckungsgleich mit maySeeFullRoster.
+// GESCHICHTE IN ZWEI SCHRITTEN, damit niemand den zweiten fuer einen Rueckbau
+// des ersten haelt:
+//
+//  1. URSPRUNG: der Report gab JEDEM Mitglied `date` + `years`. Bei einem
+//     Geburtstag ist `years` das ALTER -> `date - years` = exaktes
+//     Geburtsdatum. Belegt war das Geburtsdatum eines 10-jaehrigen Kindes,
+//     ausgeliefert an eine familienfremde Gast-Trainerin, obwohl der Roster
+//     birth_date fuer dieselbe Person redigiert.
+//  2. ERSTE ANTWORT: member_contact >= read_all -> coach/member/guest_coach
+//     bekamen 403. Leck zu — aber der Verein wusste auch nicht mehr, wer
+//     Geburtstag hat. Ein abgeschaltetes Feature ist keine geloeste Aufgabe.
+//  3. JETZT: getrennt nach Art. Geburtstag -> Tag+Monat, years=null (der
+//     Verein soll WANN wissen, nicht WIE ALT). Jubilaeum -> years bleibt, dort
+//     ist die Zahl der ganze Sinn. Damit brauchen die Geburtstage keine
+//     Spaltenschranke mehr, und alle duerfen wieder gucken.
+//
+// DIE INVARIANTE, die dieser Block bewacht, ist damit NICHT mehr
+// "Report-Zugang == Roster-Zugang", sondern die schaerfere:
+//   AUS DIESEM REPORT LAESST SICH KEIN GEBURTSDATUM REKONSTRUIEREN — fuer
+//   KEINE Rolle, auch nicht fuer den Vorstand.
 // ============================================================================
 {
-  console.log('\n[smoke] --- /reports/anniversaries: der Spaltenschutz gilt jetzt auch hier ---');
+  console.log('\n[smoke] --- /reports/anniversaries: sichtbar fuer alle, ohne Alter ---');
   const ann = async (as) => call('GET', `/reports/anniversaries?club_id=${CLUB}`, { as });
 
-  // Wer die Spalten im Roster sehen darf, sieht auch den Report.
   const treas = await ann(t.treasurer);
   assertEq('treasurer liest Jubilaeen -> 200', treas.status, 200);
   if ((treas.json?.length ?? 0) > 0) ok(`...mit Eintraegen (${treas.json.length})`);
@@ -866,31 +879,67 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   assertEq('admin liest Jubilaeen -> 200', (await ann(t.admin)).status, 200);
   assertEq('moderator liest Jubilaeen -> 200', (await ann(t.moderator)).status, 200);
 
-  // Wer sie NICHT sehen darf, bekommt sie auch nicht mehr abgeleitet.
-  // Genau diese drei lieferten vorher 200 samt Kinder-Geburtsdaten.
-  assertEq('guest_coach bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.guest)).status, 403);
-  assertEq('coach bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.coach)).status, 403);
-  assertEq('member bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.parent)).status, 403);
+  // Der Verein darf wieder gratulieren: genau die drei, die vorher 403 bekamen.
+  assertEq('guest_coach sieht Geburtstage wieder -> 200', (await ann(t.guest)).status, 200);
+  assertEq('coach sieht Geburtstage wieder -> 200', (await ann(t.coach)).status, 200);
+  assertEq('member sieht Geburtstage wieder -> 200', (await ann(t.parent)).status, 200);
 
-  // Die Konsistenz-Zusage: Report-Zugang == Roster-Spalten-Zugang.
+  // DIE KERNZUSAGE: kein Geburtstag traegt jemals `years` — fuer NIEMANDEN.
+  // Ohne years ist `date` nur Tag+Monat und rekonstruiert nichts.
+  for (const [name, tok] of [
+    ['owner', t.owner], ['admin', t.admin], ['moderator', t.moderator],
+    ['treasurer', t.treasurer], ['coach', t.coach], ['member', t.parent],
+    ['guest_coach', t.guest],
+  ]) {
+    const rows = (await ann(tok)).json ?? [];
+    const birthdays = rows.filter((r) => r.kind === 'birthday');
+    const leaky = birthdays.filter((r) => r.years !== null && r.years !== undefined);
+    if (leaky.length === 0) {
+      ok(`...${name}: ${birthdays.length} Geburtstag(e), 0 davon mit Alter (nicht rekonstruierbar)`);
+    } else {
+      fail(`${name} Geburtstags-Leck`, `${leaky.length} Eintraege mit years: ${JSON.stringify(leaky[0])}`);
+    }
+  }
+
+  // Der Original-Fall, wortwoertlich: Emma (2016-11-03) und die familienfremde
+  // Gast-Trainerin. Sie muss den TAG sehen und darf das JAHR nicht ableiten.
+  {
+    const rows = (await ann(t.guest)).json ?? [];
+    const emma = rows.find((r) => r.kind === 'birthday' && r.member_name.includes('Emma'));
+    if (emma && emma.years === null && emma.date.endsWith('-11-03')) {
+      ok(`...guest_coach sieht "Emma hat am 3.11. Geburtstag" — aber nicht, dass sie 2016 geboren ist`);
+    } else {
+      fail('Emma-Fall', `got ${JSON.stringify(emma)}`);
+    }
+  }
+
+  // Vereinsjubilaeen sind das GEGENTEIL: dort ist `years` der ganze Sinn und
+  // muss dableiben ("10 Jahre dabei"). Ein Report ohne die Zahl waere kaputt.
+  {
+    const rows = (await ann(t.coach)).json ?? [];
+    const memberships = rows.filter((r) => r.kind === 'membership');
+    if (memberships.length > 0 && memberships.every((r) => typeof r.years === 'number')) {
+      ok(`...Vereinsjubilaeen behalten ihre Jahre (${memberships.length} Eintraege, z.B. ${memberships[0].years} Jahre)`);
+    } else {
+      fail('Jubilaeums-Jahre', `got ${JSON.stringify(memberships)}`);
+    }
+  }
+
+  // Die Redigierung im Roster bleibt davon unberuehrt — der Report ist KEIN
+  // Umgehungspfad geworden, er leitet die geschuetzte Spalte nur nicht mehr ab.
   const rosterShowsBirthDate = async (as) => {
     const r = await call('GET', `/clubs/${CLUB}/members`, { as });
     return (r.json ?? []).some((m) => m.birth_date !== null && m.birth_date !== undefined);
   };
-  const pairs = [
-    ['treasurer', t.treasurer, 200],
-    ['coach', t.coach, 403],
-    ['member', t.parent, 403],
-    ['guest_coach', t.guest, 403],
-  ];
-  for (const [name, tok, expected] of pairs) {
-    const reportOk = (await ann(tok)).status === 200;
+  for (const [name, tok, expected] of [
+    ['treasurer', t.treasurer, true],
+    ['coach', t.coach, false],
+    ['member', t.parent, false],
+    ['guest_coach', t.guest, false],
+  ]) {
     const rosterOk = await rosterShowsBirthDate(tok);
-    if (reportOk === rosterOk && (expected === 200) === reportOk) {
-      ok(`...${name}: Report-Zugang == Roster-Spalten-Zugang (${reportOk ? 'beides' : 'keins von beiden'})`);
-    } else {
-      fail(`${name} consistency`, `report=${reportOk}, roster_birth_date=${rosterOk}`);
-    }
+    if (rosterOk === expected) ok(`...${name}: Roster-Redigierung von birth_date unveraendert (${rosterOk ? 'sichtbar' : 'redigiert'})`);
+    else fail(`${name} roster redaction`, `roster_birth_date=${rosterOk}, expected ${expected}`);
   }
 }
 

@@ -6240,7 +6240,8 @@
             "type": "string"
           },
           "years": {
-            "type": "integer"
+            "type": "integer",
+            "nullable": true
           },
           "days_until": {
             "type": "integer"
@@ -19883,8 +19884,8 @@
         "tags": [
           "reports"
         ],
-        "summary": "Upcoming anniversaries & round birthdays (anniversaries + member_contact)",
-        "description": "Leitet Jubilaeen aus joined_on und runde Geburtstage aus birth_date ab. Beide Spalten sind im Roster (GET /clubs/{clubId}/members) nur fuer Mitglieder-Verwalter sichtbar; da `date` minus `years` das Original exakt rekonstruiert, gilt hier dieselbe Schranke: member_contact >= read_all. Zusaetzlich ist der Report ueber die Faehigkeit `anniversaries` im Admin abschaltbar.",
+        "summary": "Jubilaeen & Geburtstage / Upcoming anniversaries & birthdays (anniversaries)",
+        "description": "Zwei verschiedene Dinge in einer Liste: kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. kind=membership liefert years (\"10 Jahre dabei\") — dort ist die Zahl der ganze Sinn. Sichtbar fuer jedes Mitglied; abschaltbar ueber die Faehigkeit `anniversaries` im Admin.",
         "security": [
           {
             "bearerAuth": []

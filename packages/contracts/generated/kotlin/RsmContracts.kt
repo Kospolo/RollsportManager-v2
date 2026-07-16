@@ -1924,7 +1924,7 @@ data class Anniversary(
     @SerialName("member_name") val memberName: String,
     val kind: AnniversaryKind,
     val date: String,
-    val years: Long,
+    val years: Long?,
     @SerialName("days_until") val daysUntil: Long
 )
 

@@ -112,6 +112,16 @@ export class ApiClient {
   }
 
   /**
+   * Verein selbst anlegen (Testphase) / Register a club (trial)
+   * Legt einen Verein an und macht die aufrufende Person zur Inhaberin (owner, active) - inklusive Rollenzuweisung, sonst haette sie im eigenen Verein NULL Rechte (app.member_role_keys, 0025:37-53). Setzt eine 30-Tage-Testphase (Entitlement club_license, metadata.status=trial) und erzeugt den ersten Vereinscode. Erfordert eine Anmeldung (fuer den Inhaber-Bezug), aber KEINE Vereinszugehoerigkeit.
+   * 
+   * `POST /clubs`
+   */
+  async postClubs(body: M.ClubRegistration, options?: RequestOptions): Promise<M.ClubRegistrationResult> {
+    return this.request<M.ClubRegistrationResult>("POST", "/clubs", { body, auth: true, options });
+  }
+
+  /**
    * Get a single club
    * 
    * `GET /clubs/{clubId}`
@@ -127,6 +137,56 @@ export class ApiClient {
    */
   async patchClubsByClubId(clubId: string, body: M.ClubUpdate, options?: RequestOptions): Promise<M.Club> {
     return this.request<M.Club>("PATCH", `/clubs/${encodeURIComponent(clubId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Beitritt beantragen (Vereinscode) / Request to join a club (club code)
+   * Ein RICHTIGER Code erzeugt einen ANTRAG (status=pending), keinen Zugang: app.member_role_keys (0025) filtert auf status=active, eine pending-Mitgliedschaft faellt damit durch jede Policy. Der Vorstand gibt frei (POST .../approve) - das wirkt sofort ohne Re-Login. Falscher/abgelaufener/widerrufener Code -> immer dieselbe 404 (keine Enumeration), zusaetzlich gedrosselt.
+   * 
+   * `POST /clubs/join`
+   */
+  async postClubsJoin(body: M.ClubJoinInput, options?: RequestOptions): Promise<M.ClubJoinResult> {
+    return this.request<M.ClubJoinResult>("POST", "/clubs/join", { body, auth: true, options });
+  }
+
+  /**
+   * Beitrittsantrag freigeben (pending -> active) / Approve a join request
+   * Setzt status=active. Wirkt SOFORT ohne Re-Login (0025 loest Rollen bei jeder Anfrage aus der DB auf). Erfordert die Faehigkeit members>=manage. Der Trigger protect_club_membership (0007:216-222) blockt zusaetzlich jede Selbst-Freigabe.
+   * 
+   * `POST /clubs/{clubId}/members/{memberId}/approve`
+   */
+  async postClubsByClubIdMembersByMemberIdApprove(clubId: string, memberId: string, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("POST", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/approve`, { auth: true, options });
+  }
+
+  /**
+   * Beitrittsantrag ablehnen / Reject a join request
+   * Soft-Delete des Antrags (deleted_at). Die Person kann danach erneut beantragen - eine Ablehnung ist keine Sperre. Erfordert members>=manage.
+   * 
+   * `POST /clubs/{clubId}/members/{memberId}/reject`
+   */
+  async postClubsByClubIdMembersByMemberIdReject(clubId: string, memberId: string, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("POST", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/reject`, { auth: true, options });
+  }
+
+  /**
+   * Vereinscode neu erzeugen / Rotate the club join code
+   * Erzeugt einen neuen Code (CSPRNG, Crockford-Base32) und macht den alten damit sofort wertlos. Noetig, weil der Code ein GETEILTES Geheimnis ist: er steht in WhatsApp-Gruppen und an Aushaengen. Ohne Rotation waere die einzige Reaktion auf einen geleakten Code die Neuanlage des Vereins. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).
+   * 
+   * `POST /clubs/{clubId}/join-code/rotate`
+   */
+  async postClubsByClubIdJoinCodeRotate(clubId: string, body?: M.ClubJoinCodeRotateInput, options?: RequestOptions): Promise<M.ClubJoinCodeRotated> {
+    return this.request<M.ClubJoinCodeRotated>("POST", `/clubs/${encodeURIComponent(clubId)}/join-code/rotate`, { body, auth: true, options });
+  }
+
+  /**
+   * Vereinscode widerrufen / Revoke the club join code
+   * Macht den Code ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. Getrennt von rotate, weil "niemand soll mehr beitreten" etwas anderes ist als "alle brauchen einen neuen Code".
+   * 
+   * `POST /clubs/{clubId}/join-code/revoke`
+   */
+  async postClubsByClubIdJoinCodeRevoke(clubId: string, options?: RequestOptions): Promise<M.ClubJoinCodeRevoked> {
+    return this.request<M.ClubJoinCodeRevoked>("POST", `/clubs/${encodeURIComponent(clubId)}/join-code/revoke`, { auth: true, options });
   }
 
   /**
@@ -1329,8 +1389,8 @@ export class ApiClient {
   }
 
   /**
-   * Upcoming anniversaries & round birthdays (anniversaries + member_contact)
-   * Leitet Jubilaeen aus joined_on und runde Geburtstage aus birth_date ab. Beide Spalten sind im Roster (GET /clubs/{clubId}/members) nur fuer Mitglieder-Verwalter sichtbar; da `date` minus `years` das Original exakt rekonstruiert, gilt hier dieselbe Schranke: member_contact >= read_all. Zusaetzlich ist der Report ueber die Faehigkeit `anniversaries` im Admin abschaltbar.
+   * Jubilaeen & Geburtstage / Upcoming anniversaries & birthdays (anniversaries)
+   * Zwei verschiedene Dinge in einer Liste: kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. kind=membership liefert years ("10 Jahre dabei") — dort ist die Zahl der ganze Sinn. Sichtbar fuer jedes Mitglied; abschaltbar ueber die Faehigkeit `anniversaries` im Admin.
    * 
    * `GET /reports/anniversaries`
    */

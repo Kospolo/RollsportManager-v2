@@ -15,7 +15,7 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
-import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
+import { requireCap, requireClubMemberDb, requireClubRoleDb } from '../lib/capabilities.js';
 
 export const reportsRouter = createRouter();
 
@@ -268,28 +268,67 @@ reportsRouter.openapi(
 //
 // Die Regel dahinter ist NICHT "API an die DB angleichen" (die DB schuetzt hier
 // gar nichts), sondern: DIE API DARF IHREN EIGENEN SPALTENSCHUTZ NICHT
-// HINTERGEHEN. Deshalb zwei Gates:
-//   * anniversaries >= read_team — die Faehigkeit selbst (im Admin abschaltbar)
-//   * member_contact >= read_all — die SPALTEN, die der Report ableitet.
-//     Im Seed exakt MANAGE_MEMBER_ROLES (owner/admin/moderator/treasurer) und
-//     damit deckungsgleich mit maySeeFullRoster (members.ts:68-70): fuer JEDEN
-//     Pfad, der birth_date/joined_on ausliefert, gilt jetzt dieselbe Regel.
+// HINTERGEHEN.
 //
-// VERHALTENSAENDERUNG, ausdruecklich benannt: coach/member/guest_coach
-// bekommen 200 -> 403. Das ist eine Haertung, kein Angleichen.
+// ###########################################################################
+// NACHTRAG (Registrierung/0034): DER SCHUTZ WAR RICHTIG, DIE ANTWORT WAR FALSCH
+// ###########################################################################
+// Die Haertung oben sperrte coach/member/guest_coach komplett aus (403). Damit
+// war die Luecke zu — aber auch das Feature: ein Verein, der nicht mehr weiss,
+// wer Geburtstag hat, hat kein Datenschutzproblem geloest, sondern eine
+// Vereinsfunktion abgeschafft. Beides ist gleichzeitig zu haben, wenn man
+// aufhoert, GEBURTSTAGE und VEREINSJUBILAEEN in einen Topf zu werfen:
+//
+//   GEBURTSTAG:  'years' ist das ALTER. `date` minus `years` = Geburtsdatum.
+//                Der Verein braucht "Emma hat am 3. November Geburtstag" —
+//                NICHT "Emma wird 10". -> years = null, Tag+Monat genuegen.
+//
+//                ACHTUNG, DER SUBTILE TEIL: 'years' wegzulassen reicht NICHT,
+//                solange der Report nur RUNDE Geburtstage zeigt (Vielfache von
+//                10). Wer in der Liste steht, ist an diesem Tag nachweislich
+//                10/20/30/… — das Geburtsjahr schrumpft auf eine Handvoll
+//                Kandidaten, und bei einem Kind bleibt genau einer uebrig. Die
+//                Rundheit selbst IST die Auskunft. Deshalb faellt der
+//                10er-Filter weg: es werden ALLE Geburtstage gezeigt. Erst
+//                "jeder ist dabei" macht die Anwesenheit in der Liste
+//                aussagelos.
+//
+//   JUBILAEUM:   'years' ist der ganze Sinn ("10 Jahre dabei") — ohne die Zahl
+//                gibt es nichts zu feiern. Es bleibt erhalten.
+//
+// Damit braucht der Report member_contact >= read_all nicht mehr: er leitet aus
+// birth_date nur noch Tag+Monat ab, und das ist keine der redigierten Spalten.
+// Es bleibt EIN Gate: anniversaries >= read_team (die Faehigkeit selbst, im
+// Admin abschaltbar).
+//
+// OFFEN BENANNT, damit es niemand spaeter "entdeckt": bei kind='membership' ist
+// `date` minus `years` weiterhin exakt joined_on, und joined_on steht in
+// SENSITIVE_MEMBER_FIELDS (members.ts:59-70). Fuer die Personen mit einem
+// 5-Jahres-Schritt im naechsten Jahr wird joined_on also ableitbar, obwohl der
+// Roster es fuer dieselbe Person redigiert. Das ist eine bewusste Entscheidung
+// des Betreibers, keine Unachtsamkeit: ein Vereinsjubilaeum IST die oeffentliche
+// Bekanntgabe eines Eintrittsdatums — wer es geheim halten will, muss die
+// Faehigkeit 'anniversaries' abschalten, dann ist der Report ganz weg. Es
+// betrifft ausserdem nur die wenigen Personen mit einem Jubilaeum im
+// Jahresfenster, nicht den Roster.
+//
+// VERHALTENSAENDERUNG: coach/member/guest_coach bekommen 403 -> 200, sehen aber
+// bei Geburtstagen years=null. Gegenueber dem URSPRUNG (vor der Haertung) ist
+// das strenger: dort stand years=10 in der Antwort.
 // ============================================================================
 reportsRouter.openapi(
   createRoute({
     method: 'get',
     path: '/reports/anniversaries',
     tags: ['reports'],
-    summary: 'Upcoming anniversaries & round birthdays (anniversaries + member_contact)',
+    summary: 'Jubilaeen & Geburtstage / Upcoming anniversaries & birthdays (anniversaries)',
     description:
-      'Leitet Jubilaeen aus joined_on und runde Geburtstage aus birth_date ab. Beide Spalten sind ' +
-      'im Roster (GET /clubs/{clubId}/members) nur fuer Mitglieder-Verwalter sichtbar; da `date` ' +
-      'minus `years` das Original exakt rekonstruiert, gilt hier dieselbe Schranke: ' +
-      'member_contact >= read_all. Zusaetzlich ist der Report ueber die Faehigkeit ' +
-      '`anniversaries` im Admin abschaltbar.',
+      'Zwei verschiedene Dinge in einer Liste: ' +
+      'kind=birthday liefert Tag und Monat OHNE Jahre (years=null) — der Verein soll wissen, WANN ' +
+      'jemand Geburtstag hat, nicht WIE ALT er wird. Es werden bewusst ALLE Geburtstage gezeigt und ' +
+      'nicht nur runde: waeren es nur runde, verriete schon die Anwesenheit in der Liste das Alter. ' +
+      'kind=membership liefert years ("10 Jahre dabei") — dort ist die Zahl der ganze Sinn. ' +
+      'Sichtbar fuer jedes Mitglied; abschaltbar ueber die Faehigkeit `anniversaries` im Admin.',
     security: [{ bearerAuth: [] }],
     request: { query: z.object({ club_id: uuid }) },
     responses: {
@@ -300,13 +339,11 @@ reportsRouter.openapi(
   async (c) => {
     const { club_id } = c.req.valid('query');
     const claims = c.get('claims');
-    requireClubMember(claims, club_id);
-    // Die Faehigkeit selbst — erste echte Durchsetzung von 'anniversaries'.
+    // Die Faehigkeit selbst — der Ein/Aus-Schalter im Admin. Sie ist jetzt das
+    // EINZIGE Gate: der Report leitet aus birth_date nur noch Tag+Monat ab
+    // (siehe Kopf), und das ist keine redigierte Spalte mehr.
+    await requireClubMemberDb(c, club_id);
     await requireCap(c, club_id, 'anniversaries', 'read_team');
-    // Die abgeleiteten SPALTEN (birth_date/joined_on) — dieselbe Schranke wie
-    // maySeeFullRoster in members.ts. Ohne diese Zeile ist der Report ein
-    // Umgehungspfad um die eigene Redigierung.
-    await requireCap(c, club_id, 'member_contact', 'read_all');
 
     const rows = await withUser(claims, (tx) =>
       tx`
@@ -316,7 +353,8 @@ reportsRouter.openapi(
           where club_id = ${club_id} and deleted_at is null and status = 'active'
         ),
         membership as (
-          -- 5/10/15/20/25 … years of membership (multiples of 5)
+          -- 5/10/15/20/25 … Jahre Mitgliedschaft. 'years' bleibt: ohne die Zahl
+          -- gibt es kein Jubilaeum.
           select r.id as member_id, r.member_name, 'membership'::text as kind,
                  (r.joined_on + (y * interval '1 year'))::date as date, y as years
           from roster r
@@ -326,14 +364,28 @@ reportsRouter.openapi(
                 between current_date and (current_date + interval '365 days')::date
         ),
         birthdays as (
-          -- round birthdays (multiples of 10): 10, 20, 30 …
+          -- ALLE Geburtstage (nicht nur runde — siehe Kopf: die Rundheit selbst
+          -- waere die Auskunft), als naechstes Vorkommen von Tag+Monat.
+          --
+          -- Die Jahresdifferenz 'yd' bleibt hier drin und wird NICHT selektiert:
+          -- sie dient nur dazu, den Tag zu finden. Postgres klemmt dabei den
+          -- 29. Februar in Nicht-Schaltjahren von selbst auf den 28. —
+          -- deshalb Datums-Arithmetik und nicht make_date(), das dort
+          -- schlicht mit einem Fehler abbraeche.
           select r.id as member_id, r.member_name, 'birthday'::text as kind,
-                 (r.birth_date + (a * interval '1 year'))::date as date, a as years
+                 o.next_date as date, null::int as years
           from roster r
-          cross join generate_series(10, 100, 10) as a
+          cross join lateral (
+            select case
+                     when (r.birth_date + (yd.d * interval '1 year'))::date >= current_date
+                       then (r.birth_date + (yd.d * interval '1 year'))::date
+                     else (r.birth_date + ((yd.d + 1) * interval '1 year'))::date
+                   end as next_date
+            from (select (extract(year from current_date)
+                          - extract(year from r.birth_date))::int as d) yd
+          ) o
           where r.birth_date is not null
-            and (r.birth_date + (a * interval '1 year'))::date
-                between current_date and (current_date + interval '365 days')::date
+            and o.next_date between current_date and (current_date + interval '365 days')::date
         )
         select member_id, member_name, kind, date::text as date, years,
                (date - current_date)::int as days_until

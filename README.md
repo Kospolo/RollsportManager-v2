@@ -40,13 +40,34 @@ npm run dev      # http://localhost:3021
 
 ## Backend prüfen (alle lokal, Wegwerf-Postgres `rsm2-pg-test`)
 
+**Alle fünf sind Pflicht-Gates. Keines ersetzt ein anderes.**
+
 ```bash
 supabase/scripts/db-test.sh              # Schema + Seed + RLS-Grundchecks
-supabase/tests/run-tests.sh              # 155 SQL-Sicherheitstests (RLS/Mandanten/GoBD)
-cd services/api && npm test              # Unit-Tests (ohne Netz/DB)
-cd services/api && npm run db:test       # API-End-to-End-Smoke über HTTP
+supabase/tests/run-tests.sh              # SQL-Sicherheitstests (RLS/Mandanten/GoBD), aktuell 852
+cd services/api && npm test              # Unit-Tests (ohne Netz/DB), aktuell 199
+cd services/api && npm run db:test       # PFLICHT: API-End-to-End-Smoke über HTTP (scripts/smoke.mjs)
 cd packages/contracts && npm run check   # Contract-Gate (Spec-Frische + Codegen-Drift)
 ```
+
+### Warum `npm run db:test` (smoke.mjs) kein „nice to have“ ist
+
+Die SQL-Suite kann `services/api/src` **strukturell nicht sehen**: `run-tests.sh`
+startet einen Container und schiebt `tests/sql/*.sql` per `psql` hinein — es wird
+nie eine Zeile TypeScript geladen. Alles, was zwischen HTTP-Anfrage und SQL liegt
+(Guards, Service-Mode-Aufrufe, Redigierung von Spalten, Routen-Verdrahtung),
+liegt damit in ihrem toten Winkel.
+
+Das ist keine Theorie: mit **sabotiertem `routines.ts`** blieb die SQL-Suite
+**grün** — rot wurde ausschließlich der Smoke. Genau diese Lücke hat dazu
+geführt, dass „Kür anlegen“ tagelang für *jede* Rolle kaputt war, ohne dass ein
+Gate es gemerkt hat.
+
+Faustregel: **wer `services/api/src` anfasst, muss `npm run db:test` laufen
+lassen.** Ein grünes SQL-Gate sagt darüber nichts aus.
+
+> `scripts/api-db-test.sh` ist nur auf einem frischen `dev-stack.sh reset`
+> aussagekräftig — er ist nicht idempotent.
 
 Alle drei Shell-Harnesse teilen sich `supabase/scripts/lib/pg-harness.sh`
 (Container `rsm2-pg-test`, `postgres:16-alpine`, `127.0.0.1:55432`, `--rm`) —

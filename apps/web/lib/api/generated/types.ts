@@ -70,6 +70,52 @@ export interface ClubMember {
   "updated_at": string;
 }
 
+export interface ClubRegistrationResult {
+  "club": Club;
+  "member": ClubMember;
+  "join_code": string;
+  "trial_ends_at": string;
+}
+
+export interface ClubRegistration {
+  "name": string;
+  "city": string;
+  "short_name"?: string;
+  "discipline"?: string;
+  "accept_terms": boolean;
+  "accept_privacy": boolean;
+}
+
+export interface ClubJoinResult {
+  "club_id": string;
+  "club_name": string;
+  "member_id": string;
+  "status": MemberStatus;
+}
+
+export interface ClubJoinInput {
+  "code": string;
+  "first_name": string;
+  "last_name": string;
+  "accept_terms": boolean;
+  "accept_privacy": boolean;
+}
+
+export interface ClubJoinCodeRotated {
+  "club_id": string;
+  "join_code": string;
+  "join_code_expires_at": string | null;
+}
+
+export interface ClubJoinCodeRotateInput {
+  "expires_in_days"?: number | null;
+}
+
+export interface ClubJoinCodeRevoked {
+  "club_id": string;
+  "join_code_revoked_at": string;
+}
+
 export type AssignableClubRole = "admin" | "moderator" | "treasurer" | "coach" | "member" | "guest_coach";
 export const AssignableClubRoleValues: readonly AssignableClubRole[] = ["admin", "moderator", "treasurer", "coach", "member", "guest_coach"] as const;
 
@@ -1399,7 +1445,7 @@ export interface Anniversary {
   "member_name": string;
   "kind": AnniversaryKind;
   "date": string;
-  "years": number;
+  "years": number | null;
   "days_until": number;
 }
 
