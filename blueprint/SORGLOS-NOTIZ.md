@@ -36,21 +36,34 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
    - **Noch offen:** `none` sperrt bisher nur SCHREIBEN, nicht LESEN → das UI darf `none` **nicht als „abgeschaltet" anzeigen**,
      solange die SELECT-Policies nicht umgestellt sind (0027+). Performance von `cap_rank` ungemessen (vor Prod `EXPLAIN ANALYZE`).
      Der GoTrue-Hook, der `club_roles` in den Token schreibt, ist im Repo **nicht auffindbar** — für Prod klären.
-2. **iOS fertigstellen:** Finanz-Tiefe B (Beitragskategorien/Mitgliedsbeiträge/Familienrabatte, Jahresabschluss, Bankabgleich, Spenden) ·
+2. **Registrierung + DSGVO + Botschutz** (neu am 2026-07-16 von Marcel beauftragt, Recherche lief als `wcixbacpt`).
+   Heute gibt es nur den Dev-Persona-Login — **es kann sich weder ein Verein noch ein Mitglied selbst anmelden.**
+   - **Von Marcel vorgegeben:** Es geht um **Vereine und Mitglieder** (nicht Firma/Mitarbeiter — das war ein Versprecher).
+     **Beitritt per VEREINSCODE**, wenn die Person einen hat. **Bewerbung ohne Code** ist nur eine *mögliche* Ergänzung
+     und muss **standardmäßig AUS** sein — einschaltbar **im Super-Admin** (Betreiberkonsole `app/(super)/`).
+   - **⚠️ Sicherheits-Konsequenz des Vereinscodes** (beim Bau beachten): ein Vereinscode ist ein *geteiltes* Geheimnis —
+     er landet in WhatsApp-Gruppen. Wenn er direkten Zugang gibt, sieht jeder, der ihn hat, Mitglieder- und **Kinderdaten**.
+     Deshalb: hohe Entropie, Versuchs-Limit, widerrufbar/rotierbar — und die Frage, ob der Code direkt hereinlässt oder
+     nur eine **Beitrittsanfrage** erzeugt, die der Vorstand freigibt. Marcel entscheidet das, wenn der Bauplan steht.
+   - Offene Kernkonflikte: **Kinder** (DSGVO Art. 8 — Einwilligung der Eltern), **Löschrecht vs. GoBD** (Rechnungen
+     müssen 10 Jahre bleiben), **GoTrue-Hook fehlt im Repo** (ohne ihn kein brauchbarer Token nach echter Registrierung),
+     **Mailversand** (ohne SMTP keine Verifikation/Einladung).
+3. **iOS fertigstellen:** Finanz-Tiefe B (Beitragskategorien/Mitgliedsbeiträge/Familienrabatte, Jahresabschluss, Bankabgleich, Spenden) ·
    Super-Admin-Konsole · **Politur-Pass** (UI-Rechte-Gating an die neue RLS anpassen — Buttons ausblenden statt 403; Bearbeiten-Flows in Lese-Modulen;
    Toast-System; Layout-Nickel wie Chip-Umbruch in Jubiläen/Notizen).
-3. **2. Datenschutz-Konsistenz-Durchgang** (nach RBAC evtl. obsolet): Jubiläen/Geburtstage, Ausrüstungs-Reservierungen, Anwesenheit — gleiche Logik.
-4. **Android:** ~10 % (früher Anfang, unfertig). Volle Parität nachbauen (mehrere Bündel).
+4. **2. Datenschutz-Konsistenz-Durchgang** (nach RBAC evtl. obsolet): Jubiläen/Geburtstage, Ausrüstungs-Reservierungen, Anwesenheit — gleiche Logik.
+5. **Android:** ~10 % (früher Anfang, unfertig). Volle Parität nachbauen (mehrere Bündel).
    BLOCKER: Emulator-System-Image fehlt (~2,6 GB nachladen) oder physisches Gerät nutzen.
-5. **Watch / Widgets:** 0 %.
-6. **iPhone-Geräte-Install (Zuhause-Test):** machbar & bereit — dein iPhone 16 Pro ist gekoppelt, Signierung da, Mac-IP 192.168.1.168.
+6. **Watch / Widgets:** 0 %.
+7. **iPhone-Geräte-Install (Zuhause-Test):** machbar & bereit — dein iPhone 16 Pro ist gekoppelt, Signierung da, Mac-IP 192.168.1.168.
    Nötig: Dev-API aufs WLAN öffnen (0.0.0.0:3022) + App-Build auf die Mac-IP zeigen + Development-Signierung + devicectl-Install.
    Funktioniert nur im Heim-WLAN, solange Mac+Backend laufen (dev-Build). Wartet auf dein „ja".
-7. **Produktivbetrieb (v2-Start):** gehosteter Server (Blueprint: Hetzner) + Daten-Cutover/ETL aus v1 + TestFlight/Play.
+8. **Produktivbetrieb (v2-Start):** gehosteter Server (Blueprint: Hetzner) + Daten-Cutover/ETL aus v1 + TestFlight/Play.
    Echte Zahlungen (Stripe-Checkout/RevenueCat) sind noch Gerüst.
-8. **Kleinkram „v2.1/später" (Web):** Mehrvereins-Umschalter/Onboarding, echter SMTP-Mahnversand, automatische Familienrabatt-Verrechnung,
-   Betreiber-Rechnungsverwaltung/Beta/Demo-Daten, Chat-Voice-to-Text/Check-out/Favoriten, echte Registrierung.
-9. **Getrennt & dringend (NICHT v2):** Phase-0-Sicherheit der laufenden **v1-Produktion** (Demo-JWT, Selbst-Beförderung) —
+9. **Kleinkram „v2.1/später" (Web):** Mehrvereins-Umschalter/Onboarding, echter SMTP-Mahnversand, automatische Familienrabatt-Verrechnung,
+   Betreiber-Rechnungsverwaltung/Beta/Demo-Daten, Chat-Voice-to-Text/Check-out/Favoriten.
+   („echte Registrierung" stand hier — ist seit 2026-07-16 als **Punkt 2** eigenständig beauftragt.)
+10. **Getrennt & dringend (NICHT v2):** Phase-0-Sicherheit der laufenden **v1-Produktion** (Demo-JWT, Selbst-Beförderung) —
    eigener Task-Chip vom Sessionbeginn. Braucht Abstimmung (Key-Rotation invalidiert App-Sessions).
 
 ## 3. Wie man testet / weitermacht (Resume-Fakten)
