@@ -7,8 +7,12 @@
 --     moderator (Petra Köhler, m-14), treasurer, coach, guest_coach, member —
 --     3 teams, 5 guardianships (3 families)
 --   * 1 PLATFORM admin (no club_members row; app_metadata.is_platform_admin)
---   * 15 events relative to today (past trainings with attendance, upcoming
---     trainings with RSVPs, the Bezirksmeisterschaft in 9 days)
+--   * 16 events relative to today (past trainings with attendance, upcoming
+--     trainings with RSVPs, the Bezirksmeisterschaft in 9 days). 14 davon sind
+--     audience='teams' (nur die zugeordneten Teams sehen sie), ZWEI sind
+--     ausdrueckliche Vereinsveranstaltungen (audience='club', 0050):
+--     e-14 Sommerfest und e-16 Jahreshauptversammlung — sie haben deshalb
+--     KEINE event_teams-Zeile und jedes Mitglied sieht sie.
 --   * 6 routines (Küren) with audio media assets, markers and score history
 --   * 2 competitions with entries
 --   * 10 invoices — the 5 OPEN ones sum to exactly 38,100 cents = 381.00 EUR
@@ -212,22 +216,29 @@ insert into app.competitions (id, club_id, name, location, starts_at, ends_at, r
 -- ----------------------------------------------------------------------------
 -- Events (mock e-01 … e-15, relative to today)
 -- ----------------------------------------------------------------------------
-insert into app.events (id, club_id, type, title, location, starts_at, ends_at, note, competition_id) values
-  ('e0000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date - 7 + time '17:00')::timestamptz, (current_date - 7 + time '18:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date - 6 + time '18:30')::timestamptz, (current_date - 6 + time '20:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date - 5 + time '16:00')::timestamptz, (current_date - 5 + time '17:00')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date - 3 + time '17:00')::timestamptz, (current_date - 3 + time '18:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Kür-Feinschliff Leistung',             'Ballei-Sporthalle, Neckarsulm', (current_date - 1 + time '18:30')::timestamptz, (current_date - 1 + time '20:30')::timestamptz, 'Schwerpunkt: Sprungkombinationen für die Bezirksmeisterschaft', null),
-  ('e0000000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date + 0 + time '16:00')::timestamptz, (current_date + 0 + time '17:00')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000007', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date + 1 + time '17:00')::timestamptz, (current_date + 1 + time '18:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000008', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date + 2 + time '18:30')::timestamptz, (current_date + 2 + time '20:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000009', 'c1ab0000-0000-4000-8000-000000000001', 'other',       'Elternabend: Saisonplanung',           'Vereinsheim RSV Neckarsulm',    (current_date + 3 + time '19:00')::timestamptz, (current_date + 3 + time '20:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000010', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date + 4 + time '16:00')::timestamptz, (current_date + 4 + time '17:00')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000011', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Generalprobe Küren',                   'Ballei-Sporthalle, Neckarsulm', (current_date + 6 + time '18:00')::timestamptz, (current_date + 6 + time '20:30')::timestamptz, 'Mit Musik und Wettkampfkleidung — Ablauf wie am Wettkampftag', null),
-  ('e0000000-0000-4000-8000-000000000012', 'c1ab0000-0000-4000-8000-000000000001', 'competition', 'Bezirksmeisterschaft Rollkunstlauf',   'Rundsporthalle Ludwigsburg',    (current_date + 9 + time '08:30')::timestamptz, (current_date + 9 + time '18:00')::timestamptz, 'Treffpunkt 7:45 Uhr am Vereinsheim, Fahrgemeinschaften bitte eintragen', 'c0000000-0000-4000-8000-000000000001'),
-  ('e0000000-0000-4000-8000-000000000013', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date + 11 + time '17:00')::timestamptz, (current_date + 11 + time '18:30')::timestamptz, null, null),
-  ('e0000000-0000-4000-8000-000000000014', 'c1ab0000-0000-4000-8000-000000000001', 'other',       'Sommerfest mit Schnupperlaufen',       'Vereinsgelände RSV Neckarsulm', (current_date + 23 + time '14:00')::timestamptz, (current_date + 23 + time '20:00')::timestamptz, 'Kuchen-Slots werden im Vereinsleben-Board verteilt', null),
-  ('e0000000-0000-4000-8000-000000000015', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date + 13 + time '18:30')::timestamptz, (current_date + 13 + time '20:30')::timestamptz, null, null);
+insert into app.events (id, club_id, type, title, location, starts_at, ends_at, note, competition_id, audience) values
+  ('e0000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date - 7 + time '17:00')::timestamptz, (current_date - 7 + time '18:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date - 6 + time '18:30')::timestamptz, (current_date - 6 + time '20:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date - 5 + time '16:00')::timestamptz, (current_date - 5 + time '17:00')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date - 3 + time '17:00')::timestamptz, (current_date - 3 + time '18:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Kür-Feinschliff Leistung',             'Ballei-Sporthalle, Neckarsulm', (current_date - 1 + time '18:30')::timestamptz, (current_date - 1 + time '20:30')::timestamptz, 'Schwerpunkt: Sprungkombinationen für die Bezirksmeisterschaft', null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date + 0 + time '16:00')::timestamptz, (current_date + 0 + time '17:00')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000007', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date + 1 + time '17:00')::timestamptz, (current_date + 1 + time '18:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000008', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date + 2 + time '18:30')::timestamptz, (current_date + 2 + time '20:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000009', 'c1ab0000-0000-4000-8000-000000000001', 'other',       'Elternabend: Saisonplanung',           'Vereinsheim RSV Neckarsulm',    (current_date + 3 + time '19:00')::timestamptz, (current_date + 3 + time '20:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000010', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Minis & Anfänger',            'Pichterichhalle, Neckarsulm',   (current_date + 4 + time '16:00')::timestamptz, (current_date + 4 + time '17:00')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000011', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Generalprobe Küren',                   'Ballei-Sporthalle, Neckarsulm', (current_date + 6 + time '18:00')::timestamptz, (current_date + 6 + time '20:30')::timestamptz, 'Mit Musik und Wettkampfkleidung — Ablauf wie am Wettkampftag', null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000012', 'c1ab0000-0000-4000-8000-000000000001', 'competition', 'Bezirksmeisterschaft Rollkunstlauf',   'Rundsporthalle Ludwigsburg',    (current_date + 9 + time '08:30')::timestamptz, (current_date + 9 + time '18:00')::timestamptz, 'Treffpunkt 7:45 Uhr am Vereinsheim, Fahrgemeinschaften bitte eintragen', 'c0000000-0000-4000-8000-000000000001', 'teams'),
+  ('e0000000-0000-4000-8000-000000000013', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Nachwuchs Pflicht',           'Ballei-Sporthalle, Neckarsulm', (current_date + 11 + time '17:00')::timestamptz, (current_date + 11 + time '18:30')::timestamptz, null, null, 'teams'),
+  ('e0000000-0000-4000-8000-000000000014', 'c1ab0000-0000-4000-8000-000000000001', 'other',       'Sommerfest mit Schnupperlaufen',       'Vereinsgelände RSV Neckarsulm', (current_date + 23 + time '14:00')::timestamptz, (current_date + 23 + time '20:00')::timestamptz, 'Kuchen-Slots werden im Vereinsleben-Board verteilt', null, 'club'),
+  ('e0000000-0000-4000-8000-000000000015', 'c1ab0000-0000-4000-8000-000000000001', 'training',    'Training Kürgruppe Leistung',          'Ballei-Sporthalle, Neckarsulm', (current_date + 13 + time '18:30')::timestamptz, (current_date + 13 + time '20:30')::timestamptz, null, null, 'teams'),
+  -- e-16: die zweite VEREINSVERANSTALTUNG. Ohne sie loege der Seed weiter —
+  -- ein frisch freigegebenes Mitglied ohne Team und ohne Kind saehe sonst
+  -- NULL Termine, und die neue Regel saehe am Bildschirm kaputt aus statt
+  -- richtig. Genau diese Falle ("coach sieht 0 Schliessfaecher") hat hier
+  -- schon zweimal zugeschlagen. Traegt zusaetzlich 99f_pending_matrix.sql:241
+  -- ("nach Freigabe: sie sieht die Termine" > 0), der sonst rot fiele.
+  ('e0000000-0000-4000-8000-000000000016', 'c1ab0000-0000-4000-8000-000000000001', 'other',       'Jahreshauptversammlung',               'Vereinsheim RSV Neckarsulm',    (current_date + 17 + time '19:00')::timestamptz, (current_date + 17 + time '21:30')::timestamptz, 'Mit Vorstandswahl — stimmberechtigt sind alle Mitglieder ab 16 Jahren', null, 'club');
 
 insert into app.event_teams (club_id, event_id, team_id)
 select 'c1ab0000-0000-4000-8000-000000000001', v.event_id::uuid, v.team_id::uuid
@@ -249,9 +260,10 @@ from (values
   ('e0000000-0000-4000-8000-000000000012', 'b0000000-0000-4000-8000-000000000002'),
   ('e0000000-0000-4000-8000-000000000012', 'b0000000-0000-4000-8000-000000000003'),
   ('e0000000-0000-4000-8000-000000000013', 'b0000000-0000-4000-8000-000000000002'),
-  ('e0000000-0000-4000-8000-000000000014', 'b0000000-0000-4000-8000-000000000001'),
-  ('e0000000-0000-4000-8000-000000000014', 'b0000000-0000-4000-8000-000000000002'),
-  ('e0000000-0000-4000-8000-000000000014', 'b0000000-0000-4000-8000-000000000003'),
+  -- e-14 (Sommerfest) und e-16 (Jahreshauptversammlung) stehen BEWUSST nicht
+  -- hier: sie sind audience='club'. Eine Vereinsveranstaltung MIT Team-Zeile
+  -- weist app.protect_event_teams_audience (0050) mit 23514 zurueck — die
+  -- Zielgruppe ist die eine Wahrheit, die Team-Zuordnung waere die zweite.
   ('e0000000-0000-4000-8000-000000000015', 'b0000000-0000-4000-8000-000000000003')
 ) as v(event_id, team_id);
 
