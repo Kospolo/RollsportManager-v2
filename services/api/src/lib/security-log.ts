@@ -30,6 +30,10 @@ export type AuthEventName =
   | 'join_code_revoked'
   | 'join_rate_limited'
   | 'join_already_member'
+  // Wiederantrag innerhalb der Sperrfrist nach einer Ablehnung (0036/0037).
+  // Gehoert ins Protokoll, weil genau DAS das Muster ist, das man spaeter sucht:
+  // ein einzelner 409 ist ein Missverstaendnis, zwanzig sind Belaestigung.
+  | 'join_rejected_cooldown'
   | 'club_create_rate_limited'
   | 'approve_forbidden';
 
