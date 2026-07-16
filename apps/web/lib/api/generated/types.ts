@@ -275,6 +275,9 @@ export interface UserPreferencesUpdate {
 export type CapabilityLevel = "none" | "read_own" | "read_team" | "read_all" | "edit" | "manage";
 export const CapabilityLevelValues: readonly CapabilityLevel[] = ["none", "read_own", "read_team", "read_all", "edit", "manage"] as const;
 
+export type CapabilityEnforcement = "enforced" | "partial" | "write_only" | "unenforced";
+export const CapabilityEnforcementValues: readonly CapabilityEnforcement[] = ["enforced", "partial", "write_only", "unenforced"] as const;
+
 export interface ResolvedCapability {
   "capability_key": string;
   "label_de": string;
@@ -284,6 +287,7 @@ export interface ResolvedCapability {
   "rank": number;
   "level": CapabilityLevel;
   "owner_only": boolean;
+  "enforcement": CapabilityEnforcement;
 }
 
 export interface CapabilityResolution {
@@ -299,6 +303,13 @@ export interface Capability {
   "label_en": string;
   "allowed_levels": CapabilityLevel[];
   "sort": number;
+  "owner_only": boolean;
+  "enforcement": CapabilityEnforcement;
+}
+
+export interface MemberRoleAssignment {
+  "member_id": string;
+  "role_ids": string[];
 }
 
 export interface ClubRoleDef {

@@ -218,9 +218,11 @@ meRouter.openapi(
       'vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen ' +
       'Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im ' +
       'Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. ' +
-      'HINWEIS fuer Clients: Stufe "none" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind ' +
-      'noch nicht durchgaengig umgestellt. "none" darf deshalb nicht pauschal als "abgeschaltet" ' +
-      'dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).',
+      'HINWEIS fuer Clients: was eine Stufe WIRKLICH bewirkt, steht je Faehigkeit in `enforcement` ' +
+      '(0033) — nur bei "enforced" entzieht die Stufe "none" auch den LESEZUGRIFF. Bei "partial" ' +
+      '(finance, member_contact) wirkt sie nur auf einen Teil des Lesens, bei "write_only" nur auf ' +
+      'das Schreiben, bei "unenforced" auf nichts. "none" darf deshalb NICHT pauschal als ' +
+      '"abgeschaltet" beschriftet werden — das waere eine Zusage, die der Server nicht einloest.',
     security: [{ bearerAuth: [] }],
     request: {
       query: z.object({ club_id: z.string().uuid() }),

@@ -2261,6 +2261,24 @@ export const capabilityLevelSchema = z
   .enum(['none', 'read_own', 'read_team', 'read_all', 'edit', 'manage'])
   .openapi('CapabilityLevel');
 
+/**
+ * Wie weit die eingestellte Stufe TATSAECHLICH durchgesetzt wird (0033).
+ * Rein deskriptiv — NIE Grundlage einer Autorisierung, sondern der Beschriftung:
+ *   enforced   Die Stufe wirkt auf das LESEN. "none" entzieht den Zugriff wirklich.
+ *   partial    Die Stufe wirkt nur auf einen TEIL des Lesens. "none" hier als
+ *              "kein Zugriff" zu beschriften waere eine Taeuschung — und zwar
+ *              die gefaehrlichste Sorte: sie verspricht Vertraulichkeit, die
+ *              nachweislich nicht existiert (finance, member_contact).
+ *   write_only Die Stufe wirkt nur auf das SCHREIBEN. Gelesen wird weiter.
+ *   unenforced Die Stufe wirkt NIRGENDS (18 von 32 — die Bereiche haengen noch
+ *              an den alten Rollen-Praedikaten).
+ * Clients MUESSEN das auswerten, bevor sie eine Stufe beschriften. Herleitung
+ * und Dauerkontrolle: Migration 0033 + supabase/tests/sql/93j.
+ */
+export const capabilityEnforcementSchema = z
+  .enum(['enforced', 'partial', 'write_only', 'unenforced'])
+  .openapi('CapabilityEnforcement');
+
 /** Ein Katalog-Eintrag (app.capabilities). Bewusst OHNE `level` (siehe Regel 1). */
 export const capabilitySchema = z
   .object({
@@ -2270,6 +2288,14 @@ export const capabilitySchema = z
     /** Die im Admin-UI waehlbare Teilmenge der Skala. */
     allowed_levels: z.array(capabilityLevelSchema),
     sort: z.number().int(),
+    /**
+     * Geschuetzte Faehigkeit (0032): nur der Vereinsinhaber darf sie in der
+     * Rollen-Matrix aendern. Ohne dieses Feld baut ein Admin-UI aus DIESEM
+     * Katalog ein Dropdown, das beim Speichern 403 liefert (roles.ts:404-415).
+     */
+    owner_only: z.boolean(),
+    /** Was die Stufe wirklich bewirkt (0033) — fuer die Beschriftung. */
+    enforcement: capabilityEnforcementSchema,
   })
   .openapi('Capability');
 
@@ -2291,6 +2317,11 @@ export const resolvedCapabilitySchema = z
      * Speichern 403 liefert. Inline: kein benannter Skalar.
      */
     owner_only: z.boolean(),
+    /**
+     * Was die eingestellte Stufe WIRKLICH bewirkt (0033). Das UI darf "none"
+     * nur dort als "kein Zugriff" beschriften, wo hier 'enforced' steht.
+     */
+    enforcement: capabilityEnforcementSchema,
   })
   .openapi('ResolvedCapability');
 
@@ -2390,6 +2421,25 @@ export const memberRolesSetSchema = z
     role_ids: z.array(uuid),
   })
   .openapi('MemberRolesSet');
+
+/**
+ * Wer hat welche Rollen? Die LESESEITE der Mehrfachrollen — bis Phase 3 gab es
+ * sie nicht: PUT .../members/{id}/roles lieferte die Rollen einer Person nur als
+ * Antwort auf ein SCHREIBEN. Eine Personen-Liste mit Rollen-Chips war damit ohne
+ * N+1 nicht baubar (und ohne GET je Person gar nicht).
+ *
+ * Vereinsweit statt je Person, weil das Admin-UI immer die ganze Liste zeigt.
+ * Kein neues Recht: member_roles_select ist is_club_member (0022:242) — jedes
+ * Mitglied darf ohnehin sehen, wer welche Rolle hat (die Chips muessen benannt
+ * werden koennen). Die Zeilen kommen durch RLS, nicht an ihr vorbei.
+ */
+export const memberRoleAssignmentSchema = z
+  .object({
+    member_id: uuid,
+    /** Alle Rollen der Person, nach roles.sort. Leer = nur die Primaerrolle-Spiegelung fehlt. */
+    role_ids: z.array(uuid),
+  })
+  .openapi('MemberRoleAssignment');
 
 /** Die Trainer:innen EINES Teams (§1.4) — PUT = Zielzustand. */
 export const teamCoachesSetSchema = z

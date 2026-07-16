@@ -111,6 +111,13 @@ public enum CapabilityLevel: String, Codable, CaseIterable, Sendable, Equatable 
     case manage = "manage"
 }
 
+public enum CapabilityEnforcement: String, Codable, CaseIterable, Sendable, Equatable {
+    case enforced = "enforced"
+    case partial = "partial"
+    case writeOnly = "write_only"
+    case unenforced = "unenforced"
+}
+
 public enum PlatformTier: String, Codable, CaseIterable, Sendable, Equatable {
     case basic = "basic"
     case pro = "pro"
@@ -1411,6 +1418,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
     public var rank: Int
     public var level: CapabilityLevel
     public var ownerOnly: Bool
+    public var enforcement: CapabilityEnforcement
 
     enum CodingKeys: String, CodingKey {
         case capabilityKey = "capability_key"
@@ -1421,6 +1429,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         case rank
         case level
         case ownerOnly = "owner_only"
+        case enforcement
     }
 
     public init(
@@ -1431,7 +1440,8 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         sort: Int,
         rank: Int,
         level: CapabilityLevel,
-        ownerOnly: Bool
+        ownerOnly: Bool,
+        enforcement: CapabilityEnforcement
     ) {
         self.capabilityKey = capabilityKey
         self.labelDe = labelDe
@@ -1441,6 +1451,7 @@ public struct ResolvedCapability: Codable, Equatable, Sendable {
         self.rank = rank
         self.level = level
         self.ownerOnly = ownerOnly
+        self.enforcement = enforcement
     }
 }
 
@@ -1477,6 +1488,8 @@ public struct Capability: Codable, Equatable, Sendable {
     public var labelEn: String
     public var allowedLevels: [CapabilityLevel]
     public var sort: Int
+    public var ownerOnly: Bool
+    public var enforcement: CapabilityEnforcement
 
     enum CodingKeys: String, CodingKey {
         case key
@@ -1484,6 +1497,8 @@ public struct Capability: Codable, Equatable, Sendable {
         case labelEn = "label_en"
         case allowedLevels = "allowed_levels"
         case sort
+        case ownerOnly = "owner_only"
+        case enforcement
     }
 
     public init(
@@ -1491,13 +1506,37 @@ public struct Capability: Codable, Equatable, Sendable {
         labelDe: String,
         labelEn: String,
         allowedLevels: [CapabilityLevel],
-        sort: Int
+        sort: Int,
+        ownerOnly: Bool,
+        enforcement: CapabilityEnforcement
     ) {
         self.key = key
         self.labelDe = labelDe
         self.labelEn = labelEn
         self.allowedLevels = allowedLevels
         self.sort = sort
+        self.ownerOnly = ownerOnly
+        self.enforcement = enforcement
+    }
+}
+
+public struct MemberRoleAssignment: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var memberId: String
+    /// Format: [uuid]
+    public var roleIds: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+        case roleIds = "role_ids"
+    }
+
+    public init(
+        memberId: String,
+        roleIds: [String]
+    ) {
+        self.memberId = memberId
+        self.roleIds = roleIds
     }
 }
 

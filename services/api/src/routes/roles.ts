@@ -31,6 +31,7 @@ import {
   clubRoleDefSchema,
   clubRoleDefUpdateSchema,
   deletedSchema,
+  memberRoleAssignmentSchema,
   memberRolesSetSchema,
   rolePermissionSchema,
   rolePermissionSetSchema,
@@ -78,10 +79,59 @@ rolesRouter.openapi(
   async (c) => {
     const claims = c.get('claims');
     const rows = await withUser(claims, (tx) =>
-      tx`select key, label_de, label_en, allowed_levels, sort
+      tx`select key, label_de, label_en, allowed_levels, sort, owner_only, enforcement
          from app.capabilities order by sort, key`,
     );
     return c.json(z.array(capabilitySchema).parse(rows), 200);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// GET /clubs/{clubId}/member-roles - wer hat welche Rollen? (§7 "Chips")
+//
+// Die LESESEITE der Mehrfachrollen. Bis Phase 3 fehlte sie ersatzlos: es gab
+// weder eine Liste noch ein GET je Person — die Rollen einer Person bekam man
+// nur als ANTWORT AUF EIN SCHREIBEN (PUT .../members/{id}/roles). Eine
+// Personen-Liste mit Rollen-Chips war damit nicht baubar, und genau die ist
+// die Anforderung ("dazu auch mehrere rollen").
+//
+// Gate: requireClubMember, sonst nichts — deckungsgleich mit der Policy
+// (member_roles_select = is_club_member, 0022:242). Bewusst KEIN roles:manage:
+// wer die Mitgliederliste sieht, sieht auch heute schon die Primaerrolle jeder
+// Person (club_members.role), und die Rollen-NAMEN sind fuer jedes Mitglied
+// lesbar (roles_select). Ein Gate hier waere Fassade, keine Vertraulichkeit.
+// Die Zeilen kommen durch RLS (withUser), nicht an ihr vorbei.
+// ---------------------------------------------------------------------------
+rolesRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/clubs/{clubId}/member-roles',
+    tags: ['roles'],
+    summary: 'Die Rollen ALLER Mitglieder des Vereins (Mehrfachrollen, Leseseite)',
+    description:
+      'Eine Zeile je Person mit mindestens einer Rollenzuweisung. Gegenstueck zu ' +
+      'PUT /clubs/{clubId}/members/{memberId}/roles.',
+    security: [{ bearerAuth: [] }],
+    request: { params: clubParam },
+    responses: {
+      200: jsonContent(z.array(memberRoleAssignmentSchema), 'Person -> ihre Rollen'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId } = c.req.valid('param');
+    const claims = c.get('claims');
+    requireClubMember(claims, clubId);
+    const rows = await withUser(claims, (tx) =>
+      tx`
+        select mr.member_id,
+               array_agg(mr.role_id order by r.sort, r.key) as role_ids
+        from app.member_roles mr
+        join app.roles r on r.id = mr.role_id
+        where mr.club_id = ${clubId}
+        group by mr.member_id`,
+    );
+    return c.json(z.array(memberRoleAssignmentSchema).parse(rows), 200);
   },
 );
 

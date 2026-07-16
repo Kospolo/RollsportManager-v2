@@ -84,6 +84,14 @@ enum class CapabilityLevel {
 }
 
 @Serializable
+enum class CapabilityEnforcement {
+    @SerialName("enforced") ENFORCED,
+    @SerialName("partial") PARTIAL,
+    @SerialName("write_only") WRITE_ONLY,
+    @SerialName("unenforced") UNENFORCED;
+}
+
+@Serializable
 enum class PlatformTier {
     @SerialName("basic") BASIC,
     @SerialName("pro") PRO,
@@ -696,7 +704,8 @@ data class ResolvedCapability(
     val sort: Long,
     val rank: Long,
     val level: CapabilityLevel,
-    @SerialName("owner_only") val ownerOnly: Boolean
+    @SerialName("owner_only") val ownerOnly: Boolean,
+    val enforcement: CapabilityEnforcement
 )
 
 @Serializable
@@ -713,7 +722,15 @@ data class Capability(
     @SerialName("label_de") val labelDe: String,
     @SerialName("label_en") val labelEn: String,
     @SerialName("allowed_levels") val allowedLevels: List<CapabilityLevel>,
-    val sort: Long
+    val sort: Long,
+    @SerialName("owner_only") val ownerOnly: Boolean,
+    val enforcement: CapabilityEnforcement
+)
+
+@Serializable
+data class MemberRoleAssignment(
+    @SerialName("member_id") val memberId: String,
+    @SerialName("role_ids") val roleIds: List<String>
 )
 
 @Serializable

@@ -67,6 +67,12 @@ export function levelOfRank(rank: number): CapabilityLevel | undefined {
   return CAPABILITY_LEVELS[rank];
 }
 
+/**
+ * Wie weit die Stufe einer Faehigkeit tatsaechlich durchgesetzt wird (0033).
+ * Deskriptiv, nie autorisierend — siehe capabilityEnforcementSchema.
+ */
+export type CapabilityEnforcement = 'enforced' | 'partial' | 'write_only' | 'unenforced';
+
 /** Eine aufgeloeste Faehigkeit, so wie sie GET /me/capabilities ausliefert. */
 export interface ResolvedCap {
   capability_key: string;
@@ -78,6 +84,8 @@ export interface ResolvedCap {
   level: CapabilityLevel;
   /** Geschuetzte Faehigkeit (0032): nur der Vereinsinhaber darf sie aendern. */
   owner_only: boolean;
+  /** Was die Stufe wirklich bewirkt (0033) — fuer die Beschriftung im UI. */
+  enforcement: CapabilityEnforcement;
 }
 
 /** Die aufgeloesten Rechte einer Person in EINEM Verein. */
@@ -97,7 +105,8 @@ export interface ClubCaps {
  */
 export async function loadCaps(tx: Tx, clubId: string): Promise<ClubCaps> {
   const rows = await tx`
-    select capability_key, label_de, label_en, allowed_levels, sort, rank, level, owner_only
+    select capability_key, label_de, label_en, allowed_levels, sort, rank, level, owner_only,
+           enforcement
     from app.cap_ranks(${clubId})`;
   const roleRows = await tx`select app.member_role_keys(${clubId}) as keys`;
 
@@ -110,6 +119,7 @@ export async function loadCaps(tx: Tx, clubId: string): Promise<ClubCaps> {
     rank: r['rank'] as number,
     level: r['level'] as CapabilityLevel,
     owner_only: r['owner_only'] as boolean,
+    enforcement: r['enforcement'] as CapabilityEnforcement,
   }));
 
   return {

@@ -338,7 +338,7 @@ export class ApiClient {
 
   /**
    * Die aufgeloesten Rechte der eingeloggten Person in einem Verein
-   * Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: Stufe "none" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind noch nicht durchgaengig umgestellt. "none" darf deshalb nicht pauschal als "abgeschaltet" dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).
+   * Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: was eine Stufe WIRKLICH bewirkt, steht je Faehigkeit in `enforcement` (0033) — nur bei "enforced" entzieht die Stufe "none" auch den LESEZUGRIFF. Bei "partial" (finance, member_contact) wirkt sie nur auf einen Teil des Lesens, bei "write_only" nur auf das Schreiben, bei "unenforced" auf nichts. "none" darf deshalb NICHT pauschal als "abgeschaltet" beschriftet werden — das waere eine Zusage, die der Server nicht einloest.
    * 
    * `GET /me/capabilities`
    */
@@ -353,6 +353,16 @@ export class ApiClient {
    */
   async getCapabilities(options?: RequestOptions): Promise<M.Capability[]> {
     return this.request<M.Capability[]>("GET", "/capabilities", { auth: true, options });
+  }
+
+  /**
+   * Die Rollen ALLER Mitglieder des Vereins (Mehrfachrollen, Leseseite)
+   * Eine Zeile je Person mit mindestens einer Rollenzuweisung. Gegenstueck zu PUT /clubs/{clubId}/members/{memberId}/roles.
+   * 
+   * `GET /clubs/{clubId}/member-roles`
+   */
+  async getClubsByClubIdMemberRoles(clubId: string, options?: RequestOptions): Promise<M.MemberRoleAssignment[]> {
+    return this.request<M.MemberRoleAssignment[]>("GET", `/clubs/${encodeURIComponent(clubId)}/member-roles`, { auth: true, options });
   }
 
   /**

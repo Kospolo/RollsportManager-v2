@@ -1212,6 +1212,15 @@
           "manage"
         ]
       },
+      "CapabilityEnforcement": {
+        "type": "string",
+        "enum": [
+          "enforced",
+          "partial",
+          "write_only",
+          "unenforced"
+        ]
+      },
       "ResolvedCapability": {
         "type": "object",
         "properties": {
@@ -1241,6 +1250,9 @@
           },
           "owner_only": {
             "type": "boolean"
+          },
+          "enforcement": {
+            "$ref": "#/components/schemas/CapabilityEnforcement"
           }
         },
         "required": [
@@ -1251,7 +1263,8 @@
           "sort",
           "rank",
           "level",
-          "owner_only"
+          "owner_only",
+          "enforcement"
         ]
       },
       "CapabilityResolution": {
@@ -1304,6 +1317,12 @@
           },
           "sort": {
             "type": "integer"
+          },
+          "owner_only": {
+            "type": "boolean"
+          },
+          "enforcement": {
+            "$ref": "#/components/schemas/CapabilityEnforcement"
           }
         },
         "required": [
@@ -1311,7 +1330,29 @@
           "label_de",
           "label_en",
           "allowed_levels",
-          "sort"
+          "sort",
+          "owner_only",
+          "enforcement"
+        ]
+      },
+      "MemberRoleAssignment": {
+        "type": "object",
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "member_id",
+          "role_ids"
         ]
       },
       "ClubRoleDef": {
@@ -10281,7 +10322,7 @@
           "me"
         ],
         "summary": "Die aufgeloesten Rechte der eingeloggten Person in einem Verein",
-        "description": "Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: Stufe \"none\" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind noch nicht durchgaengig umgestellt. \"none\" darf deshalb nicht pauschal als \"abgeschaltet\" dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).",
+        "description": "Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: was eine Stufe WIRKLICH bewirkt, steht je Faehigkeit in `enforcement` (0033) — nur bei \"enforced\" entzieht die Stufe \"none\" auch den LESEZUGRIFF. Bei \"partial\" (finance, member_contact) wirkt sie nur auf einen Teil des Lesens, bei \"write_only\" nur auf das Schreiben, bei \"unenforced\" auf nichts. \"none\" darf deshalb NICHT pauschal als \"abgeschaltet\" beschriftet werden — das waere eine Zusage, die der Server nicht einloest.",
         "security": [
           {
             "bearerAuth": []
@@ -10372,6 +10413,86 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Capability"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/member-roles": {
+      "get": {
+        "tags": [
+          "roles"
+        ],
+        "summary": "Die Rollen ALLER Mitglieder des Vereins (Mehrfachrollen, Leseseite)",
+        "description": "Eine Zeile je Person mit mindestens einer Rollenzuweisung. Gegenstueck zu PUT /clubs/{clubId}/members/{memberId}/roles.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person -> ihre Rollen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberRoleAssignment"
                   }
                 }
               }
