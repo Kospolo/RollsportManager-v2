@@ -93,7 +93,7 @@ export const landingDict = {
     p2F2: "Küren-Studio: Loop, Tempo, Zeitmarken",
     p2F3: "Beiträge, Rechnungen und Kassenbuch",
     p2F4: "Mahn-Automatik mit Vorstands-Freigabe",
-    p2F5: "SEPA-Export für den Beitragseinzug",
+    p2F5: "SEPA-Mandate für den Beitragseinzug verwalten",
 
     p3Name: "Verein Premium",
     p3Price: "59 €",
@@ -110,9 +110,9 @@ export const landingDict = {
     q1: "Was zahlen Mitglieder und Eltern?",
     a1: "Nichts — versprochen. Den Paketpreis zahlt der Verein, alle Mitglieder, Eltern und Trainerinnen nutzen die App kostenlos. Es gibt keine Pro-Kopf-Preise und keine versteckten Zusatzkosten.",
     q2: "Wie kommen unsere Daten aus Excel oder der alten Software hierher?",
-    a2: "Per CSV-Import für Mitglieder, Familien und offene Beiträge. Beim Umzug helfen wir persönlich — in der Regel ist ein Verein an einem Nachmittag komplett umgezogen.",
+    a2: "Beim Umzug helfen wir persönlich und übernehmen die Daten gemeinsam mit euch. Ehrlich gesagt: einen fertigen CSV-Import für Mitglieder, Familien und offene Beiträge gibt es noch nicht. Kontoauszüge lassen sich bereits als CSV einlesen.",
     q3: "Wo liegen unsere Daten und was ist mit dem Datenschutz?",
-    a3: "Alle Daten liegen auf Servern in Deutschland und werden täglich gesichert. Die Verarbeitung ist DSGVO-konform, ein Vertrag zur Auftragsverarbeitung liegt bei. Ihr könnt eure Daten jederzeit vollständig exportieren.",
+    a3: "Jeder Verein sieht ausschließlich seine eigenen Daten — die Trennung ist in der Datenbank erzwungen, nicht bloß in der Oberfläche. Wer was sehen darf, regeln Rollen und Rechte: Eine Krankmeldung etwa sehen nur die Familie selbst und das Trainerteam des Kindes, nicht der ganze Verein. Hosting, Auftragsverarbeitung und Datenexport halten wir verbindlich im Vertrag fest — hier versprechen wir euch nichts, was wir nicht auch schriftlich geben.",
     q4: "Können wir das erst einmal ausprobieren?",
     a4: "Ja — 30 Tage kostenlos, ohne Zahlungsdaten und mit allen Pro-Funktionen. Danach entscheidet ihr euch für ein Paket oder der Zugang pausiert einfach. Gekündigt wird monatlich, formlos per Klick.",
 
@@ -212,7 +212,7 @@ export const landingDict = {
     p2F2: "Routine studio: loop, tempo, markers",
     p2F3: "Fees, invoices and cash book",
     p2F4: "Dunning automation with board approval",
-    p2F5: "SEPA export for direct debit",
+    p2F5: "Manage SEPA mandates for membership fees",
 
     p3Name: "Club Premium",
     p3Price: "€59",
@@ -229,9 +229,9 @@ export const landingDict = {
     q1: "What do members and parents pay?",
     a1: "Nothing — promised. The club pays the plan price; all members, parents and coaches use the app for free. There are no per-head prices and no hidden extras.",
     q2: "How do we get our data out of Excel or our old software?",
-    a2: "Via CSV import for members, families and open fees. We help with the move personally — most clubs are fully migrated in an afternoon.",
+    a2: "We help with the move personally and migrate the data together with you. To be honest: there is no ready-made CSV import for members, families and open fees yet. Bank statements can already be imported as CSV.",
     q3: "Where is our data stored, and what about privacy?",
-    a3: "All data is stored on servers in Germany and backed up daily. Processing is GDPR-compliant and a data processing agreement is included. You can export your data in full at any time.",
+    a3: "Every club sees only its own data — the separation is enforced in the database, not merely in the interface. Roles and permissions decide who sees what: a sick note, for example, is visible only to the family itself and to that child's coaching team, not to the whole club. Hosting, data processing agreements and data export are settled bindingly in the contract — we promise nothing here that we would not also put in writing.",
     q4: "Can we try it first?",
     a4: "Yes — 30 days for free, no payment details, with all Pro features. Afterwards you pick a plan or your access simply pauses. Cancellation is monthly, informally, with one click.",
 
