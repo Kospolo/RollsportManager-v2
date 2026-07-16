@@ -28,8 +28,9 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 ## 2. Was NOCH zu tun ist (Reihenfolge = „mach weiter")
 > Web zuerst fertig war die Vorgabe — Web ist fertig. Reihenfolge jetzt:
 
-1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md` — **Korrektur-Block ganz oben zuerst lesen**,
-   er überschreibt den Rest). 4 Durchläufe: ~~Kern-Backend/RLS~~ ✅ → **API+Contracts (Phase 2, läuft)** →
+1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md` — **BEIDE Korrektur-Blöcke oben zuerst
+   lesen**, sie überschreiben den Rest). 4 Durchläufe: ~~Kern-Backend/RLS~~ ✅ → ~~API+Contracts (Phase 2)~~ ✅ →
+   **Web-Admin-UI (Phase 3, läuft)** →
    Web-Admin-UI (editierbare Matrix, eigene Rollen, Mehrfachrollen, Trainer-Mehrfachteams) → Verifikation.
    - **Von Marcel entschieden (2026-07-16):** (a) Austritt/Soft-Delete entzieht Rechte **sofort**, für alle Rollen — freigegeben.
      (b) Küren-Split in `routines_read` + `routines_edit`, damit auch Bearbeiten konfigurierbar wird. (c) Phase 2 freigegeben.
@@ -38,16 +39,36 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
      Der GoTrue-Hook, der `club_roles` in den Token schreibt, ist im Repo **nicht auffindbar** — für Prod klären.
 2. **Registrierung + DSGVO + Botschutz** (neu am 2026-07-16 von Marcel beauftragt, Recherche lief als `wcixbacpt`).
    Heute gibt es nur den Dev-Persona-Login — **es kann sich weder ein Verein noch ein Mitglied selbst anmelden.**
-   - **Von Marcel vorgegeben:** Es geht um **Vereine und Mitglieder** (nicht Firma/Mitarbeiter — das war ein Versprecher).
-     **Beitritt per VEREINSCODE**, wenn die Person einen hat. **Bewerbung ohne Code** ist nur eine *mögliche* Ergänzung
-     und muss **standardmäßig AUS** sein — einschaltbar **im Super-Admin** (Betreiberkonsole `app/(super)/`).
-   - **⚠️ Sicherheits-Konsequenz des Vereinscodes** (beim Bau beachten): ein Vereinscode ist ein *geteiltes* Geheimnis —
-     er landet in WhatsApp-Gruppen. Wenn er direkten Zugang gibt, sieht jeder, der ihn hat, Mitglieder- und **Kinderdaten**.
-     Deshalb: hohe Entropie, Versuchs-Limit, widerrufbar/rotierbar — und die Frage, ob der Code direkt hereinlässt oder
-     nur eine **Beitrittsanfrage** erzeugt, die der Vorstand freigibt. Marcel entscheidet das, wenn der Bauplan steht.
-   - Offene Kernkonflikte: **Kinder** (DSGVO Art. 8 — Einwilligung der Eltern), **Löschrecht vs. GoBD** (Rechnungen
-     müssen 10 Jahre bleiben), **GoTrue-Hook fehlt im Repo** (ohne ihn kein brauchbarer Token nach echter Registrierung),
-     **Mailversand** (ohne SMTP keine Verifikation/Einladung).
+   - **ALLE ENTSCHEIDUNGEN GETROFFEN (2026-07-16) — der Bauplan kann direkt los:**
+     1. **Vereine und Mitglieder** (nicht Firma/Mitarbeiter — war ein Versprecher).
+     2. **Vereinscode = ANTRAG, nicht Zutritt.** Code richtig → `status='pending'` → Vorstand gibt frei → `active`.
+        Kostet fast nichts: seit 0025 heißt Mitgliedsein wörtlich `status='active'`; `pending` = leeres Rollen-Array
+        = fällt durch **alle ~110 Policies auf 48 Tabellen**. Freigabe = ein `UPDATE`, wirkt sofort ohne Re-Login.
+        Ist zugleich der beste Botschutz: ein Bot mit geratenem Code kommt bis `pending` und keinen Schritt weiter.
+     3. **Verein legt sich selbst an + Testphase** (Spond-Muster), nur Vereinsname + Ort. Zahlung erst beim Upgrade.
+        Erst freigeben, wenn das Rate-Limit steht.
+     4. **GoTrue** stellt die Tokens aus, strikt hinter der Hono-API — nie aus dem Browser erreichbar.
+     5. **Bewerbung ohne Code**: nur Option, **Default AUS**, einschaltbar im Super-Admin. Nicht jetzt bauen
+        (das Datenmodell aus Schritt 1 lässt es später zu — derselbe `pending`-Pfad).
+   - **⚠️ Vereinscode-Bau:** hohe Entropie (CSPRNG, **nie** `random()` wie v1), Versuchs-Limit auf **drei Achsen**
+     (IP, Konto, **und pro Code global** — die dritte kann kein Proxy und kein CAPTCHA liefern), widerrufbar/rotierbar.
+   - **KEIN GoTrue-Claims-Hook bauen** — der größte Streichposten. Er schriebe nur `club_roles` in den Token, und die DB
+     liest das seit 0025 nicht mehr. Der Token braucht nur `sub`. Zwei Recherchen nannten ihn „Blocker Nr. 1" — falsch.
+   - **KEIN CAPTCHA/Turnstile** in v2.0: beantwortet „ist das ein Mensch?", die Frage hier ist „gehört der in DIESEN
+     Verein?" — die beantwortet der Vorstand. Turnstile schickte IPs von Eltern Minderjähriger an Cloudflare/USA.
+   - Echte Blocker: **Mailversand** (`services/api/package.json` hat **keinen** Mail-Client; das SMTP-Formular ist gebaut
+     und komplett folgenlos) · **Rechtstexte/AVV/DPIA** (Anwaltssache; DPIA wohl Pflicht: Kinder + `sick` + Mandanten-SaaS)
+     · `internal.platform_settings` ist ein **id=1-Singleton per UPSERT** → nicht rekonstruierbar, welchem Text jemand
+     zugestimmt hat → jeder Einwilligungsnachweis wertlos (braucht append-only `legal_documents` + `policy_version`).
+   - **⚠️ Landing-FAQ behauptet Unwahres** (`_landing/i18n.ts:115`): „AVV liegt bei" + „Daten jederzeit exportieren" —
+     beides gibt es nicht. Nicht live (v2 ist nirgends deployt), aber vor dem Start streichen oder einlösen.
+   - **⚠️ Art.-9-Leck, unabhängig von der Registrierung:** `rsvp_status` kennt `'sick'` (0003:23) + Freitext-Kommentar,
+     `event_rsvps_select` ist blank `is_club_member` (0003:231-233) → **jedes Mitglied liest, dass Kind X krank ist.**
+     Gesundheitsdaten Minderjähriger. Braucht keinen Contract-Bruch. Gehört in den nächsten Lauf.
+   - Kinder-Modell ist **schon richtig gebaut**: `club_members.profile_id` nullable („NULL = child without account",
+     0002:72) + `guardianships`. Für Art. 8 heißt das: unter 16 kein Selbst-Signup, sondern Profil ohne Login,
+     angelegt vom Elternteil. Lücken: `family.ts:105-106` setzt hart `'active'` statt `pending`; `birth_date` wird
+     gespeichert, aber **nie ausgewertet** — es gibt keine Altersschwelle im Code.
 3. **iOS fertigstellen:** Finanz-Tiefe B (Beitragskategorien/Mitgliedsbeiträge/Familienrabatte, Jahresabschluss, Bankabgleich, Spenden) ·
    Super-Admin-Konsole · **Politur-Pass** (UI-Rechte-Gating an die neue RLS anpassen — Buttons ausblenden statt 403; Bearbeiten-Flows in Lese-Modulen;
    Toast-System; Layout-Nickel wie Chip-Umbruch in Jubiläen/Notizen).
@@ -63,8 +84,17 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 9. **Kleinkram „v2.1/später" (Web):** Mehrvereins-Umschalter/Onboarding, echter SMTP-Mahnversand, automatische Familienrabatt-Verrechnung,
    Betreiber-Rechnungsverwaltung/Beta/Demo-Daten, Chat-Voice-to-Text/Check-out/Favoriten.
    („echte Registrierung" stand hier — ist seit 2026-07-16 als **Punkt 2** eigenständig beauftragt.)
-10. **Getrennt & dringend (NICHT v2):** Phase-0-Sicherheit der laufenden **v1-Produktion** (Demo-JWT, Selbst-Beförderung) —
-   eigener Task-Chip vom Sessionbeginn. Braucht Abstimmung (Key-Rotation invalidiert App-Sessions).
+10. **v1-Produktion — Marcel hat am 2026-07-16 entschieden: NICHTS TUN, v2 kommt.** Nicht mehr vorschlagen, außer er fragt.
+   Der Befund ist trotzdem hier festgehalten, falls er es sich anders überlegt — **alle drei selbst nachgeprüft**:
+   - `www/portal/register.html:380` prüft den Einladungscode **im Browser** gegen PostgREST (anon-Key), ungedrosselt,
+     und gibt bei Treffer den Vereinsnamen zurück → login-freies Brute-Force-Orakel.
+   - `supabase/migrations/20260118_sync_ios_android_models.sql:47`: Code = `UPPER(SUBSTRING(MD5(RANDOM()::TEXT)...))`
+     → Postgres' `random()` ist **kein** Krypto-Zufall.
+   - `20251230_initial_schema.sql:335`: `FOR UPDATE USING (id = get_current_user_id())` prüft **nur die id** →
+     jede andere Spalte der eigenen Zeile ist frei schreibbar, **inklusive `verein_id` und `rolle`**.
+     Jeder Eingeloggte kann sich per Browser in einen fremden Verein setzen.
+   Das saubere Vorbild steht in v1 selbst: `20260201_guest_trainer_access.sql:112` nutzt `gen_random_bytes(32)`
+   mit `expires_at`, serverseitig eingelöst.
 
 ## 3. Wie man testet / weitermacht (Resume-Fakten)
 - **Dev-Backend starten:** `bash scripts/dev-stack.sh up` (nach neuer Migration: `reset`). Postgres `rsm2-pg-dev` :55433
