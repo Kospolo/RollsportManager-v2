@@ -649,6 +649,97 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 }
 
 // ============================================================================
+// POST /routines — das Kernfeature WIRKLICH ausueben, nicht nur die
+// Capability-Raenge daneben abfragen.
+//
+// WARUM DIESER BLOCK EXISTIERT: der Smoke hat zu 'routines' bisher NUR die
+// Raenge oben geprueft (routines_edit = 4 usw.) und deshalb "ALL PASSED"
+// gemeldet, WAEHREND POST /routines fuer ALLE 8 Personas 403 lieferte — auch
+// fuer den Vereinsinhaber. Ein Rang ist kein Beweis, dass der Endpoint geht.
+// Ursache war das `returning *` im INSERT (Details: routes/routines.ts und
+// supabase/tests/sql/93f_routines_returning.sql).
+//
+// Teams: b-03 Kuergruppe Leistung (Sandra=coach UND Milena=guest_coach betreuen
+// es), b-01 Minis & Anfaenger (Sandra betreut es NICHT).
+// ============================================================================
+{
+  console.log('\n[smoke] --- POST /routines: Kuer anlegen (der echte Pfad, inkl. RETURNING) ---');
+  const TEAM_EIGEN = 'b0000000-0000-4000-8000-000000000003';
+  const TEAM_FREMD = 'b0000000-0000-4000-8000-000000000001';
+  const mkRoutine = (as, body) => call('POST', '/routines', { as, body });
+
+  // --- Die 5 Trainer-Rollen legen an: 201 + eine echte Kuer zurueck ---------
+  for (const [label, as] of [
+    ['owner', t.owner], ['admin', t.admin], ['moderator', t.moderator],
+    ['coach', t.coach], ['guest_coach', t.guest],
+  ]) {
+    const r = await mkRoutine(as, {
+      club_id: CLUB, team_id: TEAM_EIGEN,
+      title: `Smoke-Kuer ${label}`, skater_member_ids: [],
+    });
+    assertEq(`${label} legt eine Kuer an -> 201`, r.status, 201);
+    if (r.json?.id && r.json?.title === `Smoke-Kuer ${label}` && r.json?.status === 'draft') {
+      ok(`...${label} bekommt die angelegte Kuer zurueck (id + title + status)`);
+    } else {
+      fail(`POST /routines als ${label}`, `got ${JSON.stringify(r.json)}`);
+    }
+    // Der Beweis, dass die Kuer WIRKLICH da ist: ueber den Lesepfad wiederfinden.
+    const list = await call('GET', `/routines?club_id=${CLUB}`, { as });
+    if ((list.json ?? []).some((x) => x.id === r.json?.id)) {
+      ok(`...${label} findet sie danach in GET /routines wieder`);
+    } else {
+      fail(`GET /routines als ${label}`, `angelegte Kuer ${r.json?.id} fehlt in der Liste`);
+    }
+  }
+
+  // --- Wer NICHT schreiben darf, darf auch weiterhin nicht ------------------
+  assertEq('treasurer legt KEINE Kuer an -> 403',
+    (await mkRoutine(t.treasurer, {
+      club_id: CLUB, team_id: TEAM_EIGEN, title: 'darf nicht', skater_member_ids: [],
+    })).status, 403);
+  assertEq('member legt KEINE Kuer an -> 403',
+    (await mkRoutine(t.parent, {
+      club_id: CLUB, team_id: TEAM_EIGEN, title: 'darf nicht', skater_member_ids: [],
+    })).status, 403);
+  assertEq('Vereinsfremde legt KEINE Kuer an -> 403',
+    (await mkRoutine(t.foreign, {
+      club_id: CLUB, team_id: TEAM_EIGEN, title: 'darf nicht', skater_member_ids: [],
+    })).status, 403);
+
+  // --- Die Asymmetrie: Schreiben ist weiter als Lesen ----------------------
+  // Ein coach DARF fuer ein fremdes Team schreiben (routines_edit), saehe das
+  // Ergebnis aber nie (can_read_routine). Die API bricht deshalb mit 422 ab,
+  // statt eine unsichtbare Geisterzeile zu hinterlassen.
+  assertEq('coach legt KEINE Kuer fuer ein fremdes Team an -> 422',
+    (await mkRoutine(t.coach, {
+      club_id: CLUB, team_id: TEAM_FREMD, title: 'fremdes Team', skater_member_ids: [],
+    })).status, 422);
+  assertEq('coach legt KEINE teamlose Kuer an (saehe er nicht) -> 422',
+    (await mkRoutine(t.coach, {
+      club_id: CLUB, title: 'ohne Team', skater_member_ids: [],
+    })).status, 422);
+  // Der owner sieht alles im Verein -> fuer ihn ist beides regulaer.
+  assertEq('owner legt sehr wohl eine teamlose Kuer an -> 201',
+    (await mkRoutine(t.owner, {
+      club_id: CLUB, title: 'Smoke-Kuer owner ohne Team', skater_member_ids: [],
+    })).status, 201);
+
+  // --- Mit Laeufer:innen (der n:m-Zweig schreibt routine_skaters) -----------
+  {
+    const r = await mkRoutine(t.coach, {
+      club_id: CLUB, team_id: TEAM_EIGEN, title: 'Smoke-Kuer mit Laeuferin',
+      skater_member_ids: [MEMBER.linaChildOfParent],
+    });
+    assertEq('coach legt eine Kuer MIT Laeuferin an -> 201', r.status, 201);
+    if (JSON.stringify(r.json?.skater_member_ids) === JSON.stringify([MEMBER.linaChildOfParent])) {
+      ok('...die Laeuferin kommt in skater_member_ids zurueck');
+    } else {
+      fail('routine skaters', `got ${JSON.stringify(r.json?.skater_member_ids)}`);
+    }
+  }
+}
+
+// ============================================================================
 // RBAC Phase 2 Schritt 5 — /reports/anniversaries war ein Datenleck.
 //
 // Der Report leitet aus birth_date/joined_on ab und gibt `date` + `years`

@@ -117,23 +117,62 @@ routinesRouter.openapi(
     requireClubRole(c.get('claims'), body.club_id, COACH_ROLES);
 
     const created = await withUser(c.get('claims'), async (tx) => {
-      const rows = await tx`
+      // ---------------------------------------------------------------------
+      // KEIN `returning` auf diesem INSERT - das war der Bug (Altbestand seit
+      // der Privacy-Haertung 0021, KEINE Phase-2-Regression).
+      //
+      // RETURNING zieht ZUSAETZLICH die SELECT-Policy heran
+      // (routines_select using app.can_read_routine(id)). can_read_routine ist
+      // STABLE security definer und liest app.routines - im Snapshot des
+      // eigenen Statements ist die gerade eingefuegte Zeile aber unsichtbar.
+      // Ergebnis: Postgres meldet irrefuehrend "new row violates row-level
+      // security policy", obwohl der INSERT selbst erlaubt ist.
+      // Empirisch gegen rsm2-pg-dev belegt (als owner, has_cap=true):
+      //     insert ... values (...)              -> INSERT 0 1   OK
+      //     insert ... values (...) returning id -> ERROR 42501
+      // ACHTUNG: `returning id` genuegt NICHT als Ausweg - JEDES returning
+      // loest die SELECT-Policy aus, auch auf einer einzelnen Spalte.
+      //
+      // Der Weg: id vorab ziehen (app.uuid_v7() erhaelt die Zeitordnung des
+      // Spalten-Defaults, keine v4-UUID), OHNE returning einfuegen und die
+      // Zeile in einem SEPARATEN Statement zurueckenlesen. Ein spaeteres
+      // Statement derselben Transaktion sieht die Schreibvorgaenge der
+      // frueheren Kommandos - damit greift can_read_routine normal.
+      // Die SELECT-Policy bleibt unangetastet (keine Aufweichung).
+      // ---------------------------------------------------------------------
+      const idRows = await tx`select app.uuid_v7() as id`;
+      const routineId = (idRows[0] as { id: string }).id;
+
+      await tx`
         insert into app.routines
-          (club_id, team_id, title, category, music_title, music_artist, music_bpm, music_duration_ms)
+          (id, club_id, team_id, title, category, music_title, music_artist, music_bpm, music_duration_ms)
         values
-          (${body.club_id}, ${body.team_id ?? null}, ${body.title}, ${body.category ?? null},
+          (${routineId}, ${body.club_id}, ${body.team_id ?? null}, ${body.title}, ${body.category ?? null},
            ${body.music_title ?? null}, ${body.music_artist ?? null},
-           ${body.music_bpm ?? null}, ${body.music_duration_ms ?? null})
-        returning *`;
-      const routine = rows[0] as { id: string };
+           ${body.music_bpm ?? null}, ${body.music_duration_ms ?? null})`;
+
       // n:m skaters - pair/group routines have several (design deviation, documented)
       for (const memberId of body.skater_member_ids) {
         await tx`
           insert into app.routine_skaters (club_id, routine_id, member_id)
-          values (${body.club_id}, ${routine.id}, ${memberId})`;
+          values (${body.club_id}, ${routineId}, ${memberId})`;
       }
-      // Fresh routine: skaters from the request body, no audio asset yet.
-      return { ...rows[0], skater_member_ids: body.skater_member_ids, waveform_peaks: null };
+
+      // Rueckenlesen ueber den NORMALEN Lesepfad (RLS aktiv). Liefert er
+      // nichts, hat der Aufrufer eine Kuer angelegt, die er selbst nicht
+      // sehen darf - moeglich, weil das Schreibrecht (routines_edit) bewusst
+      // WEITER ist als das Leserecht (can_read_routine): ein coach/guest_coach
+      // fuer ein FREMDES Team oder ganz OHNE Team. Statt eine unsichtbare
+      // Geisterzeile zu hinterlassen, wird die Transaktion abgebrochen.
+      const row = await selectRoutine(tx, routineId);
+      if (row === undefined) {
+        throw problem(
+          422,
+          'Unprocessable Entity',
+          'You may only create a routine you can also see: pick a team you coach.',
+        );
+      }
+      return row;
     });
     return c.json(routineSchema.parse(created), 201);
   },
