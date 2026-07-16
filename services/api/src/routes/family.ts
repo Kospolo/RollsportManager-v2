@@ -98,12 +98,35 @@ familyRouter.openapi(
         where id = ${guardianId} and club_id = ${clubId} and deleted_at is null`;
       if (guardian.length === 0) throw problem(404, 'Not Found', 'Guardian membership not found in this club');
 
+      // G3: status. Ein selbst angelegtes Kind ist ein ANTRAG, kein Zutritt.
+      //
+      // Vorher stand hier hart 'active' — und zwar GEGEN den Vorgabewert der
+      // Spalte: app.club_members.status hat default 'pending' (0002:78). Wer
+      // 'active' schreibt, uebersteuert diese Vorgabe aktiv. Damit konnte jedes
+      // einfache Mitglied eine ACTIVE Zeile in den Vereinsbestand schreiben,
+      // ohne dass der Vorstand je zustimmt — waehrend POST /clubs/join fuer
+      // ERWACHSENE mit demselben Ziel penibel auf 'pending' besteht
+      // (registration.ts:152-160: "Ein richtiger Code ist ein ANTRAG, kein
+      // ZUTRITT"). Fuer ein Kind, das noch weniger geprueft ist als ein
+      // Code-Inhaber, war die Huerde also NIEDRIGER als fuer Erwachsene. Das
+      // ist keine Absicht, das ist ein Loch: eine active-Zeile zaehlt im
+      // Bestand mit (Beitraege, Familienrabatte, Mannschaftslisten).
+      //
+      // Der Vormund-Vorgabewert (guardian = Aufrufer, oben) bleibt dagegen —
+      // DAS ist die Absicht ("Eltern verwalten EIGENE Kinder"). Nicht der
+      // Vormund ist das Problem, sondern dass niemand den Neuzugang bestaetigt.
+      // Genau das holt 'pending' nach: die Freigabe ist ein einziges UPDATE und
+      // wirkt sofort (registration.ts:165-167).
+      //
+      // Admins legen weiter direkt aktiv an: sie haben members:manage ohnehin,
+      // fuer sie waere die eigene Freigabe ein leerer Umweg.
+      const childStatus = isAdmin ? 'active' : 'pending';
       const childRows = await tx`
         insert into app.club_members
           (club_id, first_name, last_name, birth_date, role, status, joined_on)
         values
           (${clubId}, ${body.first_name}, ${body.last_name}, ${body.birth_date ?? null},
-           'member', 'active', ${body.joined_on ?? null})
+           'member', ${childStatus}, ${body.joined_on ?? null})
         returning *`;
       const child = childRows[0] as Record<string, unknown>;
 

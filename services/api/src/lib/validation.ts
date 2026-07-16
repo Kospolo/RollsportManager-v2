@@ -2542,6 +2542,81 @@ export const consentPurposeSchema = z
   .enum(['terms', 'privacy', 'photos_internal', 'photos_public', 'chat', 'newsletter'])
   .openapi('ConsentPurpose');
 
+/**
+ * Die Zwecke, die WIRKLICH eine Einwilligung sind (Art. 6 Abs. 1 lit. a).
+ *
+ * terms/privacy fehlen hier mit Absicht und sind seit Migration 0039 in
+ * app.consents per CHECK gesperrt: 'terms' ist Vertragserfuellung
+ * (Art. 6 Abs. 1 lit. b), 'privacy' ist eine Informationspflicht (Art. 13).
+ * In eine Datenschutzerklaerung willigt man nicht ein, man nimmt sie zur
+ * Kenntnis -> app.policy_acknowledgements (policyAcknowledgementSchema).
+ * Beide als Einwilligung zu fuehren verletzt das Kopplungsverbot
+ * (Art. 7 Abs. 4), weil accept_terms/accept_privacy Pflicht sind
+ * (z.literal(true), siehe clubJoinInputSchema) — ein Pflicht-Haken neben
+ * freiwilligen laesst auch die freiwilligen wie Pflicht wirken.
+ */
+export const realConsentPurposeSchema = z
+  .enum(['photos_internal', 'photos_public', 'chat', 'newsletter'])
+  .openapi('RealConsentPurpose');
+
+/** Rechtstexte, die zur KENNTNIS genommen werden (keine Einwilligung). */
+export const acknowledgementKindSchema = z
+  .enum(['terms', 'privacy'])
+  .openapi('AcknowledgementKind');
+
+/**
+ * Eine Einwilligung erteilen ODER widerrufen.
+ *
+ * granted=false IST der Widerruf (Art. 7 Abs. 3) — app.consents ist
+ * append-only, ein Widerruf ist eine NEUE Zeile, kein UPDATE und kein DELETE.
+ * member_id ist Pflicht: ohne Mitgliedszeile gibt es kein Geburtsdatum und
+ * keine Vormundschaft, also auch keine Art.-8-Pruefung.
+ */
+export const consentDeclareSchema = z
+  .object({
+    member_id: uuid,
+    purpose: realConsentPurposeSchema,
+    granted: z.boolean(),
+    policy_version: z.string().max(120).optional(),
+  })
+  .openapi('ConsentDeclare');
+
+/** Der WIRKSAME Stand einer Einwilligung (app.effective_consents). */
+export const effectiveConsentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    member_id: uuid.nullable(),
+    subject_profile_id: uuid.nullable(),
+    purpose: consentPurposeSchema,
+    granted_by_profile_id: uuid,
+    legal_document_id: uuid.nullable(),
+    policy_version: z.string().nullable(),
+    recorded_at: timestamp,
+    /** DAS Feld, das zaehlt - inklusive Ablauf am 16. Geburtstag. */
+    effective: z.boolean(),
+    /** Was in der Zeile steht (vor der Auswertung des Alters). */
+    recorded_granted: z.boolean(),
+    /** true = von einer erziehungsberechtigten Person erklaert (Art. 8). */
+    granted_by_guardian: z.boolean(),
+    /** valid | revoked | expired_age_16 */
+    state: z.enum(['valid', 'revoked', 'expired_age_16']),
+  })
+  .openapi('EffectiveConsent');
+
+/** Eine Kenntnisnahme (app.policy_acknowledgements) - KEINE Einwilligung. */
+export const policyAcknowledgementSchema = z
+  .object({
+    id: uuid,
+    profile_id: uuid,
+    club_id: uuid.nullable(),
+    kind: acknowledgementKindSchema,
+    /** NOT NULL - eine Kenntnisnahme ohne Fassung waere kein Nachweis. */
+    legal_document_id: uuid,
+    acknowledged_at: timestamp,
+  })
+  .openapi('PolicyAcknowledgement');
+
 /** Eine Einwilligung (append-only: ein Widerruf ist eine neue Zeile). */
 export const memberConsentSchema = z
   .object({
