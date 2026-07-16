@@ -15,7 +15,7 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
-import { requireCap } from '../lib/capabilities.js';
+import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
 
 export const reportsRouter = createRouter();
 
@@ -35,7 +35,15 @@ reportsRouter.openapi(
   async (c) => {
     const { club_id } = c.req.valid('query');
     const claims = c.get('claims');
-    requireClubRole(claims, club_id, COACH_ROLES);
+    // SERVICE-MODE-ROUTE: RLS ist hier AUS -> dieser Guard ist die ALLEINIGE
+    // Autorisierung, ein Fehler hat kein Netz. Seit Phase 2 loest er aus der
+    // DATENBANK auf: Mehrfachrollen wirken, und der Mitgliedschafts-Gate aus
+    // 0025 (deleted_at/status/valid_until) greift erstmals auch hier.
+    // Rollenmenge unveraendert (COACH_ROLES) -> keine Rechteaenderung.
+    // Bewusst KEINE Faehigkeit: der Katalog kennt keine "Auswertung", und eine
+    // fremde zu missbrauchen, die zufaellig dieselbe Menge trifft, waere eine
+    // stille Bedeutungsverschiebung (siehe requireClubRoleDb).
+    await requireClubRoleDb(c, club_id, COACH_ROLES);
 
     const summary = await withServiceRole(
       `club evaluation summary for ${club_id} (caller ${claims.sub})`,
@@ -149,7 +157,9 @@ reportsRouter.openapi(
   async (c) => {
     const { club_id, year } = c.req.valid('query');
     const claims = c.get('claims');
-    requireClubRole(claims, club_id, FINANCE_ROLES);
+    // SERVICE-MODE-ROUTE: alleinige Autorisierung (RLS aus).
+    // finance >= manage ist im Seed exakt FINANCE_ROLES -> deckungsgleich.
+    await requireCap(c, club_id, 'finance', 'manage');
 
     const prevYear = year - 1;
 

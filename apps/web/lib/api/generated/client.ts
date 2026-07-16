@@ -347,6 +347,91 @@ export class ApiClient {
   }
 
   /**
+   * Der globale Faehigkeiten-Katalog (bilingual, mit waehlbaren Stufen)
+   * 
+   * `GET /capabilities`
+   */
+  async getCapabilities(options?: RequestOptions): Promise<M.Capability[]> {
+    return this.request<M.Capability[]>("GET", "/capabilities", { auth: true, options });
+  }
+
+  /**
+   * Die Rollen des Vereins (Systemrollen + eigene)
+   * 
+   * `GET /clubs/{clubId}/roles`
+   */
+  async getClubsByClubIdRoles(clubId: string, options?: RequestOptions): Promise<M.ClubRoleDef[]> {
+    return this.request<M.ClubRoleDef[]>("GET", `/clubs/${encodeURIComponent(clubId)}/roles`, { auth: true, options });
+  }
+
+  /**
+   * Eine eigene Rolle anlegen (startet ohne Rechte)
+   * Legt eine Vereins-eigene Rolle an. Sie beginnt ohne jede Berechtigung (fail-closed); die Stufen werden anschliessend per PUT /clubs/{clubId}/roles/{roleId}/permissions gesetzt. Systemrollen lassen sich hierueber nicht erzeugen.
+   * 
+   * `POST /clubs/{clubId}/roles`
+   */
+  async postClubsByClubIdRoles(clubId: string, body: M.ClubRoleDefCreate, options?: RequestOptions): Promise<M.ClubRoleDef> {
+    return this.request<M.ClubRoleDef>("POST", `/clubs/${encodeURIComponent(clubId)}/roles`, { body, auth: true, options });
+  }
+
+  /**
+   * Die Rechte-Matrix einer Rolle
+   * 
+   * `GET /clubs/{clubId}/roles/{roleId}/permissions`
+   */
+  async getClubsByClubIdRolesByRoleIdPermissions(clubId: string, roleId: string, options?: RequestOptions): Promise<M.RolePermission[]> {
+    return this.request<M.RolePermission[]>("GET", `/clubs/${encodeURIComponent(clubId)}/roles/${encodeURIComponent(roleId)}/permissions`, { auth: true, options });
+  }
+
+  /**
+   * Die Rechte-Matrix einer Rolle setzen
+   * Setzt die uebergebenen Faehigkeiten auf die genannten Stufen (Teilmenge erlaubt; nicht genannte Faehigkeiten bleiben unveraendert). Die owner-Rolle ist geschuetzt und kann nicht abgesenkt werden. Wirkt SOFORT — auch fuer bereits angemeldete Personen.
+   * 
+   * `PUT /clubs/{clubId}/roles/{roleId}/permissions`
+   */
+  async putClubsByClubIdRolesByRoleIdPermissions(clubId: string, roleId: string, body: M.RolePermissionSet, options?: RequestOptions): Promise<M.RolePermission[]> {
+    return this.request<M.RolePermission[]>("PUT", `/clubs/${encodeURIComponent(clubId)}/roles/${encodeURIComponent(roleId)}/permissions`, { body, auth: true, options });
+  }
+
+  /**
+   * Eine Rolle umbenennen oder umsortieren
+   * 
+   * `PATCH /clubs/{clubId}/roles/{roleId}`
+   */
+  async patchClubsByClubIdRolesByRoleId(clubId: string, roleId: string, body: M.ClubRoleDefUpdate, options?: RequestOptions): Promise<M.ClubRoleDef> {
+    return this.request<M.ClubRoleDef>("PATCH", `/clubs/${encodeURIComponent(clubId)}/roles/${encodeURIComponent(roleId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Eine eigene Rolle loeschen (Systemrollen sind geschuetzt)
+   * 
+   * `DELETE /clubs/{clubId}/roles/{roleId}`
+   */
+  async deleteClubsByClubIdRolesByRoleId(clubId: string, roleId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/roles/${encodeURIComponent(roleId)}`, { auth: true, options });
+  }
+
+  /**
+   * Die Rollen einer Person setzen (mehrere moeglich)
+   * Setzt den Zielzustand der Rollenzuweisungen. Rechte = Vereinigung ueber alle Rollen (hoechste Stufe je Faehigkeit gewinnt). Wirkt SOFORT, ohne dass sich die Person neu anmelden muss. Nur die tatsaechlichen Aenderungen werden geschrieben.
+   * 
+   * `PUT /clubs/{clubId}/members/{memberId}/roles`
+   */
+  async putClubsByClubIdMembersByMemberIdRoles(clubId: string, memberId: string, body: M.MemberRolesSet, options?: RequestOptions): Promise<M.ClubRoleDef[]> {
+    return this.request<M.ClubRoleDef[]>("PUT", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/roles`, { body, auth: true, options });
+  }
+
+  /**
+   * Die Trainer:innen eines Teams setzen
+   * Setzt den Zielzustand der Trainer-Zuordnungen eines Teams (n:m — eine Person kann mehrere Teams betreuen). Entfernte Zuordnungen werden soft-geloescht. Wer im Team bereits Skater ist, kann nicht zusaetzlich Trainer:in sein (eine Zeile je Person und Team).
+   * 
+   * `PUT /clubs/{clubId}/teams/{teamId}/coaches`
+   */
+  async putClubsByClubIdTeamsByTeamIdCoaches(clubId: string, teamId: string, body: M.TeamCoachesSet, options?: RequestOptions): Promise<string[]> {
+    return this.request<string[]>("PUT", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}/coaches`, { body, auth: true, options });
+  }
+
+  /**
    * List teams of a club incl. skater/coach member ids
    * 
    * `GET /clubs/{clubId}/teams`

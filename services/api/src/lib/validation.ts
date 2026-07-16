@@ -2303,3 +2303,90 @@ export const capabilityResolutionSchema = z
     capabilities: z.array(resolvedCapabilitySchema),
   })
   .openapi('CapabilityResolution');
+
+// ---------------------------------------------------------------------------
+// Rollen-Admin (RBAC-DESIGN §6/§7) — die Schreibseite der Rechte-Matrix.
+//
+// Namen: `Role` waere weich mit androidx.compose.ui.semantics.Role kollidiert
+// (in 5 Kotlin-Dateien importiert) und verwirrend neben dem bestehenden
+// `ClubRole` (= der Enum der Primaerrolle). `Permissions` haette den iOS-Build
+// zerlegt (apps/ios/App/Auth/Permissions.swift:35, gleiches Target). Daher
+// ClubRoleDef* / RolePermission* — gegen Spec/iOS/Kotlin geprueft: frei.
+// ---------------------------------------------------------------------------
+
+/** Eine Rolle eines Vereins (app.roles): 7 Systemrollen + frei angelegte. */
+export const clubRoleDefSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    key: z.string(),
+    name_de: z.string(),
+    name_en: z.string(),
+    /** Systemrolle = Vorlage; key unveraenderlich, nicht loeschbar. */
+    is_system: z.boolean(),
+    /** owner: Stufen nicht absenkbar (sonst sperrt sich der Verein aus). */
+    protected: z.boolean(),
+    sort: z.number().int(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('ClubRoleDef');
+
+/**
+ * Eine EIGENE Rolle anlegen. is_system/protected fehlen bewusst: sie sind ueber
+ * die API strukturell nicht setzbar, nicht bloss ungepruefte Felder.
+ */
+export const clubRoleDefCreateSchema = z
+  .object({
+    key: z
+      .string()
+      .regex(/^[a-z][a-z0-9_]{1,40}$/, 'key muss ^[a-z][a-z0-9_]{1,40}$ erfuellen')
+      .openapi({ description: 'Stabiler Schluessel, klein geschrieben (app.roles.key).' }),
+    name_de: z.string().min(1),
+    name_en: z.string().min(1),
+    sort: z.number().int().optional(),
+  })
+  .openapi('ClubRoleDefCreate');
+
+/**
+ * Eine Rolle umbenennen/umsortieren. `key` fehlt bewusst: bei Systemrollen ist
+ * er unveraenderlich (protect_roles, 0024:256-258) — und bei eigenen Rollen
+ * waere ein Key-Wechsel eine stille Neudefinition der Rechte.
+ */
+export const clubRoleDefUpdateSchema = z
+  .object({
+    name_de: z.string().min(1).optional(),
+    name_en: z.string().min(1).optional(),
+    sort: z.number().int().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ClubRoleDefUpdate');
+
+/** Eine Zelle der Rechte-Matrix: Faehigkeit -> Stufe. */
+export const rolePermissionSchema = z
+  .object({
+    capability_key: z.string(),
+    level: capabilityLevelSchema,
+  })
+  .openapi('RolePermission');
+
+/** Die Matrix EINER Rolle, wie das Admin-UI sie speichert (PUT = Vollbild). */
+export const rolePermissionSetSchema = z
+  .object({
+    permissions: z.array(rolePermissionSchema),
+  })
+  .openapi('RolePermissionSet');
+
+/** Die Rollen EINER Person (Mehrfachrollen, §1.3) — PUT = Zielzustand. */
+export const memberRolesSetSchema = z
+  .object({
+    role_ids: z.array(uuid),
+  })
+  .openapi('MemberRolesSet');
+
+/** Die Trainer:innen EINES Teams (§1.4) — PUT = Zielzustand. */
+export const teamCoachesSetSchema = z
+  .object({
+    member_ids: z.array(uuid),
+  })
+  .openapi('TeamCoachesSet');

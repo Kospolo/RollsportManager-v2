@@ -21,6 +21,7 @@ import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { requireCap } from '../lib/capabilities.js';
 import type { AuthClaims } from '../middleware/auth.js';
 
 export const invoicesRouter = createRouter();
@@ -127,7 +128,11 @@ invoicesRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    requireClubRole(claims, body.club_id, FINANCE_ROLES); // fast fail on claims
+    // SERVICE-MODE-ROUTE (Rechnungsnummern-Sequenz): RLS ist AUS, dieser Guard
+    // ist die alleinige Autorisierung. Seit Phase 2 DB-aufgeloest ->
+    // Mehrfachrollen + Mitgliedschafts-Gate wirken. finance >= manage ist im
+    // Seed exakt FINANCE_ROLES -> Rollenmenge unveraendert.
+    await requireCap(c, body.club_id, 'finance', 'manage');
 
     const created = await withServiceRole(
       `invoice create club=${body.club_id} by=${claims.sub}`,

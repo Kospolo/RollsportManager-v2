@@ -23,6 +23,7 @@ import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { COACH_ROLES, hasClubRole, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { requireCap } from '../lib/capabilities.js';
 import type { ClubRole } from '../middleware/auth.js';
 
 /** Structure changes (creating events) exclude guest_coach by design. */
@@ -217,9 +218,14 @@ eventsRouter.openapi(
 
     const stored = await withUser(claims, async (tx) => {
       const event = await loadEvent(tx, eventId);
-      if (!hasClubRole(claims, event.club_id, COACH_ROLES)) {
-        throw problem(403, 'Forbidden', 'Attendance requires a coaching role');
-      }
+      // Phase 2: aus der DATENBANK aufgeloest statt aus dem Claim.
+      // ALT: hasClubRole(claims, ..., COACH_ROLES) — las die EINE Rolle aus dem
+      // Token; wer per Admin-UI eine Zweitrolle 'coach' bekam, blieb draussen,
+      // obwohl die DB (attendance_insert = has_cap(...,'attendance','edit'),
+      // 0026:162) laengst ja sagte. Genau diese Luecke schliesst der Tausch.
+      // attendance >= edit ist im Seed exakt COACH_ROLES -> Rollenmenge
+      // unveraendert, deckungsgleich mit der Policy.
+      await requireCap(c, event.club_id, 'attendance', 'edit');
       const checkedInAt =
         body.checked_in_at ?? (body.status === 'present' || body.status === 'late' ? new Date().toISOString() : null);
       const rows = await tx`

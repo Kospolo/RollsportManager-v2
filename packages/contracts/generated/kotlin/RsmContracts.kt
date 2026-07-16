@@ -707,6 +707,65 @@ data class CapabilityResolution(
 )
 
 @Serializable
+data class Capability(
+    val key: String,
+    @SerialName("label_de") val labelDe: String,
+    @SerialName("label_en") val labelEn: String,
+    @SerialName("allowed_levels") val allowedLevels: List<CapabilityLevel>,
+    val sort: Long
+)
+
+@Serializable
+data class ClubRoleDef(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val key: String,
+    @SerialName("name_de") val nameDe: String,
+    @SerialName("name_en") val nameEn: String,
+    @SerialName("is_system") val isSystem: Boolean,
+    val protected: Boolean,
+    val sort: Long,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class RolePermission(
+    @SerialName("capability_key") val capabilityKey: String,
+    val level: CapabilityLevel
+)
+
+@Serializable
+data class ClubRoleDefCreate(
+    val key: String,
+    @SerialName("name_de") val nameDe: String,
+    @SerialName("name_en") val nameEn: String,
+    val sort: Long? = null
+)
+
+@Serializable
+data class ClubRoleDefUpdate(
+    @SerialName("name_de") val nameDe: String? = null,
+    @SerialName("name_en") val nameEn: String? = null,
+    val sort: Long? = null
+)
+
+@Serializable
+data class RolePermissionSet(
+    val permissions: List<RolePermission>
+)
+
+@Serializable
+data class MemberRolesSet(
+    @SerialName("role_ids") val roleIds: List<String>
+)
+
+@Serializable
+data class TeamCoachesSet(
+    @SerialName("member_ids") val memberIds: List<String>
+)
+
+@Serializable
 data class Team(
     val id: String,
     @SerialName("club_id") val clubId: String,

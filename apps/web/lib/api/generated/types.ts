@@ -292,6 +292,57 @@ export interface CapabilityResolution {
   "capabilities": ResolvedCapability[];
 }
 
+export interface Capability {
+  "key": string;
+  "label_de": string;
+  "label_en": string;
+  "allowed_levels": CapabilityLevel[];
+  "sort": number;
+}
+
+export interface ClubRoleDef {
+  "id": string;
+  "club_id": string;
+  "key": string;
+  "name_de": string;
+  "name_en": string;
+  "is_system": boolean;
+  "protected": boolean;
+  "sort": number;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface RolePermission {
+  "capability_key": string;
+  "level": CapabilityLevel;
+}
+
+export interface ClubRoleDefCreate {
+  "key": string;
+  "name_de": string;
+  "name_en": string;
+  "sort"?: number;
+}
+
+export interface ClubRoleDefUpdate {
+  "name_de"?: string;
+  "name_en"?: string;
+  "sort"?: number;
+}
+
+export interface RolePermissionSet {
+  "permissions": RolePermission[];
+}
+
+export interface MemberRolesSet {
+  "role_ids": string[];
+}
+
+export interface TeamCoachesSet {
+  "member_ids": string[];
+}
+
 export interface Team {
   "id": string;
   "club_id": string;

@@ -1467,6 +1467,198 @@ public struct CapabilityResolution: Codable, Equatable, Sendable {
     }
 }
 
+public struct Capability: Codable, Equatable, Sendable {
+    public var key: String
+    public var labelDe: String
+    public var labelEn: String
+    public var allowedLevels: [CapabilityLevel]
+    public var sort: Int
+
+    enum CodingKeys: String, CodingKey {
+        case key
+        case labelDe = "label_de"
+        case labelEn = "label_en"
+        case allowedLevels = "allowed_levels"
+        case sort
+    }
+
+    public init(
+        key: String,
+        labelDe: String,
+        labelEn: String,
+        allowedLevels: [CapabilityLevel],
+        sort: Int
+    ) {
+        self.key = key
+        self.labelDe = labelDe
+        self.labelEn = labelEn
+        self.allowedLevels = allowedLevels
+        self.sort = sort
+    }
+}
+
+public struct ClubRoleDef: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var key: String
+    public var nameDe: String
+    public var nameEn: String
+    public var isSystem: Bool
+    public var protected: Bool
+    public var sort: Int
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case key
+        case nameDe = "name_de"
+        case nameEn = "name_en"
+        case isSystem = "is_system"
+        case protected
+        case sort
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        key: String,
+        nameDe: String,
+        nameEn: String,
+        isSystem: Bool,
+        protected: Bool,
+        sort: Int,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.key = key
+        self.nameDe = nameDe
+        self.nameEn = nameEn
+        self.isSystem = isSystem
+        self.protected = protected
+        self.sort = sort
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct RolePermission: Codable, Equatable, Sendable {
+    public var capabilityKey: String
+    public var level: CapabilityLevel
+
+    enum CodingKeys: String, CodingKey {
+        case capabilityKey = "capability_key"
+        case level
+    }
+
+    public init(
+        capabilityKey: String,
+        level: CapabilityLevel
+    ) {
+        self.capabilityKey = capabilityKey
+        self.level = level
+    }
+}
+
+public struct ClubRoleDefCreate: Codable, Equatable, Sendable {
+    public var key: String
+    public var nameDe: String
+    public var nameEn: String
+    public var sort: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case key
+        case nameDe = "name_de"
+        case nameEn = "name_en"
+        case sort
+    }
+
+    public init(
+        key: String,
+        nameDe: String,
+        nameEn: String,
+        sort: Int? = nil
+    ) {
+        self.key = key
+        self.nameDe = nameDe
+        self.nameEn = nameEn
+        self.sort = sort
+    }
+}
+
+public struct ClubRoleDefUpdate: Codable, Equatable, Sendable {
+    public var nameDe: String?
+    public var nameEn: String?
+    public var sort: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case nameDe = "name_de"
+        case nameEn = "name_en"
+        case sort
+    }
+
+    public init(
+        nameDe: String? = nil,
+        nameEn: String? = nil,
+        sort: Int? = nil
+    ) {
+        self.nameDe = nameDe
+        self.nameEn = nameEn
+        self.sort = sort
+    }
+}
+
+public struct RolePermissionSet: Codable, Equatable, Sendable {
+    public var permissions: [RolePermission]
+
+    enum CodingKeys: String, CodingKey {
+        case permissions
+    }
+
+    public init(
+        permissions: [RolePermission]
+    ) {
+        self.permissions = permissions
+    }
+}
+
+public struct MemberRolesSet: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var roleIds: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case roleIds = "role_ids"
+    }
+
+    public init(
+        roleIds: [String]
+    ) {
+        self.roleIds = roleIds
+    }
+}
+
+public struct TeamCoachesSet: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var memberIds: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case memberIds = "member_ids"
+    }
+
+    public init(
+        memberIds: [String]
+    ) {
+        self.memberIds = memberIds
+    }
+}
+
 public struct Team: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String

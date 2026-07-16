@@ -188,3 +188,36 @@ export async function isClubMemberInDb(c: Context<AuthEnv>, clubId: string): Pro
   const caps = await capsFor(c, clubId);
   return caps.roleKeys.length > 0;
 }
+
+/**
+ * DB-aufgeloestes Gegenstueck zu guards.requireClubRole - dieselbe Rollenmenge,
+ * aber aus app.member_roles statt aus dem Token.
+ *
+ * ### Wann DIESES statt requireCap? ###
+ * Nur dort, wo es zur Rollenmenge KEINE passende Faehigkeit gibt. Konkret:
+ * /reports/summary gated auf COACH_ROLES, aber der Katalog kennt keine
+ * Faehigkeit "Auswertung" (RBAC-DESIGN §3 fuehrt sie nicht). Eine Faehigkeit zu
+ * erfinden waere eine Katalog-Erweiterung mit eigener Entscheidung - und eine
+ * beliebige andere zu nehmen, die zufaellig dieselbe Rollenmenge trifft
+ * (attendance:edit trifft COACH_ROLES), waere eine stille Bedeutungsverschiebung:
+ * wer spaeter attendance umkonfiguriert, veraenderte unbeabsichtigt den Zugang
+ * zur Auswertung.
+ *
+ * Der Gewinn bleibt derselbe wie bei requireCap: MEHRFACHROLLEN wirken, und der
+ * Mitgliedschafts-Gate aus 0025 (deleted_at/status/valid_until) greift - beides
+ * kann der Claim nicht. Die Rollenmenge ist unveraendert -> keine Rechteaenderung.
+ */
+export async function requireClubRoleDb(
+  c: Context<AuthEnv>,
+  clubId: string,
+  roles: readonly string[],
+): Promise<void> {
+  const caps = await capsFor(c, clubId);
+  if (!caps.roleKeys.some((k) => roles.includes(k))) {
+    throw problem(
+      403,
+      'Forbidden',
+      `Erfordert eine dieser Rollen: ${roles.join(', ')}. / Requires one of: ${roles.join(', ')}.`,
+    );
+  }
+}

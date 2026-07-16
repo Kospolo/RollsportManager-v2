@@ -30,6 +30,7 @@ import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { FINANCE_ROLES, requireClubRole } from '../lib/guards.js';
+import { requireCap } from '../lib/capabilities.js';
 
 export const budgetsRouter = createRouter();
 
@@ -191,7 +192,11 @@ budgetsRouter.openapi(
   async (c) => {
     const { club_id, year } = c.req.valid('query');
     const claims = c.get('claims');
-    requireClubRole(claims, club_id, FINANCE_ROLES);
+    // SERVICE-MODE-ROUTE: RLS ist hier AUS -> dieser Guard ist die ALLEINIGE
+    // Autorisierung. Seit Phase 2 DB-aufgeloest: Mehrfachrollen wirken und der
+    // Mitgliedschafts-Gate aus 0025 greift. finance >= manage ist im Seed exakt
+    // FINANCE_ROLES -> Rollenmenge unveraendert, keine Rechteaenderung.
+    await requireCap(c, club_id, 'finance', 'manage');
 
     const report = await withServiceRole(
       `budget report club=${club_id} year=${year} (caller ${claims.sub})`,

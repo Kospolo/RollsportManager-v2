@@ -54,6 +54,10 @@ function assertEq(label, actual, expected) {
   if (actual === expected) ok(`${label} = ${JSON.stringify(actual)}`);
   else fail(label, `got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
 }
+/** Der aufgeloeste Rang einer Faehigkeit aus einer /me/capabilities-Antwort. */
+function rankOfCapability(resolution, key) {
+  return resolution?.capabilities?.find((c) => c.capability_key === key)?.rank;
+}
 
 async function token(sub, role, club = CLUB) {
   return new SignJWT({ sub, role: 'authenticated', club_roles: { [club]: role } })
@@ -693,6 +697,154 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
       fail(`${name} consistency`, `report=${reportOk}, roster_birth_date=${rosterOk}`);
     }
   }
+}
+
+// ============================================================================
+// RBAC Phase 2 Schritt 6 — die Rollen-Admin-Endpoints (routes/roles.ts).
+//
+// Der KERNBEWEIS von Phase 2 steht hier: eine Zweitrolle wirkt SOFORT durch die
+// API — an derselben Stelle, die vorher 403 gab, ohne dass die Person einen
+// neuen Token holt. Genau das konnte der claim-basierte Guard nie.
+// ============================================================================
+{
+  console.log('\n[smoke] --- Rollen-Admin + Mehrfachrollen (RBAC Phase 2) ---');
+
+  assertEq('jedes Mitglied liest den Faehigkeiten-Katalog -> 200',
+    (await call('GET', '/capabilities', { as: t.parent })).status, 200);
+
+  const rolesRes = await call('GET', `/clubs/${CLUB}/roles`, { as: t.owner });
+  assertEq('owner liest die Rollen -> 200', rolesRes.status, 200);
+  assertEq('...7 Systemrollen', rolesRes.json?.filter((r) => r.is_system).length, 7);
+  const roleByKey = Object.fromEntries((rolesRes.json ?? []).map((r) => [r.key, r]));
+
+  // --- Rechte: wer darf hier ueberhaupt schreiben? --------------------------
+  assertEq('treasurer legt KEINE Rolle an (roles=none) -> 403',
+    (await call('POST', `/clubs/${CLUB}/roles`, {
+      as: t.treasurer, body: { key: 'darf_nicht', name_de: 'Darf nicht', name_en: 'Must not' },
+    })).status, 403);
+  assertEq('coach legt KEINE Rolle an -> 403',
+    (await call('POST', `/clubs/${CLUB}/roles`, {
+      as: t.coach, body: { key: 'darf_auch_nicht', name_de: 'Nein', name_en: 'No' },
+    })).status, 403);
+
+  // --- Systemrollen + owner-Matrix sind geschuetzt --------------------------
+  assertEq('Systemrolle loeschen -> 409 (nicht 500)',
+    (await call('DELETE', `/clubs/${CLUB}/roles/${roleByKey.coach?.id}`, { as: t.owner })).status, 409);
+  assertEq('owner-Matrix aendern -> 409 (protected)',
+    (await call('PUT', `/clubs/${CLUB}/roles/${roleByKey.owner?.id}/permissions`, {
+      as: t.owner, body: { permissions: [{ capability_key: 'finance', level: 'none' }] },
+    })).status, 409);
+  assertEq('Stufe ausserhalb allowed_levels -> 422',
+    (await call('PUT', `/clubs/${CLUB}/roles/${roleByKey.member?.id}/permissions`, {
+      as: t.owner, body: { permissions: [{ capability_key: 'routines_edit', level: 'read_team' }] },
+    })).status, 422);
+
+  // --- Eigene Rolle: anlegen, Rechte geben, loeschen ------------------------
+  const created = await call('POST', `/clubs/${CLUB}/roles`, {
+    as: t.owner, body: { key: 'kuerwart', name_de: 'Kürwart:in', name_en: 'Routine warden' },
+  });
+  assertEq('owner legt eine eigene Rolle an -> 201', created.status, 201);
+  assertEq('...is_system erzwungen false', created.json?.is_system, false);
+  assertEq('...protected erzwungen false', created.json?.protected, false);
+  assertEq('...derselbe Schluessel nochmal -> 409',
+    (await call('POST', `/clubs/${CLUB}/roles`, {
+      as: t.owner, body: { key: 'kuerwart', name_de: 'X', name_en: 'X' },
+    })).status, 409);
+
+  const customId = created.json?.id;
+  const perms = await call('PUT', `/clubs/${CLUB}/roles/${customId}/permissions`, {
+    as: t.owner, body: { permissions: [{ capability_key: 'routines_edit', level: 'edit' }] },
+  });
+  assertEq('owner setzt die Matrix der eigenen Rolle -> 200', perms.status, 200);
+
+  // ==========================================================================
+  // DER KERNBEWEIS: Mehrfachrollen wirken SOFORT durch die API.
+  // Katrin (member) darf keine Anwesenheit erfassen — das ist eine Coach-Sache
+  // (weiter oben schon als 403 belegt). Sie bekommt die Rolle coach DAZU (ihre
+  // Primaerrolle bleibt member, ihr TOKEN BLEIBT DERSELBE) und darf es danach.
+  // Genau das konnte der claim-basierte Guard nie: im Token steht "member".
+  // ==========================================================================
+  const KATRIN = 'a0000000-0000-4000-8000-000000000009';
+  const recordAttendance = (as) =>
+    call('PUT', `/events/${someEvent.id}/attendance`, {
+      as, body: { member_id: MEMBER.linaChildOfParent, status: 'present' },
+    });
+  const capRank = async (as, key) =>
+    rankOfCapability((await call('GET', `/me/capabilities?club_id=${CLUB}`, { as })).json, key);
+
+  assertEq('VORHER: Katrin (nur member) erfasst KEINE Anwesenheit -> 403',
+    (await recordAttendance(t.parent)).status, 403);
+  assertEq('...ihr attendance-Rang ist read_all (3), nicht edit',
+    await capRank(t.parent, 'attendance'), 3);
+
+  const assign = await call('PUT', `/clubs/${CLUB}/members/${KATRIN}/roles`, {
+    as: t.owner, body: { role_ids: [roleByKey.member?.id, roleByKey.coach?.id] },
+  });
+  assertEq('owner gibt Katrin die Zweitrolle coach -> 200', assign.status, 200);
+  assertEq('...sie haelt jetzt ZWEI Rollen', assign.json?.length, 2);
+
+  // DERSELBE Token wie oben - t.parent wurde nicht neu erzeugt.
+  const afterCaps = (await call('GET', `/me/capabilities?club_id=${CLUB}`, { as: t.parent })).json;
+  assertEq('NACHHER: ihr attendance-Rang steigt auf edit (4) — ohne neuen Token',
+    rankOfCapability(afterCaps, 'attendance'), 4);
+  assertEq('...role_keys zeigt BEIDE Rollen (der Claim kennt nur eine)',
+    JSON.stringify([...(afterCaps?.role_keys ?? [])].sort()), '["coach","member"]');
+  // Und jetzt wirkt es auch DURCH die API — der Guard fragt seit Schritt 7 die
+  // Datenbank statt den Claim. Im Token steht unveraendert "member".
+  assertEq('NACHHER: dieselbe Anfrage, derselbe Token -> jetzt 200',
+    (await recordAttendance(t.parent)).status, 200);
+
+  // Gegenprobe: die Zweitrolle gibt NICHT alles. coach hat roles=none.
+  assertEq('Gegenprobe: sie darf trotzdem KEINE Rollen anlegen -> 403',
+    (await call('POST', `/clubs/${CLUB}/roles`, {
+      as: t.parent, body: { key: 'immer_noch_nicht', name_de: 'Nein', name_en: 'No' },
+    })).status, 403);
+
+  // Und zurueck: Rolle entziehen -> das Recht ist sofort wieder weg.
+  assertEq('owner entzieht die Zweitrolle wieder -> 200',
+    (await call('PUT', `/clubs/${CLUB}/members/${KATRIN}/roles`, {
+      as: t.owner, body: { role_ids: [roleByKey.member?.id] },
+    })).status, 200);
+  assertEq('...und Katrin erfasst SOFORT keine Anwesenheit mehr -> 403',
+    (await recordAttendance(t.parent)).status, 403);
+
+  // --- Rolle loeschen: erst zugewiesen (409), dann frei (204) ---------------
+  await call('PUT', `/clubs/${CLUB}/members/${KATRIN}/roles`, {
+    as: t.owner, body: { role_ids: [roleByKey.member?.id, customId] },
+  });
+  assertEq('zugewiesene Rolle loeschen -> 409 (FK RESTRICT, nicht 500)',
+    (await call('DELETE', `/clubs/${CLUB}/roles/${customId}`, { as: t.owner })).status, 409);
+  await call('PUT', `/clubs/${CLUB}/members/${KATRIN}/roles`, {
+    as: t.owner, body: { role_ids: [roleByKey.member?.id] },
+  });
+  assertEq('nach dem Entziehen loeschbar -> 200 (Deleted-Huelle, Hauskonvention)',
+    (await call('DELETE', `/clubs/${CLUB}/roles/${customId}`, { as: t.owner })).status, 200);
+
+  // --- Trainer-Teams (§1.4) -------------------------------------------------
+  // Team b-03 "Kuergruppe Leistung": 6 Skater + 2 Trainerinnen (Sandra a0..01,
+  // Milena a0..06). Hanna Foerster (a0..23) ist dort SKATERIN.
+  const TEAM_B3 = 'b0000000-0000-4000-8000-000000000003';
+  const SANDRA = 'a0000000-0000-4000-8000-000000000001';
+  const MILENA = 'a0000000-0000-4000-8000-000000000006';
+  const HANNA_SKATER = 'a0000000-0000-4000-8000-000000000023';
+  const setCoaches = (as, ids) =>
+    call('PUT', `/clubs/${CLUB}/teams/${TEAM_B3}/coaches`, { as, body: { member_ids: ids } });
+
+  assertEq('treasurer setzt KEINE Trainer (teams=none) -> 403',
+    (await setCoaches(t.treasurer, [SANDRA])).status, 403);
+  // Die Falle: on-conflict-do-update haette Hanna STILL aus dem Skater-Roster
+  // gekippt (team_members_uq ist (team_id, member_id) OHNE role).
+  assertEq('Skaterin als Trainerin setzen -> 409 (statt sie still aus dem Roster zu kippen)',
+    (await setCoaches(t.owner, [SANDRA, MILENA, HANNA_SKATER])).status, 409);
+
+  const coaches = await setCoaches(t.owner, [SANDRA]);
+  assertEq('owner setzt die Trainerinnen des Teams -> 200', coaches.status, 200);
+  assertEq('...Milena wurde entfernt, Sandra bleibt', JSON.stringify(coaches.json), JSON.stringify([SANDRA]));
+  // Wieder-Hinzufuegen einer soft-geloeschten Zeile: der Unique-Index filtert
+  // deleted_at NICHT -> ein blindes INSERT liefe auf 23505.
+  const readd = await setCoaches(t.owner, [SANDRA, MILENA]);
+  assertEq('soft-geloeschte Trainerin wieder hinzufuegen -> 200 (kein 23505)', readd.status, 200);
+  assertEq('...beide wieder da', readd.json?.length, 2);
 }
 
 console.log('');

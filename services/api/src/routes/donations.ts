@@ -28,6 +28,7 @@ import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { requireCap } from '../lib/capabilities.js';
 import type { AuthClaims } from '../middleware/auth.js';
 
 export const donationsRouter = createRouter();
@@ -114,7 +115,9 @@ donationsRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    requireClubRole(claims, body.club_id, FINANCE_ROLES); // fast fail on claims
+    // SERVICE-MODE-ROUTE: alleinige Autorisierung (RLS aus). DB-aufgeloest seit
+    // Phase 2; finance >= manage == FINANCE_ROLES -> Rollenmenge unveraendert.
+    await requireCap(c, body.club_id, 'finance', 'manage');
 
     const created = await withServiceRole(
       `donation create club=${body.club_id} by=${claims.sub}`,
