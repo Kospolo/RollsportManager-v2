@@ -70,8 +70,15 @@ eventsRouter.openapi(
                      from app.event_teams et
                      where et.event_id = e.id and et.deleted_at is null),
                     '[]'::jsonb) as team_ids,
+           -- app.event_rsvps_visible statt app.event_rsvps (0040): 'sick' und der
+           -- Freitext sind Gesundheitsdaten (Art. 9), meist die eines Kindes. Die
+           -- View maskiert sie fuer alle ausser der Person selbst, ihren
+           -- Erziehungsberechtigten, owner/admin und der Trainer:in ihres Teams.
+           -- Die ZEILEN filtert unveraendert die RLS. Die Rohspalten sind
+           -- authenticated ohnehin entzogen — ein to_jsonb(r) auf die Basistabelle
+           -- scheitert ab 0040 mit 42501 statt still zu lecken.
            coalesce((select jsonb_agg(to_jsonb(r) order by r.responded_at)
-                     from app.event_rsvps r
+                     from app.event_rsvps_visible r
                      where r.event_id = e.id and r.deleted_at is null),
                     '[]'::jsonb) as rsvps
          from app.events e
@@ -148,16 +155,31 @@ eventsRouter.openapi(
     const stored = await withUser(claims, async (tx) => {
       const event = await loadEvent(tx, eventId); // 404 when invisible (RLS)
       requireClubMember(claims, event.club_id);
-      const rows = await tx`
+      // 0040: authenticated hat auf status/comment KEIN SELECT mehr (Art.-9-Riegel).
+      // Zwei Folgen fuer diesen Upsert, beide gemessen:
+      //   * `set status = excluded.status` scheitert mit 42501 — ON CONFLICT DO
+      //     UPDATE verlangt SELECT auf die Spalten, die es in seinen SET-
+      //     Ausdruecken liest. Deshalb steht dort jetzt der Parameter selbst;
+      //     wertgleich (excluded.status IST dieser Wert), und der Upsert bleibt
+      //     EIN atomares Statement.
+      //   * `returning *` scheitert ebenso -> `returning id`, danach wird die
+      //     Zeile aus app.event_rsvps_visible gelesen. Die schreibende Person ist
+      //     per RLS immer self/guardian/coach, sieht ihre eigene Eingabe also
+      //     unmaskiert zurueck; nur eine Trainerin, die fuer ein Kind AUSSERHALB
+      //     ihrer Teams antwortet, bekommt den maskierten Wert — sie darf ihn
+      //     nicht behalten, und sie hat ihn selbst gerade geschickt.
+      const written = await tx`
         insert into app.event_rsvps (club_id, event_id, member_id, status, comment, responded_at)
         values (${event.club_id}, ${eventId}, ${body.member_id}, ${body.status},
                 ${body.comment ?? null}, now())
         on conflict (event_id, member_id) do update
-          set status = excluded.status,
-              comment = excluded.comment,
+          set status = ${body.status},
+              comment = ${body.comment ?? null},
               responded_at = now(),
               deleted_at = null
-        returning *`;
+        returning id`;
+      const rows = await tx`
+        select * from app.event_rsvps_visible where id = ${(written[0] as { id: string }).id}`;
       return rows[0];
     });
     return c.json(rsvpSchema.parse(stored), 200);
