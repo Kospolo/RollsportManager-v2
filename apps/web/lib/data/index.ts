@@ -42,6 +42,12 @@ export type {
   UpdateNoteInput,
 } from "./inputs-batch1";
 export type {
+  CreateSupportMessageInput,
+  CreateSupportTicketInput,
+  SupportRepository,
+  UpdateSupportTicketInput,
+} from "./inputs-support";
+export type {
   CreateAchievementInput,
   CreateBookingInput,
   CreateEquipmentInput,

@@ -2827,3 +2827,109 @@ export const clubModuleSetSchema = z
     enabled: z.boolean(),
   })
   .openapi('ClubModuleSet');
+
+// ----------------------------------------------------------------------------
+// Support-Tickets (Migration 0052) — Verein <-> Betreiber.
+//
+// Schema-Namen: "Message" allein ist als Contract-Name verboten (kollidiert mit
+// Swift/Foundation), deshalb durchgehend das Praefix Support*.
+//
+// Sichtbarkeit ist NICHT Sache dieser Schemas: ein Ticket sehen nur der
+// Vereinsvorstand (app.is_club_admin) und der Betreiber
+// (app.is_platform_admin) — durchgesetzt von RLS (0052) und den Guards in
+// routes/support.ts.
+// ----------------------------------------------------------------------------
+
+export const supportTicketStatusSchema = z
+  .enum(['open', 'in_progress', 'waiting_on_club', 'closed'])
+  .openapi('SupportTicketStatus');
+
+export const supportTicketPrioritySchema = z
+  .enum(['low', 'normal', 'high', 'urgent'])
+  .openapi('SupportTicketPriority');
+
+/** Seite, von der eine Nachricht stammt (app.support_actor). */
+export const supportActorSchema = z.enum(['club', 'platform']).openapi('SupportActor');
+
+export const supportTicketSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** Anzeigename des Vereins — der Betreiber sieht Tickets mandantenuebergreifend. */
+    club_name: z.string().nullable(),
+    created_by_member_id: uuid,
+    /** Wer es aufgemacht hat, als fertiger Anzeigename ("Thomas Krueger"). */
+    created_by_name: z.string().nullable(),
+    subject: z.string(),
+    status: supportTicketStatusSchema,
+    priority: supportTicketPrioritySchema,
+    /** Zeitpunkt der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
+    last_reply_at: timestamp.nullable(),
+    /** Seite der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
+    last_reply_by: supportActorSchema.nullable(),
+    message_count: z.number().int(),
+    closed_at: timestamp.nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('SupportTicket');
+
+export const supportMessageSchema = z
+  .object({
+    id: uuid,
+    ticket_id: uuid,
+    club_id: uuid,
+    author_profile_id: uuid,
+    /** Anzeigename der schreibenden Person. */
+    author_name: z.string().nullable(),
+    author_kind: supportActorSchema,
+    body: z.string(),
+    created_at: timestamp,
+  })
+  .openapi('SupportMessage');
+
+/** Ein Ticket samt Verlauf (GET /support/tickets/{id}). */
+export const supportTicketDetailSchema = supportTicketSchema
+  .extend({ messages: z.array(supportMessageSchema) })
+  .openapi('SupportTicketDetail');
+
+/**
+ * Ticket aufmachen. club_id im Body wie bei routineCreateSchema (Hausmuster
+ * fuer nicht-geschachtelte Routen).
+ *
+ * created_by_member_id ist bewusst NICHT im Vertrag: die API loest die eigene
+ * Mitgliedszeile aus dem Token auf. Sonst legte ein Vorstand das Ticket im
+ * Namen einer Kollegin an — die INSERT-Policy (0052) verboete es ohnehin, aber
+ * der Vertrag soll gar nicht erst danach fragen.
+ *
+ * Die Eroeffnungsnachricht ist Pflicht: ein Ticket ohne Text ist fuer den
+ * Betreiber wertlos.
+ */
+export const supportTicketCreateSchema = z
+  .object({
+    club_id: uuid,
+    subject: z.string().min(1).max(200),
+    body: z.string().min(1).max(10000),
+  })
+  .openapi('SupportTicketCreate');
+
+export const supportMessageCreateSchema = z
+  .object({
+    body: z.string().min(1).max(10000),
+  })
+  .openapi('SupportMessageCreate');
+
+/**
+ * Status/Prioritaet aendern — BETREIBER-VORBEHALT (0052: support_tickets_update
+ * = app.is_platform_admin()). Beide Felder optional, aber mindestens eines muss
+ * kommen: ein leeres PATCH ist ein Client-Fehler, kein No-Op.
+ */
+export const supportTicketUpdateSchema = z
+  .object({
+    status: supportTicketStatusSchema.optional(),
+    priority: supportTicketPrioritySchema.optional(),
+  })
+  .refine((v) => v.status !== undefined || v.priority !== undefined, {
+    message: 'mindestens ein Feld erforderlich (status oder priority) / at least one field required',
+  })
+  .openapi('SupportTicketUpdate');

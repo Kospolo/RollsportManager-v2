@@ -63,6 +63,7 @@ import type {
   UpdateDutyRequirementInput,
   UpdateTrainingSlotInput,
 } from "./inputs-batch3";
+import type { SupportRepository } from "./inputs-support";
 import type { Batch4Repository } from "./inputs-batch4";
 import type { Batch5Repository } from "./inputs-batch5";
 import type { Cluster6aRepository } from "./inputs-cluster6a";
@@ -206,6 +207,7 @@ export interface DataRepository
     PlatformConsoleRepository,
     RbacRepository,
     RegistrierungRepository,
+    SupportRepository,
     WettkampfRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;

@@ -24,6 +24,7 @@ import { moduleRepositoryMe } from "./modules-me";
 import { moduleRepositoryClubModules } from "./modules-clubmodules";
 import { moduleRepositoryRbac } from "./modules-rbac";
 import { moduleRepositoryRegistrierung } from "./modules-registrierung";
+import { moduleRepositorySupport } from "./modules-support";
 import { moduleRepositoryOrg } from "./modules-org";
 import { moduleRepositoryPlatform } from "./modules-platform";
 import { moduleRepositoryWettkampf } from "./modules-wettkampf";
@@ -273,6 +274,7 @@ export const mockRepository: DataRepository = {
   ...moduleRepositoryClubModules,
   ...moduleRepositoryRbac,
   ...moduleRepositoryRegistrierung,
+  ...moduleRepositorySupport,
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleRepositoryOrg,

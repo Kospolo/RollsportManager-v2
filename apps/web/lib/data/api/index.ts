@@ -16,6 +16,7 @@ import { moduleApiRepositoryMe } from "./modules-me";
 import { moduleApiRepositoryClubModules } from "./modules-clubmodules";
 import { moduleApiRepositoryRbac } from "./modules-rbac";
 import { moduleApiRepositoryRegistrierung } from "./modules-registrierung";
+import { moduleApiRepositorySupport } from "./modules-support";
 import { moduleApiRepositoryOrg } from "./modules-org";
 import { moduleApiRepositoryPlatform } from "./modules-platform";
 import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
@@ -340,6 +341,7 @@ export const apiRepository: DataRepository = {
   ...moduleApiRepositoryClubModules,
   ...moduleApiRepositoryRbac,
   ...moduleApiRepositoryRegistrierung,
+  ...moduleApiRepositorySupport,
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleApiRepositoryOrg,

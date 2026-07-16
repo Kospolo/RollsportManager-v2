@@ -518,3 +518,69 @@ export interface PlatformStats {
   events: number;
   openInvoices: number;
 }
+
+/* ---------------------------------------------------------------------------
+ * Support-Tickets (Migration 0052) — Verein <-> Betreiber.
+ * ------------------------------------------------------------------------- */
+
+/** Bearbeitungsstand eines Support-Tickets (app.support_ticket_status). */
+export type SupportTicketStatus = "open" | "in_progress" | "waiting_on_club" | "closed";
+
+/** Dringlichkeit. Setzt AUSSCHLIESSLICH der Betreiber (RLS 0052). */
+export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
+
+/** Seite, von der eine Nachricht stammt (app.support_actor). */
+export type SupportActor = "club" | "platform";
+
+/**
+ * Ein Support-Anliegen eines Vereins.
+ *
+ * SICHTBARKEIT: nur der Vereinsvorstand (owner/admin/moderator) und der
+ * Betreiber — durchgesetzt von RLS (0052), nicht von dieser Oberfläche. Ein
+ * einfaches Mitglied bekommt hier gar nichts zu sehen; ein Ticket enthält
+ * typischerweise Klartext-Probleme mit Namen von Mitgliedern, oft Kindern.
+ */
+export interface SupportTicket {
+  id: Id;
+  clubId: Id;
+  /** Vereinsname — der Betreiber sieht Tickets mandantenübergreifend. */
+  clubName?: string;
+  createdByMemberId: Id;
+  /** Wer es aufgemacht hat, als Anzeigename. */
+  createdByName?: string;
+  subject: string;
+  status: SupportTicketStatus;
+  priority: SupportTicketPriority;
+  /** Zeitpunkt der letzten Nachricht (Trigger-gepflegt). */
+  lastReplyAt?: string;
+  /** Seite der letzten Nachricht (Trigger-gepflegt). */
+  lastReplyBy?: SupportActor;
+  messageCount: number;
+  closedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Eine Nachricht im Verlauf. ANHÄNGEND: es gibt weder Ändern noch Löschen
+ * (0052 vergibt dafür bewusst keine Policy) — auch nicht für den Betreiber.
+ *
+ * authorName ist bei Betreiber-Nachrichten IMMER leer: der Betreiber hat keine
+ * Mitgliedszeile, und welcher Mensch dort geantwortet hat, geht den Verein
+ * nichts an. Die Oberfläche schreibt dann „Support-Team" darüber.
+ */
+export interface SupportMessage {
+  id: Id;
+  ticketId: Id;
+  clubId: Id;
+  authorProfileId: Id;
+  authorName?: string;
+  authorKind: SupportActor;
+  body: string;
+  createdAt: string;
+}
+
+/** Ein Ticket samt Verlauf. */
+export interface SupportTicketDetail extends SupportTicket {
+  messages: SupportMessage[];
+}
