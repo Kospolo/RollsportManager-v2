@@ -1,12 +1,16 @@
+import type * as M from "@/lib/api/generated";
+import { ApiError } from "@/lib/api/generated";
 import type { DataRepository } from "../types";
+import { API_BASE_URL } from "../config";
 import { activeClubId, apiClient } from "./client";
+import { mapMember } from "./mappers";
 import {
   mapChatChannel,
   mapChatMessage,
   mapCheckin,
   mapRegionalEvent,
 } from "./mappers-batch4";
-import { mediaKeyUrl, uploadMedia } from "./media-fetch";
+import { authHeaders, mediaKeyUrl, uploadMedia } from "./media-fetch";
 
 /**
  * API-Implementierung der Batch-4-Module (Chat, Check-in, überregionale
@@ -24,6 +28,7 @@ import { mediaKeyUrl, uploadMedia } from "./media-fetch";
 type ModuleMethods = Pick<
   DataRepository,
   | "listChatChannels"
+  | "listChatRecipients"
   | "listChatMessages"
   | "sendChatMessage"
   | "uploadChatImage"
@@ -42,6 +47,28 @@ export const moduleApiRepositoryBatch4: ModuleMethods = {
   async listChatChannels() {
     const rows = await apiClient.getChatChannels({ club_id: activeClubId() });
     return rows.map(mapChatChannel);
+  },
+  async listChatRecipients() {
+    // Roher fetch wie bei den Media-Routen (media-fetch.ts): GET /chat/recipients
+    // ist NEU und steckt noch nicht im generierten Client — die Codegen-Pipeline
+    // laeuft erst beim Zusammenfuehren. Danach ist das hier ein Einzeiler:
+    //   const rows = await apiClient.getChatRecipients({ club_id: activeClubId() });
+    // Der Filter (wen darf ich anschreiben) ist SERVERSEITIG und zusaetzlich in
+    // der RLS — hier wird nur geholt und gemappt.
+    const url = new URL(`${API_BASE_URL.replace(/\/+$/, "")}/chat/recipients`);
+    url.searchParams.set("club_id", activeClubId());
+    const res = await fetch(url, { headers: { ...authHeaders() } });
+    if (!res.ok) {
+      let problem: M.Problem | null = null;
+      try {
+        problem = (await res.json()) as M.Problem;
+      } catch {
+        // nicht-JSON-Antwort — problem bleibt null
+      }
+      throw new ApiError(res.status, problem, `GET /chat/recipients -> ${res.status}`);
+    }
+    const rows = (await res.json()) as M.ClubMember[];
+    return rows.map(mapMember);
   },
   async listChatMessages(query) {
     const rows = await apiClient.getChatMessages({

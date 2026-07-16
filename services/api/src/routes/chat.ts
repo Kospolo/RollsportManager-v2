@@ -8,6 +8,14 @@
 // The sender is ALWAYS the caller's own club_members row (never client-supplied)
 // so a message stays attributable and nobody can post as someone else.
 // Deletes are SOFT and restricted to the sender by the RLS update policy.
+//
+// WHO MAY WRITE TO WHOM (migration 0043, child protection):
+// GET /chat/recipients is the picker behind "New message to ..."; it filters the
+// roster with app.chat_dm_allowed - the SAME predicate the RLS with-check runs
+// on POST /chat/messages. An adult reaches a minor only as their guardian or as
+// a coach of one of the minor teams (and symmetrically). The picker therefore
+// cannot offer a recipient the insert would reject, and hiding a row in the
+// picker is never the only thing standing in the way.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
@@ -17,12 +25,15 @@ import {
   chatMessageCreateSchema,
   chatMessageSchema,
   deletedSchema,
+  memberSchema,
   uuid,
 } from '../lib/validation.js';
 import { withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { requireClubMember } from '../lib/guards.js';
 import { ownMemberId } from '../lib/ownership.js';
+import { avatarUrlFor } from '../lib/avatar.js';
+import { maySeeFullRoster, redactMemberForViewer } from './members.js';
 
 export const chatRouter = createRouter();
 
@@ -120,6 +131,63 @@ chatRouter.openapi(
 chatRouter.openapi(
   createRoute({
     method: 'get',
+    path: '/chat/recipients',
+    tags: ['chat'],
+    summary: 'People I may start a direct message with (child protection applied)',
+    description:
+      'The picker behind "New message to ...". Returns the club roster MINUS myself, minus ' +
+      'everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only ' +
+      'reaches a minor as their guardian or as a coach of one of the minor teams, and the same ' +
+      'holds the other way round. The rows go through the SAME redaction as ' +
+      'GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members ' +
+      'sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint ' +
+      'is deliberately not a second, wider way into the roster.',
+    security: [{ bearerAuth: [] }],
+    request: { query: z.object({ club_id: uuid }) },
+    responses: {
+      200: jsonContent(z.array(memberSchema), 'Allowed direct-message recipients, redacted for the viewer'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { club_id } = c.req.valid('query');
+    const claims = c.get('claims');
+    requireClubMember(claims, club_id);
+
+    const rows = await withUser(claims, async (tx) => {
+      const meId = await ownMemberId(tx, claims, club_id);
+      if (!meId) return [];
+      // app.chat_dm_allowed is the SAME predicate the RLS with-check enforces on
+      // POST /chat/messages -> the picker cannot offer a recipient the insert
+      // would reject, and hiding a row here is never the only line of defense.
+      return tx`
+        select m.*,
+               coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
+                         from app.team_members tm
+                         where tm.member_id = m.id and tm.deleted_at is null),
+                        '[]'::jsonb) as team_ids
+        from app.club_members m
+        where m.club_id = ${club_id}
+          and m.deleted_at is null
+          and m.id <> ${meId}
+          and app.chat_dm_allowed(${meId}, m.id)
+        order by m.last_name, m.first_name`;
+    });
+
+    const privileged = maySeeFullRoster(claims, club_id);
+    const mapped = rows.map((row) =>
+      redactMemberForViewer(
+        { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) },
+        privileged,
+      ),
+    );
+    return c.json(z.array(memberSchema).parse(mapped), 200);
+  },
+);
+
+chatRouter.openapi(
+  createRoute({
+    method: 'get',
     path: '/chat/messages',
     tags: ['chat'],
     summary: 'List messages of one channel (team by team_id, direct by peer_member_id)',
@@ -197,8 +265,23 @@ chatRouter.openapi(
     const created = await withUser(claims, async (tx) => {
       const senderId = await ownMemberId(tx, claims, body.club_id);
       if (!senderId) throw problem(403, 'Forbidden', 'No membership row for the sender in this club');
-      // Team membership / recipient-in-club is enforced by the RLS with-check
-      // policy (chat_messages_insert) -> a violation surfaces as 403.
+      // Team membership / recipient-in-club / the child-protection rule are all
+      // enforced by the RLS with-check policy (chat_messages_insert, 0043) ->
+      // a violation surfaces as 403 either way. This ONE extra lookup exists so
+      // a blocked adult<->minor DM says WHY instead of a bare 403; it is not the
+      // gate. Removing it changes the wording, not the outcome.
+      if (body.channel_type === 'direct' && body.recipient_member_id) {
+        const allowed = await tx`
+          select app.chat_dm_allowed(${senderId}, ${body.recipient_member_id}) as ok`;
+        if (allowed[0]?.['ok'] !== true) {
+          throw problem(
+            403,
+            'Forbidden',
+            'You may not start a direct message with this person. Direct messages between an ' +
+              'adult and a minor are limited to the minor guardians and the coaches of their teams.',
+          );
+        }
+      }
       const rows = await tx`
         insert into app.chat_messages
           (club_id, channel_type, team_id, sender_member_id, recipient_member_id, body, image_url)

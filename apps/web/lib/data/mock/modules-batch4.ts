@@ -1,5 +1,5 @@
-import { club, fullName, members, teams } from "@/lib/mock";
-import type { ChatChannel, ChatMessage, Checkin, RegionalEvent } from "@/lib/types";
+import { club, fullName, guardianships, members, teams } from "@/lib/mock";
+import type { ChatChannel, ChatMessage, Checkin, Member, RegionalEvent } from "@/lib/types";
 import type { DataRepository } from "../types";
 import { chatMessageSeed, checkinSeed, regionalEventSeed } from "./seed-batch4";
 
@@ -27,6 +27,7 @@ let eventSeq = eventStore.length;
 type ModuleMethods = Pick<
   DataRepository,
   | "listChatChannels"
+  | "listChatRecipients"
   | "listChatMessages"
   | "sendChatMessage"
   | "uploadChatImage"
@@ -54,6 +55,39 @@ function fileToDataUrl(file: File): Promise<string> {
 function memberName(id: string): string {
   const m = members.find((x) => x.id === id);
   return m ? fullName(m) : id;
+}
+
+/**
+ * Minderjährig laut hinterlegtem Geburtsdatum — Spiegel von app.chat_is_minor
+ * (Migration 0043). Ohne birthDate = erwachsen (im Mock wie im Seed tragen die
+ * Erwachsenen kein Geburtsdatum).
+ */
+function isMinor(memberId: string): boolean {
+  const m = members.find((x) => x.id === memberId);
+  if (!m?.birthDate) return false;
+  const eighteen = new Date();
+  eighteen.setFullYear(eighteen.getFullYear() - 18);
+  return new Date(m.birthDate) > eighteen;
+}
+
+/**
+ * Darf sender an recipient direkt schreiben? Spiegel von app.chat_dm_allowed
+ * (Migration 0043) — der Mock darf NICHT großzügiger sein als der Server, sonst
+ * zeigt die Attrappe eine Auswahl, die die echte API mit 403 ablehnt.
+ * Erwachsen<->erwachsen und Kind<->Kind offen; gemischt nur für
+ * Sorgeberechtigte des Kindes und Trainer:innen seiner Teams.
+ */
+function dmAllowed(senderId: string, recipientId: string): boolean {
+  const senderMinor = isMinor(senderId);
+  const recipMinor = isMinor(recipientId);
+  if (senderMinor === recipMinor) return true;
+  const adultId = recipMinor ? senderId : recipientId;
+  const childId = recipMinor ? recipientId : senderId;
+  const isGuardian = guardianships.some(
+    (g) => g.guardianId === adultId && g.childId === childId,
+  );
+  if (isGuardian) return true;
+  return teams.some((t) => t.coachIds.includes(adultId) && t.skaterIds.includes(childId));
 }
 
 /** Team-Kanäle der aktuellen Person + je Direkt-Peer die letzte Nachricht. */
@@ -117,6 +151,11 @@ export const moduleRepositoryBatch4: ModuleMethods = {
   /* ---------- Chat ---------- */
   async listChatChannels(): Promise<ChatChannel[]> {
     return buildChannels();
+  },
+  async listChatRecipients(): Promise<Member[]> {
+    return members
+      .filter((m) => m.id !== currentMemberId && dmAllowed(currentMemberId, m.id))
+      .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
   },
   async listChatMessages(query): Promise<ChatMessage[]> {
     const list = messageStore.filter((m) => {
