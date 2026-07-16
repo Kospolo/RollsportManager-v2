@@ -23,6 +23,11 @@ function devApp() {
 function prodApp() {
   process.env['AUTH_MODE'] = 'prod';
   process.env['AUTH_JWKS_URL'] = 'https://auth.invalid/jwks'; // never fetched here
+  // Wie AUTH_JWKS_URL eine Vorbedingung von AUTH_MODE=prod (0038, config.ts):
+  // die API startet in prod nicht mit dem oeffentlichen Vorgabe-Pfeffer, sonst
+  // waere hmac(ip) wieder ueber 2^32 Adressen durchprobierbar. Der Wert hier ist
+  // beliebig - er wird nie benutzt, er muss nur nicht die Vorgabe sein.
+  process.env['RATE_LIMIT_PEPPER'] = 'test-pepper-not-the-placeholder';
   resetConfigForTests();
   return createApp();
 }
@@ -30,6 +35,7 @@ function prodApp() {
 afterEach(() => {
   process.env['AUTH_MODE'] = 'dev';
   delete process.env['AUTH_JWKS_URL'];
+  delete process.env['RATE_LIMIT_PEPPER'];
   resetConfigForTests();
 });
 
