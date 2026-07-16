@@ -527,7 +527,16 @@ rolesRouter.openapi(
     const { member_ids } = c.req.valid('json');
     const claims = c.get('claims');
     requireClubMember(claims, clubId);
-    await requireCap(c, clubId, 'teams', 'manage');
+    // 'team_coaches' (0031), NICHT 'teams:manage'. Der Unterschied ist der
+    // ganze Punkt: 'teams:manage' traegt der coach bereits (rbac_default_level
+    // v_structure = owner/admin/moderator/COACH) — genau deshalb konnte sich
+    // Sandra Vogel (coach) hier selbst zur Trainerin eines FREMDEN Teams
+    // machen (live belegt: HTTP 200) und sah danach dessen Kueren.
+    // 'team_coaches' startet auf manage NUR fuer owner/admin/moderator.
+    // Die DB haelt dasselbe unabhaengig von dieser Zeile (0031: team_members_
+    // insert/update verlangen fuer role='coach' has_cap(...,'team_coaches',
+    // 'manage')) — die API ist hier die erste, nicht die einzige Verteidigung.
+    await requireCap(c, clubId, 'team_coaches', 'manage');
 
     const rows = await withUser(claims, async (tx) => {
       const team = await tx`
