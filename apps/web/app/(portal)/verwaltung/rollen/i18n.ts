@@ -1,196 +1,324 @@
 import type { Dict } from "@/lib/i18n";
-import type { MemberRole } from "@/lib/types";
 
 /**
- * Kolokalisiertes Dictionary für „Rollen & Rechte" (Verwaltung). Regel:
- * JEDER String in beiden Sprachen, deutsche Strings mit echten Umlauten
- * (ä/ö/ü/ß). Die Rechte-Matrix spiegelt ORIGINAL-APP-REFERENZ 1.3 —
- * reine Anzeige; durchgesetzt wird serverseitig (RLS + API-Rollencheck).
+ * Kolokalisiertes Dictionary der Steuerzentrale „Rollen & Rechte".
+ * Regel: JEDER String in beiden Sprachen, deutsche Strings mit echten Umlauten
+ * (ä/ö/ü/ß).
+ *
+ * ### Was hier NICHT mehr steht ###
+ * Die Rollen-Namen. Die kommen jetzt vom Server (app.roles.name_de/name_en) und
+ * sind pro Verein änderbar. Der alte Eintrag nannte owner „Vorstand", die
+ * Datenbank nennt ihn „Inhaber:in" (0023:111) — und nach der ersten Umbenennung
+ * im Verein wäre jedes Dictionary hier schlicht falsch.
+ *
+ * ### Die Beschriftung der Stufen ###
+ * „Kein Zugriff" gibt es NUR, wo der Server das Lesen wirklich sperrt
+ * (enforcement = 'enforced'). Überall sonst heißt „none" hier „Kein Bearbeiten"
+ * — siehe derive.ts:noneLabelKey und Migration 0033. Das ist keine Vorsicht,
+ * sondern Genauigkeit: gemessen bleiben bei finance=none Bankkonto, Budgets,
+ * Beiträge und SEPA-Mandate lesbar.
  */
 export const rollenDict = {
   de: {
     title: "Rollen & Rechte",
-    sub: "Wer darf was im Verein — und wer Rollen vergibt",
+    sub: "Hier stellst du ein, wer im Verein was darf",
 
-    /* Rollen-Labels */
-    roleOwner: "Vorstand",
-    roleAdmin: "Verwaltung",
-    roleModerator: "Moderator:in",
-    roleTreasurer: "Kassenwart",
-    roleCoach: "Trainer:in",
-    roleGuest: "Gasttrainer",
-    roleMember: "Mitglied",
+    /* Tabs */
+    tabMatrix: "Rechte",
+    tabRoles: "Rollen",
+    tabPeople: "Personen",
+    tabCoaches: "Trainer:innen",
 
-    /* Rollen-Kurzbeschreibung (Matrix, erste Spalte) */
-    descOwner: "Vereinsinhaber:in — volle Rechte",
-    descAdmin: "Verwaltet Verein, Mitglieder & Finanzen",
-    descModerator: "Verwaltung, aber nur rangtiefere Rollen",
-    descTreasurer: "Mitglieder & Finanzen, keine Rollen",
-    descCoach: "Trainingsbetrieb & Anwesenheit",
-    descGuest: "Teambezogen & befristet",
-    descMember: "Sieht eigene Termine, Beiträge & Küren",
-
-    /* Matrix */
-    matrixEyebrow: "Rechte-Modell",
-    matrixTitle: "Was jede Rolle darf",
-    matrixCaption: "Rechte-Matrix: Rollen und ihre Fähigkeiten",
-    colRole: "Rolle",
-    capTrainer: "Trainer",
-    capClubAdmin: "Verwaltung",
-    capMembers: "Mitglieder",
-    capFinance: "Finanzen",
-    capChangeRole: "Rollen ändern",
-    aYes: "ja",
-    aNo: "nein",
-    aPartial: "eingeschränkt",
-
-    /* Fußnoten */
-    fnModerator: "Moderation darf nur Rollen ändern, die nicht Vorstand, Verwaltung oder Moderation sind.",
-    fnGuest: "Gasttrainer haben Trainer-Rechte nur teambezogen und befristet (bis zum hinterlegten Datum).",
-    platformNote: "Die Plattform-Administration (Super-Admin) ist keine Vereinsrolle, sondern ein Konto-Merkmal (app_metadata.is_platform_admin) und steht außerhalb dieser Matrix.",
-
-    /* Zuweisung */
-    assignEyebrow: "Zuweisung",
-    assignTitle: "Rollen zuweisen",
-    assignSub: "Wähle für jedes Mitglied die passende Rolle. Der Vorstand bleibt geschützt.",
-    colMember: "Mitglied",
-    colCurrentRole: "Aktuelle Rolle",
-    colAssign: "Rolle zuweisen",
-    selectAria: "Rolle von {name} ändern",
-    guestUntil: "befristet bis {date}",
-    youTag: "Du",
-    reasonSelf: "eigene Rolle",
-    reasonProtected: "höher gestellt",
-    tableCaption: "Mitglieder und ihre Rollen",
-
-    lockedTitle: "Zuweisen ist für deine Rolle gesperrt",
-    lockedBody: "Nur Vorstand, Verwaltung und Moderation dürfen Rollen vergeben. Als {role} siehst du die Rollen nur zur Übersicht.",
-
-    toastSaved: "Rolle von {name} zu „{role}“ geändert",
-    toastDemo: "Rolle von {name} zu „{role}“ geändert — Demo",
-    toastForbidden: "Keine Berechtigung — die Rolle wurde nicht geändert.",
-
-    /* Zustände */
-    retry: "Erneut versuchen",
-    loadErrorTitle: "Mitglieder konnten nicht geladen werden",
-    niTitle: "Noch nicht angebunden",
-    niBody: "Die Mitgliederliste hat im api-Modus noch keinen Endpoint.",
-    emptyTitle: "Noch keine Mitglieder",
-    emptyBody: "Sobald Menschen im Verein sind, kannst du hier ihre Rollen vergeben.",
+    /* Sofortwirksamkeit — das ist ein Feature, also sagen wir es */
+    liveEyebrow: "Sofort wirksam",
+    liveTitle: "Änderungen gelten augenblicklich",
+    liveBody:
+      "Rechte werden bei jeder Anfrage frisch aus der Datenbank aufgelöst — nicht aus dem Anmelde-Token. Wer gerade angemeldet ist, sieht deine Änderung beim nächsten Laden. Niemand muss sich neu anmelden.",
 
     /* Server-Hinweis */
-    serverEyebrow: "Sicherheit",
-    serverTitle: "Rechte gelten serverseitig",
-    serverBody: "Diese Ansicht blendet nur ein und aus. Verbindlich prüft der Server jede Aktion (Row-Level-Security + API-Rollencheck gegen die Datenbank). Fehlt die Berechtigung, antwortet er mit einem Fehler — die Änderung wird dann zurückgenommen.",
+    serverEyebrow: "Durchgesetzt wird serverseitig",
+    serverTitle: "Diese Oberfläche ist nicht der Schutz",
+    serverBody:
+      "Was hier ausgeblendet wird, ist Bequemlichkeit. Die Rechte selbst setzt der Server durch (Datenbank-Policies und API-Prüfungen) — auch gegenüber Clients, die diese Oberfläche gar nicht benutzen.",
+
+    /* ---------- Matrix ---------- */
+    matrixEyebrow: "Rechte-Matrix",
+    matrixTitle: "Was jede Rolle darf",
+    matrixSub:
+      "Wähle je Fähigkeit und Rolle eine Stufe. Angeboten wird nur, was für die Fähigkeit vorgesehen ist.",
+    matrixCaption: "Rechte-Matrix: Fähigkeiten und die Stufe je Rolle",
+    colCapability: "Fähigkeit",
+    saveAll: "Änderungen speichern",
+    discard: "Verwerfen",
+    dirtyCount: "{n} Änderung(en) noch nicht gespeichert",
+    savingLabel: "Wird gespeichert …",
+    matrixSaved: "Stufen gespeichert — sie gelten ab sofort.",
+    selectAria: "Stufe von „{cap}“ für die Rolle „{role}“",
+
+    /* Stufen */
+    levelNoneOff: "Kein Zugriff",
+    levelNoneNoEdit: "Kein Bearbeiten",
+    levelReadOwn: "Nur Eigenes lesen",
+    levelReadTeam: "Eigenes Team lesen",
+    levelReadAll: "Alles lesen",
+    levelEdit: "Bearbeiten",
+    levelManage: "Verwalten",
+
+    /* Etiketten: was die Stufe WIRKLICH bewirkt (0033) */
+    enfEnforced: "wirkt vollständig",
+    enfPartial: "wirkt nur teilweise",
+    enfWriteOnly: "wirkt beim Bearbeiten",
+    enfUnenforced: "wirkt noch nicht",
+    enfEnforcedHint:
+      "„Kein Zugriff“ nimmt hier wirklich den Lesezugriff weg — die Einstellung tut, was sie sagt.",
+    enfPartialHint:
+      "Achtung: Diese Einstellung sperrt das Lesen nur zum Teil. Bei den Finanzen wirkt sie auf Rechnungen und Kassenbuch, aber Bankkonto, Budgets, Beiträge, SEPA-Mandate, Spenden und Mahnungen bleiben sichtbar. Bei den Kontaktdaten wirkt sie nur auf den Jubiläums-Bericht — in der Mitgliederliste stehen E-Mail und Geburtsdatum weiterhin.",
+    enfWriteOnlyHint:
+      "Diese Einstellung entscheidet nur über das Bearbeiten. Gelesen wird in diesem Bereich weiterhin von allen Mitgliedern.",
+    enfUnenforcedHint:
+      "Diese Einstellung wird noch nirgends ausgewertet — der Bereich hängt weiterhin an der Rolle selbst. Du kannst sie setzen, sie ändert im Moment aber nichts.",
+    enfLegendTitle: "Was die Stufen bewirken",
+    enfLegendBody:
+      "Nicht jede Fähigkeit wird gleich streng durchgesetzt. Das Etikett hinter dem Namen sagt, worauf die Einstellung tatsächlich wirkt — lieber ein ehrliches Etikett als ein schöner Schalter, der nichts tut.",
+
+    /* Geschützte Fähigkeiten (owner_only) */
+    ownerOnlyBadge: "Nur Inhaber:in",
+    ownerOnlyLocked:
+      "Diese Fähigkeit ist geschützt: nur die Vereinsinhaberin oder der Vereinsinhaber darf sie ändern. Sonst könnte sich jede Person, die Rollen verwaltet, den Zugriff selbst zurückgeben.",
+    protectedRoleNote:
+      "Die Inhaber-Rolle ist geschützt — ihre Rechte lassen sich nicht ändern, damit sich der Verein nicht selbst aussperrt.",
+
+    /* ---------- Rollen ---------- */
+    rolesEyebrow: "Rollen",
+    rolesTitle: "Rollen des Vereins",
+    rolesSub:
+      "Die Systemrollen sind die Vorlage. Du kannst sie umbenennen und beliebige eigene Rollen anlegen.",
+    roleNew: "Rolle anlegen",
+    roleNewTitle: "Neue Rolle",
+    roleEditTitle: "Rolle bearbeiten",
+    roleNameDe: "Name (Deutsch)",
+    roleNameEn: "Name (Englisch)",
+    roleKey: "Schlüssel",
+    roleKeyHint:
+      "Technische Kennung, später unveränderlich. Kleinbuchstaben, Ziffern und Unterstrich; beginnt mit einem Buchstaben.",
+    roleKeyInvalid:
+      "Der Schlüssel muss mit einem Kleinbuchstaben beginnen und darf nur Kleinbuchstaben, Ziffern und Unterstriche enthalten (2 bis 41 Zeichen).",
+    roleNameRequired: "Bitte in beiden Sprachen einen Namen angeben.",
+    roleCreate: "Anlegen",
+    roleSave: "Speichern",
+    roleEdit: "Bearbeiten",
+    roleCancel: "Abbrechen",
+    roleDelete: "Löschen",
+    roleDeleteTitle: "Rolle löschen?",
+    roleDeleteBody: "„{name}“ wird endgültig gelöscht. Das lässt sich nicht rückgängig machen.",
+    roleDeleteConfirm: "Endgültig löschen",
+    roleSystemBadge: "Systemrolle",
+    roleOwnBadge: "Eigene Rolle",
+    roleProtectedBadge: "Geschützt",
+    roleNoPermissions: "Ohne Rechte",
+    roleMemberCount: "{n} Person(en)",
+    roleNewHint:
+      "Eine neue Rolle startet ohne jedes Recht. Vergib die Stufen anschließend im Reiter „Rechte“.",
+    roleCreated: "Rolle „{name}“ angelegt.",
+    roleUpdated: "Rolle „{name}“ gespeichert.",
+    roleDeleted: "Rolle „{name}“ gelöscht.",
+
+    /* ---------- Personen ---------- */
+    peopleEyebrow: "Zuweisung",
+    peopleTitle: "Wer hat welche Rollen",
+    peopleSub:
+      "Eine Person kann mehrere Rollen haben. Ihre Rechte sind die Vereinigung: bei jeder Fähigkeit gilt die höchste Stufe.",
+    colMember: "Person",
+    colRoles: "Rollen",
+    colEdit: "Ändern",
+    editRoles: "Rollen ändern",
+    editRolesTitle: "Rollen von {name}",
+    editRolesSub: "Mehrfachauswahl. Die Rechte sind die Vereinigung aller angehakten Rollen.",
+    noRoles: "Keine Rolle",
+    youTag: "Du",
+    rolesSaved: "Rollen von {name} gespeichert.",
+    tableCaption: "Mitglieder und ihre Rollen",
+    emptyTitle: "Keine Mitglieder",
+    emptyBody: "Sobald Mitglieder im Verein sind, kannst du ihnen hier Rollen geben.",
+
+    /* ---------- Trainer:innen ---------- */
+    coachesEyebrow: "Trainer:innen",
+    coachesTitle: "Wer betreut welche Teams",
+    coachesSub:
+      "Eine Trainerin oder ein Trainer kann mehrere Teams betreuen. Wer ein Team betreut, sieht dessen Küren.",
+    colCoach: "Person",
+    colTeams: "Teams",
+    editTeams: "Teams ändern",
+    editTeamsTitle: "Teams von {name}",
+    editTeamsSub:
+      "Mehrfachauswahl. Wer in einem Team bereits Skater:in ist, kann dort nicht zusätzlich Trainer:in sein.",
+    noTeams: "Kein Team",
+    isSkaterHere: "Ist hier Skater:in",
+    teamsSaved: "Teams von {name} gespeichert.",
+    coachesEmptyTitle: "Keine Teams",
+    coachesEmptyBody: "Lege zuerst ein Team an, dann kannst du Trainer:innen zuordnen.",
+    coachesTableCaption: "Personen und die Teams, die sie betreuen",
+    coachSelfNote:
+      "Eine Trainerin kann sich nicht selbst einem Team zuordnen — das darf nur, wer Teams verwaltet.",
+
+    /* ---------- Zustände ---------- */
+    lockedTitle: "Nur Ansicht",
+    lockedBody:
+      "Du darfst Rollen und Rechte in diesem Verein nicht ändern. Angezeigt wird dir der aktuelle Stand.",
+    forbiddenTitle: "Kein Zugriff",
+    forbiddenBody:
+      "Für diesen Bereich fehlt dir die Berechtigung. Wende dich an die Vereinsverwaltung.",
+    loadErrorTitle: "Konnte nicht geladen werden",
+    retry: "Erneut versuchen",
+    toastForbidden: "Dazu fehlt dir die Berechtigung. Der Server hat die Änderung abgelehnt.",
+    demoTag: "Demo",
+    demoNote:
+      "Demo-Modus: Änderungen bleiben nur bis zum Neuladen erhalten. Mit echter Datenquelle schreibt diese Seite auf den Server.",
   },
   en: {
     title: "Roles & permissions",
-    sub: "Who can do what in the club — and who assigns roles",
+    sub: "Set who may do what in the club",
 
-    roleOwner: "Board",
-    roleAdmin: "Admin",
-    roleModerator: "Moderator",
-    roleTreasurer: "Treasurer",
-    roleCoach: "Coach",
-    roleGuest: "Guest coach",
-    roleMember: "Member",
+    tabMatrix: "Permissions",
+    tabRoles: "Roles",
+    tabPeople: "People",
+    tabCoaches: "Coaches",
 
-    descOwner: "Club owner — full rights",
-    descAdmin: "Manages club, members & finances",
-    descModerator: "Admin, but lower ranks only",
-    descTreasurer: "Members & finances, no roles",
-    descCoach: "Training operations & attendance",
-    descGuest: "Team-bound & time-limited",
-    descMember: "Sees own events, fees & routines",
+    liveEyebrow: "Takes effect immediately",
+    liveTitle: "Changes apply right away",
+    liveBody:
+      "Permissions are resolved fresh from the database on every request — not from the sign-in token. Anyone currently signed in sees your change on their next load. Nobody has to sign in again.",
 
-    matrixEyebrow: "Permission model",
-    matrixTitle: "What each role can do",
-    matrixCaption: "Permission matrix: roles and their capabilities",
-    colRole: "Role",
-    capTrainer: "Coach",
-    capClubAdmin: "Admin",
-    capMembers: "Members",
-    capFinance: "Finance",
-    capChangeRole: "Change roles",
-    aYes: "yes",
-    aNo: "no",
-    aPartial: "limited",
+    serverEyebrow: "Enforced on the server",
+    serverTitle: "This screen is not the protection",
+    serverBody:
+      "What is hidden here is convenience. The permissions themselves are enforced by the server (database policies and API checks) — including against clients that never use this screen.",
 
-    fnModerator: "Moderation may only change roles that are not board, admin or moderation.",
-    fnGuest: "Guest coaches have coach rights only per team and time-limited (until the stored date).",
-    platformNote: "Platform administration (super admin) is not a club role but an account trait (app_metadata.is_platform_admin) and sits outside this matrix.",
+    matrixEyebrow: "Permission matrix",
+    matrixTitle: "What each role may do",
+    matrixSub:
+      "Pick a level per capability and role. Only the levels intended for that capability are offered.",
+    matrixCaption: "Permission matrix: capabilities and the level per role",
+    colCapability: "Capability",
+    saveAll: "Save changes",
+    discard: "Discard",
+    dirtyCount: "{n} unsaved change(s)",
+    savingLabel: "Saving …",
+    matrixSaved: "Levels saved — they apply from now on.",
+    selectAria: "Level of “{cap}” for the role “{role}”",
 
-    assignEyebrow: "Assignment",
-    assignTitle: "Assign roles",
-    assignSub: "Pick the right role for each member. The board stays protected.",
-    colMember: "Member",
-    colCurrentRole: "Current role",
-    colAssign: "Assign role",
-    selectAria: "Change role of {name}",
-    guestUntil: "limited until {date}",
+    levelNoneOff: "No access",
+    levelNoneNoEdit: "No editing",
+    levelReadOwn: "Read own only",
+    levelReadTeam: "Read own team",
+    levelReadAll: "Read all",
+    levelEdit: "Edit",
+    levelManage: "Manage",
+
+    enfEnforced: "fully effective",
+    enfPartial: "only partly effective",
+    enfWriteOnly: "affects editing",
+    enfUnenforced: "not yet effective",
+    enfEnforcedHint:
+      "“No access” really does remove read access here — the setting does what it says.",
+    enfPartialHint:
+      "Careful: this setting only partly blocks reading. For finance it affects invoices and the ledger, but bank account, budgets, fees, SEPA mandates, donations and dunning remain visible. For contact details it only affects the anniversaries report — the member list still shows e-mail and date of birth.",
+    enfWriteOnlyHint:
+      "This setting only decides about editing. Reading in this area remains open to all members.",
+    enfUnenforcedHint:
+      "This setting is not evaluated anywhere yet — the area still depends on the role itself. You may set it, but right now it changes nothing.",
+    enfLegendTitle: "What the levels actually do",
+    enfLegendBody:
+      "Not every capability is enforced equally strictly. The label after the name tells you what the setting really affects — an honest label beats a pretty switch that does nothing.",
+
+    ownerOnlyBadge: "Owner only",
+    ownerOnlyLocked:
+      "This capability is protected: only the club owner may change it. Otherwise anyone who manages roles could simply grant themselves access again.",
+    protectedRoleNote:
+      "The owner role is protected — its permissions cannot be changed, so the club cannot lock itself out.",
+
+    rolesEyebrow: "Roles",
+    rolesTitle: "Roles of this club",
+    rolesSub:
+      "The system roles are the template. You can rename them and add any number of your own roles.",
+    roleNew: "Add role",
+    roleNewTitle: "New role",
+    roleEditTitle: "Edit role",
+    roleNameDe: "Name (German)",
+    roleNameEn: "Name (English)",
+    roleKey: "Key",
+    roleKeyHint:
+      "Technical identifier, immutable afterwards. Lowercase letters, digits and underscore; starts with a letter.",
+    roleKeyInvalid:
+      "The key must start with a lowercase letter and may only contain lowercase letters, digits and underscores (2 to 41 characters).",
+    roleNameRequired: "Please provide a name in both languages.",
+    roleCreate: "Create",
+    roleSave: "Save",
+    roleEdit: "Edit",
+    roleCancel: "Cancel",
+    roleDelete: "Delete",
+    roleDeleteTitle: "Delete role?",
+    roleDeleteBody: "“{name}” will be deleted permanently. This cannot be undone.",
+    roleDeleteConfirm: "Delete permanently",
+    roleSystemBadge: "System role",
+    roleOwnBadge: "Custom role",
+    roleProtectedBadge: "Protected",
+    roleNoPermissions: "No permissions",
+    roleMemberCount: "{n} person(s)",
+    roleNewHint:
+      "A new role starts with no permissions at all. Assign the levels afterwards in the “Permissions” tab.",
+    roleCreated: "Role “{name}” created.",
+    roleUpdated: "Role “{name}” saved.",
+    roleDeleted: "Role “{name}” deleted.",
+
+    peopleEyebrow: "Assignment",
+    peopleTitle: "Who holds which roles",
+    peopleSub:
+      "A person can hold several roles. Their permissions are the union: the highest level wins per capability.",
+    colMember: "Person",
+    colRoles: "Roles",
+    colEdit: "Change",
+    editRoles: "Change roles",
+    editRolesTitle: "Roles of {name}",
+    editRolesSub: "Multiple choice. Permissions are the union of all ticked roles.",
+    noRoles: "No role",
     youTag: "You",
-    reasonSelf: "your role",
-    reasonProtected: "ranked higher",
+    rolesSaved: "Roles of {name} saved.",
     tableCaption: "Members and their roles",
+    emptyTitle: "No members",
+    emptyBody: "Once the club has members, you can give them roles here.",
 
-    lockedTitle: "Assigning is locked for your role",
-    lockedBody: "Only board, admin and moderation may assign roles. As {role} you can view the roles for reference only.",
+    coachesEyebrow: "Coaches",
+    coachesTitle: "Who coaches which teams",
+    coachesSub:
+      "A coach can look after several teams. Whoever coaches a team sees that team’s routines.",
+    colCoach: "Person",
+    colTeams: "Teams",
+    editTeams: "Change teams",
+    editTeamsTitle: "Teams of {name}",
+    editTeamsSub:
+      "Multiple choice. Someone who is already a skater in a team cannot also be a coach there.",
+    noTeams: "No team",
+    isSkaterHere: "Is a skater here",
+    teamsSaved: "Teams of {name} saved.",
+    coachesEmptyTitle: "No teams",
+    coachesEmptyBody: "Create a team first, then you can assign coaches.",
+    coachesTableCaption: "People and the teams they coach",
+    coachSelfNote:
+      "A coach cannot assign themselves to a team — only someone who manages teams may do that.",
 
-    toastSaved: "Changed {name}'s role to “{role}”",
-    toastDemo: "Changed {name}'s role to “{role}” — demo",
-    toastForbidden: "No permission — the role was not changed.",
-
+    lockedTitle: "View only",
+    lockedBody:
+      "You may not change roles and permissions in this club. You are seeing the current state.",
+    forbiddenTitle: "No access",
+    forbiddenBody: "You lack the permission for this area. Please contact the club administration.",
+    loadErrorTitle: "Could not be loaded",
     retry: "Try again",
-    loadErrorTitle: "Members could not be loaded",
-    niTitle: "Not connected yet",
-    niBody: "The member list has no endpoint in api mode yet.",
-    emptyTitle: "No members yet",
-    emptyBody: "Once people join the club you can assign their roles here.",
-
-    serverEyebrow: "Security",
-    serverTitle: "Permissions are enforced on the server",
-    serverBody: "This view only shows and hides. The server authoritatively checks every action (row-level security + API role check against the database). Without permission it responds with an error — the change is then rolled back.",
+    toastForbidden: "You lack the permission for this. The server rejected the change.",
+    demoTag: "Demo",
+    demoNote:
+      "Demo mode: changes only last until you reload. With a real data source this screen writes to the server.",
   },
 } satisfies Dict;
 
 export type RollenKey = keyof (typeof rollenDict)["de"];
-
-/** Rolle → Dictionary-Key des Labels. */
-export function roleLabelKey(role: MemberRole): RollenKey {
-  switch (role) {
-    case "owner":
-      return "roleOwner";
-    case "admin":
-      return "roleAdmin";
-    case "moderator":
-      return "roleModerator";
-    case "treasurer":
-      return "roleTreasurer";
-    case "coach":
-      return "roleCoach";
-    case "guest_coach":
-      return "roleGuest";
-    default:
-      return "roleMember";
-  }
-}
-
-/** Rolle → Dictionary-Key der Kurzbeschreibung. */
-export function roleDescKey(role: MemberRole): RollenKey {
-  switch (role) {
-    case "owner":
-      return "descOwner";
-    case "admin":
-      return "descAdmin";
-    case "moderator":
-      return "descModerator";
-    case "treasurer":
-      return "descTreasurer";
-    case "coach":
-      return "descCoach";
-    case "guest_coach":
-      return "descGuest";
-    default:
-      return "descMember";
-  }
-}

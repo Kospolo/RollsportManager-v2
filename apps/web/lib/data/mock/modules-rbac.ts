@@ -8,7 +8,6 @@ import type {
   MemberRoleAssignment,
   RbacRepository,
   ResolvedCapability,
-  RolePermission,
 } from "../inputs-rbac";
 import {
   CAPABILITY_CATALOG,
