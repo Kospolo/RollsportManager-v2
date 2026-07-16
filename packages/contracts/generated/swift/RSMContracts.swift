@@ -102,6 +102,15 @@ public enum ThemePreference: String, Codable, CaseIterable, Sendable, Equatable 
     case auto = "auto"
 }
 
+public enum CapabilityLevel: String, Codable, CaseIterable, Sendable, Equatable {
+    case none = "none"
+    case readOwn = "read_own"
+    case readTeam = "read_team"
+    case readAll = "read_all"
+    case edit = "edit"
+    case manage = "manage"
+}
+
 public enum PlatformTier: String, Codable, CaseIterable, Sendable, Equatable {
     case basic = "basic"
     case pro = "pro"
@@ -1390,6 +1399,71 @@ public struct UserPreferencesUpdate: Codable, Equatable, Sendable {
         self.locale = locale
         self.theme = theme
         self.notifications = notifications
+    }
+}
+
+public struct ResolvedCapability: Codable, Equatable, Sendable {
+    public var capabilityKey: String
+    public var labelDe: String
+    public var labelEn: String
+    public var allowedLevels: [CapabilityLevel]
+    public var sort: Int
+    public var rank: Int
+    public var level: CapabilityLevel
+
+    enum CodingKeys: String, CodingKey {
+        case capabilityKey = "capability_key"
+        case labelDe = "label_de"
+        case labelEn = "label_en"
+        case allowedLevels = "allowed_levels"
+        case sort
+        case rank
+        case level
+    }
+
+    public init(
+        capabilityKey: String,
+        labelDe: String,
+        labelEn: String,
+        allowedLevels: [CapabilityLevel],
+        sort: Int,
+        rank: Int,
+        level: CapabilityLevel
+    ) {
+        self.capabilityKey = capabilityKey
+        self.labelDe = labelDe
+        self.labelEn = labelEn
+        self.allowedLevels = allowedLevels
+        self.sort = sort
+        self.rank = rank
+        self.level = level
+    }
+}
+
+public struct CapabilityResolution: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var roleKeys: [String]
+    public var isPlatformAdmin: Bool
+    public var capabilities: [ResolvedCapability]
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case roleKeys = "role_keys"
+        case isPlatformAdmin = "is_platform_admin"
+        case capabilities
+    }
+
+    public init(
+        clubId: String,
+        roleKeys: [String],
+        isPlatformAdmin: Bool,
+        capabilities: [ResolvedCapability]
+    ) {
+        self.clubId = clubId
+        self.roleKeys = roleKeys
+        self.isPlatformAdmin = isPlatformAdmin
+        self.capabilities = capabilities
     }
 }
 

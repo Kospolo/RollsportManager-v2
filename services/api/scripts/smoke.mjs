@@ -564,6 +564,86 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
     (await call('GET', '/platform/system', { as: t.owner })).status, 403);
 }
 
+// ============================================================================
+// RBAC Phase 2 — GET /me/capabilities (RBAC-DESIGN §6).
+//
+// Das ist der Endpunkt, der die 0025-Zusage API-seitig einloest: die Rechte
+// kommen aus der DATENBANK, nicht aus dem Claim. Geprueft wird deshalb genau
+// das, was der Claim NICHT kann: Mehrfachrollen und Sofortwirkung.
+// ============================================================================
+{
+  console.log('\n[smoke] --- /me/capabilities (RBAC Phase 2) ---');
+
+  // Die Skala, wie lib/capabilities.ts sie kodiert. Der Vergleich unten nagelt
+  // sie an die Datenbank: `rank` UND `level` kommen beide aus app.cap_ranks —
+  // stimmt CAPABILITY_LEVELS.indexOf(level) nicht mit rank ueberein, ist die
+  // TS-Kodierung von app.level_rank abgewichen und jeder requireCap-Guard
+  // rechnet falsch. Bewusst hier (HTTP) statt in vitest: nur so wird die ECHTE
+  // DB-Skala geprueft und nicht eine zweite Handliste gegen sich selbst.
+  const CAPABILITY_LEVELS = ['none', 'read_own', 'read_team', 'read_all', 'edit', 'manage'];
+
+  const caps = async (as, club = CLUB) =>
+    call('GET', `/me/capabilities?club_id=${club}`, { as });
+  const rankOfCap = (json, key) =>
+    json?.capabilities?.find((c) => c.capability_key === key)?.rank;
+
+  // --- Aufloesung je Persona: deckt sie sich mit dem Seed? -------------------
+  const ownerCaps = await caps(t.owner);
+  assertEq('owner reads /me/capabilities -> 200', ownerCaps.status, 200);
+  assertEq('...owner role_keys aus der DB', JSON.stringify(ownerCaps.json?.role_keys), '["owner"]');
+  // owner ist protected -> cap_rank schliesst ueberall auf 5 kurz (0025:232).
+  const ownerNot5 = (ownerCaps.json?.capabilities ?? []).filter((c) => c.rank !== 5);
+  if (ownerNot5.length === 0) ok('...owner hat auf JEDER Faehigkeit Rang 5 (protected)');
+  else fail('owner ranks', `nicht 5: ${ownerNot5.map((c) => c.capability_key).join(',')}`);
+
+  // DIE Skalen-Kontrolle (siehe oben).
+  const scaleMismatch = (ownerCaps.json?.capabilities ?? []).filter(
+    (c) => CAPABILITY_LEVELS.indexOf(c.level) !== c.rank,
+  );
+  if (scaleMismatch.length === 0) {
+    ok('...TS-Skala deckt sich mit app.level_rank (indexOf(level) === rank)');
+  } else {
+    fail('TS-Skala vs. app.level_rank', JSON.stringify(scaleMismatch.slice(0, 3)));
+  }
+
+  const treasurerCaps = await caps(t.treasurer);
+  assertEq('treasurer reads /me/capabilities -> 200', treasurerCaps.status, 200);
+  assertEq('...treasurer finance = manage (5)', rankOfCap(treasurerCaps.json, 'finance'), 5);
+  assertEq('...treasurer member_contact = read_all (3)',
+    rankOfCap(treasurerCaps.json, 'member_contact'), 3);
+  // Der Kassenwart schreibt keine Kueren — vor UND nach dem Split (0028).
+  assertEq('...treasurer routines_edit = none (0)', rankOfCap(treasurerCaps.json, 'routines_edit'), 0);
+  assertEq('...treasurer routines (Lesen) = read_own (1)', rankOfCap(treasurerCaps.json, 'routines'), 1);
+
+  const coachCaps = await caps(t.coach);
+  assertEq('coach reads /me/capabilities -> 200', coachCaps.status, 200);
+  assertEq('...coach routines (Lesen) = read_team (2)', rankOfCap(coachCaps.json, 'routines'), 2);
+  assertEq('...coach routines_edit (Schreiben) = edit (4)', rankOfCap(coachCaps.json, 'routines_edit'), 4);
+  assertEq('...coach attendance = edit (4)', rankOfCap(coachCaps.json, 'attendance'), 4);
+  assertEq('...coach finance = read_own (1)', rankOfCap(coachCaps.json, 'finance'), 1);
+  assertEq('...coach roles = none (0)', rankOfCap(coachCaps.json, 'roles'), 0);
+
+  const memberCaps = await caps(t.parent);
+  assertEq('member reads /me/capabilities -> 200', memberCaps.status, 200);
+  assertEq('...member routines = read_own (1)', rankOfCap(memberCaps.json, 'routines'), 1);
+  assertEq('...member routines_edit = none (0)', rankOfCap(memberCaps.json, 'routines_edit'), 0);
+  assertEq('...member member_contact = none (0)', rankOfCap(memberCaps.json, 'member_contact'), 0);
+  assertEq('...member members = read_all (3), NICHT manage',
+    rankOfCap(memberCaps.json, 'members'), 3);
+
+  // Der Katalog reist vollstaendig mit — das Admin-UI braucht Labels + Optionen.
+  const first = memberCaps.json?.capabilities?.[0];
+  if (first?.label_de && first?.label_en && Array.isArray(first?.allowed_levels)) {
+    ok('...Katalog liefert bilinguale Labels + allowed_levels mit');
+  } else {
+    fail('capability catalog', `got ${JSON.stringify(first)}`);
+  }
+
+  // --- Gegenprobe: kein Mitglied, keine Aufloesung --------------------------
+  assertEq('Fremde bekommt KEINE Aufloesung fuer diesen Verein -> 403',
+    (await caps(t.foreign)).status, 403);
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

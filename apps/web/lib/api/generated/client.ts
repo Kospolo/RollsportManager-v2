@@ -337,6 +337,16 @@ export class ApiClient {
   }
 
   /**
+   * Die aufgeloesten Rechte der eingeloggten Person in einem Verein
+   * Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: Stufe "none" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind noch nicht durchgaengig umgestellt. "none" darf deshalb nicht pauschal als "abgeschaltet" dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).
+   * 
+   * `GET /me/capabilities`
+   */
+  async getMeCapabilities(query: { "club_id": string }, options?: RequestOptions): Promise<M.CapabilityResolution> {
+    return this.request<M.CapabilityResolution>("GET", "/me/capabilities", { query, auth: true, options });
+  }
+
+  /**
    * List teams of a club incl. skater/coach member ids
    * 
    * `GET /clubs/{clubId}/teams`

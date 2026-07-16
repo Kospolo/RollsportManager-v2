@@ -2227,3 +2227,79 @@ export const anniversarySchema = z
     days_until: z.number().int(),
   })
   .openapi('Anniversary');
+
+// ---------------------------------------------------------------------------
+// RBAC (RBAC-DESIGN §2/§3/§6) — das konfigurierbare Rechte-System.
+//
+// ### Zur NAMENSWAHL (Lehre aus dem Theme/ThemePreference-Desaster) ###
+// Die Generatoren fuer Swift/Kotlin kennen keinen Namensraum: apps/ios/
+// project.yml zieht App/ und packages/contracts/generated/swift in EIN Target.
+// Ein Schema `Permissions` kollidierte hart mit apps/ios/App/Auth/
+// Permissions.swift:35 (struct Permissions) -> iOS-Build tot. `Role` kollidierte
+// weich mit androidx.compose.ui.semantics.Role (in 5 Kotlin-Dateien importiert)
+// und mit dem bestehenden ClubRole. `RoleLevel`/`MeCapabilities` kollidierten
+// mit SICH SELBST: hoistedTypes (codegen/lib/spec.mjs:167-189) hebt jede INLINE
+// definierte Enum/Objekt-Property als `<Schema><Prop>` heraus — aus
+// `Role.level` wuerde `RoleLevel`, aus `Me.capabilities` `MeCapabilities`.
+// check.mjs sieht so etwas NICHT (es vergleicht nur Bytes, es kompiliert nichts).
+//
+// Daraus zwei harte Regeln, die unten eingehalten sind:
+//   1. Kein Schema-Name ist gleich `<AnderesSchema><PropInPascalCase>`.
+//      Deshalb hat `Capability` KEINE Property `level` — sonst entstuende ein
+//      zweites `CapabilityLevel`.
+//   2. Kein BENANNTER SKALAR. gen-swift.mjs:198-210 / gen-kotlin.mjs:140-152
+//      emittieren nur string-Enums und Objekte; ein benanntes
+//      {"type":"integer"} faellt STUMM heraus (Beleg: `Weekday` — deshalb
+//      braucht iOS den ContractCodegenShim und der Android-Build ist kaputt).
+//      `rank` ist daher inline z.number().int() und NIE .openapi('CapRank').
+// Alle Namen unten sind gegen die Spec-Schemas, die iOS-Top-Level-Typen und die
+// Kotlin-Deklarationen geprueft: frei.
+// ---------------------------------------------------------------------------
+
+/** Die Stufen-Skala (§2) = app.role_level. Geordnet: none < … < manage. */
+export const capabilityLevelSchema = z
+  .enum(['none', 'read_own', 'read_team', 'read_all', 'edit', 'manage'])
+  .openapi('CapabilityLevel');
+
+/** Ein Katalog-Eintrag (app.capabilities). Bewusst OHNE `level` (siehe Regel 1). */
+export const capabilitySchema = z
+  .object({
+    key: z.string(),
+    label_de: z.string(),
+    label_en: z.string(),
+    /** Die im Admin-UI waehlbare Teilmenge der Skala. */
+    allowed_levels: z.array(capabilityLevelSchema),
+    sort: z.number().int(),
+  })
+  .openapi('Capability');
+
+/** Eine aufgeloeste Faehigkeit: Katalog + der Rang der aufrufenden Person. */
+export const resolvedCapabilitySchema = z
+  .object({
+    capability_key: z.string(),
+    label_de: z.string(),
+    label_en: z.string(),
+    allowed_levels: z.array(capabilityLevelSchema),
+    sort: z.number().int(),
+    /** Numerischer Rang 0..5 (= app.level_rank). Inline: kein benannter Skalar. */
+    rank: z.number().int(),
+    level: capabilityLevelSchema,
+  })
+  .openapi('ResolvedCapability');
+
+/**
+ * Die Antwort von GET /me/capabilities — alles, was ein Client zum Gating
+ * braucht. `role_keys` kommt aus der DATENBANK (app.member_role_keys), nicht
+ * aus dem Token: bei Mehrfachrollen stehen hier mehrere Keys, waehrend der
+ * Claim nur einen kennt.
+ */
+export const capabilityResolutionSchema = z
+  .object({
+    club_id: uuid,
+    /** Alle Rollen-Keys der Person in diesem Verein (DB-aufgeloest, Mehrfachrollen). */
+    role_keys: z.array(z.string()),
+    /** Plattform-Admin ist KEINE Vereinsrolle, sondern ein Token-Claim (§5). */
+    is_platform_admin: z.boolean(),
+    capabilities: z.array(resolvedCapabilitySchema),
+  })
+  .openapi('CapabilityResolution');

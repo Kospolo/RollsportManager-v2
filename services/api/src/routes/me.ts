@@ -17,9 +17,10 @@
 // ever touches their own club_members rows and their own user_preferences row.
 // ============================================================================
 
-import { createRoute } from '@hono/zod-openapi';
+import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
+  capabilityResolutionSchema,
   meSchema,
   meUpdateSchema,
   userPreferencesSchema,
@@ -29,6 +30,8 @@ import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { avatarUrlFor } from '../lib/avatar.js';
+import { capsFor } from '../lib/capabilities.js';
+import { isPlatformAdmin } from '../lib/guards.js';
 
 export const meRouter = createRouter();
 
@@ -183,5 +186,73 @@ meRouter.openapi(
          returning profile_id, locale, theme, notifications, updated_at`,
     );
     return c.json(userPreferencesSchema.parse(updated[0]), 200);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// GET /me/capabilities — die aufgeloesten Rechte fuer das UI-Gating (§6).
+//
+// ### Der erste Endpunkt, der die 0025-Zusage auch API-seitig einloest ###
+// Die Autorisierung kommt hier aus der DATENBANK, nicht aus dem Claim:
+//   * MEHRFACHROLLEN wirken (Rechte = Vereinigung ueber alle Rollen)
+//   * Aenderungen wirken SOFORT, ohne Re-Login (kein Token-Roundtrip)
+//   * der Mitgliedschafts-Gate (deleted_at/status/valid_until) greift
+// Deshalb wird die Mitgliedschaft NICHT ueber requireClubMember(claims, ...)
+// geprueft — das laese einen Token durch, dessen Mitgliedschaft laengst
+// erloschen ist. Massgeblich ist roleKeys aus app.member_role_keys.
+//
+// Plattform-Admins haben bewusst KEINEN Fähigkeiten-Bypass (0025:219-222,
+// fixiert durch 90_roles_matrix.sql:148): sie duerfen den Verein lesen, bekommen
+// aber keine Vereinsrechte. Sie erhalten daher die Aufloesung (alle Raenge 0,
+// solange sie kein Mitglied sind) statt eines 403 — das UI soll den Verein
+// anzeigen koennen, nur eben ohne Schaltflaechen.
+// ---------------------------------------------------------------------------
+meRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/me/capabilities',
+    tags: ['me'],
+    summary: 'Die aufgeloesten Rechte der eingeloggten Person in einem Verein',
+    description:
+      'Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden ' +
+      'vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen ' +
+      'Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im ' +
+      'Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. ' +
+      'HINWEIS fuer Clients: Stufe "none" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind ' +
+      'noch nicht durchgaengig umgestellt. "none" darf deshalb nicht pauschal als "abgeschaltet" ' +
+      'dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).',
+    security: [{ bearerAuth: [] }],
+    request: {
+      query: z.object({ club_id: z.string().uuid() }),
+    },
+    responses: {
+      200: jsonContent(capabilityResolutionSchema, 'Die aufgeloesten Rechte im Verein'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const claims = c.get('claims');
+    const { club_id } = c.req.valid('query');
+    const caps = await capsFor(c, club_id);
+    const platformAdmin = isPlatformAdmin(claims);
+
+    // Autorisierung aus der DB, NICHT aus dem Claim.
+    if (caps.roleKeys.length === 0 && !platformAdmin) {
+      throw problem(
+        403,
+        'Forbidden',
+        'Keine aktive Mitgliedschaft in diesem Verein. / No active membership in this club.',
+      );
+    }
+
+    return c.json(
+      capabilityResolutionSchema.parse({
+        club_id,
+        role_keys: caps.roleKeys,
+        is_platform_admin: platformAdmin,
+        capabilities: caps.caps,
+      }),
+      200,
+    );
   },
 );

@@ -74,6 +74,16 @@ enum class ThemePreference {
 }
 
 @Serializable
+enum class CapabilityLevel {
+    @SerialName("none") NONE,
+    @SerialName("read_own") READ_OWN,
+    @SerialName("read_team") READ_TEAM,
+    @SerialName("read_all") READ_ALL,
+    @SerialName("edit") EDIT,
+    @SerialName("manage") MANAGE;
+}
+
+@Serializable
 enum class PlatformTier {
     @SerialName("basic") BASIC,
     @SerialName("pro") PRO,
@@ -675,6 +685,25 @@ data class UserPreferencesUpdate(
     val locale: String? = null,
     val theme: ThemePreference? = null,
     val notifications: NotificationPrefs? = null
+)
+
+@Serializable
+data class ResolvedCapability(
+    @SerialName("capability_key") val capabilityKey: String,
+    @SerialName("label_de") val labelDe: String,
+    @SerialName("label_en") val labelEn: String,
+    @SerialName("allowed_levels") val allowedLevels: List<CapabilityLevel>,
+    val sort: Long,
+    val rank: Long,
+    val level: CapabilityLevel
+)
+
+@Serializable
+data class CapabilityResolution(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("role_keys") val roleKeys: List<String>,
+    @SerialName("is_platform_admin") val isPlatformAdmin: Boolean,
+    val capabilities: List<ResolvedCapability>
 )
 
 @Serializable

@@ -272,6 +272,26 @@ export interface UserPreferencesUpdate {
   "notifications"?: NotificationPrefs;
 }
 
+export type CapabilityLevel = "none" | "read_own" | "read_team" | "read_all" | "edit" | "manage";
+export const CapabilityLevelValues: readonly CapabilityLevel[] = ["none", "read_own", "read_team", "read_all", "edit", "manage"] as const;
+
+export interface ResolvedCapability {
+  "capability_key": string;
+  "label_de": string;
+  "label_en": string;
+  "allowed_levels": CapabilityLevel[];
+  "sort": number;
+  "rank": number;
+  "level": CapabilityLevel;
+}
+
+export interface CapabilityResolution {
+  "club_id": string;
+  "role_keys": string[];
+  "is_platform_admin": boolean;
+  "capabilities": ResolvedCapability[];
+}
+
 export interface Team {
   "id": string;
   "club_id": string;

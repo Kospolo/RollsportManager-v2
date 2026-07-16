@@ -1201,6 +1201,85 @@
           }
         }
       },
+      "CapabilityLevel": {
+        "type": "string",
+        "enum": [
+          "none",
+          "read_own",
+          "read_team",
+          "read_all",
+          "edit",
+          "manage"
+        ]
+      },
+      "ResolvedCapability": {
+        "type": "object",
+        "properties": {
+          "capability_key": {
+            "type": "string"
+          },
+          "label_de": {
+            "type": "string"
+          },
+          "label_en": {
+            "type": "string"
+          },
+          "allowed_levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CapabilityLevel"
+            }
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "rank": {
+            "type": "integer"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CapabilityLevel"
+          }
+        },
+        "required": [
+          "capability_key",
+          "label_de",
+          "label_en",
+          "allowed_levels",
+          "sort",
+          "rank",
+          "level"
+        ]
+      },
+      "CapabilityResolution": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "role_keys": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "is_platform_admin": {
+            "type": "boolean"
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolvedCapability"
+            }
+          }
+        },
+        "required": [
+          "club_id",
+          "role_keys",
+          "is_platform_admin",
+          "capabilities"
+        ]
+      },
       "Team": {
         "type": "object",
         "properties": {
@@ -9951,6 +10030,83 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/capabilities": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Die aufgeloesten Rechte der eingeloggten Person in einem Verein",
+        "description": "Loest die Rechte SERVERSEITIG aus der Datenbank auf (app.cap_ranks): Mehrfachrollen werden vereinigt (hoechste Stufe je Faehigkeit gewinnt) und Aenderungen wirken sofort, ohne neuen Token. Liefert den vollstaendigen Faehigkeiten-Katalog inkl. bilingualer Labels und der im Admin waehlbaren Stufen — auch dort, wo der Rang 0 ist. HINWEIS fuer Clients: Stufe \"none\" sperrt derzeit nur das SCHREIBEN; die SELECT-Policies sind noch nicht durchgaengig umgestellt. \"none\" darf deshalb nicht pauschal als \"abgeschaltet\" dargestellt werden (Ausnahmen: routines, lockers, finance, anniversaries).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Die aufgeloesten Rechte im Verein",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilityResolution"
                 }
               }
             }
