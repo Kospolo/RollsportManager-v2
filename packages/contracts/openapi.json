@@ -177,10 +177,6 @@
             "type": "integer",
             "nullable": true
           },
-          "join_code": {
-            "type": "string",
-            "nullable": true
-          },
           "settings": {
             "type": "object",
             "additionalProperties": {
@@ -215,7 +211,6 @@
           "city",
           "discipline",
           "founded_year",
-          "join_code",
           "settings",
           "created_at",
           "updated_at"
@@ -247,6 +242,51 @@
           "type",
           "title",
           "status"
+        ]
+      },
+      "ClubJoinCode": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "join_code": {
+            "type": "string",
+            "nullable": true
+          },
+          "join_code_expires_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "join_code_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "club_id",
+          "join_code",
+          "join_code_expires_at",
+          "join_code_revoked_at"
         ]
       },
       "ClubUpdate": {
@@ -292,6 +332,7 @@
         "type": "string",
         "enum": [
           "pending",
+          "rejected",
           "active",
           "inactive",
           "left"
@@ -509,12 +550,14 @@
           "first_name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
           },
           "last_name": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 80
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
           },
           "accept_terms": {
             "type": "boolean",
@@ -559,12 +602,26 @@
                 "nullable": true
               }
             ]
+          },
+          "previous_code_valid_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
           }
         },
         "required": [
           "club_id",
           "join_code",
-          "join_code_expires_at"
+          "join_code_expires_at",
+          "previous_code_valid_until"
         ]
       },
       "ClubJoinCodeRotateInput": {
@@ -575,6 +632,11 @@
             "nullable": true,
             "minimum": 1,
             "maximum": 365
+          },
+          "overlap_hours": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 168
           }
         }
       },
@@ -861,6 +923,131 @@
         "required": [
           "status",
           "id"
+        ]
+      },
+      "ConsentPurpose": {
+        "type": "string",
+        "enum": [
+          "terms",
+          "privacy",
+          "photos_internal",
+          "photos_public",
+          "chat",
+          "newsletter"
+        ]
+      },
+      "EffectiveConsent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "subject_profile_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "granted_by_profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "legal_document_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "policy_version": {
+            "type": "string",
+            "nullable": true
+          },
+          "recorded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "effective": {
+            "type": "boolean"
+          },
+          "recorded_granted": {
+            "type": "boolean"
+          },
+          "granted_by_guardian": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "revoked",
+              "expired_age_16"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "subject_profile_id",
+          "purpose",
+          "granted_by_profile_id",
+          "legal_document_id",
+          "policy_version",
+          "recorded_at",
+          "effective",
+          "recorded_granted",
+          "granted_by_guardian",
+          "state"
+        ]
+      },
+      "RealConsentPurpose": {
+        "type": "string",
+        "enum": [
+          "photos_internal",
+          "photos_public",
+          "chat",
+          "newsletter"
+        ]
+      },
+      "ConsentDeclare": {
+        "type": "object",
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/RealConsentPurpose"
+          },
+          "granted": {
+            "type": "boolean"
+          },
+          "policy_version": {
+            "type": "string",
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "member_id",
+          "purpose",
+          "granted"
         ]
       },
       "WaitlistKind": {
@@ -1718,6 +1905,78 @@
         },
         "required": [
           "member_ids"
+        ]
+      },
+      "ClubModuleState": {
+        "type": "object",
+        "properties": {
+          "module_key": {
+            "type": "string"
+          },
+          "label_de": {
+            "type": "string"
+          },
+          "label_en": {
+            "type": "string"
+          },
+          "desc_de": {
+            "type": "string"
+          },
+          "desc_en": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "core": {
+            "type": "boolean"
+          },
+          "requires_pro": {
+            "type": "boolean"
+          },
+          "enforcement": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "enforced",
+              "partial",
+              "menu_only"
+            ]
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "pro_ok": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "module_key",
+          "label_de",
+          "label_en",
+          "desc_de",
+          "desc_en",
+          "sort",
+          "core",
+          "requires_pro",
+          "enforcement",
+          "enabled",
+          "pro_ok",
+          "available"
+        ]
+      },
+      "ClubModuleSet": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
         ]
       },
       "Team": {
@@ -8772,6 +9031,83 @@
         }
       }
     },
+    "/clubs/{clubId}/join-code": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Vereinscode lesen (owner/admin/moderator) / Read the club join code",
+        "description": "Liefert den juengsten Einladungscode des Vereins. Erfordert owner, admin oder moderator - dieselbe Rollenliste, die den Code rotieren und widerrufen darf: wer ihn sieht, kann ihn auch einziehen. Der Code steht seit 0035 NICHT mehr am Club-Objekt (GET /clubs lieferte ihn bis dahin an jedes Mitglied, auch an Kinder); das Leserecht auf die Spalte ist der Rolle authenticated in der Datenbank entzogen. / Returns the club's most recent invite code. Requires owner, admin or moderator.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Der Vereinscode / The club join code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubJoinCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/clubs/join": {
       "post": {
         "tags": [
@@ -8960,7 +9296,7 @@
           "registration"
         ],
         "summary": "Beitrittsantrag ablehnen / Reject a join request",
-        "description": "Soft-Delete des Antrags (deleted_at). Die Person kann danach erneut beantragen - eine Ablehnung ist keine Sperre. Erfordert members>=manage.",
+        "description": "Setzt status=rejected und schreibt das Gedaechtnis fort (rejected_at, rejected_by, rejection_count). Die Zeile BLEIBT stehen - vorher war eine Ablehnung ein Soft-Delete, der den Vorgang verschwinden liess: der naechste Antrag derselben Person traf auf einen Vorstand ohne Gedaechtnis. Ein Wiederantrag ist nach einer Sperrfrist moeglich (POST /clubs/join dreht die Zeile zurueck auf pending); eine versehentliche Ablehnung nimmt POST .../approve sofort zurueck. Erfordert members>=manage.",
         "security": [
           {
             "bearerAuth": []
@@ -8988,7 +9324,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Abgelehnter Antrag (deleted_at gesetzt)",
+            "description": "Abgelehnter Antrag (status=rejected)",
             "content": {
               "application/json": {
                 "schema": {
@@ -9046,7 +9382,7 @@
           "registration"
         ],
         "summary": "Vereinscode neu erzeugen / Rotate the club join code",
-        "description": "Erzeugt einen neuen Code (CSPRNG, Crockford-Base32) und macht den alten damit sofort wertlos. Noetig, weil der Code ein GETEILTES Geheimnis ist: er steht in WhatsApp-Gruppen und an Aushaengen. Ohne Rotation waere die einzige Reaktion auf einen geleakten Code die Neuanlage des Vereins. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).",
+        "description": "Erzeugt einen neuen Code (CSPRNG, Crockford-Base32). Mit overlap_hours bleibt der ALTE Code noch eine Weile gueltig - das war bis 0037 im Schema unmoeglich (der Code war eine SPALTE auf app.clubs, Rotieren hiess Ueberschreiben, der alte starb in derselben Sekunde). Genau deshalb rotierte niemand: ein Wechsel sperrte Aushang, WhatsApp-Gruppe und Anmeldeformular sofort aus. Ohne overlap_hours (Vorgabe) ist der alte Code sofort tot - das ist der richtige Weg bei einem GELEAKTEN Code. Erfordert owner/admin/moderator (wie clubs_update, 0007:253).",
         "security": [
           {
             "bearerAuth": []
@@ -9133,7 +9469,7 @@
           "registration"
         ],
         "summary": "Vereinscode widerrufen / Revoke the club join code",
-        "description": "Macht den Code ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. Getrennt von rotate, weil \"niemand soll mehr beitreten\" etwas anderes ist als \"alle brauchen einen neuen Code\".",
+        "description": "Macht ALLE Codes des Vereins ungueltig, OHNE einen neuen zu erzeugen: der Verein nimmt damit keine Antraege mehr an. \"Alle\" ist woertlich - seit 0037 kann ein Verein mehrere Codes gleichzeitig fuehren (Ueberlappungsfenster einer Rotation), und ein Widerruf, der einen davon uebersieht, ist keiner. Getrennt von rotate, weil \"niemand soll mehr beitreten\" etwas anderes ist als \"alle brauchen einen neuen Code\".",
         "security": [
           {
             "bearerAuth": []
@@ -9970,6 +10306,180 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/consents": {
+      "get": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Wirksamer Einwilligungsstand / Effective consent state",
+        "description": "Liefert je (Person, Zweck) die WIRKSAME Einwilligung aus app.effective_consents — nicht das rohe Journal. state=revoked (Art. 7 Abs. 3) und state=expired_age_16 (die Erklärung einer erziehungsberechtigten Person erlischt mit dem 16. Geburtstag) sind beide effective=false. RLS entscheidet, wer was sieht: die betroffene Person, wer erklärt hat, und die Mitglieder-Verwaltung.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "member_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wirksamer Stand",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EffectiveConsent"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Einwilligung erteilen oder widerrufen / Grant or withdraw a consent",
+        "description": "Erteilt (granted=true) oder widerruft (granted=false) eine Einwilligung für EINEN Zweck. Der Widerruf ist derselbe Aufruf mit granted=false — genauso einfach wie die Erteilung (Art. 7 Abs. 3 Satz 4) — und legt eine NEUE Zeile an; die frühere bleibt als Nachweis erhalten. Bei Minderjährigen erklärt eine erziehungsberechtigte Person (Art. 8); ab 16 nur noch die betroffene Person selbst. terms/privacy sind hier NICHT zulässig: das ist Kenntnisnahme, keine Einwilligung.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentDeclare"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Erklärung erfasst",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EffectiveConsent"
                 }
               }
             }
@@ -12044,6 +12554,189 @@
                 "schema": {
                   "type": "object",
                   "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/modules": {
+      "get": {
+        "tags": [
+          "modules"
+        ],
+        "summary": "Modul-Katalog + Schalterstellung des Vereins (is_club_member)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Module des Vereins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClubModuleState"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/modules/{moduleKey}": {
+      "put": {
+        "tags": [
+          "modules"
+        ],
+        "summary": "Modul ein-/ausschalten (is_club_admin; Kernmodule sind gesperrt)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "moduleKey",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "Neue Schalterstellung",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubModuleSet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Der WIRKLICHE Zustand nach dem Schalten",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubModuleState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Kernmodul — nicht abschaltbar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -18366,6 +19059,86 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/ChatChannel"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/recipients": {
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "People I may start a direct message with (child protection applied)",
+        "description": "The picker behind \"New message to ...\". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint is deliberately not a second, wider way into the roster.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Allowed direct-message recipients, redacted for the viewer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClubMember"
                   }
                 }
               }
