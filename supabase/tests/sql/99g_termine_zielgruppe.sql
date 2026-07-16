@@ -256,7 +256,32 @@ begin
     $q$insert into app.events (club_id, type, title, starts_at, ends_at, audience)
        values ('c1ab0000-0000-4000-8000-000000000001', 'other', 'Moderator-Vereinsfest',
                now() + interval '1 day', now() + interval '1 day 2 hours', 'club')$q$);
+
+  -- Der moderator behaelt sein Schreibrecht auf die TEAM-ZUORDNUNG (0007:291).
+  -- Im ersten Anlauf hatte ich ihn hier herausgekippt, weil 0003:213 ihn nicht
+  -- nennt — 0007 ALTERt die Policy aber danach. Ergebnis waere gewesen: er darf
+  -- den Termin anlegen, aber kein Team daranhaengen -> ein Termin, den ausser
+  -- dem Vorstand niemand sieht. Diese Zeile haelt die Naht fest.
+  perform testkit.succeeds('moderator: haengt einen Termin an ein BELIEBIGES Team (0007)',
+    $q$insert into app.event_teams (club_id, event_id, team_id)
+       values ('c1ab0000-0000-4000-8000-000000000001',
+               'e0000000-0000-4000-8000-000000000002',
+               'b0000000-0000-4000-8000-000000000001')$q$);
 end $$;
+rollback;
+
+-- Und die Gegenprobe zur selben Naht: der guest_coach bleibt beim Schreiben
+-- draussen — die Verengung darf nicht versehentlich jemanden hineinlassen.
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000006","role":"authenticated","club_roles":{"c1ab0000-0000-4000-8000-000000000001":"guest_coach"}}',
+  true);
+set local role authenticated;
+select testkit.throws('guest_coach: haengt KEINEN Termin an ein Team — auch nicht an sein eigenes (t-03)',
+  $q$insert into app.event_teams (club_id, event_id, team_id)
+     values ('c1ab0000-0000-4000-8000-000000000001',
+             'e0000000-0000-4000-8000-000000000001',
+             'b0000000-0000-4000-8000-000000000003')$q$, '42501');
 rollback;
 
 -- ---------------------------------------------------------------------------

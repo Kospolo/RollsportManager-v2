@@ -26,16 +26,33 @@ import { COACH_ROLES, hasClubRole, requireClubMember, requireClubRole } from '..
 import { requireCap } from '../lib/capabilities.js';
 import type { ClubRole } from '../middleware/auth.js';
 
-/** Structure changes (creating events) exclude guest_coach by design. */
-const EVENT_WRITE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'coach'];
+/**
+ * Structure changes (creating events) exclude guest_coach by design.
+ *
+ * 0050: 'moderator' ERGAENZT — und das schliesst eine API/DB-Divergenz, die
+ * aelter ist als dieser Auftrag. Die Policy events_insert erlaubt dem moderator
+ * das Anlegen seit 0007:286 (`alter policy ... owner/admin/moderator/coach`);
+ * nur diese Liste hier kannte ihn nie. Folge, live gegen :3022 gemessen: der
+ * moderator bekam auf POST /events 403, obwohl die Datenbank ihn durchliesse.
+ * Damit waere die Bestellung "audience='club' duerfen owner/admin/moderator"
+ * fuer den moderator unerfuellbar geblieben — er kaeme nie bis zum Haekchen.
+ * KEIN neues Recht: die DB gewaehrt es seit 0007 und bleibt die letzte Instanz;
+ * hier faellt nur ein Gate, das strenger war als die Policy dahinter.
+ */
+const EVENT_WRITE_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator', 'coach'];
 
 /**
  * Wer Termine fuer BELIEBIGE Teams anlegen darf. Alle uebrigen aus
  * EVENT_WRITE_ROLES (= coach) sind auf app.coached_team_ids zugeschnitten
  * (Migration 0050): eine Trainerin legt Termine nur fuer die Teams an, die sie
  * betreut - vorher durfte sie es fuer JEDES Team im Verein.
+ *
+ * DECKUNGSGLEICH mit der Policy event_teams_insert (0050), und die nennt
+ * owner/admin/MODERATOR. Faellt der moderator hier heraus, laeuft er in den
+ * coach-Zweig, hat keine coached_team_ids und bekommt fuer JEDEN Team-Termin
+ * 403 — waehrend die Datenbank ihn durchliesse. Genau so gemessen.
  */
-const EVENT_WRITE_ANY_TEAM_ROLES: readonly ClubRole[] = ['owner', 'admin'];
+const EVENT_WRITE_ANY_TEAM_ROLES: readonly ClubRole[] = ['owner', 'admin', 'moderator'];
 
 /**
  * Wer eine VEREINSVERANSTALTUNG (audience='club') setzen darf - der

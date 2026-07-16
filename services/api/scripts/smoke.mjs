@@ -217,6 +217,13 @@ console.log('[smoke] Vereinsveranstaltung: das Haekchen ist rechtepflichtig (005
   assertEq('coach cannot publish a club-wide event (403)', c.status, 403);
   const m = await call('POST', '/events', { as: t.parent, body: body('club', []) });
   assertEq('member cannot publish a club-wide event (403)', m.status, 403);
+  const tr = await call('POST', '/events', { as: t.treasurer, body: body('club', []) });
+  assertEq('treasurer cannot publish a club-wide event (403)', tr.status, 403);
+  // Der moderator gehoert zum Vorstand und DARF. Er kam vor 0050 nicht einmal
+  // bis hierher: EVENT_WRITE_ROLES kannte ihn nicht, obwohl events_insert ihn
+  // seit 0007 durchlaesst (API/DB-Divergenz, live gemessen).
+  const mod = await call('POST', '/events', { as: t.moderator, body: body('club', []) });
+  assertEq('moderator publishes a club-wide event (201)', mod.status, 201);
   // Der Vorstand darf.
   const o = await call('POST', '/events', { as: t.owner, body: body('club', []) });
   assertEq('owner publishes a club-wide event (201)', o.status, 201);
@@ -239,6 +246,13 @@ console.log('[smoke] Vereinsveranstaltung: das Haekchen ist rechtepflichtig (005
     body: body('teams', ['b0000000-0000-4000-8000-000000000002']),
   });
   assertEq('coach creates an event for her OWN team (201)', own.status, 201);
+  // Der Vorstand darf fuer JEDES Team anlegen - auch der moderator, der kein
+  // Team betreut. Faellt er in den coach-Zweig, bekaeme er hier 403.
+  const modTeam = await call('POST', '/events', {
+    as: t.moderator,
+    body: body('teams', ['b0000000-0000-4000-8000-000000000001']),
+  });
+  assertEq('moderator creates an event for ANY team (201)', modTeam.status, 201);
 }
 
 console.log('[smoke] role changes (v1 gap + last owner)');

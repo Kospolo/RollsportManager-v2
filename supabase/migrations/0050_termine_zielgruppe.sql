@@ -105,12 +105,22 @@
 --   Faehigkeit 'checkins' und nicht am Termin. Der Schnitt ist folgenlos.
 --
 -- ### 4. SCHREIBEN: die Trainerin nur fuer IHRE Teams ###
--- event_teams_insert/_update war has_club_role(owner/admin/coach) ohne jeden
--- Team-Bezug: eine Trainerin konnte Termine an JEDES Team haengen, auch an
--- fremde. Ab jetzt: owner/admin unveraendert alles, coach nur die Teams aus
--- app.coached_team_ids. moderator/guest_coach bleiben draussen — sie duerfen
--- hier heute nicht schreiben, und Weiten ist verboten. Die neue Menge ist eine
--- echte Teilmenge der alten.
+-- event_teams_insert/_update war has_club_role(owner/admin/MODERATOR/coach)
+-- ohne jeden Team-Bezug: eine Trainerin konnte Termine an JEDES Team haengen,
+-- auch an fremde. Ab jetzt: owner/admin/moderator unveraendert alles, coach nur
+-- die Teams aus app.coached_team_ids. guest_coach bleibt draussen (er darf hier
+-- heute nicht schreiben; Weiten ist verboten). Die neue Menge ist damit eine
+-- echte Teilmenge der alten: NUR der coach verliert die fremden Teams.
+--
+-- ⚠️ MASSGEBLICH IST 0007:286-295, NICHT 0003:207. 0003 legt die Policy mit
+-- (owner/admin/coach) an, 0007 ALTERt sie danach auf (owner/admin/moderator/
+-- coach). Wer nur 0003 liest — wie ich im ersten Anlauf — kippt den moderator
+-- versehentlich heraus und baut damit eine Falle: events_insert (0007) laesst
+-- ihn den TERMIN anlegen, event_teams_insert verwehrt ihm die ZUORDNUNG. Ergebnis
+-- waere ein Termin ohne Team, den ausser dem Vorstand niemand sieht. Gefunden
+-- hat es der Live-Lauf gegen :3022 (moderator -> 403), nicht die Testsuite.
+-- Dieselbe Falle wie bei app.rbac_default_level (0031 statt 0023): die
+-- Erstfassung einer Regel ist in diesem Repo selten die geltende.
 --
 -- ### WAS HIER BEWUSST *NICHT* PASSIERT ###
 -- competition_entries_select bleibt unveraendert (blank is_club_member).
@@ -390,7 +400,7 @@ drop policy event_teams_insert on app.event_teams;
 create policy event_teams_insert on app.event_teams
   for insert to authenticated
   with check (
-    app.has_club_role(club_id, array['owner', 'admin'])
+    app.has_club_role(club_id, array['owner', 'admin', 'moderator'])
     or (
       app.has_club_role(club_id, array['coach'])
       and team_id = any (app.coached_team_ids(club_id))
@@ -401,14 +411,14 @@ drop policy event_teams_update on app.event_teams;
 create policy event_teams_update on app.event_teams
   for update to authenticated
   using (
-    app.has_club_role(club_id, array['owner', 'admin'])
+    app.has_club_role(club_id, array['owner', 'admin', 'moderator'])
     or (
       app.has_club_role(club_id, array['coach'])
       and team_id = any (app.coached_team_ids(club_id))
     )
   )
   with check (
-    app.has_club_role(club_id, array['owner', 'admin'])
+    app.has_club_role(club_id, array['owner', 'admin', 'moderator'])
     or (
       app.has_club_role(club_id, array['coach'])
       and team_id = any (app.coached_team_ids(club_id))
