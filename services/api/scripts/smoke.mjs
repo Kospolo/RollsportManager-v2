@@ -644,6 +644,57 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
     (await caps(t.foreign)).status, 403);
 }
 
+// ============================================================================
+// RBAC Phase 2 Schritt 5 — /reports/anniversaries war ein Datenleck.
+//
+// Der Report leitet aus birth_date/joined_on ab und gibt `date` + `years`
+// zurueck; `date - years` rekonstruiert das Original EXAKT. Beide Spalten sind
+// im Roster nur fuer Mitglieder-Verwalter sichtbar (SENSITIVE_MEMBER_FIELDS) —
+// der Report gab sie vorher JEDEM Mitglied. Belegt: das Geburtsdatum eines
+// 10-jaehrigen Kindes an eine familienfremde Gast-Trainerin.
+// Jetzt gilt member_contact >= read_all, deckungsgleich mit maySeeFullRoster.
+// ============================================================================
+{
+  console.log('\n[smoke] --- /reports/anniversaries: der Spaltenschutz gilt jetzt auch hier ---');
+  const ann = async (as) => call('GET', `/reports/anniversaries?club_id=${CLUB}`, { as });
+
+  // Wer die Spalten im Roster sehen darf, sieht auch den Report.
+  const treas = await ann(t.treasurer);
+  assertEq('treasurer liest Jubilaeen -> 200', treas.status, 200);
+  if ((treas.json?.length ?? 0) > 0) ok(`...mit Eintraegen (${treas.json.length})`);
+  else fail('anniversaries treasurer', `got ${JSON.stringify(treas.json)}`);
+  assertEq('owner liest Jubilaeen -> 200', (await ann(t.owner)).status, 200);
+  assertEq('admin liest Jubilaeen -> 200', (await ann(t.admin)).status, 200);
+  assertEq('moderator liest Jubilaeen -> 200', (await ann(t.moderator)).status, 200);
+
+  // Wer sie NICHT sehen darf, bekommt sie auch nicht mehr abgeleitet.
+  // Genau diese drei lieferten vorher 200 samt Kinder-Geburtsdaten.
+  assertEq('guest_coach bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.guest)).status, 403);
+  assertEq('coach bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.coach)).status, 403);
+  assertEq('member bekommt KEINE Geburtsdaten mehr -> 403', (await ann(t.parent)).status, 403);
+
+  // Die Konsistenz-Zusage: Report-Zugang == Roster-Spalten-Zugang.
+  const rosterShowsBirthDate = async (as) => {
+    const r = await call('GET', `/clubs/${CLUB}/members`, { as });
+    return (r.json ?? []).some((m) => m.birth_date !== null && m.birth_date !== undefined);
+  };
+  const pairs = [
+    ['treasurer', t.treasurer, 200],
+    ['coach', t.coach, 403],
+    ['member', t.parent, 403],
+    ['guest_coach', t.guest, 403],
+  ];
+  for (const [name, tok, expected] of pairs) {
+    const reportOk = (await ann(tok)).status === 200;
+    const rosterOk = await rosterShowsBirthDate(tok);
+    if (reportOk === rosterOk && (expected === 200) === reportOk) {
+      ok(`...${name}: Report-Zugang == Roster-Spalten-Zugang (${reportOk ? 'beides' : 'keins von beiden'})`);
+    } else {
+      fail(`${name} consistency`, `report=${reportOk}, roster_birth_date=${rosterOk}`);
+    }
+  }
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

@@ -1234,7 +1234,8 @@ export class ApiClient {
   }
 
   /**
-   * Upcoming anniversaries & round birthdays (is_club_member)
+   * Upcoming anniversaries & round birthdays (anniversaries + member_contact)
+   * Leitet Jubilaeen aus joined_on und runde Geburtstage aus birth_date ab. Beide Spalten sind im Roster (GET /clubs/{clubId}/members) nur fuer Mitglieder-Verwalter sichtbar; da `date` minus `years` das Original exakt rekonstruiert, gilt hier dieselbe Schranke: member_contact >= read_all. Zusaetzlich ist der Report ueber die Faehigkeit `anniversaries` im Admin abschaltbar.
    * 
    * `GET /reports/anniversaries`
    */

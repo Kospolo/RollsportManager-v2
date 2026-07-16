@@ -15,6 +15,7 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
+import { requireCap } from '../lib/capabilities.js';
 
 export const reportsRouter = createRouter();
 
@@ -236,16 +237,49 @@ reportsRouter.openapi(
 // 5/10/15/20/25 … years (multiples of 5) from joined_on, plus round birthdays
 // (multiples of 10) from birth_date, for the next 12 months. Each entry carries
 // the upcoming `date`, the milestone `years` reached, and `days_until` (the sort
-// key: nearest first). Access = is_club_member (Referenz 1.3, lesend); it reads
-// only the roster a member may already see under RLS, so it runs as the caller
-// (withUser) - no service mode needed.
+// key: nearest first).
+//
+// ### HAERTUNG Phase 2 — hier war ein belegtes Datenleck (RBAC Schritt 5) ###
+// Der alte Kommentar behauptete, der Report lese "only the roster a member may
+// already see under RLS". Das ist ZEILENWEISE wahr und SPALTENWEISE falsch:
+// club_members_select ist app.is_club_member (0002:317-319) — RLS filtert hier
+// gar keine Spalten. Den Spaltenschutz macht AUSSCHLIESSLICH members.ts:59-70
+// (SENSITIVE_MEMBER_FIELDS: birth_date, joined_on, …). Dieser Report las genau
+// diese beiden Spalten und gab `date` + `years` zurueck — `date - years`
+// rekonstruiert das Original EXAKT.
+//
+// Live gegen die Dev-API belegt, Persona guest_coach (kein Familienbezug):
+//   GET /clubs/{id}/members    -> Emma Gruenewald birth_date = null  (redigiert)
+//   GET /reports/anniversaries -> Emma Gruenewald birthday 2026-11-03, years=10
+//                                 => rekonstruiert 2016-11-03
+//   app.club_members.birth_date =  2016-11-03                        (exakt)
+// Also: das Geburtsdatum eines 10-jaehrigen Kindes, ausgeliefert an eine
+// familienfremde Person, an der eigenen Redigierung vorbei.
+//
+// Die Regel dahinter ist NICHT "API an die DB angleichen" (die DB schuetzt hier
+// gar nichts), sondern: DIE API DARF IHREN EIGENEN SPALTENSCHUTZ NICHT
+// HINTERGEHEN. Deshalb zwei Gates:
+//   * anniversaries >= read_team — die Faehigkeit selbst (im Admin abschaltbar)
+//   * member_contact >= read_all — die SPALTEN, die der Report ableitet.
+//     Im Seed exakt MANAGE_MEMBER_ROLES (owner/admin/moderator/treasurer) und
+//     damit deckungsgleich mit maySeeFullRoster (members.ts:68-70): fuer JEDEN
+//     Pfad, der birth_date/joined_on ausliefert, gilt jetzt dieselbe Regel.
+//
+// VERHALTENSAENDERUNG, ausdruecklich benannt: coach/member/guest_coach
+// bekommen 200 -> 403. Das ist eine Haertung, kein Angleichen.
 // ============================================================================
 reportsRouter.openapi(
   createRoute({
     method: 'get',
     path: '/reports/anniversaries',
     tags: ['reports'],
-    summary: 'Upcoming anniversaries & round birthdays (is_club_member)',
+    summary: 'Upcoming anniversaries & round birthdays (anniversaries + member_contact)',
+    description:
+      'Leitet Jubilaeen aus joined_on und runde Geburtstage aus birth_date ab. Beide Spalten sind ' +
+      'im Roster (GET /clubs/{clubId}/members) nur fuer Mitglieder-Verwalter sichtbar; da `date` ' +
+      'minus `years` das Original exakt rekonstruiert, gilt hier dieselbe Schranke: ' +
+      'member_contact >= read_all. Zusaetzlich ist der Report ueber die Faehigkeit ' +
+      '`anniversaries` im Admin abschaltbar.',
     security: [{ bearerAuth: [] }],
     request: { query: z.object({ club_id: uuid }) },
     responses: {
@@ -257,6 +291,12 @@ reportsRouter.openapi(
     const { club_id } = c.req.valid('query');
     const claims = c.get('claims');
     requireClubMember(claims, club_id);
+    // Die Faehigkeit selbst — erste echte Durchsetzung von 'anniversaries'.
+    await requireCap(c, club_id, 'anniversaries', 'read_team');
+    // Die abgeleiteten SPALTEN (birth_date/joined_on) — dieselbe Schranke wie
+    // maySeeFullRoster in members.ts. Ohne diese Zeile ist der Report ein
+    // Umgehungspfad um die eigene Redigierung.
+    await requireCap(c, club_id, 'member_contact', 'read_all');
 
     const rows = await withUser(claims, (tx) =>
       tx`
