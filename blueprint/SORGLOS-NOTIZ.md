@@ -1,10 +1,56 @@
 # RollsportManager v2 — Sorglos-Notiz (Stand & „mach weiter")
 
 **Zweck:** Alles an einem Ort. Du sagst einfach **„mach weiter"**, dann arbeite ich die
-Reihenfolge unten von oben ab. Stand: 2026-07-16.
+Reihenfolge unten von oben ab. **Stand: 2026-07-18.** (Wird nach jedem Meilenstein aktualisiert —
+du sollst dich nie wiederholen müssen.)
 
 Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf Branch `main`
 (kein Remote; `apps/android/` bewusst untracked).
+
+---
+
+## 0. AKTUELLER STAND — 2026-07-18 (zuerst lesen; überschreibt ältere Prozentangaben unten)
+
+**Arbeitsweise (nie mehr sagen müssen):** RICHTIG LESEN, NICHT RATEN — erst echten Code lesen + im
+Browser/curl verifizieren, dann handeln. Offenlegen ist keine Behebung. Team-Muster: Marcel = CIO,
+Fach-Agenten + Angreifer-Gegenprüfung vor dem „fertig". Genutzte Skills: database-designer,
+senior-backend/-frontend, api-design-reviewer, ui-ux-pro-max, frontend-design, gdpr-dsgvo-expert,
+code-reviewer, web-design-guidelines (via `find-skills` / `~/.claude/skills/`).
+
+**🟢 SPARTEN — Mehrsparten-Vereine (z. B. REV Heilbronn = Eiskunstlauf + Rollkunstlauf + Hockey).**
+Marcel 2026-07-18: „Abteilungen" waren falsch — eine Abteilung ist eine **Sparte** (Sportbereich), nicht
+eine Mitglieder-Gruppe. Die v1-App konnte das schon; v2 hatte es verloren.
+- Modell: **Verein → Sparten → Teams → Mitglieder.** Mitglied in MEHREREN Sparten (n:m); Team gehört zu EINER Sparte.
+- Sparte-Felder: Name, Icon, Farbe, Aktiv, Sortierung, Schalter **„eigene Finanzen"** (aus = Vereinskasse).
+- **Rechte (Marcel wörtlich):** Sparten anlegen/bearbeiten nur **Super-Admin + owner(=Vorstand) + admin +
+  Kassenwart(treasurer)** — sonst keiner. NICHT coach/member/**moderator** (Küren-Moderation ≠ Vorstand).
+- Die alte „Abteilung" (`departments`) bleibt, wird im UI zu **„Gruppen"** umbenannt (zweite Achse).
+- **Etappe 1 FERTIG, angreifer-geprüft:** Migr. **0062** (sparten + sparte_members + teams.sparte_id) ·
+  **0063** (Team-Zuordnung) · **0064** (Härtung: gleicher-Verein-Trigger + teams.club_id immutabel).
+  Guard `app.can_manage_sparten`. API `services/api/src/routes/sparten.ts` (6 Endpunkte). 1560/1560 SQL-Tests, Contract grün.
+- **Etappe 2 (Web-UI):** Teil 1 (Verwaltungsseite + Facade, `b127c4e`) — nach Rechner-Absturz **gerettet**;
+  Teil 2 (Mitglied/Team→Sparte, Filter, Betreiber-Konsole, Abteilung→Gruppen) + Prüfung **im Bau**.
+- OFFEN (DSGVO, kein Blocker): sparte_members-Roster vereinsweit sichtbar (Marcel: so lassen, später eng ziehbar);
+  Lösch-Runbook Art. 17 muss sparte_members miträumen.
+
+**🟢 Weitere Landungen 2026-07-17/18 (auf `main`):** 360-Profil-Teile (Kontaktdaten, Trainer-Beurteilung,
+Galerie-Foto-Markierung, Küren-Bild) · Selbst-Profil komplett editierbar **und in /profil** (`a77c941`) ·
+Motto-Phantom-Fix — „Über mich" schrieb ins Leere (`11ff5cb`) · Team-Detailseite mit ganzem Kader (`233bc19`) ·
+Küren im Profil anklickbar/abspielbar · **Finanzen pro Verein abschaltbar** · **Vereinslogo**.
+
+**🟡 NATIVE (Marcel 2026-07-18: „iOS/macOS/Android/Windows fehlen alle"):**
+- **iOS** (`apps/ios`, SwiftUI, 1052 Swift-Dateien): auf heutigen Contract-Stand gebracht, **baut grün + läuft im
+  Simulator** (`82fe557`, Dashboard mit echten Seed-Daten). Lücken-Roadmap (priorisiert): **Sparten (komplett)** ·
+  Betreiber/Super-Admin · member-facing Team-Detail · Galerie-Markierung · öffentliches Selbst-Profil · Vereinslogo ·
+  Modul-Toggle. Die generierten Swift-**Typen** sind da; es fehlt UI + Endpoints-Verdrahtung.
+- **macOS / Windows:** noch keine eigene App. macOS aus der iOS-SwiftUI-Basis holen; Windows braucht eine
+  Grundsatz-Entscheidung (kein gemeinsamer Unterbau) — wird vorgelegt, wenn dran.
+- **Android** (`apps/android`, ~64 Kotlin-Dateien): existiert dünn, volle Parität nachzubauen.
+
+**➡️ Reihenfolge jetzt:** Web-Sparten fertig → **iOS-Sparten** → macOS → Android → Windows-Weg.
+
+**Betrieb:** Rechner ist am 2026-07-18 abgestürzt — Live-Prod (Docker: keto_*/supabase/…) kam sauber hoch,
+nichts korrumpiert. Platte knapp (~54 GB frei, 95 %): vor Builds `df -h`, Build-Reste wegräumen.
 
 ---
 
@@ -176,17 +222,12 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 Ohne weitere Angabe arbeite ich **Abschnitt 2 von oben** ab — d. h. als Nächstes **RBAC (Punkt 1)**.
 Willst du etwas anderes zuerst (z. B. „iPhone-Install", „iOS fertig", „Android", „v1 absichern"), sag es dazu.
 
-### 🔜 SOFORT nach dem Foto/Galerie-Lauf (wp24k53js): Selbst-Profil in /profil
-Marcel 2026-07-17: "Selbst-Profil fehlt im profil einstellungen." Bestätigt — das Selbst-Profil
-(profile_motto/favorite_discipline/skating_since + profile_visibility öffentlich/intern) wird NUR über
-apps/web/app/(portal)/mitglieder/AboutMeSheet.tsx ("Etwas über dich schreiben") bearbeitet, NICHT unter /profil.
-ZU TUN: dieselbe Bearbeitung (Sheet-Inhalt + updateMyProfile + Sichtbarkeits-Schalter) als Karte in /profil
-(ProfilScreen.tsx) einhängen. Klein — Sheet + Facade existieren. NICHT parallel zu wp24k53js bauen (kollidiert
-in profil/**); erst nach dessen Landung.
-
-### 🔜 SAMMELPAKET "Profil-Klickwege" — SOFORT nach dem Logo/Finanz-Lauf (wi3o59tvk)
-Beide betreffen die Profil-/mitglieder-Dateien, die wi3o59tvk gerade fuer das Finanz-Gating editiert -> NICHT parallel.
-1. Selbst-Profil (Motto/Disziplin/seit-wann + oeffentlich/intern) in /profil einhaengen (ProfilScreen.tsx),
-   Sheet+Facade existieren (mitglieder/AboutMeSheet.tsx).
-2. Marcel 2026-07-17: Kueren im 360-Profil (mitglieder/[id] ProfileSections.tsx/DetailCards.tsx) anklickbar machen ->
-   Link auf /kueren/{routineId} (dort ist der volle Player) + optional Play direkt. Heute tote Anzeige.
+### ✅ ERLEDIGT (2026-07-18) — „Profil-Klickwege" komplett
+1. **Selbst-Profil in /profil** eingehängt (SelfProfileCard: Motto/Disziplin/seit-wann + öffentlich/intern-Schalter),
+   `a77c941`, angreifer-geprüft (intern → normale Mitglieder sehen es nicht, Vorstand/Trainer schon).
+2. **Küren im 360-Profil anklickbar** → öffnet /kueren/{id} + Player (`4a2bceb`).
+3. **Motto-Bug gefunden+behoben:** das alte AboutMeSheet schrieb auf ein Phantom-Feld `about_me` (422 im API-Modus);
+   jetzt auf `profile_motto` via set_self_profile (`11ff5cb`).
+4. **Team-Detailseite** mit ganzem Kader → Mitglied → Profil (`233bc19`).
+Offener Folge-Nachzug: Mitglieder-**Detail**seite liest „Über mich" evtl. noch über einen eigenen about_me-Pfad
+(gleiche Bug-Klasse) — bei Gelegenheit prüfen.
