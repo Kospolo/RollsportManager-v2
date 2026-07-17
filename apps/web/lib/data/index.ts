@@ -130,6 +130,7 @@ export type {
   UpdateMyProfileInput,
 } from "./inputs-me";
 export { ABOUT_ME_MAX } from "./inputs-me";
+export type { CreateAssessmentInput, MemberProfileRepository } from "./inputs-memberprofile";
 export type {
   CapabilityEnforcement,
   CapabilityLevel,

@@ -71,6 +71,7 @@ import type { FinanceRepository } from "./inputs-finance";
 import type { FinanceBRepository } from "./inputs-financeb";
 import type { FinanceCRepository } from "./inputs-financec";
 import type { MeRepository } from "./inputs-me";
+import type { MemberProfileRepository } from "./inputs-memberprofile";
 import type { ModuleRepository } from "./inputs-clubmodules";
 import type { RbacRepository } from "./inputs-rbac";
 import type { RegistrierungRepository } from "./inputs-registrierung";
@@ -203,6 +204,7 @@ export interface DataRepository
     FinanceBRepository,
     FinanceCRepository,
     MeRepository,
+    MemberProfileRepository,
     OrgRepository,
     PlatformConsoleRepository,
     RbacRepository,

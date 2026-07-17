@@ -12,6 +12,8 @@ import type {
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { openInvoices } from "../derive";
 import { memberStore } from "./member-store";
+import { mockViewer } from "./viewer";
+import { moduleRepositoryMemberProfile } from "./modules-memberprofile";
 import { moduleRepository } from "./modules";
 import { moduleRepositoryBatch2 } from "./modules-batch2";
 import { moduleRepositoryBatch3 } from "./modules-batch3";
@@ -73,7 +75,10 @@ export const mockRepository: DataRepository = {
     return mock.guardianships;
   },
   async getCurrentUser() {
-    return memberStore[0];
+    // Standard: memberStore[0]. Über den Demo-Umschalter (localStorage
+    // rsm.mock.viewer) lässt sich die Betrachter-Persona wechseln, damit die
+    // rollenabhängige Sichtbarkeit erlebbar ist (nur Mock, siehe viewer.ts).
+    return mockViewer();
   },
 
   /* ---------- Termine, RSVP & Anwesenheit ---------- */
@@ -268,6 +273,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Bankabgleich, Spenden, Jahresabschluss, Export (Finanz C) ---------- */
   ...moduleRepositoryFinanceC,
+
+  /* ---------- Das 360-Grad-Profil einer Person (Aggregat-Endpunkt) ---------- */
+  ...moduleRepositoryMemberProfile,
 
   /* ---------- Module: App-Shell-Selbstsicht (eigenes Profil + Präferenzen) ---------- */
   ...moduleRepositoryMe,

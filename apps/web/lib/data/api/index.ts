@@ -146,6 +146,22 @@ export const apiRepository: DataRepository = {
     const hit = roster.find((m) => m.id === id);
     return hit ? mapMember(hit) : undefined;
   },
+  async getMemberProfile(memberId) {
+    // Der Aggregat-Endpunkt trägt die Sichtbarkeit selbst (RLS + gestaffelte
+    // Sektionen). Wir reichen die Vertrags-Antwort UNVERÄNDERT durch — null vs.
+    // [] bleibt erhalten, damit die Detailseite verbotene Sektionen ausblendet.
+    return apiClient.getClubsByClubIdMembersByMemberIdProfile(activeClubId(), memberId);
+  },
+  async createMemberAssessment(input) {
+    return apiClient.postAssessments({
+      club_id: activeClubId(),
+      member_id: input.memberId,
+      body: input.body,
+      ...(input.ratingTechnik != null ? { rating_technik: input.ratingTechnik } : {}),
+      ...(input.ratingAusdruck != null ? { rating_ausdruck: input.ratingAusdruck } : {}),
+      ...(input.assessedOn ? { assessed_on: input.assessedOn } : {}),
+    });
+  },
   async getTeams() {
     const teams = await apiClient.getClubsByClubIdTeams(activeClubId());
     return teams.map(mapTeam);
