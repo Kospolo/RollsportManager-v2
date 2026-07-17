@@ -239,6 +239,13 @@ export function createMediaRouter(): Hono<AuthEnv> {
       union all
       select null::text as content_type from app.chat_messages
         where image_url like ${'%/media/' + key} and deleted_at is null
+      union all
+      -- Kueren-Medien (Musik/Bild, migration 0004/0057): der flache storage_key
+      -- ist als media_assets.storage_path abgelegt. media_assets_select
+      -- (is_club_member) begrenzt die Sichtbarkeit auf Vereinsmitglieder; die
+      -- Seed-Zeilen haben Pfade mit '/' und matchen einen flachen key nie.
+      select mime_type as content_type from app.media_assets
+        where storage_path = ${key} and deleted_at is null
       limit 1`);
     if (rows.length === 0) {
       throw problem(404, 'Not Found', 'No accessible media for this key');

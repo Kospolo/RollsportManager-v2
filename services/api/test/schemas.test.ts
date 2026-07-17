@@ -17,6 +17,8 @@ import {
   memberCreateSchema,
   regionalEventCreateSchema,
   roleChangeSchema,
+  routineAudioAttachSchema,
+  routineImageAttachSchema,
   rsvpUpsertSchema,
   trainingSlotCreateSchema,
 } from '../src/lib/validation.js';
@@ -270,5 +272,44 @@ describe('organisation schemas (lockers)', () => {
   it('assign requires a member uuid', () => {
     expect(lockerAssignSchema.safeParse({ member_id: MEMBER }).success).toBe(true);
     expect(lockerAssignSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('routine media attach schemas (Kueren-Musik/-Bild)', () => {
+  const audioBase = { storage_key: 'abc-123.mp3', mime_type: 'audio/mpeg', size_bytes: 1024 };
+  const imageBase = { storage_key: 'abc-123.png', mime_type: 'image/png', size_bytes: 1024 };
+
+  it('accepts a minimal audio attach and the optional music metadata', () => {
+    expect(routineAudioAttachSchema.safeParse(audioBase).success).toBe(true);
+    const full = routineAudioAttachSchema.parse({
+      ...audioBase,
+      duration_ms: 141000,
+      waveform_peaks: [0.1, 0.5, 0.9],
+      music_title: 'Feuervogel',
+      music_artist: 'Strawinsky',
+      music_bpm: 92,
+    });
+    expect(full.music_bpm).toBe(92);
+    expect(full.waveform_peaks).toEqual([0.1, 0.5, 0.9]);
+  });
+
+  it('requires storage_key + mime_type + a positive size', () => {
+    expect(routineAudioAttachSchema.safeParse({ mime_type: 'audio/mpeg', size_bytes: 10 }).success).toBe(false);
+    expect(routineAudioAttachSchema.safeParse({ ...audioBase, storage_key: '' }).success).toBe(false);
+    expect(routineAudioAttachSchema.safeParse({ ...audioBase, size_bytes: 0 }).success).toBe(false);
+    expect(routineAudioAttachSchema.safeParse({ ...audioBase, size_bytes: -1 }).success).toBe(false);
+  });
+
+  it('rejects a music_bpm that is not a positive integer', () => {
+    expect(routineAudioAttachSchema.safeParse({ ...audioBase, music_bpm: 0 }).success).toBe(false);
+    expect(routineAudioAttachSchema.safeParse({ ...audioBase, music_bpm: 92.5 }).success).toBe(false);
+  });
+
+  it('accepts a minimal image attach and rejects an empty/oversized key', () => {
+    expect(routineImageAttachSchema.safeParse(imageBase).success).toBe(true);
+    expect(routineImageAttachSchema.safeParse({ ...imageBase, storage_key: '' }).success).toBe(false);
+    expect(routineImageAttachSchema.safeParse({ ...imageBase, storage_key: 'x'.repeat(201) }).success).toBe(false);
+    // the image schema carries NO music fields (unknown keys are stripped by Zod)
+    expect(routineImageAttachSchema.parse({ ...imageBase, music_bpm: 92 })).not.toHaveProperty('music_bpm');
   });
 });

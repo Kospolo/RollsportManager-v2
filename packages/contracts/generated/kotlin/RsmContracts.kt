@@ -717,6 +717,8 @@ data class Routine(
     @SerialName("music_duration_ms") val musicDurationMs: Long?,
     @SerialName("audio_asset_id") val audioAssetId: String?,
     @SerialName("image_asset_id") val imageAssetId: String?,
+    @SerialName("audio_url") val audioUrl: String?,
+    @SerialName("image_url") val imageUrl: String?,
     @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
     @SerialName("waveform_peaks") val waveformPeaks: List<Double>?,
     @SerialName("created_at") val createdAt: String,
@@ -1613,6 +1615,25 @@ data class RoutineMarkerCreate(
     @SerialName("time_ms") val timeMs: Long,
     val label: String,
     @SerialName("element_code") val elementCode: String? = null
+)
+
+@Serializable
+data class RoutineAudioAttach(
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("duration_ms") val durationMs: Long? = null,
+    @SerialName("waveform_peaks") val waveformPeaks: List<Double>? = null,
+    @SerialName("music_title") val musicTitle: String? = null,
+    @SerialName("music_artist") val musicArtist: String? = null,
+    @SerialName("music_bpm") val musicBpm: Long? = null
+)
+
+@Serializable
+data class RoutineImageAttach(
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("mime_type") val mimeType: String,
+    @SerialName("size_bytes") val sizeBytes: Long
 )
 
 @Serializable

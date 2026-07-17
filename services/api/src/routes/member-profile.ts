@@ -173,7 +173,11 @@ memberProfileRouter.openapi(
                         where rs.routine_id = r.id and rs.deleted_at is null),
                        '[]'::jsonb) as skater_member_ids,
               (select ma.waveform_peaks from app.media_assets ma
-                 where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
+                 where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks,
+              (select '/media/' || ma.storage_path from app.media_assets ma
+                 where ma.id = r.audio_asset_id and ma.deleted_at is null) as audio_url,
+              (select '/media/' || ma.storage_path from app.media_assets ma
+                 where ma.id = r.image_asset_id and ma.deleted_at is null) as image_url
             from app.routines r
             where r.club_id = ${clubId} and r.deleted_at is null
               and exists (select 1 from app.routine_skaters rs

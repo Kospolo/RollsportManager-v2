@@ -253,6 +253,10 @@ export interface Routine {
   markers: RoutineMarker[];
   scores: RollArtScore[];
   category: string;
+  /** Auth-/RLS-gated URL der angehängten Musik ('/media/{key}'); null = keine Musik. */
+  audioUrl: string | null;
+  /** Auth-/RLS-gated URL des Kür-Bilds ('/media/{key}'); null = kein Bild. */
+  imageUrl: string | null;
 }
 
 /* ---------- Finanzen (Seriositätszone) ---------- */

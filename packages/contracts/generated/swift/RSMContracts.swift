@@ -1238,6 +1238,8 @@ public struct Routine: Codable, Equatable, Sendable {
     public var audioAssetId: String?
     /// Format: uuid
     public var imageAssetId: String?
+    public var audioUrl: String?
+    public var imageUrl: String?
     /// Format: [uuid]
     public var skaterMemberIds: [String]
     public var waveformPeaks: [Double]?
@@ -1257,6 +1259,8 @@ public struct Routine: Codable, Equatable, Sendable {
         case musicDurationMs = "music_duration_ms"
         case audioAssetId = "audio_asset_id"
         case imageAssetId = "image_asset_id"
+        case audioUrl = "audio_url"
+        case imageUrl = "image_url"
         case skaterMemberIds = "skater_member_ids"
         case waveformPeaks = "waveform_peaks"
         case createdAt = "created_at"
@@ -1276,6 +1280,8 @@ public struct Routine: Codable, Equatable, Sendable {
         musicDurationMs: Int? = nil,
         audioAssetId: String? = nil,
         imageAssetId: String? = nil,
+        audioUrl: String? = nil,
+        imageUrl: String? = nil,
         skaterMemberIds: [String],
         waveformPeaks: [Double]? = nil,
         createdAt: String,
@@ -1293,6 +1299,8 @@ public struct Routine: Codable, Equatable, Sendable {
         self.musicDurationMs = musicDurationMs
         self.audioAssetId = audioAssetId
         self.imageAssetId = imageAssetId
+        self.audioUrl = audioUrl
+        self.imageUrl = imageUrl
         self.skaterMemberIds = skaterMemberIds
         self.waveformPeaks = waveformPeaks
         self.createdAt = createdAt
@@ -4469,6 +4477,70 @@ public struct RoutineMarkerCreate: Codable, Equatable, Sendable {
         self.timeMs = timeMs
         self.label = label
         self.elementCode = elementCode
+    }
+}
+
+public struct RoutineAudioAttach: Codable, Equatable, Sendable {
+    public var storageKey: String
+    public var mimeType: String
+    public var sizeBytes: Int
+    public var durationMs: Int?
+    public var waveformPeaks: [Double]?
+    public var musicTitle: String?
+    public var musicArtist: String?
+    public var musicBpm: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case storageKey = "storage_key"
+        case mimeType = "mime_type"
+        case sizeBytes = "size_bytes"
+        case durationMs = "duration_ms"
+        case waveformPeaks = "waveform_peaks"
+        case musicTitle = "music_title"
+        case musicArtist = "music_artist"
+        case musicBpm = "music_bpm"
+    }
+
+    public init(
+        storageKey: String,
+        mimeType: String,
+        sizeBytes: Int,
+        durationMs: Int? = nil,
+        waveformPeaks: [Double]? = nil,
+        musicTitle: String? = nil,
+        musicArtist: String? = nil,
+        musicBpm: Int? = nil
+    ) {
+        self.storageKey = storageKey
+        self.mimeType = mimeType
+        self.sizeBytes = sizeBytes
+        self.durationMs = durationMs
+        self.waveformPeaks = waveformPeaks
+        self.musicTitle = musicTitle
+        self.musicArtist = musicArtist
+        self.musicBpm = musicBpm
+    }
+}
+
+public struct RoutineImageAttach: Codable, Equatable, Sendable {
+    public var storageKey: String
+    public var mimeType: String
+    public var sizeBytes: Int
+
+    enum CodingKeys: String, CodingKey {
+        case storageKey = "storage_key"
+        case mimeType = "mime_type"
+        case sizeBytes = "size_bytes"
+    }
+
+    public init(
+        storageKey: String,
+        mimeType: String,
+        sizeBytes: Int
+    ) {
+        self.storageKey = storageKey
+        self.mimeType = mimeType
+        self.sizeBytes = sizeBytes
     }
 }
 
