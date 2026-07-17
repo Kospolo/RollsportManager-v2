@@ -717,6 +717,8 @@ data class Routine(
     @SerialName("music_duration_ms") val musicDurationMs: Long?,
     @SerialName("audio_asset_id") val audioAssetId: String?,
     @SerialName("image_asset_id") val imageAssetId: String?,
+    @SerialName("audio_url") val audioUrl: String?,
+    @SerialName("image_url") val imageUrl: String?,
     @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
     @SerialName("waveform_peaks") val waveformPeaks: List<Double>?,
     @SerialName("created_at") val createdAt: String,

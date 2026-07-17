@@ -1003,6 +1003,14 @@
             "nullable": true,
             "format": "uuid"
           },
+          "audio_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
           "skater_member_ids": {
             "type": "array",
             "items": {
@@ -1051,6 +1059,8 @@
           "music_duration_ms",
           "audio_asset_id",
           "image_asset_id",
+          "audio_url",
+          "image_url",
           "skater_member_ids",
           "waveform_peaks",
           "created_at",

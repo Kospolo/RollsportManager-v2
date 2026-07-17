@@ -216,6 +216,8 @@ export interface Routine {
   "music_duration_ms": number | null;
   "audio_asset_id": string | null;
   "image_asset_id": string | null;
+  "audio_url": string | null;
+  "image_url": string | null;
   "skater_member_ids": string[];
   "waveform_peaks": number[] | null;
   "created_at": string;

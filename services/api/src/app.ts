@@ -69,6 +69,7 @@ import { entitlementsRouter } from './routes/entitlements.js';
 import { productsRouter } from './modules/billing/products.js';
 import { createWebhooksRouter } from './modules/billing/webhooks.js';
 import { createMediaRouter } from './modules/media/routes.js';
+import { createRoutineMediaRouter } from './modules/media/routine-media.js';
 import { createExportRouter } from './modules/export/routes.js';
 import { dunningRouter } from './modules/dunning/routes.js';
 
@@ -197,6 +198,11 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   // raw bytes, so deliberately NOT in the OpenAPI contract (like the webhooks).
   // Requires auth (not in PUBLIC_PATHS): POST /media/upload, GET /media/{key}.
   app.route('/', createMediaRouter());
+  // plain Hono router - Kueren-Musik/-Bild an eine Kuer haengen (multipart, wie
+  // /media/upload). Der storage_key wird SERVERSEITIG erzeugt (kein client-Key
+  // mehr - das war das Mandanten-Leck, Revert 6dafb38), deshalb NICHT im
+  // OpenAPI-Contract. Requires auth: POST/DELETE /routines/{id}/audio|image.
+  app.route('/', createRoutineMediaRouter());
   // plain Hono router - GoBD/DATEV CSV export; streams text/csv, so deliberately
   // NOT in the OpenAPI contract (like media/webhooks). Requires auth (not in
   // PUBLIC_PATHS): GET /export/ledger.csv, GET /export/datev.

@@ -484,6 +484,11 @@ export const routineSchema = z
     audio_asset_id: uuid.nullable(),
     /** Optional cover image of the routine (app.media_assets), like audio_asset_id (migration 0057). */
     image_asset_id: uuid.nullable(),
+    /** Served, auth-/RLS-gated URL of the attached music ('/media/{key}'), or null.
+     *  Derived server-side from the linked audio_asset's storage_path (like member avatar_url). */
+    audio_url: z.string().nullable(),
+    /** Served, auth-/RLS-gated URL of the cover image ('/media/{key}'), or null. */
+    image_url: z.string().nullable(),
     /** Skaters of this routine (app.routine_skaters) - single, pair or group. */
     skater_member_ids: z.array(uuid),
     /** Normalized waveform peaks (0..1) of the linked audio asset, when present. */

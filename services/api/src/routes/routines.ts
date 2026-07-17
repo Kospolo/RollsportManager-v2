@@ -41,7 +41,7 @@ const routineIdParam = z.object({
   routineId: uuid.openapi({ param: { name: 'routineId', in: 'path' } }),
 });
 
-async function loadRoutine(tx: Tx, routineId: string): Promise<{ id: string; club_id: string }> {
+export async function loadRoutine(tx: Tx, routineId: string): Promise<{ id: string; club_id: string }> {
   const rows = await tx`
     select id, club_id from app.routines
     where id = ${routineId} and deleted_at is null`;
@@ -50,8 +50,8 @@ async function loadRoutine(tx: Tx, routineId: string): Promise<{ id: string; clu
   return routine as { id: string; club_id: string };
 }
 
-/** One enriched routine row (skaters + waveform of the linked audio asset). */
-async function selectRoutine(tx: Tx, routineId: string): Promise<unknown | undefined> {
+/** One enriched routine row (skaters + waveform + served media urls). */
+export async function selectRoutine(tx: Tx, routineId: string): Promise<unknown | undefined> {
   const rows = await tx`
     select r.*,
       coalesce((select jsonb_agg(rs.member_id order by rs.created_at)
@@ -59,7 +59,11 @@ async function selectRoutine(tx: Tx, routineId: string): Promise<unknown | undef
                 where rs.routine_id = r.id and rs.deleted_at is null),
                '[]'::jsonb) as skater_member_ids,
       (select ma.waveform_peaks from app.media_assets ma
-        where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
+        where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks,
+      (select '/media/' || ma.storage_path from app.media_assets ma
+        where ma.id = r.audio_asset_id and ma.deleted_at is null) as audio_url,
+      (select '/media/' || ma.storage_path from app.media_assets ma
+        where ma.id = r.image_asset_id and ma.deleted_at is null) as image_url
     from app.routines r
     where r.id = ${routineId} and r.deleted_at is null`;
   return rows[0];
@@ -88,7 +92,11 @@ routinesRouter.openapi(
                      where rs.routine_id = r.id and rs.deleted_at is null),
                     '[]'::jsonb) as skater_member_ids,
            (select ma.waveform_peaks from app.media_assets ma
-             where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
+             where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks,
+           (select '/media/' || ma.storage_path from app.media_assets ma
+             where ma.id = r.audio_asset_id and ma.deleted_at is null) as audio_url,
+           (select '/media/' || ma.storage_path from app.media_assets ma
+             where ma.id = r.image_asset_id and ma.deleted_at is null) as image_url
          from app.routines r
          where r.club_id = ${club_id} and r.deleted_at is null
          order by r.title`,

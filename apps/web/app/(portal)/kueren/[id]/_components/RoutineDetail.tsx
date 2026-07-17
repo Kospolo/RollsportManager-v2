@@ -28,6 +28,7 @@ import { MarkerList } from "./MarkerList";
 import { ScoreTrend } from "./ScoreTrend";
 import { NotesCard } from "./NotesCard";
 import { ShareRoutineDialog } from "./ShareRoutineDialog";
+import { RoutineMediaCard, RoutineCoverImage } from "./RoutineMediaCard";
 
 /**
  * Kür-Detail (Mockup Screen 2): Kopf mit Läufer:in + Status-Chips,
@@ -94,6 +95,7 @@ export function RoutineDetail({ routineId }: { routineId: string }) {
       routine={routine}
       members={members}
       currentUser={currentUser}
+      reload={state.reload}
     />
   );
 }
@@ -127,17 +129,21 @@ function LoadedDetail({
   routine,
   members,
   currentUser,
+  reload,
 }: {
   routine: Routine;
   members: Member[];
   currentUser: Member;
+  reload: () => void;
 }) {
   const t = useT(kuerenDict);
   const { showToast } = useToast();
   const playback = usePlayback(routine.music.durationMs);
 
-  /* Kür-Teilen ist Trainer:innen vorbehalten (serverseitig is_club_trainer). */
-  const canShare = permissions(currentUser).isTrainer;
+  /* Kür-Teilen UND Medien-Upload sind Trainer:innen vorbehalten (serverseitig
+     is_club_trainer + PRO); im UI ausgeblendet statt 403. */
+  const canManage = permissions(currentUser).isTrainer;
+  const canShare = canManage;
   const [shareOpen, setShareOpen] = useState(false);
 
   /* Marker optimistisch: sofort lokal, dann Facade-Write (api: POST). */
@@ -258,6 +264,9 @@ function LoadedDetail({
         </span>
       </p>
 
+      {/* Kür-Bild — sichtbar für alle, die die Kür sehen (wenn hinterlegt). */}
+      <RoutineCoverImage routine={routine} />
+
       <PlayerCard routine={routine} playback={playback} />
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -271,6 +280,8 @@ function LoadedDetail({
         />
         <div className="grid gap-6">
           <ScoreTrend routine={routine} />
+          {/* Medien-Upload nur für Trainer:innen (ausgeblendet statt 403). */}
+          {canManage && <RoutineMediaCard routine={routine} onChanged={reload} />}
           <NotesCard routineId={routine.id} />
         </div>
       </div>

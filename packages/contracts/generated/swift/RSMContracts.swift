@@ -1238,6 +1238,8 @@ public struct Routine: Codable, Equatable, Sendable {
     public var audioAssetId: String?
     /// Format: uuid
     public var imageAssetId: String?
+    public var audioUrl: String?
+    public var imageUrl: String?
     /// Format: [uuid]
     public var skaterMemberIds: [String]
     public var waveformPeaks: [Double]?
@@ -1257,6 +1259,8 @@ public struct Routine: Codable, Equatable, Sendable {
         case musicDurationMs = "music_duration_ms"
         case audioAssetId = "audio_asset_id"
         case imageAssetId = "image_asset_id"
+        case audioUrl = "audio_url"
+        case imageUrl = "image_url"
         case skaterMemberIds = "skater_member_ids"
         case waveformPeaks = "waveform_peaks"
         case createdAt = "created_at"
@@ -1276,6 +1280,8 @@ public struct Routine: Codable, Equatable, Sendable {
         musicDurationMs: Int? = nil,
         audioAssetId: String? = nil,
         imageAssetId: String? = nil,
+        audioUrl: String? = nil,
+        imageUrl: String? = nil,
         skaterMemberIds: [String],
         waveformPeaks: [Double]? = nil,
         createdAt: String,
@@ -1293,6 +1299,8 @@ public struct Routine: Codable, Equatable, Sendable {
         self.musicDurationMs = musicDurationMs
         self.audioAssetId = audioAssetId
         self.imageAssetId = imageAssetId
+        self.audioUrl = audioUrl
+        self.imageUrl = imageUrl
         self.skaterMemberIds = skaterMemberIds
         self.waveformPeaks = waveformPeaks
         self.createdAt = createdAt

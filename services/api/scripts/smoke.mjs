@@ -910,6 +910,156 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 }
 
 // ============================================================================
+// Kueren-Medien: Musik + Bild DIREKT an eine Kuer hochladen (multipart).
+//
+// DER KERNBEWEIS (die Lehre aus dem Mandanten-Leck, Revert 6dafb38):
+// Der erste Versuch nahm einen vom CLIENT gelieferten storage_key. Ein Trainer
+// aus Verein A konnte den Key von Verein B anhaengen -> media_assets(club_id=A,
+// storage_path=B-Bytes) -> GET /media/{key} lieferte FREMDE Kinderfotos an alle
+// Mitglieder von A. Diese Bauform macht den Angriff STRUKTURELL unmoeglich: es
+// gibt keinen client-gelieferten storage_key mehr. Der Upload laeuft in EINEM
+// multipart-Schritt DIREKT an die Kuer, der Server erzeugt den Key und setzt
+// club_id = routine.club_id. Der Block beweist:
+//   * ein JSON-Body mit storage_key (die ALTE Angriffsform) prallt ab (400).
+//   * untergeschobene storage_key/storage_path-Felder haben KEINE Wirkung — der
+//     Server nimmt seinen eigenen frischen Key, nie den fremden Pfad.
+//   * ein Fremdverein-Mitglied bekommt den Key nicht (404).
+// Plus die uebrigen Wachen: fremdes Team -> 404, sichtbares Mitglied -> 403,
+// Bild-als-Audio/Audio-als-Bild -> 415, und der Positivpfad Ende-zu-Ende.
+// ============================================================================
+{
+  console.log('\n[smoke] --- Kueren-Medien: Musik + Bild DIREKT hochladen (multipart) ---');
+  const TEAM_EIGEN = 'b0000000-0000-4000-8000-000000000003'; // b-03: Sandra ist Trainerin
+  const TEAM_FREMD = 'b0000000-0000-4000-8000-000000000001'; // b-01: Sandra ist KEINE Trainerin
+  const KATRIN = 'a0000000-0000-4000-8000-000000000009';     // einfaches Mitglied (Profil = SUB.parent)
+
+  // Eine Kuer im EIGENEN Team, Skaterin = Katrin (einfaches Mitglied). Damit
+  // kann t.parent die Kuer LESEN (read_own), aber nicht als Trainer:in anhaengen
+  // -> sauberer 403 (Rolle), abgegrenzt vom 404 (Sichtbarkeit) des treasurer.
+  const created = await call('POST', '/routines', {
+    as: t.coach,
+    body: { club_id: CLUB, team_id: TEAM_EIGEN, title: 'Smoke-Kuer Medien', skater_member_ids: [KATRIN] },
+  });
+  assertEq('Kuer fuer den Medien-Test anlegen -> 201', created.status, 201);
+  const routineId = created.json?.id;
+
+  // multipart-POST DIREKT an die Kuer (Blob/FormData wie im Browser). extraFields
+  // erlaubt es, untergeschobene storage_key/-path mitzuschicken (Angriffsprobe).
+  const attach = async (as, routine, kind, bytes, type, name, extraFields = {}) => {
+    const form = new FormData();
+    form.set('file', new Blob([bytes], { type }), name);
+    for (const [k, v] of Object.entries(extraFields)) form.set(k, v);
+    const res = await fetch(`${BASE}/routines/${routine}/${kind}`, {
+      method: 'POST', headers: { authorization: `Bearer ${as}` }, body: form,
+    });
+    let json; try { json = await res.json(); } catch { json = undefined; }
+    return { status: res.status, json };
+  };
+  const serve = (as, key) =>
+    fetch(`${BASE}/media/${encodeURIComponent(key)}`, { headers: { authorization: `Bearer ${as}` } });
+
+  const mp3 = new Uint8Array([0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x21, 0x11]);
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
+
+  // --- KERNBEWEIS 1: der Angreifer kann keinen fremden Key referenzieren -----
+  // Untergeschobene storage_key/storage_path (echter Pfad einer FREMDEN
+  // media_assets-Seedzeile: Feuervogel-Kuer) werden IGNORIERT. Der Server nimmt
+  // seinen eigenen frischen Key.
+  const FOREIGN_SEED_PATH = 'clubs/rsv-neckarsulm/routines/feuervogel.mp3';
+  const attackAttach = await attach(t.coach, routineId, 'audio', mp3, 'audio/mpeg', 'x.mp3', {
+    storage_key: FOREIGN_SEED_PATH,
+    storage_path: FOREIGN_SEED_PATH,
+    club_id: FOREIGN_CLUB,
+  });
+  assertEq('multipart-Attach mit untergeschobenem Key -> 200', attackAttach.status, 200);
+  const serverKey = attackAttach.json?.audio_url?.replace('/media/', '');
+  if (serverKey && serverKey !== FOREIGN_SEED_PATH && attackAttach.json?.audio_url === `/media/${serverKey}`) {
+    ok(`...der Server hat einen EIGENEN Key erzeugt (${serverKey}), nicht den fremden Pfad`);
+  } else {
+    fail('attack key', `audio_url=${attackAttach.json?.audio_url} (erwartet einen frischen Server-Key)`);
+  }
+  // Der Fremdpfad ist als flacher key gar nicht adressierbar (enthaelt '/',
+  // assertValidKey wirft -> 400) und selbst wenn, gaebe media_assets_select ihn
+  // nicht frei. Beweis: er ist NICHT abrufbar (400 invalid-key, nicht 200).
+  {
+    const attempt = (await serve(t.coach, FOREIGN_SEED_PATH)).status;
+    if (attempt === 400 || attempt === 404) ok(`...der untergeschobene Fremdpfad ist NICHT abrufbar -> ${attempt}`);
+    else fail('foreign path serve', `erwartet 400/404, bekam ${attempt}`);
+  }
+  // KERNBEWEIS 2: die ALTE Angriffsform (JSON-Body mit storage_key) prallt ab.
+  assertEq('JSON-Body mit storage_key (alte Angriffsform) -> 400 (kein multipart-file)',
+    (await call('POST', `/routines/${routineId}/audio`, {
+      as: t.coach, body: { storage_key: FOREIGN_SEED_PATH, mime_type: 'audio/mpeg', size_bytes: 10 },
+    })).status, 400);
+
+  // --- Positivpfad Ende-zu-Ende: echte mp3 direkt an die Kuer ---------------
+  const upA = await attach(t.coach, routineId, 'audio', mp3, 'audio/mpeg', 'kuer.mp3', {
+    music_title: 'Feuervogel', music_bpm: '92', duration_ms: '141000',
+  });
+  assertEq('POST /routines/{id}/audio (multipart) -> 200', upA.status, 200);
+  if (typeof upA.json?.audio_asset_id === 'string' && upA.json.audio_asset_id.length > 0) {
+    ok('...audio_asset_id ist gesetzt');
+  } else {
+    fail('audio attach', `audio_asset_id fehlt: ${JSON.stringify(upA.json)}`);
+  }
+  assertEq('...music_title wurde uebernommen', upA.json?.music_title, 'Feuervogel');
+  assertEq('...music_bpm wurde uebernommen', upA.json?.music_bpm, 92);
+  const audioKey = upA.json?.audio_url?.replace('/media/', '');
+  assertEq('...audio_url zeigt auf /media/<server-key>', upA.json?.audio_url, `/media/${audioKey}`);
+
+  // Persistenz ueber den Lesepfad + die Bytes ueber GET /media/{key}.
+  const reread = await call('GET', `/routines/${routineId}`, { as: t.coach });
+  assertEq('GET /routines/{id}: audio_asset_id persistiert', reread.json?.audio_asset_id, upA.json?.audio_asset_id);
+  const serveA = await serve(t.coach, audioKey);
+  assertEq('GET /media/{audioKey} -> 200', serveA.status, 200);
+  assertEq('...content-type der Bytes = audio/mpeg', serveA.headers.get('content-type'), 'audio/mpeg');
+  assertEq('...Byte-Laenge stimmt', (await serveA.arrayBuffer()).byteLength, mp3.length);
+
+  // KERNBEWEIS 3: der Key ist auf den Verein der Kuer begrenzt — ein
+  // Fremdverein-Owner bekommt ihn NICHT (media_assets_select = is_club_member).
+  assertEq('Fremdverein-Mitglied ruft den Kuer-Audio-Key ab -> 404',
+    (await serve(t.foreign, audioKey)).status, 404);
+
+  // --- Bild: upload -> serve ------------------------------------------------
+  const upI = await attach(t.coach, routineId, 'image', png, 'image/png', 'cover.png');
+  assertEq('POST /routines/{id}/image (multipart) -> 200', upI.status, 200);
+  if (typeof upI.json?.image_asset_id === 'string' && upI.json.image_asset_id.length > 0) {
+    ok('...image_asset_id ist gesetzt');
+  } else {
+    fail('image attach', `image_asset_id fehlt: ${JSON.stringify(upI.json)}`);
+  }
+  const imgKey = upI.json?.image_url?.replace('/media/', '');
+  assertEq('GET /media/{imgKey} -> 200', (await serve(t.coach, imgKey)).status, 200);
+
+  // --- Typ-Vertauscher scheitert (Bild als Musik, Musik als Bild) -> 415 ----
+  assertEq('Bild-Typ an /audio -> 415',
+    (await attach(t.coach, routineId, 'audio', png, 'image/png', 'x.png')).status, 415);
+  assertEq('Audio-Typ an /image -> 415',
+    (await attach(t.coach, routineId, 'image', mp3, 'audio/mpeg', 'x.mp3')).status, 415);
+
+  // --- Rechte: sichtbares Mitglied -> 403, unsichtbar -> 404, fremdes Team --
+  assertEq('Mitglied (sieht die Kuer, aber keine Trainerrolle) -> 403',
+    (await attach(t.parent, routineId, 'audio', mp3, 'audio/mpeg', 'x.mp3')).status, 403);
+  assertEq('treasurer (sieht die Kuer NICHT) -> 404',
+    (await attach(t.treasurer, routineId, 'audio', mp3, 'audio/mpeg', 'x.mp3')).status, 404);
+
+  // Fremdes Team: der owner legt eine Kuer in b-01 an (Sandra ist dort KEINE
+  // Trainerin) -> can_read_routine faellt fuer sie auf 404, wie bei /markers.
+  const foreignTeamRoutine = await call('POST', '/routines', {
+    as: t.owner, body: { club_id: CLUB, team_id: TEAM_FREMD, title: 'Smoke b-01', skater_member_ids: [] },
+  });
+  assertEq('owner legt Kuer im fremden Team an -> 201', foreignTeamRoutine.status, 201);
+  assertEq('coach haengt Musik an eine Kuer eines NICHT betreuten Teams -> 404',
+    (await attach(t.coach, foreignTeamRoutine.json?.id, 'audio', mp3, 'audio/mpeg', 'x.mp3')).status, 404);
+
+  // --- DELETE loest wieder (Feld null, Bytes weg) --------------------------
+  const del = await call('DELETE', `/routines/${routineId}/audio`, { as: t.coach });
+  assertEq('DELETE /routines/{id}/audio -> 200', del.status, 200);
+  assertEq('...audio_asset_id ist wieder null', del.json?.audio_asset_id, null);
+  assertEq('geloeste Musik ist nicht mehr abrufbar -> 404', (await serve(t.coach, audioKey)).status, 404);
+}
+
+// ============================================================================
 // /reports/anniversaries — das Datenleck ist zu, das FEATURE ist wieder da.
 //
 // GESCHICHTE IN ZWEI SCHRITTEN, damit niemand den zweiten fuer einen Rueckbau

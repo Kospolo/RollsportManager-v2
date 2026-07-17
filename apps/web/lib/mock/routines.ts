@@ -16,6 +16,8 @@ export const routines: Routine[] = [
     memberIds: ["m-16"], teamId: "t-03", category: "Jugend Kür A",
     music: { title: "L'Oiseau de feu (Finale)", artist: "Igor Strawinsky", durationMs: 150_000, bpm: 92 },
     waveformPeaks: waveformPeaks(101),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-01-m1", timeMs: 12_400, label: "Eröffnung Feld", elementCode: "StSq" },
       { id: "r-01-m2", timeMs: 38_200, label: "Doppelsalchow", elementCode: "2S" },
@@ -34,6 +36,8 @@ export const routines: Routine[] = [
     memberIds: ["m-18"], teamId: "t-03", category: "Junioren Kür",
     music: { title: "Clair de Lune", artist: "Claude Debussy", durationMs: 165_000, bpm: 66 },
     waveformPeaks: waveformPeaks(202),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-02-m1", timeMs: 18_000, label: "Einlauf Diagonale" },
       { id: "r-02-m2", timeMs: 47_500, label: "Doppelrittberger", elementCode: "2Lo" },
@@ -50,6 +54,8 @@ export const routines: Routine[] = [
     memberIds: ["m-17"], teamId: "t-03", category: "Jugend Kür B",
     music: { title: "Riders on the Storm (Instrumental)", artist: "The Doors", durationMs: 138_000, bpm: 104 },
     waveformPeaks: waveformPeaks(303),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-03-m1", timeMs: 9_800, label: "Auftakt Regentropfen" },
       { id: "r-03-m2", timeMs: 42_100, label: "Einfacher Axel", elementCode: "1A" },
@@ -65,6 +71,8 @@ export const routines: Routine[] = [
     memberIds: ["m-21", "m-22"], teamId: "t-03", category: "Paarlauf Nachwuchs",
     music: { title: "Danse Macabre", artist: "Camille Saint-Saëns", durationMs: 172_000, bpm: 112 },
     waveformPeaks: waveformPeaks(404),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-04-m1", timeMs: 15_600, label: "Synchronstart" },
       { id: "r-04-m2", timeMs: 58_000, label: "Schattenlauf", elementCode: "StSq" },
@@ -78,6 +86,8 @@ export const routines: Routine[] = [
     memberIds: ["m-07"], teamId: "t-02", category: "Schüler Pflichtkür",
     music: { title: "Die Moldau (Ausschnitt)", artist: "Bedřich Smetana", durationMs: 120_000, bpm: 80 },
     waveformPeaks: waveformPeaks(505),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-05-m1", timeMs: 22_000, label: "Erster Bogenlauf" },
       { id: "r-05-m2", timeMs: 61_500, label: "Einfacher Salchow", elementCode: "1S" },
@@ -89,6 +99,8 @@ export const routines: Routine[] = [
     memberIds: ["m-23"], teamId: "t-03", category: "Junioren Kür (Saison 2025)",
     music: { title: "Storm", artist: "Antonio Vivaldi / Neuarrangement", durationMs: 158_000, bpm: 120 },
     waveformPeaks: waveformPeaks(606),
+    audioUrl: null,
+    imageUrl: null,
     markers: [
       { id: "r-06-m1", timeMs: 11_000, label: "Sturmauftakt" },
       { id: "r-06-m2", timeMs: 49_300, label: "Doppelflip", elementCode: "2F" },

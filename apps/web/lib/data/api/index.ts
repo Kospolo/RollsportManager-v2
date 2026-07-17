@@ -4,6 +4,7 @@ import { readSession } from "@/lib/auth/storage";
 import { readOperatorClub } from "../operator-club";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { activeClubId, apiClient } from "./client";
+import { attachRoutineMedia, detachRoutineMedia } from "./media-fetch";
 import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
@@ -224,6 +225,28 @@ export const apiRepository: DataRepository = {
       if (error instanceof ApiError && error.status === 404) return undefined;
       throw error;
     }
+  },
+  async attachRoutineAudio(routineId, file) {
+    // EIN Schritt: multipart DIREKT an /routines/{id}/audio (Server erzeugt den
+    // storage_key). mediaError macht aus 402 einen ClubProRequiredError.
+    const updated = await attachRoutineMedia(routineId, "audio", file, "Kür-Musik");
+    const [markers, scores] = await loadRoutineDetails(routineId);
+    return mapRoutine(updated, markers, scores);
+  },
+  async attachRoutineImage(routineId, file) {
+    const updated = await attachRoutineMedia(routineId, "image", file, "Kür-Bild");
+    const [markers, scores] = await loadRoutineDetails(routineId);
+    return mapRoutine(updated, markers, scores);
+  },
+  async detachRoutineAudio(routineId) {
+    const updated = await detachRoutineMedia(routineId, "audio", "Kür-Musik");
+    const [markers, scores] = await loadRoutineDetails(routineId);
+    return mapRoutine(updated, markers, scores);
+  },
+  async detachRoutineImage(routineId) {
+    const updated = await detachRoutineMedia(routineId, "image", "Kür-Bild");
+    const [markers, scores] = await loadRoutineDetails(routineId);
+    return mapRoutine(updated, markers, scores);
   },
 
   /* ---------- Finanzen ---------- */

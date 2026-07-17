@@ -1,4 +1,5 @@
 import { ApiError } from "@/lib/api/generated";
+import type { Routine as WireRoutine } from "@/lib/api/generated";
 import { readSession } from "@/lib/auth/storage";
 import type { MediaUploadResult } from "@/lib/types";
 import { API_BASE_URL } from "../config";
@@ -85,4 +86,43 @@ export async function uploadMedia(
 /** Absolute, Bearer-auflösbare URL zu einem opaken Storage-Key. */
 export function mediaKeyUrl(storageKey: string): string {
   return `${API_BASE_URL}/media/${encodeURIComponent(storageKey)}`;
+}
+
+/**
+ * Kür-Medien anhängen — EIN Schritt, multipart DIREKT an /routines/{id}/audio
+ * bzw. /image (KEIN vorheriges /media/upload, KEIN client-gelieferter
+ * storage_key: den erzeugt der Server, das war das Mandanten-Leck). Der Browser
+ * setzt den multipart/form-data-Header inkl. boundary selbst — NICHT von Hand
+ * setzen. Diese Route steht (wie /media/upload) NICHT im OpenAPI-Contract,
+ * deshalb roher fetch mit Bearer-Header.
+ */
+export async function attachRoutineMedia(
+  routineId: string,
+  kind: "audio" | "image",
+  file: File,
+  feature: string,
+): Promise<WireRoutine> {
+  const form = new FormData();
+  form.set("file", file);
+  const res = await fetch(`${API_BASE_URL}/routines/${encodeURIComponent(routineId)}/${kind}`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+    body: form,
+  });
+  if (!res.ok) throw await mediaError(res, feature);
+  return (await res.json()) as WireRoutine;
+}
+
+/** Kür-Medien lösen — DELETE /routines/{id}/audio|image (nicht im Contract). */
+export async function detachRoutineMedia(
+  routineId: string,
+  kind: "audio" | "image",
+  feature: string,
+): Promise<WireRoutine> {
+  const res = await fetch(`${API_BASE_URL}/routines/${encodeURIComponent(routineId)}/${kind}`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw await mediaError(res, feature);
+  return (await res.json()) as WireRoutine;
 }
