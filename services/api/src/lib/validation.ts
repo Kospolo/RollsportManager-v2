@@ -482,6 +482,8 @@ export const routineSchema = z
     music_bpm: z.number().int().nullable(),
     music_duration_ms: z.coerce.number().int().nullable(),
     audio_asset_id: uuid.nullable(),
+    /** Optional cover image of the routine (app.media_assets), like audio_asset_id (migration 0057). */
+    image_asset_id: uuid.nullable(),
     /** Skaters of this routine (app.routine_skaters) - single, pair or group. */
     skater_member_ids: z.array(uuid),
     /** Normalized waveform peaks (0..1) of the linked audio asset, when present. */
@@ -3080,3 +3082,56 @@ export const supportTicketUpdateSchema = z
     message: 'mindestens ein Feld erforderlich (status oder priority) / at least one field required',
   })
   .openapi('SupportTicketUpdate');
+
+// ============================================================================
+// Foto-Markierung (migration 0056) — "diese Person ist auf dem Bild".
+// MARKIEREN = Staff (Metadatum, auch fuer nicht-eingewilligte Kinder);
+// ANZEIGEN auf dem Profil = nur bei wirksamer Einwilligung photos_internal.
+// ============================================================================
+
+/** Eine Markierungs-Zeile (app.photo_tags). */
+export const photoTagSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** app.gallery_items.id des Bildes. */
+    gallery_item_id: uuid,
+    /** WER ist auf dem Bild (club_members.id). */
+    member_id: uuid,
+    /** WER hat markiert (club_members.id der Staff-Person). */
+    tagged_by_member_id: uuid,
+    created_at: timestamp,
+  })
+  .openapi('PhotoTag');
+
+/**
+ * Markieren. tagged_by_member_id ist NICHT im Vertrag: die API loest die
+ * eigene Mitgliedszeile aus dem Token auf (wie support/gallery). Der Aufrufer
+ * gibt nur an, WELCHES Bild und WELCHE Person.
+ */
+export const photoTagCreateSchema = z
+  .object({
+    club_id: uuid,
+    gallery_item_id: uuid,
+    member_id: uuid,
+  })
+  .openapi('PhotoTagCreate');
+
+/**
+ * Ein markiertes Foto, wie es auf dem PROFIL erscheint (nur mit Einwilligung).
+ * Vereint die Markierung mit den Anzeige-Feldern des Galerie-Bildes.
+ */
+export const memberPhotoSchema = z
+  .object({
+    tag_id: uuid,
+    gallery_item_id: uuid,
+    member_id: uuid,
+    album: z.string().nullable(),
+    title: z.string(),
+    kind: galleryKindSchema,
+    storage_key: z.string(),
+    content_type: z.string(),
+    thumbnail_key: z.string().nullable(),
+    tagged_at: timestamp,
+  })
+  .openapi('MemberPhoto');
