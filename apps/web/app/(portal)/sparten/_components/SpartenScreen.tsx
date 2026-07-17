@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import type { Sparte, Team } from "@/lib/types";
 import {
   data,
-  dataSource,
   errorMessage,
   isForbidden,
   isNotImplemented,
@@ -30,8 +29,11 @@ import { DeleteSparteDialog } from "./DeleteSparteDialog";
  * moderator/coach/member). Sichtbarkeit ist Komfort — die verbindliche
  * Durchsetzung bleibt serverseitig (RLS/API, 403 → Toast + Rollback).
  *
- * Im mock-Modus werden die Schreibpfade freigeschaltet, damit die Demo alle
- * Interaktionen zeigt; im api-Modus zählt allein die echte Rolle.
+ * Die Sichtbarkeit der Verwaltungs-Aktionen folgt IMMER der echten Rolle des
+ * Betrachters (getCurrentUser) — im mock-Modus über den Persona-Umschalter
+ * (rsm.mock.viewer), im api-Modus über den Login-Token. So bleibt die Seite
+ * deckungsgleich mit dem VerwaltungHub (der die Sparten-Kachel ebenfalls nur
+ * bei canManageSparten zeigt) und dem Mitglieder-Screen.
  */
 
 const NO_SPARTEN: Sparte[] = [];
@@ -57,7 +59,7 @@ export function SpartenScreen() {
   const modules = state.data?.[3] ?? NO_MODULES;
 
   const perms = currentUser ? permissions(currentUser) : null;
-  const canManage = (perms?.canManageSparten ?? false) || dataSource === "mock";
+  const canManage = perms?.canManageSparten ?? false;
 
   // Finanz-Modul an? (Kernmodul → i. d. R. immer verfügbar). Fehlt der Eintrag,
   // wird fail-open angenommen (kein Eintrag = kein Schalter = verfügbar).
