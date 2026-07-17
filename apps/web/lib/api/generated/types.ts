@@ -216,8 +216,6 @@ export interface Routine {
   "music_duration_ms": number | null;
   "audio_asset_id": string | null;
   "image_asset_id": string | null;
-  "audio_url": string | null;
-  "image_url": string | null;
   "skater_member_ids": string[];
   "waveform_peaks": number[] | null;
   "created_at": string;
@@ -1096,23 +1094,6 @@ export interface RoutineMarkerCreate {
   "time_ms": number;
   "label": string;
   "element_code"?: string;
-}
-
-export interface RoutineAudioAttach {
-  "storage_key": string;
-  "mime_type": string;
-  "size_bytes": number;
-  "duration_ms"?: number;
-  "waveform_peaks"?: number[];
-  "music_title"?: string;
-  "music_artist"?: string;
-  "music_bpm"?: number;
-}
-
-export interface RoutineImageAttach {
-  "storage_key": string;
-  "mime_type": string;
-  "size_bytes": number;
 }
 
 export interface RoutineScoreCreate {

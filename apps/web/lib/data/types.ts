@@ -228,20 +228,6 @@ export interface DataRepository
   /* ---------- Küren ---------- */
   getRoutines(): Promise<Routine[]>;
   getRoutineById(id: Id): Promise<Routine | undefined>;
-  /**
-   * Kür-Musik hochladen und an die Kür hängen (Trainer:in des Teams + PRO,
-   * serverseitig erzwungen). Zweistufig wie Galerie/Profilfoto: erst
-   * POST /media/upload, dann POST /routines/{id}/audio mit dem storage_key.
-   * Liefert die aktualisierte Kür (audioUrl gesetzt). 415 = falscher Typ,
-   * 413 = zu groß, 402 = kein PRO (ClubProRequiredError).
-   */
-  attachRoutineAudio(routineId: Id, file: File): Promise<Routine>;
-  /** Kür-Bild hochladen und anhängen (Trainer:in + PRO). Nur Bild-Typen. */
-  attachRoutineImage(routineId: Id, file: File): Promise<Routine>;
-  /** Kür-Musik wieder lösen (Trainer:in). Liefert die aktualisierte Kür. */
-  detachRoutineAudio(routineId: Id): Promise<Routine>;
-  /** Kür-Bild wieder lösen (Trainer:in). */
-  detachRoutineImage(routineId: Id): Promise<Routine>;
 
   /* ---------- Finanzen (Aggregat-Lesesichten; Draft-Rechnungen gefiltert) ---------- */
   getInvoices(): Promise<Invoice[]>;

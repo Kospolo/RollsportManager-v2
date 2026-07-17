@@ -211,8 +211,6 @@ function linaSections(): RawSections {
       music_duration_ms: 150_000,
       audio_asset_id: "audio-lina-01",
       image_asset_id: "img-lina-01",
-      audio_url: "/media/lina-01.mp3",
-      image_url: "/media/lina-01.jpg",
       skater_member_ids: ["m-07"],
       waveform_peaks: WAVE,
       created_at: "2026-02-10T10:00:00.000Z",

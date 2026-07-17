@@ -484,11 +484,6 @@ export const routineSchema = z
     audio_asset_id: uuid.nullable(),
     /** Optional cover image of the routine (app.media_assets), like audio_asset_id (migration 0057). */
     image_asset_id: uuid.nullable(),
-    /** Served, auth-/RLS-gated URL of the attached music ('/media/{key}'), or null.
-     *  Derived from the linked audio_asset's storage_path (like member avatar_url). */
-    audio_url: z.string().nullable(),
-    /** Served, auth-/RLS-gated URL of the cover image ('/media/{key}'), or null. */
-    image_url: z.string().nullable(),
     /** Skaters of this routine (app.routine_skaters) - single, pair or group. */
     skater_member_ids: z.array(uuid),
     /** Normalized waveform peaks (0..1) of the linked audio asset, when present. */
@@ -511,45 +506,6 @@ export const routineCreateSchema = z
     skater_member_ids: z.array(uuid).default([]),
   })
   .openapi('RoutineCreate');
-
-/**
- * Kueren-MUSIK an eine Kuer haengen (POST /routines/{id}/audio). Der Client hat
- * die Bytes ZUVOR per POST /media/upload abgelegt und reicht hier nur den
- * opaken storage_key + Metadaten. Der Server legt daraus eine app.media_assets-
- * Zeile an und setzt routine.audio_asset_id. mime_type MUSS ein Audiotyp sein
- * (Server prueft isAudioContentType — ein Bild als Musik unterzuschieben
- * scheitert). Die music_*-Felder werden, wenn mitgegeben, an der Kuer gesetzt.
- */
-export const routineAudioAttachSchema = z
-  .object({
-    /** Opaker storage_key aus der Antwort von POST /media/upload. */
-    storage_key: z.string().min(1).max(200),
-    /** Content-Type der hochgeladenen Datei (muss audio/* sein). */
-    mime_type: z.string().min(1),
-    size_bytes: z.number().int().positive(),
-    duration_ms: z.number().int().positive().optional(),
-    /** Normalisierte Wellenform-Spitzen (0..1) fuer den Trainings-Player. */
-    waveform_peaks: z.array(z.number()).optional(),
-    music_title: z.string().max(200).optional(),
-    music_artist: z.string().max(200).optional(),
-    music_bpm: z.number().int().positive().optional(),
-  })
-  .openapi('RoutineAudioAttach');
-
-/**
- * Kueren-BILD an eine Kuer haengen (POST /routines/{id}/image, Migration 0057).
- * Analog zum Audio: der Client laedt zuerst per /media/upload hoch, reicht hier
- * den storage_key + Metadaten. mime_type MUSS image/* sein. Der Server setzt
- * routine.image_asset_id.
- */
-export const routineImageAttachSchema = z
-  .object({
-    storage_key: z.string().min(1).max(200),
-    /** Content-Type der hochgeladenen Datei (muss image/* sein). */
-    mime_type: z.string().min(1),
-    size_bytes: z.number().int().positive(),
-  })
-  .openapi('RoutineImageAttach');
 
 export const markerSchema = z
   .object({

@@ -4,7 +4,6 @@ import { readSession } from "@/lib/auth/storage";
 import { readOperatorClub } from "../operator-club";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { activeClubId, apiClient } from "./client";
-import { proGuard, uploadMedia } from "./media-fetch";
 import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
@@ -225,43 +224,6 @@ export const apiRepository: DataRepository = {
       if (error instanceof ApiError && error.status === 404) return undefined;
       throw error;
     }
-  },
-  async attachRoutineAudio(routineId, file) {
-    // Zweistufig wie Galerie/Profilfoto: erst die Bytes, dann der Verweis.
-    const up = await uploadMedia(activeClubId(), file, "Kür-Musik");
-    const updated = await proGuard(
-      apiClient.postRoutinesByRoutineIdAudio(routineId, {
-        storage_key: up.storageKey,
-        mime_type: up.contentType,
-        size_bytes: up.sizeBytes,
-      }),
-      "Kür-Musik",
-    );
-    const [markers, scores] = await loadRoutineDetails(routineId);
-    return mapRoutine(updated, markers, scores);
-  },
-  async attachRoutineImage(routineId, file) {
-    const up = await uploadMedia(activeClubId(), file, "Kür-Bild");
-    const updated = await proGuard(
-      apiClient.postRoutinesByRoutineIdImage(routineId, {
-        storage_key: up.storageKey,
-        mime_type: up.contentType,
-        size_bytes: up.sizeBytes,
-      }),
-      "Kür-Bild",
-    );
-    const [markers, scores] = await loadRoutineDetails(routineId);
-    return mapRoutine(updated, markers, scores);
-  },
-  async detachRoutineAudio(routineId) {
-    const updated = await apiClient.deleteRoutinesByRoutineIdAudio(routineId);
-    const [markers, scores] = await loadRoutineDetails(routineId);
-    return mapRoutine(updated, markers, scores);
-  },
-  async detachRoutineImage(routineId) {
-    const updated = await apiClient.deleteRoutinesByRoutineIdImage(routineId);
-    const [markers, scores] = await loadRoutineDetails(routineId);
-    return mapRoutine(updated, markers, scores);
   },
 
   /* ---------- Finanzen ---------- */

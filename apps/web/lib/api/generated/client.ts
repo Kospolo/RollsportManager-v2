@@ -818,42 +818,6 @@ export class ApiClient {
   }
 
   /**
-   * Attach uploaded music to a routine (coaching staff, PRO)
-   * 
-   * `POST /routines/{routineId}/audio`
-   */
-  async postRoutinesByRoutineIdAudio(routineId: string, body: M.RoutineAudioAttach, options?: RequestOptions): Promise<M.Routine> {
-    return this.request<M.Routine>("POST", `/routines/${encodeURIComponent(routineId)}/audio`, { body, auth: true, options });
-  }
-
-  /**
-   * Detach the music from a routine (coaching staff)
-   * 
-   * `DELETE /routines/{routineId}/audio`
-   */
-  async deleteRoutinesByRoutineIdAudio(routineId: string, options?: RequestOptions): Promise<M.Routine> {
-    return this.request<M.Routine>("DELETE", `/routines/${encodeURIComponent(routineId)}/audio`, { auth: true, options });
-  }
-
-  /**
-   * Attach an uploaded cover image to a routine (coaching staff, PRO)
-   * 
-   * `POST /routines/{routineId}/image`
-   */
-  async postRoutinesByRoutineIdImage(routineId: string, body: M.RoutineImageAttach, options?: RequestOptions): Promise<M.Routine> {
-    return this.request<M.Routine>("POST", `/routines/${encodeURIComponent(routineId)}/image`, { body, auth: true, options });
-  }
-
-  /**
-   * Detach the cover image from a routine (coaching staff)
-   * 
-   * `DELETE /routines/{routineId}/image`
-   */
-  async deleteRoutinesByRoutineIdImage(routineId: string, options?: RequestOptions): Promise<M.Routine> {
-    return this.request<M.Routine>("DELETE", `/routines/${encodeURIComponent(routineId)}/image`, { auth: true, options });
-  }
-
-  /**
    * Score history of a routine
    * 
    * `GET /routines/{routineId}/scores`

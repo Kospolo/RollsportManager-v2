@@ -11,9 +11,7 @@ import { randomBytes } from 'node:crypto';
 import {
   markerCreateSchema,
   markerSchema,
-  routineAudioAttachSchema,
   routineCreateSchema,
-  routineImageAttachSchema,
   routineSchema,
   scoreCreateSchema,
   scoreSchema,
@@ -25,16 +23,7 @@ import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { COACH_ROLES, hasClubRole, requireClubMember, requireClubRole } from '../lib/guards.js';
-import { assertClubPro } from '../lib/pro-gate.js';
 import { ownMemberId } from '../lib/ownership.js';
-import {
-  assertValidKey,
-  deleteBytes,
-  isAllowedContentType,
-  isAudioContentType,
-  readBytes,
-} from '../modules/media/storage.js';
-import type { AuthClaims } from '../middleware/auth.js';
 
 /** URL-safe, high-entropy share token (kuer-share.html). */
 function generateShareToken(): string {
@@ -70,11 +59,7 @@ async function selectRoutine(tx: Tx, routineId: string): Promise<unknown | undef
                 where rs.routine_id = r.id and rs.deleted_at is null),
                '[]'::jsonb) as skater_member_ids,
       (select ma.waveform_peaks from app.media_assets ma
-        where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks,
-      (select '/media/' || ma.storage_path from app.media_assets ma
-        where ma.id = r.audio_asset_id and ma.deleted_at is null) as audio_url,
-      (select '/media/' || ma.storage_path from app.media_assets ma
-        where ma.id = r.image_asset_id and ma.deleted_at is null) as image_url
+        where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
     from app.routines r
     where r.id = ${routineId} and r.deleted_at is null`;
   return rows[0];
@@ -103,11 +88,7 @@ routinesRouter.openapi(
                      where rs.routine_id = r.id and rs.deleted_at is null),
                     '[]'::jsonb) as skater_member_ids,
            (select ma.waveform_peaks from app.media_assets ma
-             where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks,
-           (select '/media/' || ma.storage_path from app.media_assets ma
-             where ma.id = r.audio_asset_id and ma.deleted_at is null) as audio_url,
-           (select '/media/' || ma.storage_path from app.media_assets ma
-             where ma.id = r.image_asset_id and ma.deleted_at is null) as image_url
+             where ma.id = r.audio_asset_id and ma.deleted_at is null) as waveform_peaks
          from app.routines r
          where r.club_id = ${club_id} and r.deleted_at is null
          order by r.title`,
@@ -278,253 +259,6 @@ routinesRouter.openapi(
       return rows[0];
     });
     return c.json(markerSchema.parse(created), 201);
-  },
-);
-
-// ----------------------------------------------------------------------------
-// Kueren-Medien anhaengen: Musik (audio_asset_id) und Bild (image_asset_id,
-// Migration 0057). Der Client hat die Bytes ZUVOR per POST /media/upload
-// abgelegt und reicht hier nur den opaken storage_key + Metadaten. Rechte wie
-// bei /markers (loadRoutine -> RLS-Team-Grenze + hasClubRole COACH_ROLES) plus
-// derselbe PRO-Gate wie /media/upload (assertClubPro), damit Upload und Attach
-// konsistent gated sind. Der Content-Type wird geprueft: /audio nur Audio,
-// /image nur image/* — ein Bild als Musik (oder umgekehrt) muss scheitern.
-// ----------------------------------------------------------------------------
-
-/**
- * Gemeinsamer Vorlauf fuer /audio und /image: den vom Client gereichten
- * storage_key gegen Pfad-Traversal absichern (assertValidKey), pruefen dass die
- * Bytes wirklich liegen (kein Verweis ins Leere) und eine app.media_assets-Zeile
- * anlegen. Liefert die neue asset-id. RETURNING ist hier unbedenklich (kein
- * returning noetig): media_assets_select haengt an is_club_member, nicht an der
- * gerade eingefuegten Zeile — der Bug betrifft nur app.routines / can_read_routine.
- * Wir ziehen die id trotzdem vorab und schreiben ohne returning (Hausstil).
- */
-async function insertRoutineMediaAsset(
-  tx: Tx,
-  claims: AuthClaims,
-  routine: { id: string; club_id: string },
-  bucket: string,
-  input: {
-    storage_key: string;
-    mime_type: string;
-    size_bytes: number;
-    duration_ms?: number | undefined;
-    waveform_peaks?: number[] | undefined;
-  },
-): Promise<string> {
-  try {
-    assertValidKey(input.storage_key);
-  } catch {
-    throw problem(400, 'Bad Request', 'invalid storage_key');
-  }
-  const bytes = await readBytes(input.storage_key);
-  if (!bytes) {
-    throw problem(
-      422,
-      'Unprocessable Entity',
-      'no uploaded bytes for this storage_key - upload the file via POST /media/upload first',
-    );
-  }
-  const idRows = await tx`select app.uuid_v7() as id`;
-  const assetId = (idRows[0] as { id: string }).id;
-  await tx`
-    insert into app.media_assets
-      (id, club_id, bucket, storage_path, mime_type, size_bytes, duration_ms, waveform_peaks, created_by)
-    values
-      (${assetId}, ${routine.club_id}, ${bucket}, ${input.storage_key}, ${input.mime_type},
-       ${input.size_bytes}, ${input.duration_ms ?? null},
-       ${input.waveform_peaks ? tx.json(input.waveform_peaks) : null}, ${claims.sub})`;
-  return assetId;
-}
-
-routinesRouter.openapi(
-  createRoute({
-    method: 'post',
-    path: '/routines/{routineId}/audio',
-    tags: ['routines'],
-    summary: 'Attach uploaded music to a routine (coaching staff, PRO)',
-    security: [{ bearerAuth: [] }],
-    request: {
-      params: routineIdParam,
-      body: { content: { 'application/json': { schema: routineAudioAttachSchema } }, required: true },
-    },
-    responses: {
-      200: jsonContent(routineSchema, 'The routine with the music attached'),
-      ...errorResponses,
-    },
-  }),
-  async (c) => {
-    const { routineId } = c.req.valid('param');
-    const body = c.req.valid('json');
-    const claims = c.get('claims');
-
-    // Content-Type PRUEFEN, bevor irgendetwas geschrieben wird: nur Audio.
-    if (!isAllowedContentType(body.mime_type) || !isAudioContentType(body.mime_type)) {
-      throw problem(
-        415,
-        'Unsupported Media Type',
-        `content type '${body.mime_type || 'unknown'}' is not an allowed audio type (mp3/m4a/aac/wav/ogg/flac)`,
-      );
-    }
-
-    const updated = await withUser(claims, async (tx) => {
-      const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
-        throw problem(403, 'Forbidden', 'Attaching music requires a coaching role');
-      }
-      await assertClubPro(tx, routine.club_id);
-
-      const assetId = await insertRoutineMediaAsset(tx, claims, routine, 'routine-audio', body);
-
-      // RETURNING-Bug (routines.ts Kopf): KEIN returning auf app.routines - das
-      // loest routines_select / can_read_routine aus und scheitert mit 42501,
-      // obwohl der UPDATE erlaubt ist. Ohne returning schreiben, separat lesen.
-      await tx`
-        update app.routines set
-          audio_asset_id    = ${assetId},
-          music_title       = coalesce(${body.music_title ?? null}::text, music_title),
-          music_artist      = coalesce(${body.music_artist ?? null}::text, music_artist),
-          music_bpm         = coalesce(${body.music_bpm ?? null}::int, music_bpm),
-          music_duration_ms = coalesce(${body.duration_ms ?? null}::bigint, music_duration_ms)
-        where id = ${routineId} and deleted_at is null`;
-
-      return selectRoutine(tx, routineId);
-    });
-    return c.json(routineSchema.parse(updated), 200);
-  },
-);
-
-routinesRouter.openapi(
-  createRoute({
-    method: 'post',
-    path: '/routines/{routineId}/image',
-    tags: ['routines'],
-    summary: 'Attach an uploaded cover image to a routine (coaching staff, PRO)',
-    security: [{ bearerAuth: [] }],
-    request: {
-      params: routineIdParam,
-      body: { content: { 'application/json': { schema: routineImageAttachSchema } }, required: true },
-    },
-    responses: {
-      200: jsonContent(routineSchema, 'The routine with the image attached'),
-      ...errorResponses,
-    },
-  }),
-  async (c) => {
-    const { routineId } = c.req.valid('param');
-    const body = c.req.valid('json');
-    const claims = c.get('claims');
-
-    // Content-Type PRUEFEN: nur Bilder. Ein Audio als Bild scheitert hier.
-    if (!isAllowedContentType(body.mime_type) || !body.mime_type.toLowerCase().startsWith('image/')) {
-      throw problem(
-        415,
-        'Unsupported Media Type',
-        `content type '${body.mime_type || 'unknown'}' is not an allowed image type (jpeg/png/gif/webp/heic)`,
-      );
-    }
-
-    const updated = await withUser(claims, async (tx) => {
-      const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
-        throw problem(403, 'Forbidden', 'Attaching an image requires a coaching role');
-      }
-      await assertClubPro(tx, routine.club_id);
-
-      const assetId = await insertRoutineMediaAsset(tx, claims, routine, 'routine-image', body);
-
-      // RETURNING-Bug (siehe /audio): ohne returning schreiben, separat lesen.
-      await tx`
-        update app.routines set image_asset_id = ${assetId}
-        where id = ${routineId} and deleted_at is null`;
-
-      return selectRoutine(tx, routineId);
-    });
-    return c.json(routineSchema.parse(updated), 200);
-  },
-);
-
-/**
- * Musik bzw. Bild von einer Kuer loesen. Setzt audio_asset_id / image_asset_id
- * auf null, soft-loescht die media_assets-Zeile und entfernt die Bytes
- * best-effort (nur MEDIA_DIR, nie das Seed-Verzeichnis). Rechte wie beim Anlegen
- * (COACH_ROLES). KEIN returning auf app.routines (RETURNING-Bug).
- */
-async function detachRoutineMedia(
-  claims: AuthClaims,
-  routineId: string,
-  column: 'audio_asset_id' | 'image_asset_id',
-): Promise<{ storagePath: string | null; row: unknown }> {
-  return withUser(claims, async (tx) => {
-    const routine = await loadRoutine(tx, routineId);
-    if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
-      throw problem(403, 'Forbidden', 'Detaching media requires a coaching role');
-    }
-    const curRows =
-      column === 'audio_asset_id'
-        ? await tx`select audio_asset_id as asset_id from app.routines where id = ${routineId} and deleted_at is null`
-        : await tx`select image_asset_id as asset_id from app.routines where id = ${routineId} and deleted_at is null`;
-    const assetId = (curRows[0] as { asset_id: string | null } | undefined)?.asset_id ?? null;
-
-    // KEIN returning auf app.routines (RETURNING-Bug / can_read_routine).
-    if (column === 'audio_asset_id') {
-      await tx`update app.routines set audio_asset_id = null where id = ${routineId} and deleted_at is null`;
-    } else {
-      await tx`update app.routines set image_asset_id = null where id = ${routineId} and deleted_at is null`;
-    }
-
-    let storagePath: string | null = null;
-    if (assetId) {
-      const aRows = await tx`
-        select storage_path from app.media_assets where id = ${assetId} and deleted_at is null`;
-      storagePath = (aRows[0] as { storage_path: string } | undefined)?.storage_path ?? null;
-      await tx`update app.media_assets set deleted_at = now() where id = ${assetId} and deleted_at is null`;
-    }
-    return { storagePath, row: await selectRoutine(tx, routineId) };
-  });
-}
-
-routinesRouter.openapi(
-  createRoute({
-    method: 'delete',
-    path: '/routines/{routineId}/audio',
-    tags: ['routines'],
-    summary: 'Detach the music from a routine (coaching staff)',
-    security: [{ bearerAuth: [] }],
-    request: { params: routineIdParam },
-    responses: {
-      200: jsonContent(routineSchema, 'The routine with the music removed'),
-      ...errorResponses,
-    },
-  }),
-  async (c) => {
-    const { routineId } = c.req.valid('param');
-    const outcome = await detachRoutineMedia(c.get('claims'), routineId, 'audio_asset_id');
-    // Bytes best-effort ausserhalb der Transaktion entfernen (nie fatal).
-    if (outcome.storagePath) await deleteBytes(outcome.storagePath);
-    return c.json(routineSchema.parse(outcome.row), 200);
-  },
-);
-
-routinesRouter.openapi(
-  createRoute({
-    method: 'delete',
-    path: '/routines/{routineId}/image',
-    tags: ['routines'],
-    summary: 'Detach the cover image from a routine (coaching staff)',
-    security: [{ bearerAuth: [] }],
-    request: { params: routineIdParam },
-    responses: {
-      200: jsonContent(routineSchema, 'The routine with the image removed'),
-      ...errorResponses,
-    },
-  }),
-  async (c) => {
-    const { routineId } = c.req.valid('param');
-    const outcome = await detachRoutineMedia(c.get('claims'), routineId, 'image_asset_id');
-    if (outcome.storagePath) await deleteBytes(outcome.storagePath);
-    return c.json(routineSchema.parse(outcome.row), 200);
   },
 );
 

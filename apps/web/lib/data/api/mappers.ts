@@ -298,8 +298,6 @@ export function mapRoutine(
     markers: markers.map(mapMarker).sort((a, b) => a.timeMs - b.timeMs),
     scores: scores.map(mapScore).sort((a, b) => a.date.localeCompare(b.date)),
     category: w.category ?? "",
-    audioUrl: w.audio_url ?? null,
-    imageUrl: w.image_url ?? null,
   };
 }
 

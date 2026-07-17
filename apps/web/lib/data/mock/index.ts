@@ -38,14 +38,6 @@ import { moduleRepositoryWettkampf } from "./modules-wettkampf";
  * Dev-Stack erfahrbar — Termine, Teams und Stammdaten-Änderungen bleiben
  * sichtbar, bis die Seite neu geladen wird.
  */
-/** Mock: Datei-Bytes -> lokal nutzbare URL (Fallback ohne URL.createObjectURL). */
-function mockLocalUrl(file: File): string {
-  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-    return URL.createObjectURL(file);
-  }
-  return `mock-local:${file.name}`;
-}
-
 const createdEvents: Event[] = [];
 const teamStore: Team[] = mock.teams.map((t) => ({
   ...t,
@@ -106,32 +98,6 @@ export const mockRepository: DataRepository = {
   },
   async getRoutineById(id) {
     return mock.routineById(id);
-  },
-  async attachRoutineAudio(routineId, file) {
-    const routine = mock.routineById(routineId);
-    if (!routine) throw new Error("Kür nicht gefunden");
-    // Mock: die Datei-Bytes werden lokal zu einer nutzbaren Object-/Data-URL;
-    // loadMediaUrl gibt sie unverändert zurück (wie Galerie/Profilfoto).
-    routine.audioUrl = mockLocalUrl(file);
-    return routine;
-  },
-  async attachRoutineImage(routineId, file) {
-    const routine = mock.routineById(routineId);
-    if (!routine) throw new Error("Kür nicht gefunden");
-    routine.imageUrl = mockLocalUrl(file);
-    return routine;
-  },
-  async detachRoutineAudio(routineId) {
-    const routine = mock.routineById(routineId);
-    if (!routine) throw new Error("Kür nicht gefunden");
-    routine.audioUrl = null;
-    return routine;
-  },
-  async detachRoutineImage(routineId) {
-    const routine = mock.routineById(routineId);
-    if (!routine) throw new Error("Kür nicht gefunden");
-    routine.imageUrl = null;
-    return routine;
   },
 
   /* ---------- Finanzen ---------- */
