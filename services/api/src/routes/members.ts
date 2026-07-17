@@ -83,9 +83,18 @@ const JOINED_ON_FIELDS = ['joined_on'] as const;
  */
 const JOINED_ON_ROLES: readonly ClubRole[] = [...MANAGE_MEMBER_ROLES, 'coach'];
 
-/** True when the viewer may see the CONTACT columns (birth_date/email/…). */
+/**
+ * True when the viewer may see the CONTACT columns (birth_date/email/…).
+ *
+ * KEIN eigener isPlatformAdmin-Zweig: hasClubRole laesst den Betreiber bereits
+ * durch — ABER nur ueber hasOperatorOverride, also erst nachdem die
+ * Audit-Middleware den Zugriff protokolliert und app.operator_override gesetzt
+ * hat. Ein blosser isPlatformAdmin(claims) waere die zweite, protokoll-FREIE
+ * Tuer, die 0051 abschaffen wollte (der Roster traegt birth_date/email von
+ * Kindern). Genau die haben wir hier entfernt.
+ */
 export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
-  return isPlatformAdmin(claims) || hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
+  return hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
 }
 
 /**
@@ -102,7 +111,9 @@ export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
  * auseinanderlaufen.
  */
 export function maySeeJoinedOn(claims: AuthClaims, clubId: string): boolean {
-  return isPlatformAdmin(claims) || hasClubRole(claims, clubId, JOINED_ON_ROLES);
+  // Betreiber laeuft ueber hasClubRole -> hasOperatorOverride (ans Protokoll
+  // gekoppelt); kein protokoll-freier isPlatformAdmin-Zweig, siehe maySeeFullRoster.
+  return hasClubRole(claims, clubId, JOINED_ON_ROLES);
 }
 
 /**
