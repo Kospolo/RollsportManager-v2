@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { maySeeFullRoster, redactMemberForViewer } from '../src/routes/members.js';
+import { markOperatorAccess } from '../src/lib/operator-context.js';
 import type { AuthClaims, ClubRole } from '../src/middleware/auth.js';
 
 const CLUB = '11111111-1111-4111-8111-111111111111';
@@ -52,8 +53,19 @@ describe('maySeeFullRoster', () => {
     expect(maySeeFullRoster(claims('coach'), CLUB)).toBe(false);
   });
 
-  it('is true for a platform admin regardless of club role', () => {
-    expect(maySeeFullRoster(platformAdminClaims(), CLUB)).toBe(true);
+  // Seit 0051/ef9acdf: ein BLOSSER Plattform-Admin-Claim sieht den Roster NICHT.
+  // Der Betreiber-Zugriff haengt am protokoll-gekoppelten Operator-Override
+  // (markOperatorAccess, gesetzt nur von der Audit-Middleware nach der
+  // Protokollzeile) — nicht am Claim allein. Vorher war das eine zweite,
+  // protokoll-FREIE Tuer zu den Kinder-Kontaktdaten.
+  it('is FALSE for a bare platform-admin claim (no audit-coupled override)', () => {
+    expect(maySeeFullRoster(platformAdminClaims(), CLUB)).toBe(false);
+  });
+
+  it('is true only WITH the operator override', () => {
+    const c = platformAdminClaims();
+    markOperatorAccess(c);
+    expect(maySeeFullRoster(c, CLUB)).toBe(true);
   });
 });
 

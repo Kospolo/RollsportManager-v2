@@ -14,6 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { maySeeFullRoster, maySeeJoinedOn, redactMemberForViewer } from '../src/routes/members.js';
+import { markOperatorAccess } from '../src/lib/operator-context.js';
 import type { AuthClaims, ClubRole } from '../src/middleware/auth.js';
 
 const CLUB = '11111111-1111-4111-8111-111111111111';
@@ -76,8 +77,13 @@ describe('maySeeJoinedOn — "Trainer und hoeher"', () => {
     expect(maySeeJoinedOn(claims('guest_coach'), CLUB)).toBe(false);
   });
 
-  it('is true for a platform admin', () => {
-    expect(maySeeJoinedOn(platformAdminClaims(), CLUB)).toBe(true);
+  // Seit 0051/ef9acdf ans Protokoll gekoppelt: blosser Claim -> nein, erst der
+  // Operator-Override (Audit-Middleware) -> ja. Siehe members-redact.test.ts.
+  it('is FALSE for a bare platform-admin claim, true only with the override', () => {
+    expect(maySeeJoinedOn(platformAdminClaims(), CLUB)).toBe(false);
+    const c = platformAdminClaims();
+    markOperatorAccess(c);
+    expect(maySeeJoinedOn(c, CLUB)).toBe(true);
   });
 });
 

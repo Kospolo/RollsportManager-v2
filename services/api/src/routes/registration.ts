@@ -57,12 +57,44 @@ import {
 } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
+import {
+  maySeeFullRoster,
+  maySeeJoinedOn,
+  maySeeInternalSelfProfile,
+  redactMemberForViewer,
+  redactSelfProfile,
+} from './members.js';
+import type { AuthClaims } from '../middleware/auth.js';
 import { requireCap, requireClubRoleDb } from '../lib/capabilities.js';
 import { checkRateLimits, clientIp } from '../lib/rate-limit.js';
 import { recordAuthEvent } from '../lib/security-log.js';
 import { recordAcknowledgements } from '../lib/consent.js';
 
 export const registrationRouter = createRouter();
+
+/**
+ * approve/reject liefern eine BESTEHENDE Mitgliedszeile (returning *) zurueck.
+ * Anders als ein frisch angelegter Antrag kann sie ein voll gesetztes Profil
+ * tragen — z.B. wenn ein Manager ein aktives Mitglied erst auf 'pending' dreht
+ * und dann approve/reject ruft. Deshalb GENAU DIESELBE Redaktion wie im Roster
+ * (members.ts): Kontaktdaten nach maySeeFullRoster/maySeeJoinedOn, das
+ * Selbst-Profil nach maySeeInternalSelfProfile. Ohne das saehe eine treasurer
+ * (members>=manage, aber NICHT internal-Profil-berechtigt) ein internes Profil.
+ * _self_or_guardian fehlt hier bewusst (der Freigebende ist nie der Antragsteller)
+ * -> redactSelfProfile wertet es als false, was korrekt ist.
+ */
+function redactedApplicantRow(
+  claims: AuthClaims,
+  clubId: string,
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const contactRedacted = redactMemberForViewer(
+    { ...row, avatar_url: null, team_ids: [] },
+    maySeeFullRoster(claims, clubId),
+    maySeeJoinedOn(claims, clubId),
+  );
+  return redactSelfProfile(contactRedacted, maySeeInternalSelfProfile(claims, clubId));
+}
 
 const clubIdParam = z.object({ clubId: uuid.openapi({ param: { name: 'clubId', in: 'path' } }) });
 const memberIdParam = z.object({
@@ -409,7 +441,10 @@ registrationRouter.openapi(
       // Auskunft darueber, welcher der Faelle es war.
       throw problem(404, 'Not Found', 'Kein offener Antrag. / No pending request.');
     }
-    return c.json(memberSchema.parse({ ...rows[0], avatar_url: null, team_ids: [] }), 200);
+    return c.json(
+      memberSchema.parse(redactedApplicantRow(c.get('claims'), clubId, rows[0] as Record<string, unknown>)),
+      200,
+    );
   },
 );
 
@@ -455,7 +490,10 @@ registrationRouter.openapi(
           returning *`,
     );
     if (rows.length === 0) throw problem(404, 'Not Found', 'Kein offener Antrag. / No pending request.');
-    return c.json(memberSchema.parse({ ...rows[0], avatar_url: null, team_ids: [] }), 200);
+    return c.json(
+      memberSchema.parse(redactedApplicantRow(c.get('claims'), clubId, rows[0] as Record<string, unknown>)),
+      200,
+    );
   },
 );
 
