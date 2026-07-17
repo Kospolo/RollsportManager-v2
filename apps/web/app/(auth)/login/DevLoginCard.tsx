@@ -37,7 +37,11 @@ export function DevLoginCard() {
     setError(null);
     try {
       await signIn(key);
-      router.push("/dashboard");
+      // Ziel nach Rolle: der Plattform-Admin hat keinen Verein und gehoert in
+      // die Betreiber-Konsole (/dashboard verlangt einen Verein und wies ihn ab
+      // -> "Kein Zugriff"). Ein vereinsloser Neuling legt einen an / tritt bei.
+      const dest = key === "platform" ? "/super" : key === "neuling" ? "/registrieren" : "/dashboard";
+      router.push(dest);
     } catch (e) {
       setPendingKey(null);
       if (e instanceof DevStackDownError) {
