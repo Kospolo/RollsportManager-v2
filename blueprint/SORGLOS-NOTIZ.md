@@ -183,3 +183,10 @@ apps/web/app/(portal)/mitglieder/AboutMeSheet.tsx ("Etwas über dich schreiben")
 ZU TUN: dieselbe Bearbeitung (Sheet-Inhalt + updateMyProfile + Sichtbarkeits-Schalter) als Karte in /profil
 (ProfilScreen.tsx) einhängen. Klein — Sheet + Facade existieren. NICHT parallel zu wp24k53js bauen (kollidiert
 in profil/**); erst nach dessen Landung.
+
+### 🔜 SAMMELPAKET "Profil-Klickwege" — SOFORT nach dem Logo/Finanz-Lauf (wi3o59tvk)
+Beide betreffen die Profil-/mitglieder-Dateien, die wi3o59tvk gerade fuer das Finanz-Gating editiert -> NICHT parallel.
+1. Selbst-Profil (Motto/Disziplin/seit-wann + oeffentlich/intern) in /profil einhaengen (ProfilScreen.tsx),
+   Sheet+Facade existieren (mitglieder/AboutMeSheet.tsx).
+2. Marcel 2026-07-17: Kueren im 360-Profil (mitglieder/[id] ProfileSections.tsx/DetailCards.tsx) anklickbar machen ->
+   Link auf /kueren/{routineId} (dort ist der volle Player) + optional Play direkt. Heute tote Anzeige.
