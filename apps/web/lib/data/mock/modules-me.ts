@@ -83,7 +83,6 @@ function buildProfile(): MyProfile {
         joinedOn: self.joinedAt || undefined,
         validUntil: self.guestAccessUntil,
         avatarUrl: profileStore.avatarUrl,
-        aboutMe: profileStore.aboutMe,
         createdAt: `${self.joinedAt || "2015-01-01"}T00:00:00.000Z`,
         updatedAt: preferencesStore.updatedAt,
       },
@@ -100,10 +99,8 @@ export const moduleRepositoryMe: MeRepository = {
     if (patch.lastName !== undefined) profileStore.lastName = patch.lastName;
     if (patch.email !== undefined) profileStore.email = patch.email ?? undefined;
     if (patch.birthDate !== undefined) profileStore.birthDate = patch.birthDate ?? undefined;
-    if (patch.aboutMe !== undefined) {
-      const trimmed = patch.aboutMe?.trim();
-      profileStore.aboutMe = trimmed ? trimmed : undefined;
-    }
+    // Das Motto („Über mich") gehört NICHT zu /me — es wird über
+    // updateMySelfProfile gepflegt (profile_motto). Hier NUR die Stammdaten.
     // DURCHSCHREIBEN in den Verzeichnis-Store: sonst zeigt der Toast Erfolg,
     // die eigene Mitglieder-Karte bleibt aber unverändert (serverseitig ist
     // /me dieselbe Zeile in app.club_members — das muss der Mock spiegeln).
@@ -112,7 +109,6 @@ export const moduleRepositoryMe: MeRepository = {
     me.lastName = profileStore.lastName;
     me.email = profileStore.email;
     me.birthDate = profileStore.birthDate;
-    me.aboutMe = profileStore.aboutMe;
     me.avatarUrl = profileStore.avatarUrl;
     preferencesStore.updatedAt = nowIso();
     return buildProfile();

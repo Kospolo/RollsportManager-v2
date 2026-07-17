@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
-import { data, dataSource, errorMessage, isForbidden, ABOUT_ME_MAX } from "@/lib/data";
+import { data, dataSource, errorMessage, isForbidden, MOTTO_MAX } from "@/lib/data";
 import { useToast } from "@/components/ui/Toast";
 import { Sheet } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Field";
@@ -13,14 +13,24 @@ import { mitgliederDict } from "./i18n";
  * „Über mich" bearbeiten — der Weg, auf dem ein Mitglied überhaupt etwas über
  * sich einträgt. Ohne ihn bleibt das Verzeichnis leer, egal wie schön es ist.
  *
- * Schreibt über die Facade (updateMyProfile → PATCH /me, member_id = self,
- * serverseitig erzwungen) und bedient damit mock UND api: der Mock schreibt in
- * denselben Mitglieder-Store, aus dem das Verzeichnis liest (mock/member-store)
- * — die Änderung ist also SOFORT auf der eigenen Karte sichtbar. Kein Formular,
- * das grün blinkt und nichts speichert.
+ * „Über mich" IST das Selbst-Profil-Motto (club_members.profile_motto, 0045/
+ * 0053). Geschrieben wird deshalb über die Facade updateMySelfProfile → PATCH
+ * /clubs/{clubId}/members/{memberId}/profile → app.set_self_profile — ein echter
+ * TEIL-PATCH: nur `motto` senden lässt Lieblingsdisziplin, „läuft seit" und
+ * Sichtbarkeit UNVERÄNDERT. (NICHT PATCH /me: dessen MeUpdate-Schema kennt kein
+ * Motto und würde den leeren Body mit 422 abweisen.) Rechte serverseitig: nur
+ * die Person selbst / ihre Erziehungsberechtigten, nur status=active.
+ *
+ * Bedient mock UND api: der Mock spiegelt das Motto in denselben Mitglieder-
+ * Store, aus dem das Verzeichnis liest (mock/member-store) — die Änderung ist
+ * also SOFORT auf der eigenen Karte sichtbar. Kein Formular, das grün blinkt
+ * und nichts speichert.
  *
  * Der Aufrufer lädt nach onSaved neu; der lokale Entwurf lebt nur, solange das
- * Sheet offen ist (Remount über `key` beim Öffnen).
+ * Sheet offen ist (Remount über `key` beim Öffnen). Der ANFANGSWERT `initial`
+ * kommt vom Aufrufer aus Member.aboutMe — und das ist im api-Modus profile_motto
+ * (mappers.mapMember), im Mock der gespiegelte Motto-Store: derselbe Wert, den
+ * wir hier zurückschreiben.
  */
 export function AboutMeSheet({
   open,
@@ -29,7 +39,7 @@ export function AboutMeSheet({
   onSaved,
 }: {
   open: boolean;
-  /** Aktueller Serverstand des eigenen Textes ("" = nichts eingetragen). */
+  /** Aktueller Serverstand des eigenen Mottos ("" = nichts eingetragen). */
   initial: string;
   onClose: () => void;
   onSaved: () => void;
@@ -41,9 +51,9 @@ export function AboutMeSheet({
   const [submitting, setSubmitting] = useState(false);
 
   const trimmed = text.trim();
-  const tooLong = trimmed.length > ABOUT_ME_MAX;
+  const tooLong = trimmed.length > MOTTO_MAX;
   const dirty = trimmed !== initial.trim();
-  const remaining = ABOUT_ME_MAX - trimmed.length;
+  const remaining = MOTTO_MAX - trimmed.length;
 
   const close = () => {
     if (submitting) return;
@@ -58,10 +68,11 @@ export function AboutMeSheet({
     }
     setSubmitting(true);
     try {
-      // Leerer Text ⇒ null: der Eintrag wird entfernt, nicht als "" gespeichert
-      // (sonst gälte „eingetragen, aber leer" als Eintrag und die Karte
-      // reservierte Platz für nichts).
-      await data.updateMyProfile({ aboutMe: trimmed === "" ? null : trimmed });
+      // Nur `motto` senden — Teil-Patch: Disziplin/„läuft seit"/Sichtbarkeit
+      // bleiben unberührt. Leerer Text ⇒ null: der Eintrag wird entfernt, nicht
+      // als "" gespeichert (sonst gälte „eingetragen, aber leer" als Eintrag und
+      // die Karte reservierte Platz für nichts).
+      await data.updateMySelfProfile({ motto: trimmed === "" ? null : trimmed });
       if (trimmed === "") {
         showToast(t("aboutClearedToast"), { tone: "neutral" });
       } else {
@@ -103,10 +114,10 @@ export function AboutMeSheet({
         label={t("aboutField")}
         placeholder={t("aboutFieldPh")}
         hint={t("aboutFieldHint")}
-        error={tooLong ? t("aboutTooLong", { max: ABOUT_ME_MAX }) : undefined}
+        error={tooLong ? t("aboutTooLong", { max: MOTTO_MAX }) : undefined}
         value={text}
         rows={5}
-        maxLength={ABOUT_ME_MAX + 40}
+        maxLength={MOTTO_MAX + 40}
         onChange={(event) => setText(event.target.value)}
       />
       {/* Restzeichen: aria-live, damit Screenreader das Limit mitbekommen,

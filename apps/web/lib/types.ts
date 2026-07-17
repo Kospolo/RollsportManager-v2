@@ -137,7 +137,9 @@ export interface Member {
    *
    * Fehlt/leer = nichts eingetragen → die Karte zeigt dann schlicht nichts,
    * NIE „—" oder „unbekannt" (das würde eine Redaktion vortäuschen).
-   * Schreibweg: NUR updateMyProfile (PATCH /me, member_id = self).
+   * Quelle: club_members.profile_motto (Selbst-Profil, 0045/0053).
+   * Schreibweg: updateMySelfProfile → PATCH /clubs/{clubId}/members/{memberId}
+   * /profile (app.set_self_profile) — NICHT PATCH /me.
    */
   aboutMe?: string;
 }

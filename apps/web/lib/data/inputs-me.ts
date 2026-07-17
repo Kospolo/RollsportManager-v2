@@ -19,9 +19,11 @@ import type {
  */
 
 /**
- * Patch des EIGENEN Profils. Editierbar sind ausschließlich diese fünf Felder;
- * Rolle/Status/Gültigkeit sind serverseitig gesperrt (Trigger P0001). null
- * leert E-Mail, Geburtsdatum bzw. das Selbst-Profil.
+ * Patch des EIGENEN Profils (Stammdaten). Editierbar sind ausschließlich diese
+ * vier Felder; Rolle/Status/Gültigkeit sind serverseitig gesperrt (Trigger
+ * P0001). null leert E-Mail bzw. Geburtsdatum. Das Motto („Über mich") gehört
+ * NICHT hierher — es lebt auf profile_motto und wird über UpdateMySelfProfileInput
+ * geschrieben (PATCH /clubs/{clubId}/members/{memberId}/profile).
  */
 export interface UpdateMyProfileInput {
   firstName?: string;
@@ -29,23 +31,14 @@ export interface UpdateMyProfileInput {
   email?: string | null;
   /** ISO-Datum (YYYY-MM-DD) */
   birthDate?: string | null;
-  /**
-   * Selbst-Profil („Über mich") — freiwilliger Freitext, den JEDES
-   * Vereinsmitglied sehen darf. null/"" leert den Eintrag wieder.
-   * Wire-Feld: about_me (PATCH /me).
-   */
-  aboutMe?: string | null;
 }
-
-/** Max. Länge des Selbst-Profils — Client-Guard, der Server ist die Wahrheit. */
-export const ABOUT_ME_MAX = 280;
 
 /**
  * Selbst-Profil-Grenzen — deckungsgleich mit den DB-CHECK-Constraints (0045:
  * club_members_profile_motto_len_chk = 140, _discipline_len_chk = 60) und dem
  * memberSelfProfileUpdateSchema der API. Client-Guard; die Wahrheit steht in der
- * Datenbank. Bewusst NICHT ABOUT_ME_MAX (280): das war der alte, nie
- * persistierte about_me-Pfad — profile_motto ist auf 140 begrenzt.
+ * Datenbank. MOTTO_MAX (140) ist die Grenze für „Über mich" (profile_motto) —
+ * es gab früher einen nie persistierten about_me-Pfad mit 280; der ist tot.
  */
 export const MOTTO_MAX = 140;
 export const DISCIPLINE_MAX = 60;

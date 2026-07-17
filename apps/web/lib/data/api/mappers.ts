@@ -73,21 +73,6 @@ function mapMemberStatus(s: M.MemberStatus): MemberStatus {
   return s;
 }
 
-/**
- * Selbst-Profil aus dem Wire-Objekt lesen. Das Feld `about_me` ergänzt gerade
- * der Backend-Trupp; solange die GENERIERTEN Contract-Typen es nicht kennen,
- * geht es nur über diesen eng gefassten Cast (Contracts werden bewusst NICHT
- * hier regeneriert — das macht der Zusammenführer einmal).
- *
- * ⚠️ NACH der Regenerierung: Cast entfernen und direkt `w.about_me` lesen.
- * Leerstring → undefined, damit „eingetragen, aber leer" nicht als Eintrag gilt.
- */
-function aboutMeOf(w: unknown): string | undefined {
-  const value = (w as { about_me?: string | null }).about_me;
-  const trimmed = typeof value === "string" ? value.trim() : "";
-  return trimmed ? trimmed : undefined;
-}
-
 export function mapMember(w: M.ClubMember): Member {
   return {
     id: w.id,
@@ -102,7 +87,9 @@ export function mapMember(w: M.ClubMember): Member {
     joinedAt: w.joined_on ?? w.created_at.slice(0, 10),
     guestAccessUntil: w.role === "guest_coach" ? (w.valid_until ?? undefined) : undefined,
     avatarUrl: mediaUrl(w.avatar_url),
-    aboutMe: aboutMeOf(w),
+    // „Über mich" IST das selbst gepflegte profile_motto (0045/0053). Leerstring
+    // → undefined, damit „eingetragen, aber leer" nicht als Eintrag gilt.
+    aboutMe: w.profile_motto?.trim() || undefined,
   };
 }
 
@@ -392,7 +379,6 @@ function mapMyProfileMembership(w: M.MeMembership): MyProfileMembership {
     joinedOn: w.joined_on ?? undefined,
     validUntil: w.valid_until ?? undefined,
     avatarUrl: mediaUrl(w.avatar_url),
-    aboutMe: aboutMeOf(w),
     createdAt: w.created_at,
     updatedAt: w.updated_at,
   };

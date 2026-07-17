@@ -130,7 +130,7 @@ export type {
   UpdateMyProfileInput,
   UpdateMySelfProfileInput,
 } from "./inputs-me";
-export { ABOUT_ME_MAX, DISCIPLINE_MAX, MOTTO_MAX, SKATING_SINCE_MIN } from "./inputs-me";
+export { DISCIPLINE_MAX, MOTTO_MAX, SKATING_SINCE_MIN } from "./inputs-me";
 export type { CreateAssessmentInput, MemberProfileRepository } from "./inputs-memberprofile";
 export type {
   CapabilityEnforcement,
