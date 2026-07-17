@@ -1218,4 +1218,70 @@ from (values
   ('ca100000-0000-4000-8000-000000000005'::uuid,   -60000::bigint, 'Sonstige Ausgaben')
 ) as v(category_id, planned_cents, note);
 
+-- ----------------------------------------------------------------------------
+-- Foto-Einwilligungen (migration 0039) — der KONTRAST, der die Anzeige-Wache
+-- sichtbar macht. Ohne echte Zeilen haelt der Nutzer die Markierung fuer kaputt.
+--
+--   Katrin Grünewald (a-09, Erwachsene) willigt SELBST in photos_internal ein.
+--   Für ihre Tochter Lina (a-07, Kind) willigt sie als eingetragener Vormund
+--   ein — beide erscheinen später markiert AUF dem Profil.
+--   Für ihre zweite Tochter Emma (a-08) liegt BEWUSST keine Einwilligung vor:
+--   Emma wird markiert (Metadatum), erscheint aber NICHT — auch nicht für Staff.
+--
+-- Der enforce_consent_art8-Trigger (0039) prüft jede Zeile: Selbst-Erklärung
+-- der Erwachsenen ohne Geburtsdatum ist gültig; die Eltern-Erklärung fürs Kind
+-- ist gültig, weil die Guardianship a-09→a-07 eingetragen ist.
+-- ----------------------------------------------------------------------------
+insert into app.consents
+  (club_id, member_id, subject_profile_id, purpose, granted, granted_by_profile_id, policy_version)
+values
+  -- Katrin selbst (Erwachsene, eigenes Konto)
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   '90000000-0000-4000-8000-000000000009', 'photos_internal', true,
+   '90000000-0000-4000-8000-000000000009', 'photos-internal-2026-05'),
+  -- Lina (Kind), erklärt durch Vormund Katrin
+  ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000007',
+   null, 'photos_internal', true,
+   '90000000-0000-4000-8000-000000000009', 'photos-internal-2026-05');
+
+-- ----------------------------------------------------------------------------
+-- Foto-Markierungen (migration 0056) — 3 Tags, markiert von Coach Sandra (a-01).
+--   * Katrin (a-09)  auf dem Gruppenfoto     — MIT Einwilligung  -> sichtbar
+--   * Lina   (a-07)  auf der Siegerehrung    — MIT Einwilligung  -> sichtbar
+--   * Emma   (a-08)  auf dem Trainingsfoto   — OHNE Einwilligung -> markiert,
+--                                              erscheint NICHT (auch nicht Staff)
+-- ----------------------------------------------------------------------------
+insert into app.photo_tags
+  (id, club_id, gallery_item_id, member_id, tagged_by_member_id)
+values
+  ('f0000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   '6a110000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   'a0000000-0000-4000-8000-000000000001'),
+  ('f0000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   '6a110000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000007',
+   'a0000000-0000-4000-8000-000000000001'),
+  ('f0000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   '6a110000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000008',
+   'a0000000-0000-4000-8000-000000000001');
+
+-- ----------------------------------------------------------------------------
+-- Küren-Bilder (migration 0057) — 2 Bild-Assets (Metadaten, Blueprint §4) +
+-- Verknüpfung an zwei Küren. Die übrigen Küren bleiben ohne Bild (Normalfall).
+-- ----------------------------------------------------------------------------
+insert into app.media_assets (id, club_id, bucket, storage_path, mime_type, size_bytes, sha256, created_by)
+values
+  ('ab000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'routine-image', 'clubs/rsv-neckarsulm/routines/feuervogel-cover.png', 'image/png',
+   84210, encode(sha256('rsm2-demo-feuervogel-cover'::bytea), 'hex'),
+   '90000000-0000-4000-8000-000000000001'),
+  ('ab000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'routine-image', 'clubs/rsv-neckarsulm/routines/sommerregen-cover.png', 'image/png',
+   77120, encode(sha256('rsm2-demo-sommerregen-cover'::bytea), 'hex'),
+   '90000000-0000-4000-8000-000000000001');
+
+update app.routines set image_asset_id = 'ab000000-0000-4000-8000-000000000001'
+  where id = 'd0000000-0000-4000-8000-000000000001';
+update app.routines set image_asset_id = 'ab000000-0000-4000-8000-000000000002'
+  where id = 'd0000000-0000-4000-8000-000000000003';
+
 commit;

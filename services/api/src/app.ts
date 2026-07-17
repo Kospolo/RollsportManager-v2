@@ -50,6 +50,7 @@ import { chatRouter } from './routes/chat.js';
 import { checkinsRouter } from './routes/checkins.js';
 import { regionalEventsRouter } from './routes/regional-events.js';
 import { galleryRouter } from './routes/gallery.js';
+import { photoTagsRouter } from './routes/photo-tags.js';
 import { documentsRouter } from './routes/documents.js';
 import { reportsRouter } from './routes/reports.js';
 import { departmentsRouter } from './routes/departments.js';
@@ -170,6 +171,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', checkinsRouter);
   app.route('/', regionalEventsRouter);
   app.route('/', galleryRouter);
+  app.route('/', photoTagsRouter);
   app.route('/', documentsRouter);
   app.route('/', reportsRouter);
   app.route('/', departmentsRouter);
