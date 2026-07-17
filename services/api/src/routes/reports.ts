@@ -310,7 +310,10 @@ reportsRouter.openapi(
 // Es bleibt EIN Gate: anniversaries >= read_team (die Faehigkeit selbst, im
 // Admin abschaltbar).
 //
-// JUBILAEEN SIND DESHALB AN member_contact >= read_all GEBUNDEN, Geburtstage nicht.
+// JUBILAEEN SIND DESHALB AN "darf joined_on im Roster sehen" GEBUNDEN, Geburtstage
+// nicht. (Bis 0045 hiess diese Bedingung member_contact >= read_all; seither ist es
+// woertlich maySeeJoinedOn() aus members.ts — siehe den Nachtrag am Ende dieses Kopfs
+// und die Begruendung an der Fundstelle im Handler.)
 // Ein frueherer Stand liess die Jubilaeums-Zeilen fuer alle stehen und nannte das
 // im Kommentar "eine bewusste Entscheidung des Betreibers". Das war es nicht — es
 // war ein Leck, und zwar ein gemessenes: aus `date` minus `years` wurde joined_on
@@ -327,12 +330,23 @@ reportsRouter.openapi(
 //
 // Die Regel ist dieselbe wie ueberall sonst hier:
 //   Die API darf ihren eigenen Spaltenschutz nicht hintergehen.
-// member_contact >= read_all ist im Seed deckungsgleich mit maySeeFullRoster
-// (members.ts:67-70) — wer joined_on im Roster sehen darf, sieht es auch hier.
 //
-// VERHALTEN: coach/member/guest_coach sehen ALLE Geburtstage (Tag+Monat, years=null)
-// und KEINE Jubilaeen. Vorstand/Kasse sehen beides inkl. "10 Jahre dabei" — also
-// genau die, die das Jubilaeum ohnehin ausrichten.
+// ### NACHTRAG 0045 — DIESER KOPF SAGTE DAS GEGENTEIL DES CODES ###
+// Hier stand: "member_contact >= read_all ist im Seed deckungsgleich mit
+// maySeeFullRoster (members.ts:67-70)" und "VERHALTEN: coach/member/guest_coach
+// sehen ALLE Geburtstage und KEINE Jubilaeen".
+// Beides stimmt seit 0045 nicht mehr: der coach sieht joined_on im Roster
+// (JOINED_ON_ROLES) und bekommt damit auch die Jubilaeen — nachgemessen, 5 Zeilen.
+// Der Handler wurde von Trupp 4 richtig umgestellt (maySeeJoinedOn), nur dieser
+// Kopf blieb stehen. Ein Kommentar, der das Gegenteil des Codes behauptet, ist
+// schlimmer als keiner: der naechste Leser "korrigiert" sonst den Code auf den
+// Kommentar. Beim Zusammenfuehren nachgezogen.
+//
+// VERHALTEN (gemessen, dev-stack + Seed):
+//   owner/admin/moderator/treasurer/coach -> Geburtstage UND Jubilaeen (5 Zeilen)
+//   member/guest_coach                    -> NUR Geburtstage (years=null), 0 Jubilaeen
+// Die Zusicherung dahinter ist unveraendert und gilt woertlich fuer alle 7 Rollen:
+//   Jubilaeums-Zeilen genau dann, wenn derselben Person der Roster joined_on zeigt.
 // ============================================================================
 reportsRouter.openapi(
   createRoute({
