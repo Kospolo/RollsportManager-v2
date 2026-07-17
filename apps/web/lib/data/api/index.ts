@@ -20,6 +20,7 @@ import { moduleApiRepositoryRbac } from "./modules-rbac";
 import { moduleApiRepositoryRegistrierung } from "./modules-registrierung";
 import { moduleApiRepositorySupport } from "./modules-support";
 import { moduleApiRepositoryOrg } from "./modules-org";
+import { moduleApiRepositorySparten } from "./modules-sparten";
 import { moduleApiRepositoryPlatform } from "./modules-platform";
 import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
 import {
@@ -442,6 +443,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleApiRepositoryOrg,
+
+  /* ---------- Module: Sparten (fachliche Großbereiche, n:m Mitglieder) ---------- */
+  ...moduleApiRepositorySparten,
 
   /* ---------- Module: Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen (Wettkampf) ---------- */
   ...moduleApiRepositoryWettkampf,

@@ -66,6 +66,11 @@ export type * from "./types-financec";
 // als Typen re-exportiert.
 export type * from "./types-org";
 
+// Sparten-Typen (fachliche Grossbereiche wie Rollkunstlauf/Eiskunstlauf,
+// Migration 0062–0064) leben ausgelagert in lib/types-sparten.ts, sind aber
+// weiterhin unter "@/lib/types" verfügbar.
+export type * from "./types-sparten";
+
 // Plattform-/Betreiber-Konsolen-Typen ((super)-Bereich: Lizenzen, Zahlungen,
 // Produkte, System-Info, Plattform-Einstellungen) leben ausgelagert in
 // lib/types-platform.ts, sind aber weiterhin unter "@/lib/types" verfügbar.
@@ -160,6 +165,11 @@ export interface Team {
   coachIds: Id[];
   /** Läufer:innen des Teams (Roster ohne Trainerstab). */
   skaterIds: Id[];
+  /**
+   * Sparte, zu der dieses Team gehört (Migration 0064) — null/undefined, wenn
+   * nicht zugeordnet. Gesetzt/gelöscht über data.setTeamSparte (can_manage_sparten).
+   */
+  sparteId?: Id | null;
 }
 
 /* ---------- Termine, RSVP & Anwesenheit ---------- */

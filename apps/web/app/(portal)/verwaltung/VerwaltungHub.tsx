@@ -30,6 +30,7 @@ const HREF = {
   roles: "/verwaltung/rollen",
   modules: "/verwaltung/module",
   teams: "/verwaltung/teams",
+  sparten: "/sparten",
   settings: "/verwaltung/verein",
   platform: "/super",
 } as const;
@@ -84,6 +85,17 @@ export function VerwaltungHub() {
       tone: "success",
       titleKey: "tileTeamsTitle",
       descKey: "tileTeamsDesc",
+    });
+  }
+  // Sparten: eigenes Gate (owner/admin/treasurer + Plattform-Admin, NICHT
+  // moderator) — deckungsgleich mit can_manage_sparten auf dem Server.
+  if (perms.canManageSparten) {
+    tiles.push({
+      href: HREF.sparten,
+      icon: "sparkle",
+      tone: "brand",
+      titleKey: "tileSpartenTitle",
+      descKey: "tileSpartenDesc",
     });
   }
   if (canManageClub) {

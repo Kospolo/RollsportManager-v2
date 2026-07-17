@@ -154,6 +154,12 @@ export type {
   UpdateLockerInput,
 } from "./inputs-org";
 export type {
+  CreateSparteInput,
+  SetSparteMembersInput,
+  SpartenRepository,
+  UpdateSparteInput,
+} from "./inputs-sparten";
+export type {
   PlatformConsoleRepository,
   PlatformPaymentsQuery,
   PlatformRoutinesQuery,

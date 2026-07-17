@@ -18,6 +18,13 @@ import { readSession } from "@/lib/auth/storage";
 
 const CLUB_ADMIN_ROLES: readonly MemberRole[] = ["owner", "admin", "moderator"];
 const MANAGE_ROLES: readonly MemberRole[] = ["owner", "admin", "moderator", "treasurer"];
+/**
+ * Sparten verwalten (Migration 0062–0064, can_manage_sparten). BEWUSST OHNE
+ * moderator — anders als is_club_admin. Deckungsgleich mit dem Server: Anlegen/
+ * Aendern/(De)Aktivieren/Loeschen/Roster/Team-Zuordnung duerfen nur owner/admin/
+ * treasurer (+ Plattform-Admin, siehe canManageSparten).
+ */
+const MANAGE_SPARTEN_ROLES: readonly MemberRole[] = ["owner", "admin", "treasurer"];
 const TRAINER_ROLES: readonly MemberRole[] = ["owner", "admin", "moderator", "coach"];
 /** Ziele, die ein Moderator NICHT umstufen darf. */
 const MODERATOR_PROTECTED: readonly MemberRole[] = ["owner", "admin", "moderator"];
@@ -33,6 +40,11 @@ export interface Permissions {
   canManageMembers: boolean;
   /** treasurer/moderator/admin/owner. */
   canManageFinance: boolean;
+  /**
+   * Sparten verwalten: owner/admin/treasurer ODER Plattform-Admin (NICHT
+   * moderator/coach/member). Nur Sichtbarkeit — der Server (RLS) ist die Grenze.
+   */
+  canManageSparten: boolean;
   /** Plattform-Super-Admin (Token-Claim, keine Club-Rolle). */
   isPlatformAdmin: boolean;
   /** Darf die Rolle dieses Ziels (Anzeige) geändert werden? */
@@ -67,6 +79,7 @@ export function permissions(
     isClubAdmin,
     canManageMembers: canManage,
     canManageFinance: canManage,
+    canManageSparten: isPlatformAdmin || (role != null && MANAGE_SPARTEN_ROLES.includes(role)),
     isPlatformAdmin,
     canChangeRole(target) {
       if (role === "owner" || role === "admin") return true;

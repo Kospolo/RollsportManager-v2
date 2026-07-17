@@ -29,6 +29,7 @@ import { moduleRepositoryRbac } from "./modules-rbac";
 import { moduleRepositoryRegistrierung } from "./modules-registrierung";
 import { moduleRepositorySupport } from "./modules-support";
 import { moduleRepositoryOrg } from "./modules-org";
+import { moduleRepositorySparten } from "./modules-sparten";
 import { moduleRepositoryPlatform } from "./modules-platform";
 import { moduleRepositoryWettkampf } from "./modules-wettkampf";
 
@@ -336,6 +337,16 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Abteilungen, Schließfächer, Jubiläen (Organisation) ---------- */
   ...moduleRepositoryOrg,
+
+  /* ---------- Module: Sparten (fachliche Großbereiche, n:m Mitglieder) ---------- */
+  ...moduleRepositorySparten,
+  async setTeamSparte(teamId, sparteId): Promise<Team> {
+    // Team->Sparte in mock/index.ts, weil hier der teamStore lebt.
+    const team = teamStore.find((t) => t.id === teamId);
+    if (!team) throw new Error(`Team ${teamId} nicht gefunden (mock)`);
+    team.sparteId = sparteId;
+    return team;
+  },
 
   /* ---------- Module: Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen (Wettkampf) ---------- */
   ...moduleRepositoryWettkampf,

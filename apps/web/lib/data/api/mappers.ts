@@ -127,6 +127,7 @@ export function mapTeam(w: M.Team): Team {
     ageGroup: w.age_group ?? "",
     coachIds: w.coach_member_ids,
     skaterIds: w.skater_member_ids,
+    sparteId: w.sparte_id ?? null,
   };
 }
 
