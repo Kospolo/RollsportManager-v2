@@ -17,8 +17,11 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("navLabel")}
-      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-surface px-1 pb-[env(safe-area-inset-bottom)] pt-1 lg:hidden"
-      style={{ gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))` }}
+      className="fixed inset-x-0 bottom-0 z-30 grid border-t border-line bg-surface px-1 pt-1 lg:hidden"
+      style={{
+        gridTemplateColumns: `repeat(${navItems.length}, minmax(0, 1fr))`,
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
     >
       {navItems.map((item) => {
         const active = isActive(pathname, item.href);
