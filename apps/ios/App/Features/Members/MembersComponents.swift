@@ -47,6 +47,7 @@ enum MembersL10n {
     static func statusKey(_ status: MemberStatus) -> LocalizedStringKey {
         switch status {
         case .pending: "members.status.pending"
+        case .rejected: "members.status.rejected"
         case .active: "members.status.active"
         case .inactive: "members.status.inactive"
         case .left: "members.status.left"
@@ -57,6 +58,7 @@ enum MembersL10n {
         switch status {
         case .active: .success
         case .pending: .info
+        case .rejected: .danger
         case .inactive, .left: .neutral
         }
     }

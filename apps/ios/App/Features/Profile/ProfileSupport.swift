@@ -81,6 +81,7 @@ enum ProfileFormat {
         switch status {
         case .active: return "profil.status.active"
         case .pending: return "profil.status.pending"
+        case .rejected: return "profil.status.rejected"
         case .inactive: return "profil.status.inactive"
         case .left: return "profil.status.left"
         }
@@ -91,6 +92,7 @@ enum ProfileFormat {
         switch status {
         case .active: return .success
         case .pending: return .info
+        case .rejected: return .danger
         case .inactive, .left: return .neutral
         }
     }

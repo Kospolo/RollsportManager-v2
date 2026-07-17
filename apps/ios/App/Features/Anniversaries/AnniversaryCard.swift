@@ -22,11 +22,15 @@ struct AnniversaryCard: View {
                     .lineLimit(1)
                 HStack(spacing: Theme.Spacing.s2) {
                     RSMStatusPill(text: JubilaeenFormat.kindLabel(item.kind), kind: style.pill)
-                    Text(JubilaeenFormat.milestone(item.kind, years: item.years))
-                        .font(Theme.Fonts.caption.weight(.semibold))
-                        .foregroundStyle(Theme.Colors.inkSoft)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
+                    // years == nil = Geburtstag ohne bekanntes Geburtsjahr (kein Alter).
+                    // Web-Referenz blendet das Meilenstein-Label dann aus (Chip bleibt).
+                    if let years = item.years {
+                        Text(JubilaeenFormat.milestone(item.kind, years: years))
+                            .font(Theme.Fonts.caption.weight(.semibold))
+                            .foregroundStyle(Theme.Colors.inkSoft)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

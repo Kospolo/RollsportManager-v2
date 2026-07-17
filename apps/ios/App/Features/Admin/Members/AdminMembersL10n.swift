@@ -118,6 +118,7 @@ enum AdminMembersL10n {
         case .active: "mitglieder.status.active"
         case .inactive: "mitglieder.status.inactive"
         case .pending: "mitglieder.status.pending"
+        case .rejected: "mitglieder.status.rejected"
         case .left: "mitglieder.status.left"
         }
     }
@@ -126,6 +127,7 @@ enum AdminMembersL10n {
         switch status {
         case .active: .success
         case .pending: .info
+        case .rejected: .danger
         case .inactive, .left: .neutral
         }
     }

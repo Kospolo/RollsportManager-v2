@@ -13251,6 +13251,22 @@
         }
       }
     },
+    "members.status.rejected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgelehnt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejected"
+          }
+        }
+      }
+    },
     "mitglieder.alert.ok": {
       "localizations": {
         "de": {
@@ -14359,6 +14375,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pending"
+          }
+        }
+      }
+    },
+    "mitglieder.status.rejected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgelehnt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejected"
           }
         }
       }
@@ -19049,6 +19081,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pending"
+          }
+        }
+      }
+    },
+    "profil.status.rejected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgelehnt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejected"
           }
         }
       }
