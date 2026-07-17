@@ -48,6 +48,45 @@ export const teamsViewDict = {
     emptyRoster: "Kader noch leer",
     moreNames: "+{n} weitere",
     teamRoster: "Kader von {team}",
+    openTeam: "Team öffnen",
+    openTeamAria: "Team {team} öffnen — Kader und Trainerstab ansehen",
+
+    // Detailseite — Kopf & Navigation
+    breadcrumb: "Brotkrumen",
+    backCrumb: "Teams",
+    backToTeams: "Zu allen Teams",
+    notFoundTitle: "Team nicht gefunden",
+    notFoundBody:
+      "Dieses Team gibt es nicht (mehr) — vielleicht wurde es umbenannt oder entfernt.",
+
+    // Detailseite — Kader
+    rosterTitle: "Kader",
+    rosterEmptyTitle: "Kader noch leer",
+    rosterEmptyBody:
+      "Sobald die Vereinsleitung Sportler:innen zuordnet, erscheinen sie hier als Karten.",
+    openProfileAria: "Profil von {name} öffnen",
+    bornYear: "Jg. {year}",
+
+    // Detailseite — Rollen (Trainerstab-Karten)
+    roleOwner: "Vereinsleitung",
+    roleAdmin: "Verwaltung",
+    roleModerator: "Moderation",
+    roleTreasurer: "Kassenwart:in",
+    roleCoach: "Trainer:in",
+    roleGuest: "Gasttrainer:in",
+    roleMember: "Mitglied",
+
+    // Detailseite — Küren
+    kuerenTitle: "Küren des Teams",
+    kuerenAllLink: "Alle Küren",
+    kuerCountOne: "1 Kür",
+    kuerCountMany: "{n} Küren",
+    openRoutineAria: "Kür „{title}“ öffnen",
+
+    // Detailseite — Termine
+    eventsTitle: "Nächste Termine",
+    eventsAllLink: "Alle Termine",
+    openEventAria: "Termin „{title}“ öffnen",
   },
   en: {
     eyebrow: "Club",
@@ -83,6 +122,45 @@ export const teamsViewDict = {
     emptyRoster: "Roster still empty",
     moreNames: "+{n} more",
     teamRoster: "Roster of {team}",
+    openTeam: "Open team",
+    openTeamAria: "Open team {team} — view roster and coaches",
+
+    // Detail page — header & navigation
+    breadcrumb: "Breadcrumb",
+    backCrumb: "Teams",
+    backToTeams: "Back to all teams",
+    notFoundTitle: "Team not found",
+    notFoundBody:
+      "This team does not exist (any more) — it may have been renamed or removed.",
+
+    // Detail page — roster
+    rosterTitle: "Roster",
+    rosterEmptyTitle: "Roster still empty",
+    rosterEmptyBody:
+      "As soon as club management assigns skaters, they show up here as cards.",
+    openProfileAria: "Open {name}'s profile",
+    bornYear: "Born {year}",
+
+    // Detail page — roles (coach cards)
+    roleOwner: "Club owner",
+    roleAdmin: "Administration",
+    roleModerator: "Moderation",
+    roleTreasurer: "Treasurer",
+    roleCoach: "Coach",
+    roleGuest: "Guest coach",
+    roleMember: "Member",
+
+    // Detail page — routines
+    kuerenTitle: "Team routines",
+    kuerenAllLink: "All routines",
+    kuerCountOne: "1 routine",
+    kuerCountMany: "{n} routines",
+    openRoutineAria: "Open routine “{title}”",
+
+    // Detail page — dates
+    eventsTitle: "Upcoming dates",
+    eventsAllLink: "All dates",
+    openEventAria: "Open event “{title}”",
   },
 } satisfies Dict;
 

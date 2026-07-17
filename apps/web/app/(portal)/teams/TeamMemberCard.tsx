@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useT } from "@/lib/i18n";
 import { fullName } from "@/lib/data";
 import type { Member, Team } from "@/lib/types";
@@ -14,8 +15,12 @@ import { rosterOf } from "./derive";
 /**
  * Eine Team-Kachel der Mitgliederansicht (REIN LESEND): Name + Altersklasse,
  * Trainerstab (Avatar + Klartext), Sportler:innen als Avatar-Stapel mit Zahl
- * und ersten Namen. Keine Aktionen — die Verwaltung läuft über
- * /verwaltung/teams. „Mein Team"-Badge, wenn `mine`.
+ * und ersten Namen. „Mein Team"-Badge, wenn `mine`.
+ *
+ * DIE GANZE KARTE ÖFFNET das Team (/teams/{id}) — der Team-Name trägt den Link,
+ * ein ::before-Overlay macht die ganze Kachel klickbar, unten steht die klare
+ * „Team öffnen"-Affordanz. Die Detailseite ist rein lesend (Kader ansehen),
+ * die Verwaltung (Anlegen/Kader) läuft weiter über /verwaltung/teams.
  */
 
 const MAX_NAMES = 4;
@@ -45,13 +50,23 @@ export function TeamMemberCard({
   const restNames = skaters.length - shownNames.length;
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="group relative flex flex-col gap-4 transition-[border-color,box-shadow,transform] duration-150 hover:border-line-strong hover:shadow-pop focus-within:border-brand active:scale-[0.99]">
       <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-brand-soft text-brand-ink">
+        <span className="grid h-10 w-10 flex-none place-items-center rounded-md bg-brand-soft text-brand-ink transition-colors duration-150 group-hover:bg-brand group-hover:text-brand-contrast">
           <Icon name="teams" className="ic h-5 w-5" />
         </span>
         <div className="grid min-w-0 gap-1">
-          <h3 className="truncate font-display text-h3 tracking-[-0.01em] text-ink">{team.name}</h3>
+          <h3 className="truncate font-display text-h3 tracking-[-0.01em] text-ink">
+            {/* ::before deckt die ganze Karte ab → überall klickbar; der Name
+                trägt den Link (Fokusring liegt um ihn). */}
+            <Link
+              href={`/teams/${team.id}`}
+              aria-label={t("openTeamAria", { team: team.name })}
+              className="text-ink no-underline before:absolute before:inset-0 before:content-[''] hover:underline"
+            >
+              {team.name}
+            </Link>
+          </h3>
           <span className="flex flex-wrap items-center gap-2">
             {team.ageGroup ? (
               <Badge tone="neutral">{team.ageGroup}</Badge>
@@ -115,6 +130,17 @@ export function TeamMemberCard({
           </div>
         )}
       </div>
+
+      {/* „Team öffnen"-Affordanz — rein dekorativ (der Name-Link trägt die
+          Aktion + aria-label); pointer-events-none, damit das ::before-Overlay
+          die Klicks bekommt. Auf Hover wandert sie ins Beere. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none flex items-center gap-1 self-start text-[13px] font-bold text-ink-soft transition-colors duration-150 group-hover:text-brand"
+      >
+        {t("openTeam")}
+        <Icon name="chevronRight" className="ic h-4 w-4" />
+      </span>
     </Card>
   );
 }

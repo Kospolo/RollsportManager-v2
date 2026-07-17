@@ -1,4 +1,6 @@
-import type { Member, Team } from "@/lib/types";
+import type { Member, MemberRole, Team } from "@/lib/types";
+import type { BadgeTone } from "@/components/ui/Badge";
+import type { TeamsViewKey } from "./i18n";
 
 /**
  * Abgeleitete Sichten der Teams-Mitgliederansicht — REINE Funktionen über die
@@ -56,3 +58,40 @@ export function isMyTeam(team: Team, me: Pick<Member, "id" | "teamIds">): boolea
     me.teamIds.includes(team.id)
   );
 }
+
+/* ---------- Rollen (nur Anzeige) ---------- */
+
+/**
+ * Rolle → Dictionary-Key der Rollen-Beschriftung (lokal gehalten, damit die
+ * Teams-Spur keine Abhängigkeit in den Mitglieder-Bereich zieht — dieselben
+ * Klartext-Labels, im Teams-Katalog gepflegt).
+ */
+export function roleKey(role: MemberRole): TeamsViewKey {
+  switch (role) {
+    case "owner":
+      return "roleOwner";
+    case "admin":
+      return "roleAdmin";
+    case "moderator":
+      return "roleModerator";
+    case "treasurer":
+      return "roleTreasurer";
+    case "coach":
+      return "roleCoach";
+    case "guest_coach":
+      return "roleGuest";
+    default:
+      return "roleMember";
+  }
+}
+
+/** Pill-Ton je Rolle — Status immer Farbe + Wort (Label via roleKey). */
+export const ROLE_TONE: Record<MemberRole, BadgeTone> = {
+  owner: "brand",
+  admin: "info",
+  moderator: "info",
+  treasurer: "info",
+  coach: "success",
+  guest_coach: "neutral",
+  member: "neutral",
+};
