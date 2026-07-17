@@ -49,6 +49,27 @@ export interface GalleryItem {
   createdAt: string;
 }
 
+/* ---------- Foto-Markierungen ("wer ist auf dem Bild") ---------- */
+
+/**
+ * Eine Foto-Markierung auf einem Galerie-Objekt (Migration 0056, „diese Person
+ * ist auf dem Bild"). MARKIEREN dürfen nur Staff (Trainer/Vorstand/Moderator,
+ * OHNE Kassenwart) — das ist ein reines Metadatum ohne Einwilligungsprüfung.
+ * Die ANZEIGE auf dem 360-Profil ist zusätzlich an die Foto-Einwilligung
+ * gebunden; das entscheidet der Server, nicht dieses View-Modell.
+ * ENTFERNEN darf die markierte Person, ein Vormund ODER Staff (serverseitig).
+ */
+export interface PhotoTag {
+  id: Id;
+  clubId: Id;
+  galleryItemId: Id;
+  /** Die markierte Person. */
+  memberId: Id;
+  /** Wer markiert hat (aus dem Token aufgelöst). */
+  taggedByMemberId: Id;
+  createdAt: string;
+}
+
 /* ---------- Dokumente (PDFs u. a., PRO) ---------- */
 
 /**

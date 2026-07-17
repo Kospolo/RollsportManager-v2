@@ -7,10 +7,11 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { fullName } from "@/lib/data";
 import { formatDate } from "@/lib/format";
 import { useLocale, useT } from "@/lib/i18n";
-import { galleryKindLabels, type GalleryItem, type Member } from "@/lib/types";
+import { galleryKindLabels, type GalleryItem, type Id, type Member } from "@/lib/types";
 import { galerieDict } from "../i18n";
 import { useMediaUrl } from "./MediaImage";
 import { downloadName } from "./media";
+import { PhotoTagSection } from "./PhotoTagSection";
 
 /**
  * Lightbox/Detail eines Galerie-Objekts als Modal: Vollbild bzw. Video-Player
@@ -21,11 +22,20 @@ import { downloadName } from "./media";
 export function GalleryLightbox({
   item,
   author,
+  members,
+  canTag,
+  currentMemberId,
   onClose,
 }: {
   item: GalleryItem;
   /** Aufgelöstes Mitglied zu uploadedByMemberId (kann fehlen) */
   author?: Member;
+  /** Redigierte Mitgliederliste — Auswahlquelle der Markierung (RLS-gescoped). */
+  members: Member[];
+  /** Darf der Betrachter markieren (Staff, ohne Kassenwart)? Nur Sichtbarkeit. */
+  canTag: boolean;
+  /** Eigene member_id (für „eigene Markierung entfernen") — kann null sein. */
+  currentMemberId: Id | null;
   onClose: () => void;
 }) {
   const t = useT(galerieDict);
@@ -95,6 +105,13 @@ export function GalleryLightbox({
             {formatDate(item.createdAt, locale)}
           </span>
         </div>
+
+        <PhotoTagSection
+          itemId={item.id}
+          members={members}
+          canTag={canTag}
+          currentMemberId={currentMemberId}
+        />
       </div>
     </Modal>
   );

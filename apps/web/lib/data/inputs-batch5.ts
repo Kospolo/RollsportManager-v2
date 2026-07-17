@@ -1,4 +1,4 @@
-import type { ClubEntitlement, DocumentItem, GalleryItem, Id } from "@/lib/types";
+import type { ClubEntitlement, DocumentItem, GalleryItem, Id, PhotoTag } from "@/lib/types";
 
 /**
  * Eingabe-Typen + Repository-Slice der Batch-5-Module (Galerie, Dokumente,
@@ -65,6 +65,26 @@ export interface Batch5Repository {
   uploadGalleryItem(file: File, meta: GalleryUploadMeta): Promise<GalleryItem>;
   /** Galerie-Objekt soft-löschen (Trainer + PRO) — liefert die gelöschte ID zurück. */
   deleteGalleryItem(itemId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Foto-Markierungen ("wer ist auf dem Bild") ---------- */
+  /**
+   * Markierungen eines Galerie-Objekts (GET /gallery/{itemId}/tags). Die Sicht
+   * ist RLS-gescoped: Staff und Betroffene sehen alle, übrige nur eingewilligte.
+   * Das ist die VERWALTUNGS-Sicht der Galerie, NICHT die Profil-Anzeige.
+   */
+  listPhotoTags(galleryItemId: Id): Promise<PhotoTag[]>;
+  /**
+   * Eine Person auf einem Galerie-Objekt markieren (POST /photo-tags). Erlaubt
+   * NUR Staff (Trainer/Vorstand/Moderator, OHNE Kassenwart) — serverseitig
+   * erzwungen; tagged_by ergibt sich aus dem Token. Ein 403 bleibt möglich, auch
+   * wenn die UI den Knopf zeigt (der Server ist die Grenze).
+   */
+  tagPhoto(galleryItemId: Id, memberId: Id): Promise<PhotoTag>;
+  /**
+   * Eine Markierung entfernen (DELETE /photo-tags/{tagId}, Soft-Delete). Erlaubt
+   * der markierten Person, einem Vormund ODER Staff — serverseitig erzwungen.
+   */
+  removePhotoTag(tagId: Id): Promise<{ id: Id }>;
 
   /* ---------- Dokumente (PRO) ---------- */
   /** Dokumente des aktiven Vereins, neueste zuerst (Lesen = Mitglied + PRO). */

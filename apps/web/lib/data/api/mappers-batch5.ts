@@ -1,5 +1,11 @@
 import type * as M from "@/lib/api/generated";
-import type { ClubEntitlement, DocumentItem, EntitlementTier, GalleryItem } from "@/lib/types";
+import type {
+  ClubEntitlement,
+  DocumentItem,
+  EntitlementTier,
+  GalleryItem,
+  PhotoTag,
+} from "@/lib/types";
 
 /**
  * Mapper der Batch-5-Module (Galerie, Dokumente, Entitlement):
@@ -19,6 +25,17 @@ export function mapGalleryItem(w: M.GalleryItem): GalleryItem {
     sizeBytes: w.size_bytes ?? undefined,
     thumbnailKey: w.thumbnail_key ?? undefined,
     uploadedByMemberId: w.uploaded_by_member_id,
+    createdAt: w.created_at,
+  };
+}
+
+export function mapPhotoTag(w: M.PhotoTag): PhotoTag {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    galleryItemId: w.gallery_item_id,
+    memberId: w.member_id,
+    taggedByMemberId: w.tagged_by_member_id,
     createdAt: w.created_at,
   };
 }

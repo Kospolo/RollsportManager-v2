@@ -1,5 +1,11 @@
 import { club, members } from "@/lib/mock";
-import type { ClubEntitlement, DocumentItem, GalleryItem, GalleryKind } from "@/lib/types";
+import type {
+  ClubEntitlement,
+  DocumentItem,
+  GalleryItem,
+  GalleryKind,
+  PhotoTag,
+} from "@/lib/types";
 import type { DataRepository } from "../types";
 import { documentSeed, gallerySeed } from "./seed-batch5";
 
@@ -22,8 +28,33 @@ const nowIso = (): string => new Date().toISOString();
 const galleryStore: GalleryItem[] = gallerySeed.map((g) => ({ ...g }));
 const documentStore: DocumentItem[] = documentSeed.map((d) => ({ ...d }));
 
+/**
+ * In-Memory-Markierungen (Mock). Kein echter Rechte-/Einwilligungs-Check — die
+ * Wahrheit ist im api-Modus der Server (Migration 0056: Staff markiert, RLS +
+ * Einwilligung filtern die Sicht). Ein paar Seed-Markierungen zur Demo.
+ */
+const photoTagStore: PhotoTag[] = [
+  {
+    id: "ptag-01",
+    clubId,
+    galleryItemId: gallerySeed[0]?.id ?? "gal-01",
+    memberId: "m-16",
+    taggedByMemberId: members[0].id,
+    createdAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+  },
+  {
+    id: "ptag-02",
+    clubId,
+    galleryItemId: gallerySeed[0]?.id ?? "gal-01",
+    memberId: "m-07",
+    taggedByMemberId: members[0].id,
+    createdAt: new Date(Date.now() - 3 * 86_400_000 + 1000).toISOString(),
+  },
+];
+
 let gallerySeq = galleryStore.length;
 let docSeq = documentStore.length;
+let photoTagSeq = photoTagStore.length;
 
 /** Demo-Entitlement: Club A ist im Seed 'pro' (unbefristet). */
 const entitlement: ClubEntitlement = { clubId, pro: true, tier: "pro" };
@@ -35,6 +66,9 @@ type ModuleMethods = Pick<
   | "listGallery"
   | "uploadGalleryItem"
   | "deleteGalleryItem"
+  | "listPhotoTags"
+  | "tagPhoto"
+  | "removePhotoTag"
   | "listDocuments"
   | "uploadDocument"
   | "deleteDocument"
@@ -81,7 +115,41 @@ export const moduleRepositoryBatch5: ModuleMethods = {
   async deleteGalleryItem(itemId): Promise<{ id: string }> {
     const idx = galleryStore.findIndex((g) => g.id === itemId);
     if (idx >= 0) galleryStore.splice(idx, 1);
+    // Markierungen des Objekts mitnehmen (im api-Modus per composite-FK/RLS).
+    for (let i = photoTagStore.length - 1; i >= 0; i--) {
+      if (photoTagStore[i].galleryItemId === itemId) photoTagStore.splice(i, 1);
+    }
     return { id: itemId };
+  },
+
+  /* ---------- Foto-Markierungen ("wer ist auf dem Bild") ---------- */
+  async listPhotoTags(galleryItemId): Promise<PhotoTag[]> {
+    return photoTagStore
+      .filter((t) => t.galleryItemId === galleryItemId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .map((t) => ({ ...t }));
+  },
+  async tagPhoto(galleryItemId, memberId): Promise<PhotoTag> {
+    // Doppel-Markierung derselben Person vermeiden (im api-Modus via unique idx).
+    const existing = photoTagStore.find(
+      (t) => t.galleryItemId === galleryItemId && t.memberId === memberId,
+    );
+    if (existing) return { ...existing };
+    const created: PhotoTag = {
+      id: `ptag-local-${++photoTagSeq}`,
+      clubId,
+      galleryItemId,
+      memberId,
+      taggedByMemberId: currentMemberId,
+      createdAt: nowIso(),
+    };
+    photoTagStore.push(created);
+    return { ...created };
+  },
+  async removePhotoTag(tagId): Promise<{ id: string }> {
+    const idx = photoTagStore.findIndex((t) => t.id === tagId);
+    if (idx >= 0) photoTagStore.splice(idx, 1);
+    return { id: tagId };
   },
 
   /* ---------- Dokumente ---------- */

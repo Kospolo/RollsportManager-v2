@@ -63,7 +63,12 @@ export function GalerieScreen() {
   const items = core.status === "ready" ? core.data.items : NO_ITEMS;
 
   const isPro = entitlement?.pro ?? false;
-  const canWrite = isPro && (permissions(currentUser).isTrainer || dataSource === "mock");
+  const perms = permissions(currentUser);
+  const canWrite = isPro && (perms.isTrainer || dataSource === "mock");
+  // Markieren = Staff (Trainer/Vorstand/Moderator, OHNE Kassenwart) — deckt sich
+  // mit COACH_ROLES der API (photo-tags.ts). Nur Sichtbarkeit; der Server (403)
+  // ist die verbindliche Grenze. isTrainer schließt treasurer bereits aus.
+  const canTag = perms.isTrainer || dataSource === "mock";
 
   const { options, effectiveAlbum, filtered } = useMemo(() => {
     const albums = Array.from(
@@ -206,7 +211,14 @@ export function GalerieScreen() {
       )}
 
       {openItem && (
-        <GalleryLightbox item={openItem} author={openAuthor} onClose={() => setOpenId(null)} />
+        <GalleryLightbox
+          item={openItem}
+          author={openAuthor}
+          members={members}
+          canTag={canTag}
+          currentMemberId={currentUser?.id ?? null}
+          onClose={() => setOpenId(null)}
+        />
       )}
 
       <UploadGalleryDialog

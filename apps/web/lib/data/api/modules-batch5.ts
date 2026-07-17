@@ -1,7 +1,7 @@
 import { API_BASE_URL } from "../config";
 import type { DataRepository } from "../types";
 import { activeClubId, apiClient } from "./client";
-import { deriveEntitlement, mapDocument, mapGalleryItem } from "./mappers-batch5";
+import { deriveEntitlement, mapDocument, mapGalleryItem, mapPhotoTag } from "./mappers-batch5";
 import { authHeaders, mediaError, proGuard, uploadMedia } from "./media-fetch";
 
 /**
@@ -23,6 +23,9 @@ type ModuleMethods = Pick<
   | "listGallery"
   | "uploadGalleryItem"
   | "deleteGalleryItem"
+  | "listPhotoTags"
+  | "tagPhoto"
+  | "removePhotoTag"
   | "listDocuments"
   | "uploadDocument"
   | "deleteDocument"
@@ -65,6 +68,25 @@ export const moduleApiRepositoryBatch5: ModuleMethods = {
   },
   async deleteGalleryItem(itemId) {
     const deleted = await proGuard(apiClient.deleteGalleryByItemId(itemId), "Galerie");
+    return { id: deleted.id };
+  },
+
+  /* ---------- Foto-Markierungen ("wer ist auf dem Bild") ---------- */
+  // Die Tag-Endpunkte prüfen Rolle/RLS selbst (kein 402) — daher KEIN proGuard.
+  async listPhotoTags(galleryItemId) {
+    const rows = await apiClient.getGalleryByItemIdTags(galleryItemId);
+    return rows.map(mapPhotoTag);
+  },
+  async tagPhoto(galleryItemId, memberId) {
+    const created = await apiClient.postPhotoTags({
+      club_id: activeClubId(),
+      gallery_item_id: galleryItemId,
+      member_id: memberId,
+    });
+    return mapPhotoTag(created);
+  },
+  async removePhotoTag(tagId) {
+    const deleted = await apiClient.deletePhotoTagsByTagId(tagId);
     return { id: deleted.id };
   },
 
