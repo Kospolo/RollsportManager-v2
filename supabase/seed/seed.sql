@@ -162,6 +162,66 @@ insert into app.guardianships (club_id, guardian_member_id, child_member_id, rel
   ('c1ab0000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000014', 'a0000000-0000-4000-8000-000000000013', 'parent');
 
 -- ----------------------------------------------------------------------------
+-- Selbst-Profil (0045) + Publikum (0053).
+--
+-- Ohne echte Daten haelt der Nutzer die Funktion fuer kaputt: die Vorgabe ist
+-- 'internal' (fail-safe), also zeigt der Roster fuer ein normales Mitglied OHNE
+-- gesetzte Profile schlicht nichts — nicht weil es klemmt, sondern weil niemand
+-- "oeffentlich" gewaehlt hat. Deshalb hier ein sichtbarer Kontrast:
+--
+--   OEFFENTLICH (jedes aktive Mitglied sieht Motto/Disziplin/seit-wann):
+--     Sandra Vogel (a-01, coach), Katrin Gruenewald (a-09, member),
+--     Stefanie Mueller (a-12, member), Lina Gruenewald (a-07, Kind ohne Konto).
+--   INTERN (NUR Vorstand/Trainer — owner/admin/moderator/coach/guest_coach,
+--   ausdruecklich NICHT der treasurer und NICHT andere Mitglieder):
+--     Anna-Lena Boehm (a-05, coach), Petra Koehler (a-14, moderator).
+--
+-- Am Bildschirm wird damit sichtbar: ein normales Mitglied sieht die 4
+-- OEFFENTLICHEN Profile und die 2 INTERNEN NICHT; Vorstand/Trainer sehen alle 6.
+-- Der Rest des Vereins hat (wie im echten Leben zu Beginn) noch kein Profil.
+--
+-- service_role (kein auth.uid) -> der Urheberschutz-Trigger app.protect_self_profile
+-- laesst das Seed durch; die CHECK-Constraints (Laenge/Kontaktdaten/Stufe)
+-- greifen trotzdem. Die Mottos sind bewusst kontaktdaten-frei.
+-- ----------------------------------------------------------------------------
+update app.club_members set
+    profile_motto = 'Kür ist Kopfsache, Technik kommt danach',
+    profile_favorite_discipline = 'Kürlauf',
+    profile_skating_since = 2001,
+    profile_visibility = 'public'
+  where id = 'a0000000-0000-4000-8000-000000000001';
+update app.club_members set
+    profile_motto = 'Immer mit Schwung',
+    profile_favorite_discipline = 'Solotanz',
+    profile_skating_since = 2005,
+    profile_visibility = 'public'
+  where id = 'a0000000-0000-4000-8000-000000000009';
+update app.club_members set
+    profile_motto = 'Eltern-Taxi mit Leidenschaft',
+    profile_favorite_discipline = 'Paarlauf',
+    profile_skating_since = 2004,
+    profile_visibility = 'public'
+  where id = 'a0000000-0000-4000-8000-000000000012';
+update app.club_members set
+    profile_motto = 'Ich übe gerade den Flip!',
+    profile_favorite_discipline = 'Kürlauf',
+    profile_skating_since = 2021,
+    profile_visibility = 'public'
+  where id = 'a0000000-0000-4000-8000-000000000007';
+update app.club_members set
+    profile_motto = 'Neu im Trainerteam, alte Häsin auf Rollen',
+    profile_favorite_discipline = 'Pflicht',
+    profile_skating_since = 2012,
+    profile_visibility = 'internal'
+  where id = 'a0000000-0000-4000-8000-000000000005';
+update app.club_members set
+    profile_motto = 'Organisation ist mein zweiter Vorname',
+    profile_favorite_discipline = 'Rollkunstlauf',
+    profile_skating_since = 2005,
+    profile_visibility = 'internal'
+  where id = 'a0000000-0000-4000-8000-000000000014';
+
+-- ----------------------------------------------------------------------------
 -- Teams + memberships (skaters and coaches)
 -- ----------------------------------------------------------------------------
 insert into app.teams (id, club_id, name, age_group) values

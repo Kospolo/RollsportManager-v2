@@ -338,6 +338,14 @@
           "left"
         ]
       },
+      "ProfileVisibility": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "public",
+          "internal"
+        ]
+      },
       "ClubMember": {
         "type": "object",
         "properties": {
@@ -413,6 +421,9 @@
           "profile_skating_since": {
             "type": "integer",
             "nullable": true
+          },
+          "profile_visibility": {
+            "$ref": "#/components/schemas/ProfileVisibility"
           },
           "created_at": {
             "anyOf": [
@@ -861,6 +872,9 @@
             "nullable": true,
             "minimum": 1900,
             "maximum": 2027
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/ProfileVisibility"
           }
         }
       },

@@ -137,6 +137,90 @@ export function redactMemberForViewer<T extends Record<string, unknown>>(
   return out as T;
 }
 
+// ============================================================================
+// SELBST-PROFIL-PROJEKTION (0053) — das Gegenstueck zur Kontaktdaten-Redaktion.
+//
+// Die Selbst-Profil-Felder (Motto/Disziplin/seit-wann) und die Stufe selbst
+// werden fuer eine:n Betrachter:in NUR ausgeliefert, wenn EINE der drei
+// Bedingungen gilt:
+//   (a) profile_visibility = 'public' und Betrachter ist Vereinsmitglied
+//       (jede Route hier ist ohnehin schon requireClubMemberDb-gated), ODER
+//   (b) Betrachter ist Vorstand/Trainer — die "intern"-Stufe, ODER
+//   (c) Betrachter ist die Person selbst oder ihr/e Erziehungsberechtigte/r.
+// Sonst kommen die vier Felder als NULL zurueck (wie birth_date fuer
+// Nicht-Berechtigte). profile_visibility SELBST sieht nur, wer auch die Felder
+// sieht — sonst nicht (die Stufe ist selbst eine Aussage ueber das Profil).
+//
+// DIESELBE WAHRHEIT WIE DIE ROSTER-REDAKTION: das passiert hier in der API,
+// nicht in RLS. Begruendung im Kopf von 0053 — kurz: die Kontaktdaten-Redaktion
+// sitzt schon in der API; ein zweiter Ort (RLS-Spaltenlogik) fuer "wer darf das
+// sehen" liefe frueher oder spaeter auseinander.
+//
+// (a) ist ein Spalten-Wert, (b) ein Rollen-Claim (maySeeInternalSelfProfile),
+// (c) eine DB-Frage (app.can_act_for_member) — die Abfragen liefern sie als
+// verstecktes Feld _self_or_guardian mit. redactSelfProfile bekommt (b) als
+// Argument und liest (a)/(c) aus der Zeile.
+// ============================================================================
+export const SELF_PROFILE_FIELDS = [
+  'profile_motto',
+  'profile_favorite_discipline',
+  'profile_skating_since',
+  'profile_visibility',
+] as const;
+
+/**
+ * Verstecktes Abfrage-Feld: `app.can_act_for_member(m.id)` als boolean. Wird von
+ * den Roster-/DM-Abfragen mitselektiert und von redactSelfProfile gelesen +
+ * entfernt, damit es nicht im Contract landet (memberSchema.parse wuerde es
+ * ohnehin verwerfen — wir raeumen es trotzdem selbst weg).
+ */
+const SELF_OR_GUARDIAN_KEY = '_self_or_guardian';
+
+/**
+ * Rollen, die die INTERNEN Selbst-Profile sehen ("Vorstand/Trainer").
+ * BEWUSST OHNE treasurer: der Kassenwart ist kein Trainer und keine Leitung —
+ * die "intern"-Stufe ist eine Freigabe an die Personen, die mit dem Kind
+ * trainieren/den Verein fuehren, nicht an die Finanzverwaltung. Dieselbe
+ * Trennung wie bei der Anwesenheit (0045): treasurer ist ein Nachbar in der
+ * Rangordnung, kein "Trainer und hoeher". guest_coach IST hier drin (anders als
+ * bei joined_on): der Gast-Trainer trainiert die Kinder und ist damit Teil des
+ * gewollten "intern"-Publikums.
+ */
+const SELF_PROFILE_INTERNAL_ROLES: readonly ClubRole[] = [
+  'owner',
+  'admin',
+  'moderator',
+  'coach',
+  'guest_coach',
+];
+
+/**
+ * True when the viewer belongs to the "Vorstand/Trainer" audience that sees
+ * INTERNAL self profiles (Stufe (b)). Pure claims check, mirrors
+ * maySeeFullRoster/maySeeJoinedOn.
+ */
+export function maySeeInternalSelfProfile(claims: AuthClaims, clubId: string): boolean {
+  return hasClubRole(claims, clubId, SELF_PROFILE_INTERNAL_ROLES);
+}
+
+/**
+ * Redigiert die Selbst-Profil-Felder einer Roster-Zeile fuer eine:n Betrachter:in.
+ * `internalViewer` = Stufe (b) (aus maySeeInternalSelfProfile). Die Zeile MUSS
+ * `profile_visibility` (Stufe (a)) und `_self_or_guardian` (Stufe (c), aus
+ * app.can_act_for_member) tragen — Letzteres wird immer entfernt.
+ */
+export function redactSelfProfile<T extends Record<string, unknown>>(
+  row: T,
+  internalViewer: boolean,
+): T {
+  const out: Record<string, unknown> = { ...row };
+  const selfOrGuardian = out[SELF_OR_GUARDIAN_KEY] === true;
+  delete out[SELF_OR_GUARDIAN_KEY];
+  const visible = internalViewer || selfOrGuardian || out['profile_visibility'] === 'public';
+  if (!visible) for (const field of SELF_PROFILE_FIELDS) out[field] = null;
+  return out as T;
+}
+
 /** team_ids of one member (app.team_members, soft-deleted excluded). */
 async function teamIdsOf(tx: Tx, memberId: string): Promise<unknown> {
   const rows = await tx`
@@ -173,17 +257,27 @@ membersRouter.openapi(
     await requireClubMemberDb(c, clubId);
     const privileged = maySeeFullRoster(claims, clubId);
     const joinedOnVisible = maySeeJoinedOn(claims, clubId);
+    const internalProfileViewer = maySeeInternalSelfProfile(claims, clubId);
     const rows = await withUser(claims, (tx) =>
       tx`select m.*,
            coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
                      from app.team_members tm
                      where tm.member_id = m.id and tm.deleted_at is null),
-                    '[]'::jsonb) as team_ids
+                    '[]'::jsonb) as team_ids,
+           -- Stufe (c) der Selbst-Profil-Projektion (0053): laeuft impersoniert,
+           -- also ist auth.uid() der/die Betrachter:in -> wahr fuer die eigene
+           -- Zeile und die der eigenen Kinder.
+           app.can_act_for_member(m.id) as _self_or_guardian
          from app.club_members m
          where m.club_id = ${clubId} and m.deleted_at is null
          order by m.last_name, m.first_name`,
     );
-    const mapped = rows.map((row) => redactMemberForViewer(withAvatar(row), privileged, joinedOnVisible));
+    const mapped = rows.map((row) =>
+      redactSelfProfile(
+        redactMemberForViewer(withAvatar(row), privileged, joinedOnVisible),
+        internalProfileViewer,
+      ),
+    );
     return c.json(z.array(memberSchema).parse(mapped), 200);
   },
 );
@@ -317,16 +411,21 @@ membersRouter.openapi(
     const body = c.req.valid('json');
     requireClubRole(c.get('claims'), clubId, MANAGE_MEMBER_ROLES);
 
-    const updated = await withUser(c.get('claims'), async (tx) => {
+    const claims = c.get('claims');
+    const updated = await withUser(claims, async (tx) => {
       const rows = await tx`
         update app.club_members set ${tx(body)}
         where id = ${memberId} and club_id = ${clubId} and deleted_at is null
-        returning *`;
+        returning *, app.can_act_for_member(id) as _self_or_guardian`;
       if (rows.length === 0) throw problem(404, 'Not Found', 'Membership not found');
       return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
     });
 
-    return c.json(memberSchema.parse(updated), 200);
+    // Selbst-Profil-Projektion wie im Roster: ein treasurer (can_manage_members,
+    // aber NICHT "Vorstand/Trainer") darf ueber diese Verwaltungs-Antwort kein
+    // internes Profil sehen, das ihm der Roster verwehrt.
+    const redacted = redactSelfProfile(updated, maySeeInternalSelfProfile(claims, clubId));
+    return c.json(memberSchema.parse(redacted), 200);
   },
 );
 
@@ -377,11 +476,14 @@ membersRouter.openapi(
       // Impersonated UPDATE: protect_club_membership fires as defense in depth.
       const rows = await tx`
         update app.club_members set role = ${newRole}
-        where id = ${memberId} returning *`;
+        where id = ${memberId} returning *, app.can_act_for_member(id) as _self_or_guardian`;
       return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
     });
 
-    return c.json(memberSchema.parse(updated), 200);
+    // Rollenwechsel ist ein owner/admin-Recht — beide sind ohnehin
+    // "Vorstand/Trainer", aber die Projektion bleibt konsistent angewendet.
+    const redacted = redactSelfProfile(updated, maySeeInternalSelfProfile(claims, clubId));
+    return c.json(memberSchema.parse(redacted), 200);
   },
 );
 
@@ -457,7 +559,7 @@ membersRouter.openapi(
       // kein jsonb-Objekt ist.
       await tx`select app.set_self_profile(${clubId}::uuid, ${memberId}::uuid, ${tx.json(body)}::jsonb)`;
       const rows = await tx`
-        select m.* from app.club_members m
+        select m.*, app.can_act_for_member(m.id) as _self_or_guardian from app.club_members m
         where m.id = ${memberId} and m.club_id = ${clubId} and m.deleted_at is null`;
       if (rows.length === 0) throw problem(404, 'Not Found', 'Membership not found');
       return withAvatar({ ...rows[0], team_ids: await teamIdsOf(tx, memberId) });
@@ -466,10 +568,11 @@ membersRouter.openapi(
     // Dieselbe Redigierung wie im Roster. Ein Elternteil sieht hier also nicht
     // mehr, als es im Roster ohnehin saehe — die Antwort einer Schreib-Route
     // darf kein zweiter Lese-Pfad an der eigenen Redigierung vorbei sein.
-    const redacted = redactMemberForViewer(
-      updated,
-      maySeeFullRoster(claims, clubId),
-      maySeeJoinedOn(claims, clubId),
+    // Wer schreiben durfte, ist can_act_for_member -> _self_or_guardian ist wahr
+    // -> das eigene Selbst-Profil (inkl. Stufe) bleibt in der Antwort sichtbar.
+    const redacted = redactSelfProfile(
+      redactMemberForViewer(updated, maySeeFullRoster(claims, clubId), maySeeJoinedOn(claims, clubId)),
+      maySeeInternalSelfProfile(claims, clubId),
     );
     return c.json(memberSchema.parse(redacted), 200);
   },

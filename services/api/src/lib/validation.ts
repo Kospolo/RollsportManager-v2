@@ -40,6 +40,16 @@ export const competitionStatusSchema = z.enum(['upcoming', 'running', 'done', 'c
 export const entryStatusSchema = z.enum(['registered', 'confirmed', 'withdrawn']).openapi('CompetitionEntryStatus');
 export const counterpartyKindSchema = z.enum(['person', 'org']).openapi('CounterpartyKind');
 
+/**
+ * Publikum des Selbst-Profils (0053). ZWEI Stufen, beide INNERHALB des Vereins:
+ *   'public'   = jedes aktive Vereinsmitglied sieht Motto/Disziplin/seit-wann.
+ *   'internal' = nur Vorstand/Trainer (owner/admin/moderator/coach/guest_coach).
+ * Vorgabe in der DB ist 'internal' (fail-safe). Schema-Name bewusst
+ * 'ProfileVisibility' und NICHT 'Visibility': generische Namen kollidieren im
+ * Swift-Codegen gern mit App-Enums.
+ */
+export const profileVisibilitySchema = z.enum(['public', 'internal']).openapi('ProfileVisibility');
+
 const timestamp = z.union([z.string(), z.date()]).transform((v) => (v instanceof Date ? v.toISOString() : v));
 const isoDate = z.string(); // plain DATE columns come back as 'YYYY-MM-DD'
 
@@ -155,6 +165,22 @@ export const memberSchema = z
     profile_motto: z.string().nullable(),
     profile_favorite_discipline: z.string().nullable(),
     profile_skating_since: z.number().int().nullable(),
+    // Publikum des Selbst-Profils (0053). Wer die Profil-Felder NICHT sehen darf,
+    // sieht auch die Stufe nicht — die API setzt dann alle vier auf null
+    // (members.ts/redactSelfProfile). Wer die Felder sieht, sieht 'public' bzw.
+    // 'internal'. In der DB ist die Spalte NOT NULL DEFAULT 'internal'; null
+    // steht hier ausschliesslich fuer "redigiert".
+    //
+    // .nullable().optional() und nicht nur .nullable(): ein registriertes
+    // Enum wird als OpenAPI-$ref emittiert, und ein $ref schluckt das
+    // begleitende `nullable` (das laesst sich an einem $ref nicht ausdruecken).
+    // Waere das Feld required, entstuende im Codegen ein NICHT-optionaler Typ
+    // (Swift: ProfileVisibility) — und der wuerde beim Dekodieren eines
+    // redigierten null brechen. .optional() nimmt das Feld aus `required`, der
+    // Codegen macht daraus ein optionales ProfileVisibility?, und null dekodiert
+    // sauber zu nil. Der Wert ist real immer gesetzt ODER null (nie schlicht
+    // weggelassen) — die Optionalitaet im Typ ist nur der Traeger fuer "null".
+    profile_visibility: profileVisibilitySchema.nullable().optional(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -182,6 +208,10 @@ export const memberSelfProfileUpdateSchema = z
       .max(new Date().getFullYear() + 1)
       .nullable()
       .optional(),
+    // Der Umschalter (0053). BEWUSST nicht nullable: eine Stufe hat kein
+    // "leeren" — sie ist immer 'public' oder 'internal'. Fehlt der Schluessel,
+    // bleibt die bisherige Stufe stehen (Patch-Semantik in app.set_self_profile).
+    visibility: profileVisibilitySchema.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('ClubMemberSelfProfileUpdate');

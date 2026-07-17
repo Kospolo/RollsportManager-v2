@@ -36,6 +36,12 @@ enum class MemberStatus {
 }
 
 @Serializable
+enum class ProfileVisibility {
+    @SerialName("public") PUBLIC,
+    @SerialName("internal") INTERNAL;
+}
+
+@Serializable
 enum class AssignableClubRole {
     @SerialName("admin") ADMIN,
     @SerialName("moderator") MODERATOR,
@@ -562,6 +568,7 @@ data class ClubMember(
     @SerialName("profile_motto") val profileMotto: String?,
     @SerialName("profile_favorite_discipline") val profileFavoriteDiscipline: String?,
     @SerialName("profile_skating_since") val profileSkatingSince: Long?,
+    @SerialName("profile_visibility") val profileVisibility: ProfileVisibility? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -673,7 +680,8 @@ data class ClubMemberRoleChange(
 data class ClubMemberSelfProfileUpdate(
     val motto: String? = null,
     @SerialName("favorite_discipline") val favoriteDiscipline: String? = null,
-    @SerialName("skating_since") val skatingSince: Long? = null
+    @SerialName("skating_since") val skatingSince: Long? = null,
+    val visibility: ProfileVisibility? = null
 )
 
 @Serializable

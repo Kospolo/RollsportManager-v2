@@ -58,6 +58,9 @@ export const ClubRoleValues: readonly ClubRole[] = ["owner", "admin", "moderator
 export type MemberStatus = "pending" | "rejected" | "active" | "inactive" | "left";
 export const MemberStatusValues: readonly MemberStatus[] = ["pending", "rejected", "active", "inactive", "left"] as const;
 
+export type ProfileVisibility = "public" | "internal";
+export const ProfileVisibilityValues: readonly ProfileVisibility[] = ["public", "internal"] as const;
+
 export interface ClubMember {
   "id": string;
   "club_id": string;
@@ -75,6 +78,7 @@ export interface ClubMember {
   "profile_motto": string | null;
   "profile_favorite_discipline": string | null;
   "profile_skating_since": number | null;
+  "profile_visibility"?: ProfileVisibility;
   "created_at": string;
   "updated_at": string;
 }
@@ -176,6 +180,7 @@ export interface ClubMemberSelfProfileUpdate {
   "motto"?: string | null;
   "favorite_discipline"?: string | null;
   "skating_since"?: number | null;
+  "visibility"?: ProfileVisibility;
 }
 
 export interface ChildCreated {

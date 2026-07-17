@@ -69,6 +69,11 @@ public enum MemberStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case left = "left"
 }
 
+public enum ProfileVisibility: String, Codable, CaseIterable, Sendable, Equatable {
+    case `public` = "public"
+    case `internal` = "internal"
+}
+
 public enum AssignableClubRole: String, Codable, CaseIterable, Sendable, Equatable {
     case admin = "admin"
     case moderator = "moderator"
@@ -704,6 +709,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
     public var profileMotto: String?
     public var profileFavoriteDiscipline: String?
     public var profileSkatingSince: Int?
+    public var profileVisibility: ProfileVisibility?
     public var createdAt: String
     public var updatedAt: String
 
@@ -724,6 +730,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         case profileMotto = "profile_motto"
         case profileFavoriteDiscipline = "profile_favorite_discipline"
         case profileSkatingSince = "profile_skating_since"
+        case profileVisibility = "profile_visibility"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -745,6 +752,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         profileMotto: String? = nil,
         profileFavoriteDiscipline: String? = nil,
         profileSkatingSince: Int? = nil,
+        profileVisibility: ProfileVisibility? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -764,6 +772,7 @@ public struct ClubMember: Codable, Equatable, Sendable {
         self.profileMotto = profileMotto
         self.profileFavoriteDiscipline = profileFavoriteDiscipline
         self.profileSkatingSince = profileSkatingSince
+        self.profileVisibility = profileVisibility
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -1123,21 +1132,25 @@ public struct ClubMemberSelfProfileUpdate: Codable, Equatable, Sendable {
     public var motto: String?
     public var favoriteDiscipline: String?
     public var skatingSince: Int?
+    public var visibility: ProfileVisibility?
 
     enum CodingKeys: String, CodingKey {
         case motto
         case favoriteDiscipline = "favorite_discipline"
         case skatingSince = "skating_since"
+        case visibility
     }
 
     public init(
         motto: String? = nil,
         favoriteDiscipline: String? = nil,
-        skatingSince: Int? = nil
+        skatingSince: Int? = nil,
+        visibility: ProfileVisibility? = nil
     ) {
         self.motto = motto
         self.favoriteDiscipline = favoriteDiscipline
         self.skatingSince = skatingSince
+        self.visibility = visibility
     }
 }
 

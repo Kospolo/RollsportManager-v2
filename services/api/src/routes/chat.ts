@@ -33,7 +33,7 @@ import { problem } from '../middleware/error.js';
 import { requireClubMember } from '../lib/guards.js';
 import { ownMemberId } from '../lib/ownership.js';
 import { avatarUrlFor } from '../lib/avatar.js';
-import { maySeeFullRoster, redactMemberForViewer } from './members.js';
+import { maySeeFullRoster, maySeeInternalSelfProfile, redactMemberForViewer, redactSelfProfile } from './members.js';
 
 export const chatRouter = createRouter();
 
@@ -165,7 +165,11 @@ chatRouter.openapi(
                coalesce((select jsonb_agg(tm.team_id order by tm.created_at)
                          from app.team_members tm
                          where tm.member_id = m.id and tm.deleted_at is null),
-                        '[]'::jsonb) as team_ids
+                        '[]'::jsonb) as team_ids,
+               -- Selbst-Profil-Projektion (0053): dieselbe Redaktion wie im
+               -- Roster, sonst waere der DM-Picker ein zweiter Lese-Pfad, der
+               -- interne Profile an gewoehnliche Mitglieder ausliefert.
+               app.can_act_for_member(m.id) as _self_or_guardian
         from app.club_members m
         where m.club_id = ${club_id}
           and m.deleted_at is null
@@ -175,10 +179,14 @@ chatRouter.openapi(
     });
 
     const privileged = maySeeFullRoster(claims, club_id);
+    const internalProfileViewer = maySeeInternalSelfProfile(claims, club_id);
     const mapped = rows.map((row) =>
-      redactMemberForViewer(
-        { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) },
-        privileged,
+      redactSelfProfile(
+        redactMemberForViewer(
+          { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) },
+          privileged,
+        ),
+        internalProfileViewer,
       ),
     );
     return c.json(z.array(memberSchema).parse(mapped), 200);
