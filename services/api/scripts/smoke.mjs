@@ -1031,15 +1031,36 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 
   // Die Redigierung im Roster selbst bleibt unberuehrt — Gegenprobe, damit obiges
   // nicht deshalb "stimmig" ist, weil der Roster kaputt ist und allen alles zeigt.
+  // treasurer (privilegiert) sieht alles, member/guest_coach gar keine KONTAKTdaten.
+  // Der coach ist seit 0054 ZEILENWEISE (nur eigenes Team) und wird direkt darunter
+  // PRAEZISER geprueft (eigenes Team sichtbar, fremdes redigiert) statt hier grob.
   for (const [name, tok, expected] of [
     ['treasurer', t.treasurer, true],
-    ['coach', t.coach, false],
     ['member', t.parent, false],
     ['guest_coach', t.guest, false],
   ]) {
     const rosterOk = await rosterShows(tok, 'birth_date');
     if (rosterOk === expected) ok(`...${name}: Roster-Redigierung von birth_date unveraendert (${rosterOk ? 'sichtbar' : 'redigiert'})`);
     else fail(`${name} roster redaction`, `roster_birth_date=${rosterOk}, expected ${expected}`);
+  }
+
+  // 0054 — der coach (Sandra, betreut t-02 + t-03) sieht die KONTAKTdaten
+  // (birth_date) der Kinder SEINER Teams, aber NICHT die eines fremden Teams. Genau
+  // die zeilenweise Grenze aus maySeeContactOf (privileged || _coach_of_member),
+  // durch die echte HTTP-Schicht. VERSCHAERFT die fruehere grobe "coach sieht
+  // nichts"-Zeile (die vor 0054 galt) zu einer Zwei-Richtungs-Pruefung.
+  {
+    const EMMA_T01 = 'a0000000-0000-4000-8000-000000000008'; // Kind in t-01 — NICHT Sandras Team
+    const rosterField = async (tok, memberId, field) => {
+      const r = await call('GET', `/clubs/${CLUB}/members`, { as: tok });
+      return (r.json ?? []).find((m) => m.id === memberId)?.[field];
+    };
+    const linaBirth = await rosterField(t.coach, MEMBER.linaChildOfParent, 'birth_date');
+    if (linaBirth) ok('...coach sieht birth_date eines Kindes SEINES Teams (Lina, t-02) — 0054');
+    else fail('coach roster contact (0054, eigenes Team)', `Lina birth_date=${JSON.stringify(linaBirth)}, expected non-null`);
+    const emmaBirth = await rosterField(t.coach, EMMA_T01, 'birth_date');
+    if (emmaBirth === null) ok('...coach sieht birth_date eines FREMD-Team-Kindes NICHT (Emma, t-01)');
+    else fail('coach roster contact (0054, fremdes Team)', `Emma birth_date=${JSON.stringify(emmaBirth)}, expected null`);
   }
 }
 
@@ -1098,17 +1119,103 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
     await rosterOf(t.guest, MEMBER.linaChildOfParent, 'profile_motto'), 'Ich uebe den Flip');
 
   // 5. Und die Redigierung ringsum steht weiter: das Selbst-Profil ist sichtbar,
-  //    die KONTAKTdaten desselben Kindes sind es nicht. Sonst haette ich mit dem
-  //    Feature eine Spalte geoeffnet und daneben eine zweite mit aufgerissen.
-  assertEq('...waehrend birth_date desselben Kindes fuer den coach redigiert bleibt',
-    await rosterOf(t.coach, MEMBER.linaChildOfParent, 'birth_date'), null);
+  //    die KONTAKTdaten desselben Kindes sind es NICHT — geprueft an der Gast-
+  //    Trainerin. Sie sieht das Motto (0045, freiwillig veroeffentlicht), ist aber
+  //    vom Kontakt-Zugang (0054/maySeeContactOf) BEWUSST ausgeschlossen (guest_coach
+  //    = vereinsextern auf Zeit). So bleibt bewiesen, dass das Selbst-Profil keine
+  //    Kontaktspalte mit aufgerissen hat. (Der TEAM-coach SIEHT den Kontakt jetzt —
+  //    das ist 0054 und wird oben zeilenweise geprueft; er taugt hier nicht mehr.)
+  assertEq('...waehrend birth_date desselben Kindes fuer die Gast-Trainerin redigiert bleibt',
+    await rosterOf(t.guest, MEMBER.linaChildOfParent, 'birth_date'), null);
   assertEq('...und die E-Mail von Katrin ebenso',
-    await rosterOf(t.coach, KATRIN_M, 'email'), null);
+    await rosterOf(t.guest, KATRIN_M, 'email'), null);
 
   // 6. Moderation: leeren darf der Vorstand (nur schreiben nicht).
   const cleared = await call('PATCH', `/clubs/${CLUB}/members/${MEMBER.linaChildOfParent}`,
     { as: t.admin, body: { first_name: 'Lina' } });
   assertEq('der ADMIN pflegt weiter normale Stammdaten -> 200', cleared.status, 200);
+}
+
+// ============================================================================
+// DAS 360-GRAD-PROFIL (routes/member-profile.ts) durch die echte HTTP-Schicht.
+//
+//   GET /clubs/{clubId}/members/{memberId}/profile
+//
+// Die scharfe Zusage: JEDE Sektion ist SERVERSEITIG rollen-gestaffelt, und "darf
+// ich nicht" (null) ist von "leer" ([]) UNTERSCHIEDEN. Geprueft an Lina (a-07,
+// Kind, Team t-02) aus fuenf Blickwinkeln, die je einen anderen Gate-Zweig treffen:
+//   owner        — privilegiert: sieht ALLES.
+//   treasurer    — Finanz/Verwaltung: Finanzen JA, aber Kueren NULL (kein
+//                  routine-Leser -> beweist null != []).
+//   coach Sandra — betreut Linas Team t-02: Kontakt JA (0054), Beurteilung JA
+//                  (coaches_member), Kueren JA — aber Finanzen/Konsent NULL.
+//   guest Milena — betreut t-03, NICHT Linas Team: Kontakt NEIN, Beurteilung
+//                  NULL — ABER die Galerie-Fotos JA, weil die Anzeige AN DER
+//                  EINWILLIGUNG haengt, nicht an der Rolle (0056).
+//   parent Katrin— Vormund von Lina: Kontakt/Selbst-Profil/Finanzen/Beurteilung/
+//                  Konsent JA (Familie), aber die Verwaltungs-Kontaktfelder NEIN.
+// ============================================================================
+{
+  console.log('\n[smoke] --- 360-Grad-Profil: eine Person, jede Sektion gestaffelt ---');
+  const LINA = MEMBER.linaChildOfParent;
+  const prof = (as) => call('GET', `/clubs/${CLUB}/members/${LINA}/profile`, { as });
+  const isNull = (v) => v === null || v === undefined;
+  const notNull = (label, v) => { if (!isNull(v)) ok(label); else fail(label, `expected present, got ${JSON.stringify(v)}`); };
+  const mustNull = (label, v) => { if (isNull(v)) ok(label); else fail(label, `expected null (darf ich nicht), got a value`); };
+
+  // owner — sieht alles.
+  const po = await prof(t.owner);
+  assertEq('owner: Profil -> 200', po.status, 200);
+  assertEq('owner: Stammkopf traegt die Person', po.json?.member?.id, LINA);
+  assertEq('owner: contact_visible', po.json?.contact_visible, true);
+  assertEq('owner: admin_contact_visible', po.json?.admin_contact_visible, true);
+  assertEq('owner: self_profile_visible', po.json?.self_profile_visible, true);
+  notNull('owner: Finanzen sichtbar (Objekt)', po.json?.finance);
+  notNull('owner: Beurteilungen sichtbar', po.json?.assessments);
+  notNull('owner: Konsent-Uebersicht sichtbar', po.json?.consents);
+  notNull('owner: Kueren sichtbar', po.json?.routines);
+  notNull('owner: Galerie-Fotos sichtbar', po.json?.photos);
+
+  // treasurer — Finanzen JA, Kueren NULL (der scharfe null-vs-leer-Beweis).
+  const pt = await prof(t.treasurer);
+  assertEq('treasurer: Profil -> 200', pt.status, 200);
+  notNull('treasurer: Finanzen sichtbar (Kasse)', pt.json?.finance);
+  mustNull('treasurer: Kueren NICHT sichtbar -> null, nicht [] (kein routine-Leser)', pt.json?.routines);
+
+  // coach Sandra (betreut t-02) — Kontakt+Beurteilung+Kueren JA, Finanzen/Konsent NULL.
+  const pc = await prof(t.coach);
+  assertEq('coach: Profil -> 200', pc.status, 200);
+  assertEq('coach: contact_visible (0054, eigenes Team)', pc.json?.contact_visible, true);
+  assertEq('coach: admin_contact_visible NEIN (nur privilegiert)', pc.json?.admin_contact_visible, false);
+  notNull('coach: Beurteilungen sichtbar (coaches_member)', pc.json?.assessments);
+  notNull('coach: Kueren sichtbar (Team-Trainer)', pc.json?.routines);
+  mustNull('coach: Finanzen NICHT sichtbar -> null', pc.json?.finance);
+  mustNull('coach: Konsent-Uebersicht NICHT sichtbar -> null', pc.json?.consents);
+
+  // guest_coach Milena (betreut t-03, NICHT Linas Team) — Kontakt/Beurteilung NEIN,
+  // ABER Galerie-Fotos JA (Anzeige haengt an der Einwilligung, nicht an der Rolle).
+  const pg = await prof(t.guest);
+  assertEq('guest_coach: Profil -> 200', pg.status, 200);
+  assertEq('guest_coach: contact_visible NEIN (fremdes Team, vereinsextern)', pg.json?.contact_visible, false);
+  mustNull('guest_coach: Beurteilungen NICHT sichtbar -> null', pg.json?.assessments);
+  mustNull('guest_coach: Kueren NICHT sichtbar -> null (fremdes Team)', pg.json?.routines);
+  notNull('guest_coach: Galerie-Fotos SICHTBAR — Einwilligung, nicht Rolle (0056)', pg.json?.photos);
+  if (Array.isArray(pg.json?.photos) && pg.json.photos.length >= 1) ok('guest_coach: das eingewilligte Foto ist wirklich da (>=1)');
+  else fail('guest_coach: eingewilligtes Foto', `photos=${JSON.stringify(pg.json?.photos)}`);
+
+  // parent Katrin (Vormund von Lina) — Familie sieht viel, aber keine Verwaltungsfelder.
+  const pp = await prof(t.parent);
+  assertEq('parent: Profil -> 200', pp.status, 200);
+  assertEq('parent: contact_visible (Vormund)', pp.json?.contact_visible, true);
+  assertEq('parent: admin_contact_visible NEIN (nur privilegiert)', pp.json?.admin_contact_visible, false);
+  assertEq('parent: self_profile_visible (Vormund)', pp.json?.self_profile_visible, true);
+  notNull('parent: Finanzen sichtbar (eigenes Kind, 0002-Privacy)', pp.json?.finance);
+  notNull('parent: Beurteilungen sichtbar (Familie)', pp.json?.assessments);
+  notNull('parent: Konsent-Uebersicht sichtbar (Familie)', pp.json?.consents);
+
+  // Mandantenschnitt: die fremde Person (anderer Verein) bekommt hier nichts.
+  assertEq('fremder Verein: kein Zugriff auf dieses Profil -> 403',
+    (await prof(t.foreign)).status, 403);
 }
 
 // ============================================================================

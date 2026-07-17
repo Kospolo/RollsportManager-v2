@@ -3135,3 +3135,135 @@ export const memberPhotoSchema = z
     tagged_at: timestamp,
   })
   .openapi('MemberPhoto');
+
+// ============================================================================
+// 360-GRAD-MITGLIEDSPROFIL — GET /clubs/{clubId}/members/{memberId}/profile
+//
+// EINE Person, alle Sektionen SERVERSEITIG rollen-gestaffelt. Der Endpunkt
+// (routes/member-profile.ts) komponiert die Trupp-Funktionen (maySeeContactOf,
+// redactSelfProfile, selectMemberPhotos, coaches_member, has_internal_photo_
+// consent) mit den READ-Sektionen aus den Bestands-Tabellen; JEDE Sektion nur
+// mit den passenden Rechten, sonst NULL.
+//
+// ⚠️ null vs. []: JEDE gestaffelte Sektion unterscheidet "darf ich nicht" (null
+// -> die Web-Phase blendet sie AUS, zeigt kein "—"/Fehler) von "erlaubt aber
+// leer" ([] bzw. Objekt mit leeren Listen). Die *_visible-Marker sagen der
+// Web-Phase zusaetzlich, ob ein null-Feld im redigierten Stammkopf "redigiert"
+// (darf nicht) oder schlicht "nicht gesetzt" bedeutet.
+//
+// Die Sichtbarkeitsregel je Sektion steht am Feld — sie spiegelt die ECHTE
+// RLS/API-Regel aus dem Code (nicht geraten):
+//   contact      maySeeContactOf: can_manage_members ODER coach des Team-Kindes
+//                (0054) — plus Person/Eltern (can_act_for_member) ihre eigenen
+//   self_profile redactSelfProfile: intern (Vorstand/Trainer) ODER Person/Eltern
+//                ODER profile_visibility='public' (0045/0053)
+//   routines     can_read_routine (0026): read_all (Vorstand) / read_team
+//                (Team-Trainer) / read_own (Skater). Section-Gate spiegelt das.
+//   competition  routine_scores_select = can_read_routine (0018); entries sind
+//                club-lesbar. Section wie Kueren (eigene/Team-Trainer + Staff).
+//   achievements achievements_select = is_club_member (0009) -> jedes Mitglied.
+//   attendance   attendance_select = can_read_attendance (0045): read_all /
+//                read_team / read_own(+Kinder).
+//   checkins     checkins_select = is_own_member ODER is_club_trainer (0011);
+//                Section neben attendance gestellt (gleiche Familie).
+//   duty         duty_entries_select = is_own_member ODER is_club_trainer (kein
+//                treasurer, kein Vormund per RLS); duty_requirements club-lesbar.
+//                Section-Gate: is_club_trainer ODER Person/Eltern (Auskunft).
+//   rsvps        event_rsvps_select = is_club_member; der 'sick'-GRUND (comment)
+//                ist Gesundheitsdatum (0040) und wird maskiert, wenn NICHT
+//                can_read_rsvp_reason (Person/Eltern · owner/admin · Team-Trainer).
+//   equipment    equipment_reservations_select = is_club_member; Section-Gate
+//                is_club_trainer ODER eigene (is_own_member) — 0011-Schreibregel.
+//   finance      can_manage_finance (Kasse/Vorstand) ODER Person/Eltern (die
+//                eigene Rechnung/offener Posten, 0002-Privacy). Finanz-Aggregat
+//                quer -> Service-Mode, STRIKT auf diese club_id + member_id.
+//   assessments  member_assessments_select = can_act_for_member ODER
+//                can_manage_members ODER coaches_member (0055) — Staff + Familie.
+//   photos       has_internal_photo_consent (0056) — rollenUNabhaengig, auch
+//                Staff sieht ohne Einwilligung nichts (selectMemberPhotos).
+//   consents     consents_select = eigene/selbst-erklaerte ODER can_manage_
+//                members (0034) — Staff + Person/Eltern.
+// ============================================================================
+
+/** Eine RBAC-Rolle der Person (app.member_roles -> app.roles). */
+export const memberRoleRefSchema = z
+  .object({
+    role_id: uuid,
+    key: z.string(),
+    name_de: z.string(),
+    name_en: z.string(),
+  })
+  .openapi('MemberRoleRef');
+
+/** Eine Abteilungs-Mitgliedschaft (app.department_members -> app.departments). */
+export const memberDepartmentRefSchema = z
+  .object({
+    id: uuid,
+    name: z.string(),
+    /** true = diese Person leitet die Abteilung (departments.lead_member_id). */
+    is_lead: z.boolean(),
+  })
+  .openapi('MemberDepartmentRef');
+
+/** Wettkampf-Sektion: Starts (entries) + Notenverlauf (scores). */
+export const memberProfileCompetitionSchema = z
+  .object({
+    entries: z.array(competitionEntrySchema),
+    scores: z.array(scoreSchema),
+  })
+  .openapi('MemberProfileCompetition');
+
+/** Pflichtstunden-Sektion: Soll (requirements) + Ist (entries). */
+export const memberProfileDutySchema = z
+  .object({
+    requirements: z.array(dutyRequirementSchema),
+    entries: z.array(dutyEntrySchema),
+  })
+  .openapi('MemberProfileDuty');
+
+/** Finanz-Sektion: Rechnungen (inkl. Mahnstatus dunning_level) + Beitraege + SEPA + Spenden. */
+export const memberProfileFinanceSchema = z
+  .object({
+    invoices: z.array(invoiceSchema),
+    member_fees: z.array(memberFeeSchema),
+    sepa_mandates: z.array(sepaMandateSchema),
+    donations: z.array(donationSchema),
+  })
+  .openapi('MemberProfileFinance');
+
+export const memberProfileSchema = z
+  .object({
+    // Stammkopf + redigiertes Selbst-Profil + redigierte Kontaktdaten in EINEM:
+    // memberSchema traegt die Redaktion, die schon serverseitig sitzt
+    // (redactMemberForViewer + redactSelfProfile, getestet). IMMER vorhanden.
+    member: memberSchema,
+    // Marker, damit die Web-Phase ein redigiertes null NICHT als "—"/Fehler zeigt:
+    /** email/birth_date/phone/postal_address im member gefuellt (maySeeContactOf ODER Person/Eltern)? */
+    contact_visible: z.boolean(),
+    /** valid_until/profile_id im member gefuellt (nur can_manage_members)? */
+    admin_contact_visible: z.boolean(),
+    /** profile_motto/_favorite_discipline/_skating_since/_visibility im member gefuellt? */
+    self_profile_visible: z.boolean(),
+    /** joined_on im member gefuellt (maySeeJoinedOn)? */
+    joined_on_visible: z.boolean(),
+    // RBAC-Rollen + Abteilungen (club-lesbar) — IMMER vorhanden, ggf. leer.
+    roles: z.array(memberRoleRefSchema),
+    departments: z.array(memberDepartmentRefSchema),
+    // Gestaffelte Sektionen: null = darf ich nicht, [] / leeres Objekt = leer.
+    // Arrays tragen null direkt (der Codegen macht daraus ein Optional); die
+    // Objekt-Sektionen brauchen zusaetzlich .optional(), weil ein $ref das
+    // begleitende nullable schluckt (vgl. profile_visibility oben).
+    routines: z.array(routineSchema).nullable(),
+    competition: memberProfileCompetitionSchema.nullable().optional(),
+    achievements: z.array(achievementSchema).nullable(),
+    attendance: z.array(attendanceSchema).nullable(),
+    checkins: z.array(checkinSchema).nullable(),
+    duty: memberProfileDutySchema.nullable().optional(),
+    rsvps: z.array(rsvpSchema).nullable(),
+    equipment: z.array(equipmentReservationSchema).nullable(),
+    finance: memberProfileFinanceSchema.nullable().optional(),
+    assessments: z.array(assessmentSchema).nullable(),
+    photos: z.array(memberPhotoSchema).nullable(),
+    consents: z.array(effectiveConsentSchema).nullable(),
+  })
+  .openapi('MemberProfile');

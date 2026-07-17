@@ -69,6 +69,8 @@ export interface ClubMember {
   "last_name": string;
   "email": string | null;
   "birth_date": string | null;
+  "phone": string | null;
+  "postal_address": string | null;
   "role": ClubRole;
   "status": MemberStatus;
   "joined_on": string | null;
@@ -168,6 +170,8 @@ export interface ClubMemberUpdate {
   "last_name"?: string;
   "email"?: string | null;
   "birth_date"?: string | null;
+  "phone"?: string | null;
+  "postal_address"?: string | null;
   "status"?: MemberStatus;
   "valid_until"?: string | null;
 }
@@ -181,6 +185,325 @@ export interface ClubMemberSelfProfileUpdate {
   "favorite_discipline"?: string | null;
   "skating_since"?: number | null;
   "visibility"?: ProfileVisibility;
+}
+
+export interface MemberRoleRef {
+  "role_id": string;
+  "key": string;
+  "name_de": string;
+  "name_en": string;
+}
+
+export interface MemberDepartmentRef {
+  "id": string;
+  "name": string;
+  "is_lead": boolean;
+}
+
+export type RoutineStatus = "draft" | "ready" | "competition" | "archived";
+export const RoutineStatusValues: readonly RoutineStatus[] = ["draft", "ready", "competition", "archived"] as const;
+
+export interface Routine {
+  "id": string;
+  "club_id": string;
+  "team_id": string | null;
+  "title": string;
+  "status": RoutineStatus;
+  "category": string | null;
+  "music_title": string | null;
+  "music_artist": string | null;
+  "music_bpm": number | null;
+  "music_duration_ms": number | null;
+  "audio_asset_id": string | null;
+  "image_asset_id": string | null;
+  "skater_member_ids": string[];
+  "waveform_peaks": number[] | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type CompetitionEntryStatus = "registered" | "confirmed" | "withdrawn";
+export const CompetitionEntryStatusValues: readonly CompetitionEntryStatus[] = ["registered", "confirmed", "withdrawn"] as const;
+
+export interface CompetitionEntry {
+  "id": string;
+  "member_id": string;
+  "routine_id": string | null;
+  "status": CompetitionEntryStatus;
+}
+
+export interface RoutineScore {
+  "id": string;
+  "club_id": string;
+  "routine_id": string;
+  "competition_id": string | null;
+  "scored_on": string;
+  "scoring_system": string;
+  "technical_score": number | null;
+  "components_score": number | null;
+  "total_score": number | null;
+  "placement": number | null;
+  "note": string | null;
+}
+
+export interface MemberProfileCompetition {
+  "entries": CompetitionEntry[];
+  "scores": RoutineScore[];
+}
+
+export type Medal = "gold" | "silver" | "bronze";
+export const MedalValues: readonly Medal[] = ["gold", "silver", "bronze"] as const;
+
+export interface Achievement {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "title": string;
+  "competition_name": string | null;
+  "placement": number | null;
+  "medal": Medal;
+  "achieved_on": string;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type AttendanceStatus = "present" | "late" | "excused" | "absent";
+export const AttendanceStatusValues: readonly AttendanceStatus[] = ["present", "late", "excused", "absent"] as const;
+
+export interface Attendance {
+  "id": string;
+  "club_id": string;
+  "event_id": string;
+  "member_id": string;
+  "status": AttendanceStatus;
+  "checked_in_at": string | null;
+}
+
+export type CheckinMethod = "qr" | "manual";
+export const CheckinMethodValues: readonly CheckinMethod[] = ["qr", "manual"] as const;
+
+export interface Checkin {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "event_id": string | null;
+  "method": CheckinMethod;
+  "checked_in_at": string;
+  "created_at": string;
+}
+
+export interface DutyRequirement {
+  "id": string;
+  "club_id": string;
+  "team_id": string | null;
+  "member_id": string | null;
+  "season_label": string;
+  "required_hours": number | null;
+  "period_start": string;
+  "period_end": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type DutyKind = "training" | "helper" | "competition" | "other";
+export const DutyKindValues: readonly DutyKind[] = ["training", "helper", "competition", "other"] as const;
+
+export interface DutyEntry {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "hours": number | null;
+  "activity_date": string;
+  "kind": DutyKind;
+  "note": string | null;
+  "approved": boolean;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface MemberProfileDuty {
+  "requirements": DutyRequirement[];
+  "entries": DutyEntry[];
+}
+
+export type RsvpStatus = "going" | "declined" | "maybe" | "sick";
+export const RsvpStatusValues: readonly RsvpStatus[] = ["going", "declined", "maybe", "sick"] as const;
+
+export interface EventRsvp {
+  "id": string;
+  "club_id": string;
+  "event_id": string;
+  "member_id": string;
+  "status": RsvpStatus;
+  "comment": string | null;
+  "responded_at": string;
+}
+
+export type ReservationStatus = "active" | "returned" | "cancelled";
+export const ReservationStatusValues: readonly ReservationStatus[] = ["active", "returned", "cancelled"] as const;
+
+export interface EquipmentReservation {
+  "id": string;
+  "equipment_id": string;
+  "club_id": string;
+  "reserved_by_member_id": string;
+  "quantity": number | null;
+  "from_at": string;
+  "to_at": string;
+  "status": ReservationStatus;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
+export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
+
+export interface Invoice {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "number": string;
+  "title": string;
+  "amount_cents": number | null;
+  "currency": string;
+  "status": InvoiceStatus;
+  "dunning_level": number;
+  "issued_on": string | null;
+  "due_on": string | null;
+  "paid_at": string | null;
+  "paid_via": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type MembershipPeriod = "monthly" | "quarterly" | "yearly" | "once";
+export const MembershipPeriodValues: readonly MembershipPeriod[] = ["monthly", "quarterly", "yearly", "once"] as const;
+
+export interface MemberFee {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "category_id": string;
+  "custom_amount_cents": number | null;
+  "valid_from": string;
+  "valid_until": string | null;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+  "category_name"?: string | null;
+  "category_amount_cents"?: number | null;
+  "category_period"?: MembershipPeriod;
+}
+
+export type SepaMandateStatus = "active" | "revoked";
+export const SepaMandateStatusValues: readonly SepaMandateStatus[] = ["active", "revoked"] as const;
+
+export interface SepaMandate {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "mandate_reference": string;
+  "iban_last4": string | null;
+  "account_holder": string;
+  "signed_on": string | null;
+  "status": SepaMandateStatus;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface Donation {
+  "id": string;
+  "club_id": string;
+  "member_id": string | null;
+  "donor_name": string;
+  "donor_address": string | null;
+  "amount_cents": number | null;
+  "donation_date": string;
+  "receipt_number": string;
+  "purpose": string | null;
+  "issued_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+  "deleted_at": string | null;
+}
+
+export interface MemberProfileFinance {
+  "invoices": Invoice[];
+  "member_fees": MemberFee[];
+  "sepa_mandates": SepaMandate[];
+  "donations": Donation[];
+}
+
+export interface MemberAssessment {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "author_member_id": string;
+  "body": string;
+  "rating_technik": number | null;
+  "rating_ausdruck": number | null;
+  "assessed_on": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export type GalleryKind = "photo" | "video";
+export const GalleryKindValues: readonly GalleryKind[] = ["photo", "video"] as const;
+
+export interface MemberPhoto {
+  "tag_id": string;
+  "gallery_item_id": string;
+  "member_id": string;
+  "album": string | null;
+  "title": string;
+  "kind": GalleryKind;
+  "storage_key": string;
+  "content_type": string;
+  "thumbnail_key": string | null;
+  "tagged_at": string;
+}
+
+export type ConsentPurpose = "terms" | "privacy" | "photos_internal" | "photos_public" | "chat" | "newsletter";
+export const ConsentPurposeValues: readonly ConsentPurpose[] = ["terms", "privacy", "photos_internal", "photos_public", "chat", "newsletter"] as const;
+
+export interface EffectiveConsent {
+  "id": string;
+  "club_id": string;
+  "member_id": string | null;
+  "subject_profile_id": string | null;
+  "purpose": ConsentPurpose;
+  "granted_by_profile_id": string;
+  "legal_document_id": string | null;
+  "policy_version": string | null;
+  "recorded_at": string;
+  "effective": boolean;
+  "recorded_granted": boolean;
+  "granted_by_guardian": boolean;
+  "state": "valid" | "revoked" | "expired_age_16";
+}
+
+export interface MemberProfile {
+  "member": ClubMember;
+  "contact_visible": boolean;
+  "admin_contact_visible": boolean;
+  "self_profile_visible": boolean;
+  "joined_on_visible": boolean;
+  "roles": MemberRoleRef[];
+  "departments": MemberDepartmentRef[];
+  "routines": Routine[] | null;
+  "competition"?: MemberProfileCompetition;
+  "achievements": Achievement[] | null;
+  "attendance": Attendance[] | null;
+  "checkins": Checkin[] | null;
+  "duty"?: MemberProfileDuty;
+  "rsvps": EventRsvp[] | null;
+  "equipment": EquipmentReservation[] | null;
+  "finance"?: MemberProfileFinance;
+  "assessments": MemberAssessment[] | null;
+  "photos": MemberPhoto[] | null;
+  "consents": EffectiveConsent[] | null;
 }
 
 export interface ChildCreated {
@@ -206,25 +529,6 @@ export interface GuardianshipCreate {
 export interface Deleted {
   "status": "deleted";
   "id": string;
-}
-
-export type ConsentPurpose = "terms" | "privacy" | "photos_internal" | "photos_public" | "chat" | "newsletter";
-export const ConsentPurposeValues: readonly ConsentPurpose[] = ["terms", "privacy", "photos_internal", "photos_public", "chat", "newsletter"] as const;
-
-export interface EffectiveConsent {
-  "id": string;
-  "club_id": string;
-  "member_id": string | null;
-  "subject_profile_id": string | null;
-  "purpose": ConsentPurpose;
-  "granted_by_profile_id": string;
-  "legal_document_id": string | null;
-  "policy_version": string | null;
-  "recorded_at": string;
-  "effective": boolean;
-  "recorded_granted": boolean;
-  "granted_by_guardian": boolean;
-  "state": "valid" | "revoked" | "expired_age_16";
 }
 
 export type RealConsentPurpose = "photos_internal" | "photos_public" | "chat" | "newsletter";
@@ -322,6 +626,8 @@ export interface MeMembership {
   "last_name": string;
   "email": string | null;
   "birth_date": string | null;
+  "phone": string | null;
+  "postal_address": string | null;
   "role": ClubRole;
   "status": MemberStatus;
   "joined_on": string | null;
@@ -343,6 +649,8 @@ export interface MeUpdate {
   "last_name"?: string;
   "email"?: string | null;
   "birth_date"?: string | null;
+  "phone"?: string | null;
+  "postal_address"?: string | null;
 }
 
 export type ThemePreference = "light" | "dark" | "auto";
@@ -720,19 +1028,6 @@ export const EventTypeValues: readonly EventType[] = ["training", "competition",
 export type EventAudience = "teams" | "club";
 export const EventAudienceValues: readonly EventAudience[] = ["teams", "club"] as const;
 
-export type RsvpStatus = "going" | "declined" | "maybe" | "sick";
-export const RsvpStatusValues: readonly RsvpStatus[] = ["going", "declined", "maybe", "sick"] as const;
-
-export interface EventRsvp {
-  "id": string;
-  "club_id": string;
-  "event_id": string;
-  "member_id": string;
-  "status": RsvpStatus;
-  "comment": string | null;
-  "responded_at": string;
-}
-
 export interface Event {
   "id": string;
   "club_id": string;
@@ -768,43 +1063,10 @@ export interface EventRsvpUpsert {
   "comment"?: string;
 }
 
-export type AttendanceStatus = "present" | "late" | "excused" | "absent";
-export const AttendanceStatusValues: readonly AttendanceStatus[] = ["present", "late", "excused", "absent"] as const;
-
-export interface Attendance {
-  "id": string;
-  "club_id": string;
-  "event_id": string;
-  "member_id": string;
-  "status": AttendanceStatus;
-  "checked_in_at": string | null;
-}
-
 export interface AttendanceUpsert {
   "member_id": string;
   "status": AttendanceStatus;
   "checked_in_at"?: string;
-}
-
-export type RoutineStatus = "draft" | "ready" | "competition" | "archived";
-export const RoutineStatusValues: readonly RoutineStatus[] = ["draft", "ready", "competition", "archived"] as const;
-
-export interface Routine {
-  "id": string;
-  "club_id": string;
-  "team_id": string | null;
-  "title": string;
-  "status": RoutineStatus;
-  "category": string | null;
-  "music_title": string | null;
-  "music_artist": string | null;
-  "music_bpm": number | null;
-  "music_duration_ms": number | null;
-  "audio_asset_id": string | null;
-  "skater_member_ids": string[];
-  "waveform_peaks": number[] | null;
-  "created_at": string;
-  "updated_at": string;
 }
 
 export interface RoutineCreate {
@@ -834,20 +1096,6 @@ export interface RoutineMarkerCreate {
   "element_code"?: string;
 }
 
-export interface RoutineScore {
-  "id": string;
-  "club_id": string;
-  "routine_id": string;
-  "competition_id": string | null;
-  "scored_on": string;
-  "scoring_system": string;
-  "technical_score": number | null;
-  "components_score": number | null;
-  "total_score": number | null;
-  "placement": number | null;
-  "note": string | null;
-}
-
 export interface RoutineScoreCreate {
   "scored_on": string;
   "scoring_system"?: string;
@@ -875,16 +1123,6 @@ export interface RoutineShareRevoked {
 
 export type CompetitionStatus = "upcoming" | "running" | "done" | "cancelled";
 export const CompetitionStatusValues: readonly CompetitionStatus[] = ["upcoming", "running", "done", "cancelled"] as const;
-
-export type CompetitionEntryStatus = "registered" | "confirmed" | "withdrawn";
-export const CompetitionEntryStatusValues: readonly CompetitionEntryStatus[] = ["registered", "confirmed", "withdrawn"] as const;
-
-export interface CompetitionEntry {
-  "id": string;
-  "member_id": string;
-  "routine_id": string | null;
-  "status": CompetitionEntryStatus;
-}
 
 export interface Competition {
   "id": string;
@@ -997,6 +1235,22 @@ export interface NoteUpdate {
   "title"?: string;
   "body"?: string;
   "club_id"?: string | null;
+}
+
+export interface MemberAssessmentCreate {
+  "club_id": string;
+  "member_id": string;
+  "body": string;
+  "rating_technik"?: number;
+  "rating_ausdruck"?: number;
+  "assessed_on"?: string;
+}
+
+export interface MemberAssessmentUpdate {
+  "body"?: string;
+  "rating_technik"?: number | null;
+  "rating_ausdruck"?: number | null;
+  "assessed_on"?: string;
 }
 
 export type SupportTicketStatus = "open" | "in_progress" | "waiting_on_club" | "closed";
@@ -1211,22 +1465,6 @@ export interface EquipmentUpdate {
   "notes"?: string | null;
 }
 
-export type ReservationStatus = "active" | "returned" | "cancelled";
-export const ReservationStatusValues: readonly ReservationStatus[] = ["active", "returned", "cancelled"] as const;
-
-export interface EquipmentReservation {
-  "id": string;
-  "equipment_id": string;
-  "club_id": string;
-  "reserved_by_member_id": string;
-  "quantity": number | null;
-  "from_at": string;
-  "to_at": string;
-  "status": ReservationStatus;
-  "created_at": string;
-  "updated_at": string;
-}
-
 export interface EquipmentReservationCreate {
   "club_id": string;
   "equipment_id": string;
@@ -1242,23 +1480,6 @@ export interface EquipmentReservationUpdate {
   "from_at"?: string;
   "to_at"?: string;
   "status"?: ReservationStatus;
-}
-
-export type Medal = "gold" | "silver" | "bronze";
-export const MedalValues: readonly Medal[] = ["gold", "silver", "bronze"] as const;
-
-export interface Achievement {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "title": string;
-  "competition_name": string | null;
-  "placement": number | null;
-  "medal": Medal;
-  "achieved_on": string;
-  "note": string | null;
-  "created_at": string;
-  "updated_at": string;
 }
 
 export interface AchievementCreate {
@@ -1321,19 +1542,6 @@ export interface TrainingSlotUpdate {
   "note"?: string | null;
 }
 
-export interface DutyRequirement {
-  "id": string;
-  "club_id": string;
-  "team_id": string | null;
-  "member_id": string | null;
-  "season_label": string;
-  "required_hours": number | null;
-  "period_start": string;
-  "period_end": string;
-  "created_at": string;
-  "updated_at": string;
-}
-
 export interface DutyRequirementCreate {
   "club_id": string;
   "season_label": string;
@@ -1351,22 +1559,6 @@ export interface DutyRequirementUpdate {
   "period_end"?: string;
   "team_id"?: string | null;
   "member_id"?: string | null;
-}
-
-export type DutyKind = "training" | "helper" | "competition" | "other";
-export const DutyKindValues: readonly DutyKind[] = ["training", "helper", "competition", "other"] as const;
-
-export interface DutyEntry {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "hours": number | null;
-  "activity_date": string;
-  "kind": DutyKind;
-  "note": string | null;
-  "approved": boolean;
-  "created_at": string;
-  "updated_at": string;
 }
 
 export interface DutyEntryCreate {
@@ -1424,19 +1616,6 @@ export interface ChatMessageCreate {
   "image_url"?: string;
 }
 
-export type CheckinMethod = "qr" | "manual";
-export const CheckinMethodValues: readonly CheckinMethod[] = ["qr", "manual"] as const;
-
-export interface Checkin {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "event_id": string | null;
-  "method": CheckinMethod;
-  "checked_in_at": string;
-  "created_at": string;
-}
-
 export interface CheckinCreate {
   "club_id": string;
   "member_id": string;
@@ -1483,9 +1662,6 @@ export interface RegionalEventUpdate {
   "description"?: string | null;
 }
 
-export type GalleryKind = "photo" | "video";
-export const GalleryKindValues: readonly GalleryKind[] = ["photo", "video"] as const;
-
 export interface GalleryItem {
   "id": string;
   "club_id": string;
@@ -1509,6 +1685,21 @@ export interface GalleryItemCreate {
   "size_bytes": number;
   "album"?: string;
   "thumbnail_key"?: string;
+}
+
+export interface PhotoTag {
+  "id": string;
+  "club_id": string;
+  "gallery_item_id": string;
+  "member_id": string;
+  "tagged_by_member_id": string;
+  "created_at": string;
+}
+
+export interface PhotoTagCreate {
+  "club_id": string;
+  "gallery_item_id": string;
+  "member_id": string;
 }
 
 export interface Document {
@@ -1679,27 +1870,6 @@ export interface LockerAssign {
   "member_id": string;
 }
 
-export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
-export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
-
-export interface Invoice {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "number": string;
-  "title": string;
-  "amount_cents": number | null;
-  "currency": string;
-  "status": InvoiceStatus;
-  "dunning_level": number;
-  "issued_on": string | null;
-  "due_on": string | null;
-  "paid_at": string | null;
-  "paid_via": string | null;
-  "created_at": string;
-  "updated_at": string;
-}
-
 export interface InvoiceCreate {
   "club_id": string;
   "member_id": string;
@@ -1821,22 +1991,6 @@ export interface BankTransactionIgnore {
   "note"?: string;
 }
 
-export interface Donation {
-  "id": string;
-  "club_id": string;
-  "member_id": string | null;
-  "donor_name": string;
-  "donor_address": string | null;
-  "amount_cents": number | null;
-  "donation_date": string;
-  "receipt_number": string;
-  "purpose": string | null;
-  "issued_at": string | null;
-  "created_at": string;
-  "updated_at": string;
-  "deleted_at": string | null;
-}
-
 export interface DonationCreate {
   "club_id": string;
   "member_id"?: string;
@@ -1869,9 +2023,6 @@ export interface DonationReceipt {
   "issued": boolean;
   "text": string;
 }
-
-export type MembershipPeriod = "monthly" | "quarterly" | "yearly" | "once";
-export const MembershipPeriodValues: readonly MembershipPeriod[] = ["monthly", "quarterly", "yearly", "once"] as const;
 
 export interface MembershipCategory {
   "id": string;
@@ -1914,22 +2065,6 @@ export interface MemberFeeSummary {
   "club_id": string;
   "by_period": MemberFeeSummaryBucket[];
   "total_annual_cents": number | null;
-}
-
-export interface MemberFee {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "category_id": string;
-  "custom_amount_cents": number | null;
-  "valid_from": string;
-  "valid_until": string | null;
-  "created_at": string;
-  "updated_at": string;
-  "deleted_at": string | null;
-  "category_name"?: string | null;
-  "category_amount_cents"?: number | null;
-  "category_period"?: MembershipPeriod;
 }
 
 export interface MemberFeeCreate {
@@ -1979,23 +2114,6 @@ export interface FamilyDiscountUpdate {
   "value_numeric"?: number;
   "applies_from_child"?: number;
   "is_active"?: boolean;
-}
-
-export type SepaMandateStatus = "active" | "revoked";
-export const SepaMandateStatusValues: readonly SepaMandateStatus[] = ["active", "revoked"] as const;
-
-export interface SepaMandate {
-  "id": string;
-  "club_id": string;
-  "member_id": string;
-  "mandate_reference": string;
-  "iban_last4": string | null;
-  "account_holder": string;
-  "signed_on": string | null;
-  "status": SepaMandateStatus;
-  "created_at": string;
-  "updated_at": string;
-  "deleted_at": string | null;
 }
 
 export interface SepaMandateCreate {

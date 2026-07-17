@@ -376,6 +376,14 @@
             "type": "string",
             "nullable": true
           },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "postal_address": {
+            "type": "string",
+            "nullable": true
+          },
           "role": {
             "$ref": "#/components/schemas/ClubRole"
           },
@@ -454,6 +462,8 @@
           "last_name",
           "email",
           "birth_date",
+          "phone",
+          "postal_address",
           "role",
           "status",
           "joined_on",
@@ -833,6 +843,16 @@
             "nullable": true,
             "format": "date"
           },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "postal_address": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 300
+          },
           "status": {
             "$ref": "#/components/schemas/MemberStatus"
           },
@@ -877,6 +897,1566 @@
             "$ref": "#/components/schemas/ProfileVisibility"
           }
         }
+      },
+      "MemberRoleRef": {
+        "type": "object",
+        "properties": {
+          "role_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name_de": {
+            "type": "string"
+          },
+          "name_en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_id",
+          "key",
+          "name_de",
+          "name_en"
+        ]
+      },
+      "MemberDepartmentRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "is_lead": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "is_lead"
+        ]
+      },
+      "RoutineStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "ready",
+          "competition",
+          "archived"
+        ]
+      },
+      "Routine": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "team_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoutineStatus"
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_title": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_artist": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_bpm": {
+            "type": "integer",
+            "nullable": true
+          },
+          "music_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "audio_asset_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "image_asset_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "skater_member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "waveform_peaks": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "number"
+            }
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "team_id",
+          "title",
+          "status",
+          "category",
+          "music_title",
+          "music_artist",
+          "music_bpm",
+          "music_duration_ms",
+          "audio_asset_id",
+          "image_asset_id",
+          "skater_member_ids",
+          "waveform_peaks",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "CompetitionEntryStatus": {
+        "type": "string",
+        "enum": [
+          "registered",
+          "confirmed",
+          "withdrawn"
+        ]
+      },
+      "CompetitionEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routine_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CompetitionEntryStatus"
+          }
+        },
+        "required": [
+          "id",
+          "member_id",
+          "routine_id",
+          "status"
+        ]
+      },
+      "RoutineScore": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "routine_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "competition_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "scored_on": {
+            "type": "string"
+          },
+          "scoring_system": {
+            "type": "string"
+          },
+          "technical_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "components_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "total_score": {
+            "type": "number",
+            "nullable": true
+          },
+          "placement": {
+            "type": "integer",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "routine_id",
+          "competition_id",
+          "scored_on",
+          "scoring_system",
+          "technical_score",
+          "components_score",
+          "total_score",
+          "placement",
+          "note"
+        ]
+      },
+      "MemberProfileCompetition": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompetitionEntry"
+            }
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoutineScore"
+            }
+          }
+        },
+        "required": [
+          "entries",
+          "scores"
+        ]
+      },
+      "Medal": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "gold",
+          "silver",
+          "bronze"
+        ]
+      },
+      "Achievement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "competition_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "placement": {
+            "type": "integer",
+            "nullable": true
+          },
+          "medal": {
+            "$ref": "#/components/schemas/Medal"
+          },
+          "achieved_on": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "title",
+          "competition_name",
+          "placement",
+          "medal",
+          "achieved_on",
+          "note",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "AttendanceStatus": {
+        "type": "string",
+        "enum": [
+          "present",
+          "late",
+          "excused",
+          "absent"
+        ]
+      },
+      "Attendance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AttendanceStatus"
+          },
+          "checked_in_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "event_id",
+          "member_id",
+          "status",
+          "checked_in_at"
+        ]
+      },
+      "CheckinMethod": {
+        "type": "string",
+        "enum": [
+          "qr",
+          "manual"
+        ]
+      },
+      "Checkin": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "method": {
+            "$ref": "#/components/schemas/CheckinMethod"
+          },
+          "checked_in_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "event_id",
+          "method",
+          "checked_in_at",
+          "created_at"
+        ]
+      },
+      "DutyRequirement": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "team_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "season_label": {
+            "type": "string"
+          },
+          "required_hours": {
+            "type": "number",
+            "nullable": true
+          },
+          "period_start": {
+            "type": "string"
+          },
+          "period_end": {
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "team_id",
+          "member_id",
+          "season_label",
+          "required_hours",
+          "period_start",
+          "period_end",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "DutyKind": {
+        "type": "string",
+        "enum": [
+          "training",
+          "helper",
+          "competition",
+          "other"
+        ]
+      },
+      "DutyEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "hours": {
+            "type": "number",
+            "nullable": true
+          },
+          "activity_date": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DutyKind"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "approved": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "hours",
+          "activity_date",
+          "kind",
+          "note",
+          "approved",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "MemberProfileDuty": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "requirements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DutyRequirement"
+            }
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DutyEntry"
+            }
+          }
+        },
+        "required": [
+          "requirements",
+          "entries"
+        ]
+      },
+      "RsvpStatus": {
+        "type": "string",
+        "enum": [
+          "going",
+          "declined",
+          "maybe",
+          "sick"
+        ]
+      },
+      "EventRsvp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RsvpStatus"
+          },
+          "comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "event_id",
+          "member_id",
+          "status",
+          "comment",
+          "responded_at"
+        ]
+      },
+      "ReservationStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "returned",
+          "cancelled"
+        ]
+      },
+      "EquipmentReservation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "equipment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reserved_by_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "nullable": true
+          },
+          "from_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "to_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReservationStatus"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "equipment_id",
+          "club_id",
+          "reserved_by_member_id",
+          "quantity",
+          "from_at",
+          "to_at",
+          "status",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "InvoiceStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "open",
+          "paid",
+          "cancelled"
+        ]
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvoiceStatus"
+          },
+          "dunning_level": {
+            "type": "integer"
+          },
+          "issued_on": {
+            "type": "string",
+            "nullable": true
+          },
+          "due_on": {
+            "type": "string",
+            "nullable": true
+          },
+          "paid_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "paid_via": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "number",
+          "title",
+          "amount_cents",
+          "currency",
+          "status",
+          "dunning_level",
+          "issued_on",
+          "due_on",
+          "paid_at",
+          "paid_via",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "MembershipPeriod": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "monthly",
+          "quarterly",
+          "yearly",
+          "once"
+        ]
+      },
+      "MemberFee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "custom_amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "valid_from": {
+            "type": "string"
+          },
+          "valid_until": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "category_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "category_amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "category_period": {
+            "$ref": "#/components/schemas/MembershipPeriod"
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "category_id",
+          "custom_amount_cents",
+          "valid_from",
+          "valid_until",
+          "created_at",
+          "updated_at",
+          "deleted_at"
+        ]
+      },
+      "SepaMandateStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked"
+        ]
+      },
+      "SepaMandate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mandate_reference": {
+            "type": "string"
+          },
+          "iban_last4": {
+            "type": "string",
+            "nullable": true
+          },
+          "account_holder": {
+            "type": "string"
+          },
+          "signed_on": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/SepaMandateStatus"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "mandate_reference",
+          "iban_last4",
+          "account_holder",
+          "signed_on",
+          "status",
+          "created_at",
+          "updated_at",
+          "deleted_at"
+        ]
+      },
+      "Donation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "donor_name": {
+            "type": "string"
+          },
+          "donor_address": {
+            "type": "string",
+            "nullable": true
+          },
+          "amount_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "donation_date": {
+            "type": "string"
+          },
+          "receipt_number": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string",
+            "nullable": true
+          },
+          "issued_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "donor_name",
+          "donor_address",
+          "amount_cents",
+          "donation_date",
+          "receipt_number",
+          "purpose",
+          "issued_at",
+          "created_at",
+          "updated_at",
+          "deleted_at"
+        ]
+      },
+      "MemberProfileFinance": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Invoice"
+            }
+          },
+          "member_fees": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberFee"
+            }
+          },
+          "sepa_mandates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SepaMandate"
+            }
+          },
+          "donations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Donation"
+            }
+          }
+        },
+        "required": [
+          "invoices",
+          "member_fees",
+          "sepa_mandates",
+          "donations"
+        ]
+      },
+      "MemberAssessment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string"
+          },
+          "rating_technik": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "rating_ausdruck": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "assessed_on": {
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "author_member_id",
+          "body",
+          "rating_technik",
+          "rating_ausdruck",
+          "assessed_on",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "GalleryKind": {
+        "type": "string",
+        "enum": [
+          "photo",
+          "video"
+        ]
+      },
+      "MemberPhoto": {
+        "type": "object",
+        "properties": {
+          "tag_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gallery_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "album": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GalleryKind"
+          },
+          "storage_key": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string"
+          },
+          "thumbnail_key": {
+            "type": "string",
+            "nullable": true
+          },
+          "tagged_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tag_id",
+          "gallery_item_id",
+          "member_id",
+          "album",
+          "title",
+          "kind",
+          "storage_key",
+          "content_type",
+          "thumbnail_key",
+          "tagged_at"
+        ]
+      },
+      "ConsentPurpose": {
+        "type": "string",
+        "enum": [
+          "terms",
+          "privacy",
+          "photos_internal",
+          "photos_public",
+          "chat",
+          "newsletter"
+        ]
+      },
+      "EffectiveConsent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "subject_profile_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ConsentPurpose"
+          },
+          "granted_by_profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "legal_document_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "policy_version": {
+            "type": "string",
+            "nullable": true
+          },
+          "recorded_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "effective": {
+            "type": "boolean"
+          },
+          "recorded_granted": {
+            "type": "boolean"
+          },
+          "granted_by_guardian": {
+            "type": "boolean"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "valid",
+              "revoked",
+              "expired_age_16"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "member_id",
+          "subject_profile_id",
+          "purpose",
+          "granted_by_profile_id",
+          "legal_document_id",
+          "policy_version",
+          "recorded_at",
+          "effective",
+          "recorded_granted",
+          "granted_by_guardian",
+          "state"
+        ]
+      },
+      "MemberProfile": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/ClubMember"
+          },
+          "contact_visible": {
+            "type": "boolean"
+          },
+          "admin_contact_visible": {
+            "type": "boolean"
+          },
+          "self_profile_visible": {
+            "type": "boolean"
+          },
+          "joined_on_visible": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberRoleRef"
+            }
+          },
+          "departments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberDepartmentRef"
+            }
+          },
+          "routines": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            }
+          },
+          "competition": {
+            "$ref": "#/components/schemas/MemberProfileCompetition"
+          },
+          "achievements": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/Achievement"
+            }
+          },
+          "attendance": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/Attendance"
+            }
+          },
+          "checkins": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/Checkin"
+            }
+          },
+          "duty": {
+            "$ref": "#/components/schemas/MemberProfileDuty"
+          },
+          "rsvps": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/EventRsvp"
+            }
+          },
+          "equipment": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/EquipmentReservation"
+            }
+          },
+          "finance": {
+            "$ref": "#/components/schemas/MemberProfileFinance"
+          },
+          "assessments": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/MemberAssessment"
+            }
+          },
+          "photos": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/MemberPhoto"
+            }
+          },
+          "consents": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/EffectiveConsent"
+            }
+          }
+        },
+        "required": [
+          "member",
+          "contact_visible",
+          "admin_contact_visible",
+          "self_profile_visible",
+          "joined_on_visible",
+          "roles",
+          "departments",
+          "routines",
+          "achievements",
+          "attendance",
+          "checkins",
+          "rsvps",
+          "equipment",
+          "assessments",
+          "photos",
+          "consents"
+        ]
       },
       "ChildCreated": {
         "type": "object",
@@ -973,98 +2553,6 @@
         "required": [
           "status",
           "id"
-        ]
-      },
-      "ConsentPurpose": {
-        "type": "string",
-        "enum": [
-          "terms",
-          "privacy",
-          "photos_internal",
-          "photos_public",
-          "chat",
-          "newsletter"
-        ]
-      },
-      "EffectiveConsent": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "subject_profile_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "purpose": {
-            "$ref": "#/components/schemas/ConsentPurpose"
-          },
-          "granted_by_profile_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "legal_document_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "policy_version": {
-            "type": "string",
-            "nullable": true
-          },
-          "recorded_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "effective": {
-            "type": "boolean"
-          },
-          "recorded_granted": {
-            "type": "boolean"
-          },
-          "granted_by_guardian": {
-            "type": "boolean"
-          },
-          "state": {
-            "type": "string",
-            "enum": [
-              "valid",
-              "revoked",
-              "expired_age_16"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "subject_profile_id",
-          "purpose",
-          "granted_by_profile_id",
-          "legal_document_id",
-          "policy_version",
-          "recorded_at",
-          "effective",
-          "recorded_granted",
-          "granted_by_guardian",
-          "state"
         ]
       },
       "RealConsentPurpose": {
@@ -1446,6 +2934,14 @@
             "type": "string",
             "nullable": true
           },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "postal_address": {
+            "type": "string",
+            "nullable": true
+          },
           "role": {
             "$ref": "#/components/schemas/ClubRole"
           },
@@ -1503,6 +2999,8 @@
           "last_name",
           "email",
           "birth_date",
+          "phone",
+          "postal_address",
           "role",
           "status",
           "joined_on",
@@ -1560,6 +3058,16 @@
             "type": "string",
             "nullable": true,
             "format": "date"
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "postal_address": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 300
           }
         }
       },
@@ -3068,62 +4576,6 @@
           "club"
         ]
       },
-      "RsvpStatus": {
-        "type": "string",
-        "enum": [
-          "going",
-          "declined",
-          "maybe",
-          "sick"
-        ]
-      },
-      "EventRsvp": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "event_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "$ref": "#/components/schemas/RsvpStatus"
-          },
-          "comment": {
-            "type": "string",
-            "nullable": true
-          },
-          "responded_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "event_id",
-          "member_id",
-          "status",
-          "comment",
-          "responded_at"
-        ]
-      },
       "Event": {
         "type": "object",
         "properties": {
@@ -3309,60 +4761,6 @@
           "status"
         ]
       },
-      "AttendanceStatus": {
-        "type": "string",
-        "enum": [
-          "present",
-          "late",
-          "excused",
-          "absent"
-        ]
-      },
-      "Attendance": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "event_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "$ref": "#/components/schemas/AttendanceStatus"
-          },
-          "checked_in_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "event_id",
-          "member_id",
-          "status",
-          "checked_in_at"
-        ]
-      },
       "AttendanceUpsert": {
         "type": "object",
         "properties": {
@@ -3381,115 +4779,6 @@
         "required": [
           "member_id",
           "status"
-        ]
-      },
-      "RoutineStatus": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "ready",
-          "competition",
-          "archived"
-        ]
-      },
-      "Routine": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "team_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/RoutineStatus"
-          },
-          "category": {
-            "type": "string",
-            "nullable": true
-          },
-          "music_title": {
-            "type": "string",
-            "nullable": true
-          },
-          "music_artist": {
-            "type": "string",
-            "nullable": true
-          },
-          "music_bpm": {
-            "type": "integer",
-            "nullable": true
-          },
-          "music_duration_ms": {
-            "type": "integer",
-            "nullable": true
-          },
-          "audio_asset_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "skater_member_ids": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "waveform_peaks": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "number"
-            }
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "team_id",
-          "title",
-          "status",
-          "category",
-          "music_title",
-          "music_artist",
-          "music_bpm",
-          "music_duration_ms",
-          "audio_asset_id",
-          "skater_member_ids",
-          "waveform_peaks",
-          "created_at",
-          "updated_at"
         ]
       },
       "RoutineCreate": {
@@ -3596,67 +4885,6 @@
           "label"
         ]
       },
-      "RoutineScore": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "routine_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "competition_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "scored_on": {
-            "type": "string"
-          },
-          "scoring_system": {
-            "type": "string"
-          },
-          "technical_score": {
-            "type": "number",
-            "nullable": true
-          },
-          "components_score": {
-            "type": "number",
-            "nullable": true
-          },
-          "total_score": {
-            "type": "number",
-            "nullable": true
-          },
-          "placement": {
-            "type": "integer",
-            "nullable": true
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "routine_id",
-          "competition_id",
-          "scored_on",
-          "scoring_system",
-          "technical_score",
-          "components_score",
-          "total_score",
-          "placement",
-          "note"
-        ]
-      },
       "RoutineScoreCreate": {
         "type": "object",
         "properties": {
@@ -3750,41 +4978,6 @@
           "running",
           "done",
           "cancelled"
-        ]
-      },
-      "CompetitionEntryStatus": {
-        "type": "string",
-        "enum": [
-          "registered",
-          "confirmed",
-          "withdrawn"
-        ]
-      },
-      "CompetitionEntry": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "routine_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "status": {
-            "$ref": "#/components/schemas/CompetitionEntryStatus"
-          }
-        },
-        "required": [
-          "id",
-          "member_id",
-          "routine_id",
-          "status"
         ]
       },
       "Competition": {
@@ -4351,6 +5544,69 @@
             "type": "string",
             "nullable": true,
             "format": "uuid"
+          }
+        }
+      },
+      "MemberAssessmentCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "rating_technik": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "rating_ausdruck": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "assessed_on": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "club_id",
+          "member_id",
+          "body"
+        ]
+      },
+      "MemberAssessmentUpdate": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "rating_technik": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "rating_ausdruck": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 5
+          },
+          "assessed_on": {
+            "type": "string",
+            "format": "date"
           }
         }
       },
@@ -5304,94 +6560,6 @@
           }
         }
       },
-      "ReservationStatus": {
-        "type": "string",
-        "enum": [
-          "active",
-          "returned",
-          "cancelled"
-        ]
-      },
-      "EquipmentReservation": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "equipment_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "reserved_by_member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "quantity": {
-            "type": "integer",
-            "nullable": true
-          },
-          "from_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "to_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "status": {
-            "$ref": "#/components/schemas/ReservationStatus"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "equipment_id",
-          "club_id",
-          "reserved_by_member_id",
-          "quantity",
-          "from_at",
-          "to_at",
-          "status",
-          "created_at",
-          "updated_at"
-        ]
-      },
       "EquipmentReservationCreate": {
         "type": "object",
         "properties": {
@@ -5460,86 +6628,6 @@
             "$ref": "#/components/schemas/ReservationStatus"
           }
         }
-      },
-      "Medal": {
-        "type": "string",
-        "nullable": true,
-        "enum": [
-          "gold",
-          "silver",
-          "bronze"
-        ]
-      },
-      "Achievement": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "competition_name": {
-            "type": "string",
-            "nullable": true
-          },
-          "placement": {
-            "type": "integer",
-            "nullable": true
-          },
-          "medal": {
-            "$ref": "#/components/schemas/Medal"
-          },
-          "achieved_on": {
-            "type": "string"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "title",
-          "competition_name",
-          "placement",
-          "medal",
-          "achieved_on",
-          "note",
-          "created_at",
-          "updated_at"
-        ]
       },
       "AchievementCreate": {
         "type": "object",
@@ -5779,74 +6867,6 @@
           }
         }
       },
-      "DutyRequirement": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "team_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "season_label": {
-            "type": "string"
-          },
-          "required_hours": {
-            "type": "number",
-            "nullable": true
-          },
-          "period_start": {
-            "type": "string"
-          },
-          "period_end": {
-            "type": "string"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "team_id",
-          "member_id",
-          "season_label",
-          "required_hours",
-          "period_start",
-          "period_end",
-          "created_at",
-          "updated_at"
-        ]
-      },
       "DutyRequirementCreate": {
         "type": "object",
         "properties": {
@@ -5917,81 +6937,6 @@
             "format": "uuid"
           }
         }
-      },
-      "DutyKind": {
-        "type": "string",
-        "enum": [
-          "training",
-          "helper",
-          "competition",
-          "other"
-        ]
-      },
-      "DutyEntry": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "hours": {
-            "type": "number",
-            "nullable": true
-          },
-          "activity_date": {
-            "type": "string"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/DutyKind"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          },
-          "approved": {
-            "type": "boolean"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "hours",
-          "activity_date",
-          "kind",
-          "note",
-          "approved",
-          "created_at",
-          "updated_at"
-        ]
       },
       "DutyEntryCreate": {
         "type": "object",
@@ -6230,67 +7175,6 @@
           "channel_type"
         ]
       },
-      "CheckinMethod": {
-        "type": "string",
-        "enum": [
-          "qr",
-          "manual"
-        ]
-      },
-      "Checkin": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "event_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "method": {
-            "$ref": "#/components/schemas/CheckinMethod"
-          },
-          "checked_in_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "event_id",
-          "method",
-          "checked_in_at",
-          "created_at"
-        ]
-      },
       "CheckinCreate": {
         "type": "object",
         "properties": {
@@ -6484,13 +7368,6 @@
           }
         }
       },
-      "GalleryKind": {
-        "type": "string",
-        "enum": [
-          "photo",
-          "video"
-        ]
-      },
       "GalleryItem": {
         "type": "object",
         "properties": {
@@ -6597,6 +7474,71 @@
           "storage_key",
           "content_type",
           "size_bytes"
+        ]
+      },
+      "PhotoTag": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gallery_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tagged_by_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "gallery_item_id",
+          "member_id",
+          "tagged_by_member_id",
+          "created_at"
+        ]
+      },
+      "PhotoTagCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gallery_item_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "club_id",
+          "gallery_item_id",
+          "member_id"
         ]
       },
       "Document": {
@@ -7298,113 +8240,6 @@
           "member_id"
         ]
       },
-      "InvoiceStatus": {
-        "type": "string",
-        "enum": [
-          "draft",
-          "open",
-          "paid",
-          "cancelled"
-        ]
-      },
-      "Invoice": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "number": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "amount_cents": {
-            "type": "integer",
-            "nullable": true
-          },
-          "currency": {
-            "type": "string"
-          },
-          "status": {
-            "$ref": "#/components/schemas/InvoiceStatus"
-          },
-          "dunning_level": {
-            "type": "integer"
-          },
-          "issued_on": {
-            "type": "string",
-            "nullable": true
-          },
-          "due_on": {
-            "type": "string",
-            "nullable": true
-          },
-          "paid_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          },
-          "paid_via": {
-            "type": "string",
-            "nullable": true
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "number",
-          "title",
-          "amount_cents",
-          "currency",
-          "status",
-          "dunning_level",
-          "issued_on",
-          "due_on",
-          "paid_at",
-          "paid_via",
-          "created_at",
-          "updated_at"
-        ]
-      },
       "InvoiceCreate": {
         "type": "object",
         "properties": {
@@ -7913,106 +8748,6 @@
           }
         }
       },
-      "Donation": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "donor_name": {
-            "type": "string"
-          },
-          "donor_address": {
-            "type": "string",
-            "nullable": true
-          },
-          "amount_cents": {
-            "type": "integer",
-            "nullable": true
-          },
-          "donation_date": {
-            "type": "string"
-          },
-          "receipt_number": {
-            "type": "string"
-          },
-          "purpose": {
-            "type": "string",
-            "nullable": true
-          },
-          "issued_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "donor_name",
-          "donor_address",
-          "amount_cents",
-          "donation_date",
-          "receipt_number",
-          "purpose",
-          "issued_at",
-          "created_at",
-          "updated_at",
-          "deleted_at"
-        ]
-      },
       "DonationCreate": {
         "type": "object",
         "properties": {
@@ -8133,15 +8868,6 @@
           "purpose",
           "issued",
           "text"
-        ]
-      },
-      "MembershipPeriod": {
-        "type": "string",
-        "enum": [
-          "monthly",
-          "quarterly",
-          "yearly",
-          "once"
         ]
       },
       "MembershipCategory": {
@@ -8323,101 +9049,6 @@
           "club_id",
           "by_period",
           "total_annual_cents"
-        ]
-      },
-      "MemberFee": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "category_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "custom_amount_cents": {
-            "type": "integer",
-            "nullable": true
-          },
-          "valid_from": {
-            "type": "string"
-          },
-          "valid_until": {
-            "type": "string",
-            "nullable": true
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          },
-          "category_name": {
-            "type": "string",
-            "nullable": true
-          },
-          "category_amount_cents": {
-            "type": "integer",
-            "nullable": true
-          },
-          "category_period": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/MembershipPeriod"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "category_id",
-          "custom_amount_cents",
-          "valid_from",
-          "valid_until",
-          "created_at",
-          "updated_at",
-          "deleted_at"
         ]
       },
       "MemberFeeCreate": {
@@ -8617,93 +9248,6 @@
             "type": "boolean"
           }
         }
-      },
-      "SepaMandateStatus": {
-        "type": "string",
-        "enum": [
-          "active",
-          "revoked"
-        ]
-      },
-      "SepaMandate": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "club_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "member_id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "mandate_reference": {
-            "type": "string"
-          },
-          "iban_last4": {
-            "type": "string",
-            "nullable": true
-          },
-          "account_holder": {
-            "type": "string"
-          },
-          "signed_on": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "$ref": "#/components/schemas/SepaMandateStatus"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "deleted_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "nullable": true
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "club_id",
-          "member_id",
-          "mandate_reference",
-          "iban_last4",
-          "account_holder",
-          "signed_on",
-          "status",
-          "created_at",
-          "updated_at",
-          "deleted_at"
-        ]
       },
       "SepaMandateCreate": {
         "type": "object",
@@ -10051,7 +10595,7 @@
           "members"
         ],
         "summary": "List the club roster (sensitive columns redacted for non-managers)",
-        "description": "Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; joined_on sieht zusaetzlich der coach (\"Trainer und hoeher\", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.",
+        "description": "Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. REDIGIER-Stufen: die Parent-KONTAKTdaten (birth_date, email, phone, postal_address) sehen can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins IMMER, und ein coach (NICHT guest_coach) ZEILENWEISE fuer Mitglieder seiner eigenen Teams (um deren Eltern zu erreichen); die Verwaltungs-Kontaktdaten (valid_until, profile_id) bleiben can_manage_members vorbehalten (nie dem coach); joined_on sieht zusaetzlich der coach (\"Trainer und hoeher\", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.",
         "security": [
           {
             "bearerAuth": []
@@ -10735,6 +11279,90 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClubMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Das 360-Grad-Profil EINER Person — jede Sektion rollen-gestaffelt und serverseitig",
+        "description": "Sammelt Stammkopf, Selbst-Profil, Kontakt, Kueren, Wettkampf-Noten, Medaillen, Anwesenheit, Check-ins, Pflichtstunden, Termine (RSVP), Ausruestung, Finanzen, Trainer-Beurteilungen, Galerie-Fotos und die Konsent-Uebersicht EINER Person. Jede Sektion wird SERVERSEITIG nach den passenden Rechten gestaffelt: darf der/die Betrachter:in sie nicht sehen, kommt sie als null (nicht als leer/Fehler). Die Regel je Sektion steht im Schema. RLS traegt jede Zeile als zweite Linie; kein Service-Mode (der Endpunkt ist auf EINE Person begrenzt).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Das 360-Grad-Profil (gestaffelte Sektionen)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberProfile"
                 }
               }
             }
@@ -16881,6 +17509,327 @@
         }
       }
     },
+    "/assessments": {
+      "get": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "List the (role-filtered) assessments of one member",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "member_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessments visible to the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberAssessment"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Write an assessment (team coach of the member, or the board)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberAssessmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created assessment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAssessment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/assessments/{assessmentId}": {
+      "patch": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Edit an assessment (author or board)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "assessmentId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberAssessmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated assessment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAssessment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "assessments"
+        ],
+        "summary": "Soft-delete an assessment (author or board)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "assessmentId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assessment soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/support/tickets": {
       "get": {
         "tags": [
@@ -20314,7 +21263,7 @@
           "chat"
         ],
         "summary": "People I may start a direct message with (child protection applied)",
-        "description": "The picker behind \"New message to ...\". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint is deliberately not a second, wider way into the roster.",
+        "description": "The picker behind \"New message to ...\". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, phone, postal_address, valid_until, profile_id, joined_on. A coach (not guest_coach) additionally sees the parent contact data (birth_date/email/phone/postal_address) of members of their OWN teams, row-scoped like the roster. This endpoint is deliberately not a second, wider way into the roster.",
         "security": [
           {
             "bearerAuth": []
@@ -21392,6 +22341,324 @@
         "responses": {
           "200": {
             "description": "Gallery item soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photo-tags": {
+      "post": {
+        "tags": [
+          "gallery"
+        ],
+        "summary": "Tag a person on a gallery photo (staff; no consent required to tag)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoTagCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created photo tag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoTag"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gallery/{itemId}/tags": {
+      "get": {
+        "tags": [
+          "gallery"
+        ],
+        "summary": "List tags on a gallery item (management view; RLS-scoped)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "itemId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tags visible to the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhotoTag"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/members/{memberId}/photos": {
+      "get": {
+        "tags": [
+          "gallery"
+        ],
+        "summary": "Photos a member appears on — consent-gated (photos_internal)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tagged photos with effective internal-photo consent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberPhoto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/photo-tags/{tagId}": {
+      "delete": {
+        "tags": [
+          "gallery"
+        ],
+        "summary": "Remove a photo tag (the tagged person, a guardian, or staff)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "tagId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo tag soft-deleted",
             "content": {
               "application/json": {
                 "schema": {

@@ -52,6 +52,93 @@ enum class AssignableClubRole {
 }
 
 @Serializable
+enum class RoutineStatus {
+    @SerialName("draft") DRAFT,
+    @SerialName("ready") READY,
+    @SerialName("competition") COMPETITION,
+    @SerialName("archived") ARCHIVED;
+}
+
+@Serializable
+enum class CompetitionEntryStatus {
+    @SerialName("registered") REGISTERED,
+    @SerialName("confirmed") CONFIRMED,
+    @SerialName("withdrawn") WITHDRAWN;
+}
+
+@Serializable
+enum class Medal {
+    @SerialName("gold") GOLD,
+    @SerialName("silver") SILVER,
+    @SerialName("bronze") BRONZE;
+}
+
+@Serializable
+enum class AttendanceStatus {
+    @SerialName("present") PRESENT,
+    @SerialName("late") LATE,
+    @SerialName("excused") EXCUSED,
+    @SerialName("absent") ABSENT;
+}
+
+@Serializable
+enum class CheckinMethod {
+    @SerialName("qr") QR,
+    @SerialName("manual") MANUAL;
+}
+
+@Serializable
+enum class DutyKind {
+    @SerialName("training") TRAINING,
+    @SerialName("helper") HELPER,
+    @SerialName("competition") COMPETITION,
+    @SerialName("other") OTHER;
+}
+
+@Serializable
+enum class RsvpStatus {
+    @SerialName("going") GOING,
+    @SerialName("declined") DECLINED,
+    @SerialName("maybe") MAYBE,
+    @SerialName("sick") SICK;
+}
+
+@Serializable
+enum class ReservationStatus {
+    @SerialName("active") ACTIVE,
+    @SerialName("returned") RETURNED,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class InvoiceStatus {
+    @SerialName("draft") DRAFT,
+    @SerialName("open") OPEN,
+    @SerialName("paid") PAID,
+    @SerialName("cancelled") CANCELLED;
+}
+
+@Serializable
+enum class MembershipPeriod {
+    @SerialName("monthly") MONTHLY,
+    @SerialName("quarterly") QUARTERLY,
+    @SerialName("yearly") YEARLY,
+    @SerialName("once") ONCE;
+}
+
+@Serializable
+enum class SepaMandateStatus {
+    @SerialName("active") ACTIVE,
+    @SerialName("revoked") REVOKED;
+}
+
+@Serializable
+enum class GalleryKind {
+    @SerialName("photo") PHOTO,
+    @SerialName("video") VIDEO;
+}
+
+@Serializable
 enum class ConsentPurpose {
     @SerialName("terms") TERMS,
     @SerialName("privacy") PRIVACY,
@@ -145,42 +232,11 @@ enum class EventAudience {
 }
 
 @Serializable
-enum class RsvpStatus {
-    @SerialName("going") GOING,
-    @SerialName("declined") DECLINED,
-    @SerialName("maybe") MAYBE,
-    @SerialName("sick") SICK;
-}
-
-@Serializable
-enum class AttendanceStatus {
-    @SerialName("present") PRESENT,
-    @SerialName("late") LATE,
-    @SerialName("excused") EXCUSED,
-    @SerialName("absent") ABSENT;
-}
-
-@Serializable
-enum class RoutineStatus {
-    @SerialName("draft") DRAFT,
-    @SerialName("ready") READY,
-    @SerialName("competition") COMPETITION,
-    @SerialName("archived") ARCHIVED;
-}
-
-@Serializable
 enum class CompetitionStatus {
     @SerialName("upcoming") UPCOMING,
     @SerialName("running") RUNNING,
     @SerialName("done") DONE,
     @SerialName("cancelled") CANCELLED;
-}
-
-@Serializable
-enum class CompetitionEntryStatus {
-    @SerialName("registered") REGISTERED,
-    @SerialName("confirmed") CONFIRMED,
-    @SerialName("withdrawn") WITHDRAWN;
 }
 
 @Serializable
@@ -239,43 +295,9 @@ enum class EquipmentCondition {
 }
 
 @Serializable
-enum class ReservationStatus {
-    @SerialName("active") ACTIVE,
-    @SerialName("returned") RETURNED,
-    @SerialName("cancelled") CANCELLED;
-}
-
-@Serializable
-enum class Medal {
-    @SerialName("gold") GOLD,
-    @SerialName("silver") SILVER,
-    @SerialName("bronze") BRONZE;
-}
-
-@Serializable
-enum class DutyKind {
-    @SerialName("training") TRAINING,
-    @SerialName("helper") HELPER,
-    @SerialName("competition") COMPETITION,
-    @SerialName("other") OTHER;
-}
-
-@Serializable
 enum class ChatChannelType {
     @SerialName("team") TEAM,
     @SerialName("direct") DIRECT;
-}
-
-@Serializable
-enum class CheckinMethod {
-    @SerialName("qr") QR,
-    @SerialName("manual") MANUAL;
-}
-
-@Serializable
-enum class GalleryKind {
-    @SerialName("photo") PHOTO,
-    @SerialName("video") VIDEO;
 }
 
 @Serializable
@@ -292,14 +314,6 @@ enum class LockerStatus {
 }
 
 @Serializable
-enum class InvoiceStatus {
-    @SerialName("draft") DRAFT,
-    @SerialName("open") OPEN,
-    @SerialName("paid") PAID,
-    @SerialName("cancelled") CANCELLED;
-}
-
-@Serializable
 enum class CounterpartyKind {
     @SerialName("person") PERSON,
     @SerialName("org") ORG;
@@ -313,23 +327,9 @@ enum class BankTransactionStatus {
 }
 
 @Serializable
-enum class MembershipPeriod {
-    @SerialName("monthly") MONTHLY,
-    @SerialName("quarterly") QUARTERLY,
-    @SerialName("yearly") YEARLY,
-    @SerialName("once") ONCE;
-}
-
-@Serializable
 enum class FamilyDiscountKind {
     @SerialName("percent") PERCENT,
     @SerialName("fixed") FIXED;
-}
-
-@Serializable
-enum class SepaMandateStatus {
-    @SerialName("active") ACTIVE,
-    @SerialName("revoked") REVOKED;
 }
 
 @Serializable
@@ -349,6 +349,14 @@ enum class HealthStatus {
 @Serializable
 enum class InviteQueuedStatus {
     @SerialName("queued") QUEUED;
+}
+
+/** Inline enum of EffectiveConsent.state (hoisted by codegen). */
+@Serializable
+enum class EffectiveConsentState {
+    @SerialName("valid") VALID,
+    @SerialName("revoked") REVOKED,
+    @SerialName("expired_age_16") EXPIRED_AGE_16;
 }
 
 /** Inline enum of ChildCreate.relation (hoisted by codegen). */
@@ -371,14 +379,6 @@ enum class GuardianshipCreateRelation {
 @Serializable
 enum class DeletedStatus {
     @SerialName("deleted") DELETED;
-}
-
-/** Inline enum of EffectiveConsent.state (hoisted by codegen). */
-@Serializable
-enum class EffectiveConsentState {
-    @SerialName("valid") VALID,
-    @SerialName("revoked") REVOKED,
-    @SerialName("expired_age_16") EXPIRED_AGE_16;
 }
 
 /** Inline enum of ClubModuleState.enforcement (hoisted by codegen). */
@@ -559,6 +559,8 @@ data class ClubMember(
     @SerialName("last_name") val lastName: String,
     val email: String?,
     @SerialName("birth_date") val birthDate: String?,
+    val phone: String?,
+    @SerialName("postal_address") val postalAddress: String?,
     val role: ClubRole,
     val status: MemberStatus,
     @SerialName("joined_on") val joinedOn: String?,
@@ -667,6 +669,8 @@ data class ClubMemberUpdate(
     @SerialName("last_name") val lastName: String? = null,
     val email: String? = null,
     @SerialName("birth_date") val birthDate: String? = null,
+    val phone: String? = null,
+    @SerialName("postal_address") val postalAddress: String? = null,
     val status: MemberStatus? = null,
     @SerialName("valid_until") val validUntil: String? = null
 )
@@ -682,6 +686,309 @@ data class ClubMemberSelfProfileUpdate(
     @SerialName("favorite_discipline") val favoriteDiscipline: String? = null,
     @SerialName("skating_since") val skatingSince: Long? = null,
     val visibility: ProfileVisibility? = null
+)
+
+@Serializable
+data class MemberRoleRef(
+    @SerialName("role_id") val roleId: String,
+    val key: String,
+    @SerialName("name_de") val nameDe: String,
+    @SerialName("name_en") val nameEn: String
+)
+
+@Serializable
+data class MemberDepartmentRef(
+    val id: String,
+    val name: String,
+    @SerialName("is_lead") val isLead: Boolean
+)
+
+@Serializable
+data class Routine(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("team_id") val teamId: String?,
+    val title: String,
+    val status: RoutineStatus,
+    val category: String?,
+    @SerialName("music_title") val musicTitle: String?,
+    @SerialName("music_artist") val musicArtist: String?,
+    @SerialName("music_bpm") val musicBpm: Long?,
+    @SerialName("music_duration_ms") val musicDurationMs: Long?,
+    @SerialName("audio_asset_id") val audioAssetId: String?,
+    @SerialName("image_asset_id") val imageAssetId: String?,
+    @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
+    @SerialName("waveform_peaks") val waveformPeaks: List<Double>?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class CompetitionEntry(
+    val id: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("routine_id") val routineId: String?,
+    val status: CompetitionEntryStatus
+)
+
+@Serializable
+data class RoutineScore(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("routine_id") val routineId: String,
+    @SerialName("competition_id") val competitionId: String?,
+    @SerialName("scored_on") val scoredOn: String,
+    @SerialName("scoring_system") val scoringSystem: String,
+    @SerialName("technical_score") val technicalScore: Double?,
+    @SerialName("components_score") val componentsScore: Double?,
+    @SerialName("total_score") val totalScore: Double?,
+    val placement: Long?,
+    val note: String?
+)
+
+@Serializable
+data class MemberProfileCompetition(
+    val entries: List<CompetitionEntry>,
+    val scores: List<RoutineScore>
+)
+
+@Serializable
+data class Achievement(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val title: String,
+    @SerialName("competition_name") val competitionName: String?,
+    val placement: Long?,
+    val medal: Medal,
+    @SerialName("achieved_on") val achievedOn: String,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class Attendance(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("member_id") val memberId: String,
+    val status: AttendanceStatus,
+    @SerialName("checked_in_at") val checkedInAt: String?
+)
+
+@Serializable
+data class Checkin(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("event_id") val eventId: String?,
+    val method: CheckinMethod,
+    @SerialName("checked_in_at") val checkedInAt: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class DutyRequirement(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("team_id") val teamId: String?,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("season_label") val seasonLabel: String,
+    @SerialName("required_hours") val requiredHours: Double?,
+    @SerialName("period_start") val periodStart: String,
+    @SerialName("period_end") val periodEnd: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class DutyEntry(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val hours: Double?,
+    @SerialName("activity_date") val activityDate: String,
+    val kind: DutyKind,
+    val note: String?,
+    val approved: Boolean,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class MemberProfileDuty(
+    val requirements: List<DutyRequirement>,
+    val entries: List<DutyEntry>
+)
+
+@Serializable
+data class EventRsvp(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("member_id") val memberId: String,
+    val status: RsvpStatus,
+    val comment: String?,
+    @SerialName("responded_at") val respondedAt: String
+)
+
+@Serializable
+data class EquipmentReservation(
+    val id: String,
+    @SerialName("equipment_id") val equipmentId: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("reserved_by_member_id") val reservedByMemberId: String,
+    val quantity: Long?,
+    @SerialName("from_at") val fromAt: String,
+    @SerialName("to_at") val toAt: String,
+    val status: ReservationStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class Invoice(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val number: String,
+    val title: String,
+    @SerialName("amount_cents") val amountCents: Long?,
+    val currency: String,
+    val status: InvoiceStatus,
+    @SerialName("dunning_level") val dunningLevel: Long,
+    @SerialName("issued_on") val issuedOn: String?,
+    @SerialName("due_on") val dueOn: String?,
+    @SerialName("paid_at") val paidAt: String?,
+    @SerialName("paid_via") val paidVia: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class MemberFee(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("custom_amount_cents") val customAmountCents: Long?,
+    @SerialName("valid_from") val validFrom: String,
+    @SerialName("valid_until") val validUntil: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?,
+    @SerialName("category_name") val categoryName: String? = null,
+    @SerialName("category_amount_cents") val categoryAmountCents: Long? = null,
+    @SerialName("category_period") val categoryPeriod: MembershipPeriod? = null
+)
+
+@Serializable
+data class SepaMandate(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("mandate_reference") val mandateReference: String,
+    @SerialName("iban_last4") val ibanLast4: String?,
+    @SerialName("account_holder") val accountHolder: String,
+    @SerialName("signed_on") val signedOn: String?,
+    val status: SepaMandateStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class Donation(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("donor_name") val donorName: String,
+    @SerialName("donor_address") val donorAddress: String?,
+    @SerialName("amount_cents") val amountCents: Long?,
+    @SerialName("donation_date") val donationDate: String,
+    @SerialName("receipt_number") val receiptNumber: String,
+    val purpose: String?,
+    @SerialName("issued_at") val issuedAt: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("deleted_at") val deletedAt: String?
+)
+
+@Serializable
+data class MemberProfileFinance(
+    val invoices: List<Invoice>,
+    @SerialName("member_fees") val memberFees: List<MemberFee>,
+    @SerialName("sepa_mandates") val sepaMandates: List<SepaMandate>,
+    val donations: List<Donation>
+)
+
+@Serializable
+data class MemberAssessment(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("author_member_id") val authorMemberId: String,
+    val body: String,
+    @SerialName("rating_technik") val ratingTechnik: Long?,
+    @SerialName("rating_ausdruck") val ratingAusdruck: Long?,
+    @SerialName("assessed_on") val assessedOn: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class MemberPhoto(
+    @SerialName("tag_id") val tagId: String,
+    @SerialName("gallery_item_id") val galleryItemId: String,
+    @SerialName("member_id") val memberId: String,
+    val album: String?,
+    val title: String,
+    val kind: GalleryKind,
+    @SerialName("storage_key") val storageKey: String,
+    @SerialName("content_type") val contentType: String,
+    @SerialName("thumbnail_key") val thumbnailKey: String?,
+    @SerialName("tagged_at") val taggedAt: String
+)
+
+@Serializable
+data class EffectiveConsent(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String?,
+    @SerialName("subject_profile_id") val subjectProfileId: String?,
+    val purpose: ConsentPurpose,
+    @SerialName("granted_by_profile_id") val grantedByProfileId: String,
+    @SerialName("legal_document_id") val legalDocumentId: String?,
+    @SerialName("policy_version") val policyVersion: String?,
+    @SerialName("recorded_at") val recordedAt: String,
+    val effective: Boolean,
+    @SerialName("recorded_granted") val recordedGranted: Boolean,
+    @SerialName("granted_by_guardian") val grantedByGuardian: Boolean,
+    val state: EffectiveConsentState
+)
+
+@Serializable
+data class MemberProfile(
+    val member: ClubMember,
+    @SerialName("contact_visible") val contactVisible: Boolean,
+    @SerialName("admin_contact_visible") val adminContactVisible: Boolean,
+    @SerialName("self_profile_visible") val selfProfileVisible: Boolean,
+    @SerialName("joined_on_visible") val joinedOnVisible: Boolean,
+    val roles: List<MemberRoleRef>,
+    val departments: List<MemberDepartmentRef>,
+    val routines: List<Routine>?,
+    val competition: MemberProfileCompetition? = null,
+    val achievements: List<Achievement>?,
+    val attendance: List<Attendance>?,
+    val checkins: List<Checkin>?,
+    val duty: MemberProfileDuty? = null,
+    val rsvps: List<EventRsvp>?,
+    val equipment: List<EquipmentReservation>?,
+    val finance: MemberProfileFinance? = null,
+    val assessments: List<MemberAssessment>?,
+    val photos: List<MemberPhoto>?,
+    val consents: List<EffectiveConsent>?
 )
 
 @Serializable
@@ -711,23 +1018,6 @@ data class GuardianshipCreate(
 data class Deleted(
     val status: DeletedStatus,
     val id: String
-)
-
-@Serializable
-data class EffectiveConsent(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String?,
-    @SerialName("subject_profile_id") val subjectProfileId: String?,
-    val purpose: ConsentPurpose,
-    @SerialName("granted_by_profile_id") val grantedByProfileId: String,
-    @SerialName("legal_document_id") val legalDocumentId: String?,
-    @SerialName("policy_version") val policyVersion: String?,
-    @SerialName("recorded_at") val recordedAt: String,
-    val effective: Boolean,
-    @SerialName("recorded_granted") val recordedGranted: Boolean,
-    @SerialName("granted_by_guardian") val grantedByGuardian: Boolean,
-    val state: EffectiveConsentState
 )
 
 @Serializable
@@ -823,6 +1113,8 @@ data class MeMembership(
     @SerialName("last_name") val lastName: String,
     val email: String?,
     @SerialName("birth_date") val birthDate: String?,
+    val phone: String?,
+    @SerialName("postal_address") val postalAddress: String?,
     val role: ClubRole,
     val status: MemberStatus,
     @SerialName("joined_on") val joinedOn: String?,
@@ -845,7 +1137,9 @@ data class MeUpdate(
     @SerialName("first_name") val firstName: String? = null,
     @SerialName("last_name") val lastName: String? = null,
     val email: String? = null,
-    @SerialName("birth_date") val birthDate: String? = null
+    @SerialName("birth_date") val birthDate: String? = null,
+    val phone: String? = null,
+    @SerialName("postal_address") val postalAddress: String? = null
 )
 
 @Serializable
@@ -1247,17 +1541,6 @@ data class PlatformSystem(
 )
 
 @Serializable
-data class EventRsvp(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("event_id") val eventId: String,
-    @SerialName("member_id") val memberId: String,
-    val status: RsvpStatus,
-    val comment: String?,
-    @SerialName("responded_at") val respondedAt: String
-)
-
-@Serializable
 data class Event(
     val id: String,
     @SerialName("club_id") val clubId: String,
@@ -1296,39 +1579,10 @@ data class EventRsvpUpsert(
 )
 
 @Serializable
-data class Attendance(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("event_id") val eventId: String,
-    @SerialName("member_id") val memberId: String,
-    val status: AttendanceStatus,
-    @SerialName("checked_in_at") val checkedInAt: String?
-)
-
-@Serializable
 data class AttendanceUpsert(
     @SerialName("member_id") val memberId: String,
     val status: AttendanceStatus,
     @SerialName("checked_in_at") val checkedInAt: String? = null
-)
-
-@Serializable
-data class Routine(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("team_id") val teamId: String?,
-    val title: String,
-    val status: RoutineStatus,
-    val category: String?,
-    @SerialName("music_title") val musicTitle: String?,
-    @SerialName("music_artist") val musicArtist: String?,
-    @SerialName("music_bpm") val musicBpm: Long?,
-    @SerialName("music_duration_ms") val musicDurationMs: Long?,
-    @SerialName("audio_asset_id") val audioAssetId: String?,
-    @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
-    @SerialName("waveform_peaks") val waveformPeaks: List<Double>?,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
 )
 
 @Serializable
@@ -1362,21 +1616,6 @@ data class RoutineMarkerCreate(
 )
 
 @Serializable
-data class RoutineScore(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("routine_id") val routineId: String,
-    @SerialName("competition_id") val competitionId: String?,
-    @SerialName("scored_on") val scoredOn: String,
-    @SerialName("scoring_system") val scoringSystem: String,
-    @SerialName("technical_score") val technicalScore: Double?,
-    @SerialName("components_score") val componentsScore: Double?,
-    @SerialName("total_score") val totalScore: Double?,
-    val placement: Long?,
-    val note: String?
-)
-
-@Serializable
 data class RoutineScoreCreate(
     @SerialName("scored_on") val scoredOn: String,
     @SerialName("scoring_system") val scoringSystem: String? = "rollart",
@@ -1403,14 +1642,6 @@ data class RoutineShareCreate(
 @Serializable
 data class RoutineShareRevoked(
     val revoked: Boolean
-)
-
-@Serializable
-data class CompetitionEntry(
-    val id: String,
-    @SerialName("member_id") val memberId: String,
-    @SerialName("routine_id") val routineId: String?,
-    val status: CompetitionEntryStatus
 )
 
 @Serializable
@@ -1536,6 +1767,24 @@ data class NoteUpdate(
     val title: String? = null,
     val body: String? = null,
     @SerialName("club_id") val clubId: String? = null
+)
+
+@Serializable
+data class MemberAssessmentCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val body: String,
+    @SerialName("rating_technik") val ratingTechnik: Long? = null,
+    @SerialName("rating_ausdruck") val ratingAusdruck: Long? = null,
+    @SerialName("assessed_on") val assessedOn: String? = null
+)
+
+@Serializable
+data class MemberAssessmentUpdate(
+    val body: String? = null,
+    @SerialName("rating_technik") val ratingTechnik: Long? = null,
+    @SerialName("rating_ausdruck") val ratingAusdruck: Long? = null,
+    @SerialName("assessed_on") val assessedOn: String? = null
 )
 
 @Serializable
@@ -1748,20 +1997,6 @@ data class EquipmentUpdate(
 )
 
 @Serializable
-data class EquipmentReservation(
-    val id: String,
-    @SerialName("equipment_id") val equipmentId: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("reserved_by_member_id") val reservedByMemberId: String,
-    val quantity: Long?,
-    @SerialName("from_at") val fromAt: String,
-    @SerialName("to_at") val toAt: String,
-    val status: ReservationStatus,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
-)
-
-@Serializable
 data class EquipmentReservationCreate(
     @SerialName("club_id") val clubId: String,
     @SerialName("equipment_id") val equipmentId: String,
@@ -1778,21 +2013,6 @@ data class EquipmentReservationUpdate(
     @SerialName("from_at") val fromAt: String? = null,
     @SerialName("to_at") val toAt: String? = null,
     val status: ReservationStatus? = null
-)
-
-@Serializable
-data class Achievement(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    val title: String,
-    @SerialName("competition_name") val competitionName: String?,
-    val placement: Long?,
-    val medal: Medal,
-    @SerialName("achieved_on") val achievedOn: String,
-    val note: String?,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
 )
 
 @Serializable
@@ -1859,20 +2079,6 @@ data class TrainingSlotUpdate(
 )
 
 @Serializable
-data class DutyRequirement(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("team_id") val teamId: String?,
-    @SerialName("member_id") val memberId: String?,
-    @SerialName("season_label") val seasonLabel: String,
-    @SerialName("required_hours") val requiredHours: Double?,
-    @SerialName("period_start") val periodStart: String,
-    @SerialName("period_end") val periodEnd: String,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
-)
-
-@Serializable
 data class DutyRequirementCreate(
     @SerialName("club_id") val clubId: String,
     @SerialName("season_label") val seasonLabel: String,
@@ -1891,20 +2097,6 @@ data class DutyRequirementUpdate(
     @SerialName("period_end") val periodEnd: String? = null,
     @SerialName("team_id") val teamId: String? = null,
     @SerialName("member_id") val memberId: String? = null
-)
-
-@Serializable
-data class DutyEntry(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    val hours: Double?,
-    @SerialName("activity_date") val activityDate: String,
-    val kind: DutyKind,
-    val note: String?,
-    val approved: Boolean,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
 )
 
 @Serializable
@@ -1962,17 +2154,6 @@ data class ChatMessageCreate(
     @SerialName("recipient_member_id") val recipientMemberId: String? = null,
     val body: String? = null,
     @SerialName("image_url") val imageUrl: String? = null
-)
-
-@Serializable
-data class Checkin(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    @SerialName("event_id") val eventId: String?,
-    val method: CheckinMethod,
-    @SerialName("checked_in_at") val checkedInAt: String,
-    @SerialName("created_at") val createdAt: String
 )
 
 @Serializable
@@ -2050,6 +2231,23 @@ data class GalleryItemCreate(
     @SerialName("size_bytes") val sizeBytes: Long,
     val album: String? = null,
     @SerialName("thumbnail_key") val thumbnailKey: String? = null
+)
+
+@Serializable
+data class PhotoTag(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("gallery_item_id") val galleryItemId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("tagged_by_member_id") val taggedByMemberId: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class PhotoTagCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("gallery_item_id") val galleryItemId: String,
+    @SerialName("member_id") val memberId: String
 )
 
 @Serializable
@@ -2234,25 +2432,6 @@ data class LockerAssign(
 )
 
 @Serializable
-data class Invoice(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    val number: String,
-    val title: String,
-    @SerialName("amount_cents") val amountCents: Long?,
-    val currency: String,
-    val status: InvoiceStatus,
-    @SerialName("dunning_level") val dunningLevel: Long,
-    @SerialName("issued_on") val issuedOn: String?,
-    @SerialName("due_on") val dueOn: String?,
-    @SerialName("paid_at") val paidAt: String?,
-    @SerialName("paid_via") val paidVia: String?,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String
-)
-
-@Serializable
 data class InvoiceCreate(
     @SerialName("club_id") val clubId: String,
     @SerialName("member_id") val memberId: String,
@@ -2381,23 +2560,6 @@ data class BankTransactionIgnore(
 )
 
 @Serializable
-data class Donation(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String?,
-    @SerialName("donor_name") val donorName: String,
-    @SerialName("donor_address") val donorAddress: String?,
-    @SerialName("amount_cents") val amountCents: Long?,
-    @SerialName("donation_date") val donationDate: String,
-    @SerialName("receipt_number") val receiptNumber: String,
-    val purpose: String?,
-    @SerialName("issued_at") val issuedAt: String?,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String,
-    @SerialName("deleted_at") val deletedAt: String?
-)
-
-@Serializable
 data class DonationCreate(
     @SerialName("club_id") val clubId: String,
     @SerialName("member_id") val memberId: String? = null,
@@ -2482,23 +2644,6 @@ data class MemberFeeSummary(
 )
 
 @Serializable
-data class MemberFee(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    @SerialName("category_id") val categoryId: String,
-    @SerialName("custom_amount_cents") val customAmountCents: Long?,
-    @SerialName("valid_from") val validFrom: String,
-    @SerialName("valid_until") val validUntil: String?,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String,
-    @SerialName("deleted_at") val deletedAt: String?,
-    @SerialName("category_name") val categoryName: String? = null,
-    @SerialName("category_amount_cents") val categoryAmountCents: Long? = null,
-    @SerialName("category_period") val categoryPeriod: MembershipPeriod? = null
-)
-
-@Serializable
 data class MemberFeeCreate(
     @SerialName("club_id") val clubId: String,
     @SerialName("member_id") val memberId: String,
@@ -2547,21 +2692,6 @@ data class FamilyDiscountUpdate(
     @SerialName("value_numeric") val valueNumeric: Double? = null,
     @SerialName("applies_from_child") val appliesFromChild: Long? = null,
     @SerialName("is_active") val isActive: Boolean? = null
-)
-
-@Serializable
-data class SepaMandate(
-    val id: String,
-    @SerialName("club_id") val clubId: String,
-    @SerialName("member_id") val memberId: String,
-    @SerialName("mandate_reference") val mandateReference: String,
-    @SerialName("iban_last4") val ibanLast4: String?,
-    @SerialName("account_holder") val accountHolder: String,
-    @SerialName("signed_on") val signedOn: String?,
-    val status: SepaMandateStatus,
-    @SerialName("created_at") val createdAt: String,
-    @SerialName("updated_at") val updatedAt: String,
-    @SerialName("deleted_at") val deletedAt: String?
 )
 
 @Serializable

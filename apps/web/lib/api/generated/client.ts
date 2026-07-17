@@ -201,7 +201,7 @@ export class ApiClient {
 
   /**
    * List the club roster (sensitive columns redacted for non-managers)
-   * Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; joined_on sieht zusaetzlich der coach ("Trainer und hoeher", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.
+   * Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. REDIGIER-Stufen: die Parent-KONTAKTdaten (birth_date, email, phone, postal_address) sehen can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins IMMER, und ein coach (NICHT guest_coach) ZEILENWEISE fuer Mitglieder seiner eigenen Teams (um deren Eltern zu erreichen); die Verwaltungs-Kontaktdaten (valid_until, profile_id) bleiben can_manage_members vorbehalten (nie dem coach); joined_on sieht zusaetzlich der coach ("Trainer und hoeher", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.
    * 
    * `GET /clubs/{clubId}/members`
    */
@@ -276,6 +276,16 @@ export class ApiClient {
    */
   async patchClubsByClubIdMembersByMemberIdProfile(clubId: string, memberId: string, body: M.ClubMemberSelfProfileUpdate, options?: RequestOptions): Promise<M.ClubMember> {
     return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/profile`, { body, auth: true, options });
+  }
+
+  /**
+   * Das 360-Grad-Profil EINER Person — jede Sektion rollen-gestaffelt und serverseitig
+   * Sammelt Stammkopf, Selbst-Profil, Kontakt, Kueren, Wettkampf-Noten, Medaillen, Anwesenheit, Check-ins, Pflichtstunden, Termine (RSVP), Ausruestung, Finanzen, Trainer-Beurteilungen, Galerie-Fotos und die Konsent-Uebersicht EINER Person. Jede Sektion wird SERVERSEITIG nach den passenden Rechten gestaffelt: darf der/die Betrachter:in sie nicht sehen, kommt sie als null (nicht als leer/Fehler). Die Regel je Sektion steht im Schema. RLS traegt jede Zeile als zweite Linie; kein Service-Mode (der Endpunkt ist auf EINE Person begrenzt).
+   * 
+   * `GET /clubs/{clubId}/members/{memberId}/profile`
+   */
+  async getClubsByClubIdMembersByMemberIdProfile(clubId: string, memberId: string, options?: RequestOptions): Promise<M.MemberProfile> {
+    return this.request<M.MemberProfile>("GET", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/profile`, { auth: true, options });
   }
 
   /**
@@ -962,6 +972,42 @@ export class ApiClient {
   }
 
   /**
+   * List the (role-filtered) assessments of one member
+   * 
+   * `GET /assessments`
+   */
+  async getAssessments(query: { "club_id": string; "member_id": string }, options?: RequestOptions): Promise<M.MemberAssessment[]> {
+    return this.request<M.MemberAssessment[]>("GET", "/assessments", { query, auth: true, options });
+  }
+
+  /**
+   * Write an assessment (team coach of the member, or the board)
+   * 
+   * `POST /assessments`
+   */
+  async postAssessments(body: M.MemberAssessmentCreate, options?: RequestOptions): Promise<M.MemberAssessment> {
+    return this.request<M.MemberAssessment>("POST", "/assessments", { body, auth: true, options });
+  }
+
+  /**
+   * Edit an assessment (author or board)
+   * 
+   * `PATCH /assessments/{assessmentId}`
+   */
+  async patchAssessmentsByAssessmentId(assessmentId: string, body: M.MemberAssessmentUpdate, options?: RequestOptions): Promise<M.MemberAssessment> {
+    return this.request<M.MemberAssessment>("PATCH", `/assessments/${encodeURIComponent(assessmentId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an assessment (author or board)
+   * 
+   * `DELETE /assessments/{assessmentId}`
+   */
+  async deleteAssessmentsByAssessmentId(assessmentId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/assessments/${encodeURIComponent(assessmentId)}`, { auth: true, options });
+  }
+
+  /**
    * Support tickets of one club (club board only)
    * 
    * `GET /support/tickets`
@@ -1350,7 +1396,7 @@ export class ApiClient {
 
   /**
    * People I may start a direct message with (child protection applied)
-   * The picker behind "New message to ...". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint is deliberately not a second, wider way into the roster.
+   * The picker behind "New message to ...". Returns the club roster MINUS myself, minus everyone app.chat_dm_allowed (migration 0043) forbids me to write to: an adult only reaches a minor as their guardian or as a coach of one of the minor teams, and the same holds the other way round. The rows go through the SAME redaction as GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members sees names only - no birth_date, email, phone, postal_address, valid_until, profile_id, joined_on. A coach (not guest_coach) additionally sees the parent contact data (birth_date/email/phone/postal_address) of members of their OWN teams, row-scoped like the roster. This endpoint is deliberately not a second, wider way into the roster.
    * 
    * `GET /chat/recipients`
    */
@@ -1473,6 +1519,42 @@ export class ApiClient {
    */
   async deleteGalleryByItemId(itemId: string, options?: RequestOptions): Promise<M.Deleted> {
     return this.request<M.Deleted>("DELETE", `/gallery/${encodeURIComponent(itemId)}`, { auth: true, options });
+  }
+
+  /**
+   * Tag a person on a gallery photo (staff; no consent required to tag)
+   * 
+   * `POST /photo-tags`
+   */
+  async postPhotoTags(body: M.PhotoTagCreate, options?: RequestOptions): Promise<M.PhotoTag> {
+    return this.request<M.PhotoTag>("POST", "/photo-tags", { body, auth: true, options });
+  }
+
+  /**
+   * List tags on a gallery item (management view; RLS-scoped)
+   * 
+   * `GET /gallery/{itemId}/tags`
+   */
+  async getGalleryByItemIdTags(itemId: string, options?: RequestOptions): Promise<M.PhotoTag[]> {
+    return this.request<M.PhotoTag[]>("GET", `/gallery/${encodeURIComponent(itemId)}/tags`, { auth: true, options });
+  }
+
+  /**
+   * Photos a member appears on — consent-gated (photos_internal)
+   * 
+   * `GET /members/{memberId}/photos`
+   */
+  async getMembersByMemberIdPhotos(memberId: string, query: { "club_id": string }, options?: RequestOptions): Promise<M.MemberPhoto[]> {
+    return this.request<M.MemberPhoto[]>("GET", `/members/${encodeURIComponent(memberId)}/photos`, { query, auth: true, options });
+  }
+
+  /**
+   * Remove a photo tag (the tagged person, a guardian, or staff)
+   * 
+   * `DELETE /photo-tags/{tagId}`
+   */
+  async deletePhotoTagsByTagId(tagId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/photo-tags/${encodeURIComponent(tagId)}`, { auth: true, options });
   }
 
   /**

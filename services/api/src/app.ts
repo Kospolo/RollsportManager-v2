@@ -15,6 +15,7 @@ import { createDevLoginRouter } from './routes/dev-login.js';
 import { clubsRouter } from './routes/clubs.js';
 import { registrationRouter } from './routes/registration.js';
 import { membersRouter } from './routes/members.js';
+import { memberProfileRouter } from './routes/member-profile.js';
 import { familyRouter } from './routes/family.js';
 import { consentsRouter } from './routes/consents.js';
 import { waitlistsRouter } from './routes/waitlists.js';
@@ -137,6 +138,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', clubsRouter);
   app.route('/', registrationRouter);
   app.route('/', membersRouter);
+  app.route('/', memberProfileRouter);
   app.route('/', familyRouter);
   app.route('/', consentsRouter);
   app.route('/', waitlistsRouter);
