@@ -28,6 +28,7 @@ export const profileDict = {
     routineStatusReady: "Bereit",
     routineStatusCompetition: "Wettkampf",
     routineStatusArchived: "Archiv",
+    routineOpen: "Kür öffnen und abspielen",
     waveformLabel: "Wellenform der Kürmusik",
 
     scoreEyebrow: "Wettkampf",
@@ -217,6 +218,7 @@ export const profileDict = {
     routineStatusReady: "Ready",
     routineStatusCompetition: "Competition",
     routineStatusArchived: "Archived",
+    routineOpen: "Open routine and play",
     waveformLabel: "Waveform of the routine music",
 
     scoreEyebrow: "Competition",

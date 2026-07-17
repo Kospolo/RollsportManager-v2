@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort, formatDurationMs, formatEUR, relativeDays } from "@/lib/format";
 import type {
@@ -77,13 +78,24 @@ export function RoutinesCard({ routines }: { routines: Routine[] }) {
       <CardHeader eyebrow={tp("routineEyebrow")} title={tp("routineTitle")} />
       <ul className="grid list-none gap-4">
         {routines.map((r) => (
-          <li key={r.id} className="grid gap-2.5 rounded-lg border border-line bg-canvas p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <h4 className="font-display text-[16px] font-extrabold tracking-[-0.01em] text-ink">
-                {r.title}
-              </h4>
-              <Badge tone="neutral">{tp(ROUTINE_STATUS[r.status])}</Badge>
-            </div>
+          <li key={r.id}>
+            <Link
+              href={`/kueren/${r.id}`}
+              aria-label={`${r.title} — ${tp("routineOpen")}`}
+              className="group grid gap-2.5 rounded-lg border border-line bg-canvas p-4 transition-colors hover:border-line-strong hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <h4 className="font-display text-[16px] font-extrabold tracking-[-0.01em] text-ink">
+                  {r.title}
+                </h4>
+                <span className="flex items-center gap-2">
+                  <Badge tone="neutral">{tp(ROUTINE_STATUS[r.status])}</Badge>
+                  <Icon
+                    name="chevronRight"
+                    className="ic h-4 w-4 text-ink-faint transition-transform group-hover:translate-x-0.5"
+                  />
+                </span>
+              </div>
             {r.music_title && (
               <div className="flex flex-wrap items-center gap-2">
                 <Badge tone="honey" icon="play">
@@ -98,9 +110,10 @@ export function RoutinesCard({ routines }: { routines: Routine[] }) {
                 )}
               </div>
             )}
-            {r.waveform_peaks && r.waveform_peaks.length > 0 && (
-              <MiniWaveform peaks={r.waveform_peaks} label={tp("waveformLabel")} />
-            )}
+              {r.waveform_peaks && r.waveform_peaks.length > 0 && (
+                <MiniWaveform peaks={r.waveform_peaks} label={tp("waveformLabel")} />
+              )}
+            </Link>
           </li>
         ))}
       </ul>
