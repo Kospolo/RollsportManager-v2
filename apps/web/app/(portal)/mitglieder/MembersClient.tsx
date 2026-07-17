@@ -145,7 +145,7 @@ export function MembersClient() {
             die Karten einnehmen werden (kein Layout-Sprung beim Eintreffen). */}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }, (_, index) => (
-            <Skeleton key={index} className="h-44 rounded-xl" />
+            <Skeleton key={index} className="h-72 rounded-xl" />
           ))}
         </div>
       </>
@@ -195,18 +195,17 @@ export function MembersClient() {
                     </span>
                   </h2>
                 )}
-                {/* items-start: jede Karte ist nur so hoch wie ihr Inhalt.
-                    Ohne das dehnt die Reihe alle Karten auf die Höhe der
-                    längsten — und die 22 von 24 Personen ohne „Über mich"
-                    bekämen ein Loch. Lieber eine ehrliche Kante unten. */}
-                <ul className="grid list-none items-start gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
+                {/* items-stretch (Default): gleiche Höhe pro Reihe. Der große
+                    Porträt-Kopf gibt jeder Karte Masse; unter dem Inhalt bleibt
+                    ruhige Fläche statt einer ausgefransten Unterkante. */}
+                <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
                   {entry.members.map((member) => (
                     <li
                       key={member.id}
                       className="grid"
                       // Große Vereine: unsichtbare Karten überspringt der Browser.
                       // contain-intrinsic-size hält die Scrollhöhe stabil.
-                      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 200px" }}
+                      style={{ contentVisibility: "auto", containIntrinsicSize: "auto 340px" }}
                     >
                       <MemberCard
                         member={member}
