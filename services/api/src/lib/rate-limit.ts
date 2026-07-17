@@ -52,7 +52,34 @@ import { getConfig } from '../config.js';
 import { problem } from '../middleware/error.js';
 import type { AuthEnv } from '../middleware/auth.js';
 
-export type RateLimitScope = 'ip' | 'account' | 'code';
+// ----------------------------------------------------------------------------
+// VIERTE ACHSE: 'recipient' (Mailversand) — warum die drei oben nicht reichen
+// ----------------------------------------------------------------------------
+// Die drei Achsen oben fragen alle: "wer klopft an?" (ip/account) bzw. "worauf
+// wird geraten?" (code). Beim Mailversand ist die zu schuetzende Person aber
+// eine VIERTE Partei, die gar nicht anklopft: der EMPFAENGER. Ein Angreifer
+// tippt bei "Passwort vergessen" die Adresse des OPFERS ein — er selbst wird
+// nicht belaestigt, das Opfer bekommt das Postfach voll, und bezahlt wird es
+// vom BETREIBER (Sendekontingent, Reputation der Domain, Landung auf einer
+// Blockliste). ip/account bremsen den EINEN Absender; ein Botnetz mit 1000
+// Adressen und 1000 Konten bombardiert dieselbe Adresse an ihnen vorbei. Nur
+// eine Achse, die am ZIEL haengt, deckelt "wie viele Mails darf DIESE Adresse
+// von uns bekommen" — unabhaengig davon, wer sie ausgeloest hat.
+//
+// KEIN MIGRATIONSBEDARF: internal.auth_rate_limits.scope ist plain `text` ohne
+// CHECK (0034:209) und internal.rate_limit_hit_many behandelt jede Achse gleich
+// (nur 'code' hat mit p_probe einen Sonderweg, 0038:245). Die Achse ist damit
+// eine reine TypeScript-Erweiterung.
+//
+// UND SIE WIRD GEHASHT — das ist hier kein Nebenaspekt, sondern der Grund, warum
+// sie ueberhaupt so gebaut werden darf: storedIdentifier() unten hasht ALLES
+// ausser 'account'. Eine E-Mail-Adresse ist ein personenbezogenes Datum; eine
+// Drossel-Tabelle mit Klartext-Adressen waere eine Adressliste jedes Menschen,
+// der je eine Mail von uns bekommen hat (dieselbe Falle, die 0038 fuer die
+// Vereinscodes aufgeraeumt hat). Eine Drossel braucht nie den Wert, nur
+// GLEICHHEIT — hmac(pfeffer, adresse) leistet das identisch.
+// ----------------------------------------------------------------------------
+export type RateLimitScope = 'ip' | 'account' | 'code' | 'recipient';
 
 // ============================================================================
 // DIE LOESCHFRIST BRAUCHT EINEN AUSLOESER - SONST IST SIE NUR EINE SPALTE

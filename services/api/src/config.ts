@@ -11,6 +11,15 @@
 
 export type AuthMode = 'dev' | 'prod';
 
+/**
+ * Wie der Mailversand die Nachricht loswird.
+ *   smtp     Echter Versand ueber nodemailer (lib/mailer.ts).
+ *   dry-run  Die Mail wird VOLLSTAENDIG erzeugt (MIME, Umlaut-Kodierung, alles)
+ *            und dann NICHT gesendet, sondern zurueckgegeben. Fuer Tests und
+ *            zum Vorfuehren - siehe lib/mailer.ts, Abschnitt "Trockenlauf".
+ */
+export type MailTransport = 'smtp' | 'dry-run';
+
 export interface ApiConfig {
   /** HTTP port. 3021 is the web portal - the API defaults to 3022. */
   port: number;
@@ -52,6 +61,34 @@ export interface ApiConfig {
     /** Optional audience check (empty string = skip). GoTrue default: "authenticated". */
     audience: string;
   };
+  mail: {
+    /**
+     * smtp (Vorgabe) oder dry-run. AUTH_MODE=prod VERWEIGERT den Start mit
+     * dry-run: eine Produktion, die Mails still in den Speicher schreibt statt
+     * sie zu senden, ist genau der lautlose Ausfall, den lib/mailer.ts
+     * verhindern soll. Lieber startet die API nicht.
+     */
+    transport: MailTransport;
+    /**
+     * FALLBACK, nicht die Quelle. Die MASSGEBLICHEN SMTP-Werte stehen in
+     * internal.platform_settings.smtp und werden im Betreiber-Admin gepflegt
+     * ("Einstellungen immer ins Admin", siehe Kopf dieser Datei). lib/mailer.ts
+     * legt die Admin-Werte FELDWEISE ueber diese Vorgaben - was im Admin leer
+     * bleibt, darf hier herkommen (z.B. ein Relay-Host aus dem Deployment).
+     *
+     * Das Kennwort steht bewusst AUCH hier: ein Betreiber, der lieber ein
+     * Docker-Secret als ein Formularfeld benutzt, soll das koennen. Wer nichts
+     * setzt, hat hier leere Zeichenketten und mailer.ts sagt sprechend, was fehlt.
+     */
+    smtp: {
+      host: string;
+      port: number;
+      user: string;
+      password: string;
+      from: string;
+      secure: boolean;
+    };
+  };
   billing: {
     /**
      * Stripe webhook signing secret (whsec_...). Placeholder in dev; in prod
@@ -79,6 +116,10 @@ export function loadConfig(): ApiConfig {
   if (mode !== 'dev' && mode !== 'prod') {
     throw new Error(`AUTH_MODE must be 'dev' or 'prod', got '${mode}'`);
   }
+  const mailTransport = env('MAIL_TRANSPORT', 'smtp');
+  if (mailTransport !== 'smtp' && mailTransport !== 'dry-run') {
+    throw new Error(`MAIL_TRANSPORT must be 'smtp' or 'dry-run', got '${mailTransport}'`);
+  }
   const config: ApiConfig = {
     port: Number.parseInt(env('PORT', '3022'), 10),
     databaseUrl: env('DATABASE_URL', 'postgres://postgres:rsm2-local-test@127.0.0.1:55432/rsm2'),
@@ -100,6 +141,23 @@ export function loadConfig(): ApiConfig {
       jwksUrl: env('AUTH_JWKS_URL'),
       issuer: env('AUTH_ISSUER'),
       audience: env('AUTH_AUDIENCE', 'authenticated'),
+    },
+    mail: {
+      transport: mailTransport,
+      smtp: {
+        host: env('MAIL_SMTP_HOST'),
+        port: Number.parseInt(env('MAIL_SMTP_PORT', '587'), 10),
+        user: env('MAIL_SMTP_USER'),
+        password: env('MAIL_SMTP_PASSWORD'),
+        from: env('MAIL_SMTP_FROM'),
+        // Strato & Co. sprechen implizites TLS auf 465; 587 ist STARTTLS
+        // (secure=false + requireTLS, siehe mailer.ts). Die Vorgabe folgt dem
+        // Port, damit ein Betreiber, der nur MAIL_SMTP_PORT=465 setzt, nicht
+        // stillschweigend im Klartext landet.
+        secure: env('MAIL_SMTP_SECURE', '') !== ''
+          ? env('MAIL_SMTP_SECURE') === 'true'
+          : Number.parseInt(env('MAIL_SMTP_PORT', '587'), 10) === 465,
+      },
     },
     billing: {
       stripeWebhookSecret: env('STRIPE_WEBHOOK_SECRET', 'whsec-dev-placeholder'),
@@ -123,6 +181,16 @@ export function loadConfig(): ApiConfig {
     config.rateLimit.ipPepper === 'dev-only-throttle-pepper-please-change'
   ) {
     throw new Error('AUTH_MODE=prod requires RATE_LIMIT_PEPPER (the dev placeholder is public)');
+  }
+  // Dieselbe Begruendung wie beim Pfeffer, nur ist der Schaden hier leiser und
+  // deshalb schlimmer: MAIL_TRANSPORT=dry-run in Produktion faehrt jede Mail
+  // fehlerfrei in den Speicher. Verifikation, Einladung, Passwort-Reset melden
+  // ERFOLG, es kommt nur nie etwas an - und niemand merkt es, weil nichts
+  // scheitert. Ein Trockenlauf ist ein Werkzeug fuer Tests, kein Betriebsmodus.
+  if (config.auth.mode === 'prod' && config.mail.transport === 'dry-run') {
+    throw new Error(
+      "AUTH_MODE=prod refuses MAIL_TRANSPORT=dry-run: mail would be silently discarded",
+    );
   }
   return config;
 }
