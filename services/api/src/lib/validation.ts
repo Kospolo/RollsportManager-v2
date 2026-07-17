@@ -1549,6 +1549,51 @@ export const noteUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('NoteUpdate');
 
+// member assessments (Trainer:innen-Beurteilung, migration 0055) -------------
+// Freitext (Pflicht) + zwei optionale Noten 1..5 (Technik/Ausdruck). Rollen-
+// gefiltert serverseitig über RLS (nie im Client) — s. routes/assessments.ts.
+const assessmentRating = z.coerce.number().int().min(1).max(5);
+
+export const assessmentSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** club_members.id of the assessed member. */
+    member_id: uuid,
+    /** club_members.id of the authoring trainer / board member. */
+    author_member_id: uuid,
+    body: z.string(),
+    rating_technik: assessmentRating.nullable(),
+    rating_ausdruck: assessmentRating.nullable(),
+    assessed_on: isoDate,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('MemberAssessment');
+
+export const assessmentCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** The assessed member. */
+    member_id: uuid,
+    body: z.string().min(1).max(5000),
+    rating_technik: assessmentRating.optional(),
+    rating_ausdruck: assessmentRating.optional(),
+    /** Defaults to today (server-side) when omitted. */
+    assessed_on: z.string().date().optional(),
+  })
+  .openapi('MemberAssessmentCreate');
+
+export const assessmentUpdateSchema = z
+  .object({
+    body: z.string().min(1).max(5000).optional(),
+    rating_technik: assessmentRating.nullable().optional(),
+    rating_ausdruck: assessmentRating.nullable().optional(),
+    assessed_on: z.string().date().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('MemberAssessmentUpdate');
+
 // exercises ------------------------------------------------------------------
 export const exerciseCategorySchema = z
   .enum(['warmup', 'stretching', 'strength', 'jump', 'spin', 'steps', 'combination'])
