@@ -51,6 +51,26 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 ## 2. Was NOCH zu tun ist (Reihenfolge = „mach weiter")
 > Web zuerst fertig war die Vorgabe — Web ist fertig. Reihenfolge jetzt:
 
+### 🔜 PROFIL-AUSBAU (beauftragt 2026-07-17, Entscheidungen getroffen) — baut auf 2 laufende Läufe auf
+> **Erst bauen, wenn `wolyp23l7` (Mitglieder-Karten-Politur) UND `wuvc7fi08` (Profil-Sichtbarkeit öffentlich/intern)
+> gelandet sind** — sie sitzen in `members.ts`, der Kontakt-Projektion, dem Seed und der Detailseite. Sonst Kollision.
+> Danach die Detailseite eines Mitglieds füllen, auf der **fertigen** Karte + der **fertigen** Projektion:
+1. **Kontaktdaten** E-Mail/Geburtstag/**Telefon (neu)**/**Postanschrift (neu)**: sichtbar für Vorstand/Admin/Moderator/Kasse
+   (wie heute) **+ Trainer:in — aber NUR für Mitglieder IHRER eigenen Teams** (Marcel 2026-07-17). Der Trainer sieht
+   die Adresse fremder Kinder aus nicht-betreuten Teams NICHT. Felder auch im Profil eintragbar.
+   ⚠️ `member_contact/coach` ist heute bewusst `none` (0023:180) — das ist die kontrollierte Ausweitung, team-begrenzt.
+2. **Küren** des Mitglieds auf dem Profil, **mit Bild wenn vorhanden** (Küren haben heute nur Audio, kein Bild-Feld → neu).
+3. **Trainer-Beurteilung (NEU, ganze Tabelle):** schriftliche Einschätzung. Schreiben: Trainer:in des Teams.
+   **Lesen: Staff (Trainer/Vorstand/Kasse/Moderator) + die Familie** (Person selbst + Erziehungsberechtigte,
+   `can_act_for_member`) — Marcel 2026-07-17. Eltern-Auskunftsrecht.
+4. **Medaillen** (`achievements`, existiert) auf dem Profil anzeigen.
+5. **Pflichtstunden** (`duty_entries`, existiert): auf dem Profil **nur für Staff** (Trainer/Kasse/Moderator/Vorstand).
+6. **Galerie-Markierung (NEU):** „diese Person ist auf dem Bild". **Markieren nur Staff.** Ein markiertes Foto
+   erscheint auf dem Profil **nur bei vorliegender Foto-Einwilligung** (`consents`, Zweck `photos_internal`, existiert);
+   Person/Eltern können Entfernung verlangen — Marcel 2026-07-17.
+> Alle Sichtbarkeiten SERVERSEITIG (Projektion in `members.ts` + RLS), nicht nur im UI ausblenden. Kinder im System.
+
+
 1. **RBAC — konfigurierbares Rechte-System** (genehmigt, Spec: `RBAC-DESIGN.md` — **BEIDE Korrektur-Blöcke oben zuerst
    lesen**, sie überschreiben den Rest). 4 Durchläufe: ~~Kern-Backend/RLS~~ ✅ → ~~API+Contracts (Phase 2)~~ ✅ →
    **Web-Admin-UI (Phase 3, läuft als `wofh0duoj`)**: editierbare Matrix, eigene Rollen, Mehrfachrollen,
