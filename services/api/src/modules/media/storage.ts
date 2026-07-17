@@ -46,9 +46,11 @@ export const SEED_MEDIA_DIR = join(REPO_ROOT, 'supabase', 'seed', 'media');
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
 
 /**
- * Accepted upload content types → canonical file extension. Only images/videos
- * (Galerie) and the usual document types (Dokumente) are allowed; anything
- * else is rejected before a single byte is written.
+ * Accepted upload content types → canonical file extension. Bilder/Videos
+ * (Galerie), Kueren-MUSIK (Audio) und die ueblichen Dokument-Typen sind
+ * erlaubt; alles andere wird abgewiesen, bevor ein einziges Byte geschrieben
+ * wird. Audio kam dazu, weil eine Kuer ohne Musik keine Kuer ist — das
+ * audio_asset_id-Feld an app.routines braucht einen Weg, die Datei abzulegen.
  */
 export const ALLOWED_CONTENT_TYPES: Readonly<Record<string, string>> = {
   'image/jpeg': '.jpg',
@@ -59,6 +61,13 @@ export const ALLOWED_CONTENT_TYPES: Readonly<Record<string, string>> = {
   'video/mp4': '.mp4',
   'video/quicktime': '.mov',
   'video/webm': '.webm',
+  'audio/mpeg': '.mp3',
+  'audio/mp4': '.m4a',
+  'audio/aac': '.aac',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/ogg': '.ogg',
+  'audio/flac': '.flac',
   'application/pdf': '.pdf',
   'text/plain': '.txt',
   'text/csv': '.csv',
@@ -67,6 +76,11 @@ export const ALLOWED_CONTENT_TYPES: Readonly<Record<string, string>> = {
   'application/vnd.ms-excel': '.xls',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
 };
+
+/** True for audio content types (Kueren-Musik). */
+export function isAudioContentType(contentType: string): boolean {
+  return contentType.toLowerCase().startsWith('audio/');
+}
 
 export function isAllowedContentType(contentType: string | undefined | null): contentType is string {
   return typeof contentType === 'string' && contentType.toLowerCase() in ALLOWED_CONTENT_TYPES;

@@ -40,6 +40,7 @@ import {
   contentTypeFromKey,
   deleteBytes,
   galleryKindFor,
+  isAudioContentType,
   generateStorageKey,
   isAllowedContentType,
   readBytes,
@@ -73,7 +74,7 @@ export function createMediaRouter(): Hono<AuthEnv> {
       throw problem(
         415,
         'Unsupported Media Type',
-        `content type '${contentType || 'unknown'}' is not allowed (images, videos and common document types only)`,
+        `content type '${contentType || 'unknown'}' is not allowed (images, videos, audio and common document types only)`,
       );
     }
 
@@ -96,7 +97,7 @@ export function createMediaRouter(): Hono<AuthEnv> {
         storage_key: storageKey,
         content_type: contentType,
         size_bytes: bytes.byteLength,
-        kind: galleryKindFor(contentType),
+        kind: isAudioContentType(contentType) ? 'audio' : galleryKindFor(contentType),
       },
       201,
     );
