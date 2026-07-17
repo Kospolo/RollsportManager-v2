@@ -33,7 +33,13 @@ import { problem } from '../middleware/error.js';
 import { requireClubMember } from '../lib/guards.js';
 import { ownMemberId } from '../lib/ownership.js';
 import { avatarUrlFor } from '../lib/avatar.js';
-import { maySeeFullRoster, maySeeInternalSelfProfile, redactMemberForViewer, redactSelfProfile } from './members.js';
+import {
+  maySeeContactOf,
+  maySeeFullRoster,
+  maySeeInternalSelfProfile,
+  redactMemberForViewer,
+  redactSelfProfile,
+} from './members.js';
 
 export const chatRouter = createRouter();
 
@@ -140,8 +146,10 @@ chatRouter.openapi(
       'reaches a minor as their guardian or as a coach of one of the minor teams, and the same ' +
       'holds the other way round. The rows go through the SAME redaction as ' +
       'GET /clubs/{clubId}/members (redactMemberForViewer): a viewer without can_manage_members ' +
-      'sees names only - no birth_date, email, valid_until, profile_id, joined_on. This endpoint ' +
-      'is deliberately not a second, wider way into the roster.',
+      'sees names only - no birth_date, email, phone, postal_address, valid_until, profile_id, ' +
+      'joined_on. A coach (not guest_coach) additionally sees the parent contact data ' +
+      '(birth_date/email/phone/postal_address) of members of their OWN teams, row-scoped like the ' +
+      'roster. This endpoint is deliberately not a second, wider way into the roster.',
     security: [{ bearerAuth: [] }],
     request: { query: z.object({ club_id: uuid }) },
     responses: {
@@ -169,7 +177,15 @@ chatRouter.openapi(
                -- Selbst-Profil-Projektion (0053): dieselbe Redaktion wie im
                -- Roster, sonst waere der DM-Picker ein zweiter Lese-Pfad, der
                -- interne Profile an gewoehnliche Mitglieder ausliefert.
-               app.can_act_for_member(m.id) as _self_or_guardian
+               app.can_act_for_member(m.id) as _self_or_guardian,
+               -- Zeilenweise Kontakt-Sichtbarkeit (0054): derselbe Team-Schnitt
+               -- wie im Roster, sonst leckte phone/postal_address/email hier an
+               -- der Kontakt-Redaktion vorbei.
+               exists (
+                 select 1 from app.team_members tmc
+                 where tmc.member_id = m.id and tmc.deleted_at is null
+                   and tmc.team_id = any (app.coached_team_ids(m.club_id))
+               ) as _coach_of_member
         from app.club_members m
         where m.club_id = ${club_id}
           and m.deleted_at is null
@@ -185,6 +201,8 @@ chatRouter.openapi(
         redactMemberForViewer(
           { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) },
           privileged,
+          privileged,
+          maySeeContactOf(claims, club_id, row),
         ),
         internalProfileViewer,
       ),

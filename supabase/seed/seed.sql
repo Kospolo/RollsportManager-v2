@@ -222,6 +222,30 @@ update app.club_members set
   where id = 'a0000000-0000-4000-8000-000000000014';
 
 -- ----------------------------------------------------------------------------
+-- KONTAKTdaten (0054): Telefon + Anschrift bei fuenf Kindern, BEWUSST ueber die
+-- Teams verteilt, damit die Trainer-Team-Begrenzung am Bildschirm SICHTBAR wird.
+--
+-- Team-Zuordnung der betroffenen Kinder (siehe team_members unten):
+--   t-01 (Minis, coach: Anna-Lena a-05):            Ben (a-11)
+--   t-02 (Nachwuchs, coach: Sandra a-01 + Anna-Lena a-05): Sofia (a-10), Amelie (a-19)
+--   t-03 (Kuer, coach: Sandra a-01 + Gast Milena a-06):    Maja (a-16), Hanna (a-23)
+--
+-- Damit wird der Team-Scope belegbar:
+--   * Sandra (coach t-02+t-03) SIEHT: Sofia, Amelie, Maja, Hanna — NICHT Ben (t-01).
+--   * Anna-Lena (coach t-01+t-02) SIEHT: Ben, Sofia, Amelie — NICHT Maja, Hanna (t-03).
+--   * Milena (GAST-Trainerin t-03) sieht KEINE Kontaktdaten (guest_coach bewusst aus).
+--   * owner/admin/moderator/treasurer sehen ALLE fuenf.
+--   * ein gewoehnliches Mitglied sieht KEINE fremden Kontaktdaten.
+-- phone/postal_address sind KONTAKTdaten (kein Selbst-Profil) — keine
+-- contains_contact_details-Leitplanke, die Schranke ist die Sichtbarkeit.
+-- ----------------------------------------------------------------------------
+update app.club_members set phone = '+49 7132 445566',   postal_address = 'Lerchenweg 3, 74172 Neckarsulm'      where id = 'a0000000-0000-4000-8000-000000000010'; -- Sofia (t-02)
+update app.club_members set phone = '+49 176 22118844',  postal_address = 'Am Sonnenhang 12, 74223 Flein'       where id = 'a0000000-0000-4000-8000-000000000019'; -- Amelie (t-02)
+update app.club_members set phone = '+49 7131 998877',   postal_address = 'Rosenstraße 8, 74076 Heilbronn'      where id = 'a0000000-0000-4000-8000-000000000016'; -- Maja (t-03)
+update app.club_members set phone = '+49 160 30302020',  postal_address = 'Wingertsäcker 21, 74189 Weinsberg'   where id = 'a0000000-0000-4000-8000-000000000023'; -- Hanna (t-03)
+update app.club_members set phone = '+49 7132 776655',   postal_address = 'Öhringer Straße 45, 74172 Neckarsulm' where id = 'a0000000-0000-4000-8000-000000000011'; -- Ben (t-01)
+
+-- ----------------------------------------------------------------------------
 -- Teams + memberships (skaters and coaches)
 -- ----------------------------------------------------------------------------
 insert into app.teams (id, club_id, name, age_group) values

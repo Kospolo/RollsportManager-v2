@@ -145,6 +145,11 @@ export const memberSchema = z
     last_name: z.string(),
     email: z.string().nullable(),
     birth_date: isoDate.nullable(),
+    // KONTAKTdaten (0054), REDIGIERT wie email/birth_date: can_manage_members +
+    // Plattform-Admin sehen alle, ein coach nur die seiner Team-Kinder
+    // (members.ts/maySeeContactOf), sonst null. Kein Selbst-Profil-Feld.
+    phone: z.string().nullable(),
+    postal_address: z.string().nullable(),
     role: clubRoleSchema,
     status: memberStatusSchema,
     joined_on: isoDate.nullable(),
@@ -243,6 +248,11 @@ export const memberUpdateSchema = z
     last_name: z.string().min(1).optional(),
     email: z.string().email().nullable().optional(),
     birth_date: z.string().date().nullable().optional(),
+    // KONTAKTdaten (0054), gepflegt wie email/birth_date (derselbe Pfad, kein
+    // zweiter). Laengen deckungsgleich mit club_members_phone_len_chk /
+    // _postal_address_len_chk (0054). null/"" = Angabe loeschen.
+    phone: z.string().max(40).nullable().optional(),
+    postal_address: z.string().max(300).nullable().optional(),
     status: memberStatusSchema.optional(),
     /** guest_coach expiry; nullable to clear it for non-guest roles */
     valid_until: z.string().datetime({ offset: true }).nullable().optional(),
@@ -276,6 +286,11 @@ export const meMembershipSchema = z
     last_name: z.string(),
     email: z.string().nullable(),
     birth_date: isoDate.nullable(),
+    // Eigene KONTAKTdaten (0054). Hier UNREDIGIERT: /me liefert ausschliesslich
+    // die Zeilen der aufrufenden Person (profile_id = auth.uid()) — die eigenen
+    // Kontaktdaten sieht man immer, das ist kein Fremd-Leck.
+    phone: z.string().nullable(),
+    postal_address: z.string().nullable(),
     role: clubRoleSchema,
     status: memberStatusSchema,
     joined_on: isoDate.nullable(),
@@ -305,6 +320,11 @@ export const meUpdateSchema = z
     last_name: z.string().min(1).optional(),
     email: z.string().email().nullable().optional(),
     birth_date: z.string().date().nullable().optional(),
+    // Eigene KONTAKTdaten (0054): die Person pflegt Telefon/Anschrift auf ihrer
+    // eigenen Zeile — derselbe Selbst-Pfad wie email (RLS club_members_update_self,
+    // 0016). null/"" = loeschen.
+    phone: z.string().max(40).nullable().optional(),
+    postal_address: z.string().max(300).nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('MeUpdate');
