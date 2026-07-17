@@ -175,3 +175,11 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 ## 5. Was „mach weiter" standardmäßig heißt
 Ohne weitere Angabe arbeite ich **Abschnitt 2 von oben** ab — d. h. als Nächstes **RBAC (Punkt 1)**.
 Willst du etwas anderes zuerst (z. B. „iPhone-Install", „iOS fertig", „Android", „v1 absichern"), sag es dazu.
+
+### 🔜 SOFORT nach dem Foto/Galerie-Lauf (wp24k53js): Selbst-Profil in /profil
+Marcel 2026-07-17: "Selbst-Profil fehlt im profil einstellungen." Bestätigt — das Selbst-Profil
+(profile_motto/favorite_discipline/skating_since + profile_visibility öffentlich/intern) wird NUR über
+apps/web/app/(portal)/mitglieder/AboutMeSheet.tsx ("Etwas über dich schreiben") bearbeitet, NICHT unter /profil.
+ZU TUN: dieselbe Bearbeitung (Sheet-Inhalt + updateMyProfile + Sichtbarkeits-Schalter) als Karte in /profil
+(ProfilScreen.tsx) einhängen. Klein — Sheet + Facade existieren. NICHT parallel zu wp24k53js bauen (kollidiert
+in profil/**); erst nach dessen Landung.
