@@ -1,4 +1,11 @@
-import type { MyProfile, NotificationPrefs, PreferenceTheme, UserPreferences } from "@/lib/types";
+import type {
+  MyProfile,
+  MySelfProfile,
+  NotificationPrefs,
+  PreferenceTheme,
+  ProfileVisibility,
+  UserPreferences,
+} from "@/lib/types";
 
 /**
  * Facade-Segment „Selbstsicht" (App-Shell) — eigenes Profil + Präferenzen.
@@ -34,6 +41,31 @@ export interface UpdateMyProfileInput {
 export const ABOUT_ME_MAX = 280;
 
 /**
+ * Selbst-Profil-Grenzen — deckungsgleich mit den DB-CHECK-Constraints (0045:
+ * club_members_profile_motto_len_chk = 140, _discipline_len_chk = 60) und dem
+ * memberSelfProfileUpdateSchema der API. Client-Guard; die Wahrheit steht in der
+ * Datenbank. Bewusst NICHT ABOUT_ME_MAX (280): das war der alte, nie
+ * persistierte about_me-Pfad — profile_motto ist auf 140 begrenzt.
+ */
+export const MOTTO_MAX = 140;
+export const DISCIPLINE_MAX = 60;
+/** Frühestes plausibles „läuft seit"-Jahr (deckungsgleich mit dem Serverschema). */
+export const SKATING_SINCE_MIN = 1900;
+
+/**
+ * Patch des EIGENEN Selbst-Profils. Fehlender Schlüssel = unverändert;
+ * null/"" leert Motto/Disziplin/Jahr. `visibility` hat kein „leeren" — sie ist
+ * immer 'public' oder 'internal' (fehlender Schlüssel = Stufe bleibt).
+ * Wire-Weg: PATCH /clubs/{clubId}/members/{memberId}/profile (app.set_self_profile).
+ */
+export interface UpdateMySelfProfileInput {
+  motto?: string | null;
+  favoriteDiscipline?: string | null;
+  skatingSince?: number | null;
+  visibility?: ProfileVisibility;
+}
+
+/**
  * Patch der eigenen Präferenzen. notifications wird serverseitig PARTIELL
  * gemergt (fehlende Flags bleiben, gesetzte gewinnen) — ein Teilobjekt genügt.
  */
@@ -50,6 +82,23 @@ export interface MeRepository {
   getMyProfile(): Promise<MyProfile>;
   /** Eigenes Profil ändern (PATCH /me; member_id = self, serverseitig erzwungen). */
   updateMyProfile(patch: UpdateMyProfileInput): Promise<MyProfile>;
+
+  /* ---------- App-Shell: eigenes Selbst-Profil (freiwillig, 0045/0053) ---------- */
+  /**
+   * Das selbst gepflegte Profil der eingeloggten Person lesen (Motto,
+   * Lieblingsdisziplin, „läuft seit", Sichtbarkeit). Quelle ist die eigene
+   * club_members-Zeile. null = keine Vereinsmitgliedschaft (Plattform-Persona).
+   */
+  getMySelfProfile(): Promise<MySelfProfile | null>;
+  /**
+   * Das eigene Selbst-Profil ändern. Schreibweg ist NICHT PATCH /me, sondern
+   * PATCH /clubs/{clubId}/members/{memberId}/profile → app.set_self_profile
+   * (die EINE Wahrheit für diese vier Spalten). Serverseitig erzwungen: nur die
+   * Person selbst / ihre Erziehungsberechtigten, nur status=active, mit
+   * Kontaktdaten-Leitplanke (422) und Längen-CHECKs. Ein Administrator darf hier
+   * NICHT schreiben — das ist bewusst kein Verwaltungsrecht.
+   */
+  updateMySelfProfile(patch: UpdateMySelfProfileInput): Promise<MySelfProfile>;
 
   /* ---------- App-Shell: eigene Präferenzen (strikt privat) ---------- */
   /** Eigene Präferenzen laden (GET /me/preferences; Locale/Theme/Glocke). */

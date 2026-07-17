@@ -17,6 +17,7 @@ import { profilDict, roleKey, statusKey } from "../i18n";
 import { ROLE_TONE, STATUS_TONE, splitDisplayName } from "../derive";
 import { ProfileEditCard } from "./ProfileEditCard";
 import { ProfilePhotoCard } from "./ProfilePhotoCard";
+import { SelfProfileCard } from "./SelfProfileCard";
 import { AccountCard } from "./AccountCard";
 
 /**
@@ -168,11 +169,16 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
             />
           )}
           {primary ? (
-            <ProfileEditCard
-              key={`${primary.id}:${primary.updatedAt}`}
-              membership={primary}
-              onSaved={onSaved}
-            />
+            <>
+              <ProfileEditCard
+                key={`${primary.id}:${primary.updatedAt}`}
+                membership={primary}
+                onSaved={onSaved}
+              />
+              {/* Selbst gepflegtes Profil (freiwillig) — lädt/schreibt eigenständig
+                  über die Facade (app.set_self_profile). Nur mit Mitgliedschaft. */}
+              <SelfProfileCard />
+            </>
           ) : (
             <EmptyState
               icon="user"

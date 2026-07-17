@@ -80,3 +80,33 @@ export interface MyProfile {
   locale: string;
   memberships: MyProfileMembership[];
 }
+
+/**
+ * Sichtbarkeit des Selbst-Profils (0053). 'public' = alle aktiven
+ * Vereinsmitglieder sehen Motto/Disziplin/seit-wann; 'internal' = nur
+ * Vorstand/Trainer:innen. Die Durchsetzung ist SERVERSEITIG (redactSelfProfile,
+ * members.ts) — dieser Wert steuert sie nur. Fail-safe-Vorgabe: 'internal'.
+ */
+export type ProfileVisibility = "public" | "internal";
+
+/**
+ * Das selbst gepflegte Profil der eingeloggten Person — das freiwillige
+ * Gegenstück zu den vereinsverwalteten Stammdaten. Gelesen aus der eigenen
+ * club_members-Zeile (profile_motto/-favorite_discipline/-skating_since/
+ * -visibility), geschrieben AUSSCHLIESSLICH über app.set_self_profile
+ * (PATCH /clubs/{clubId}/members/{memberId}/profile). Für Plattform-Personas
+ * ohne Mitgliedschaft existiert es nicht (getMySelfProfile → null).
+ */
+export interface MySelfProfile {
+  /** Eigene Mitgliedschafts-Id (club_members.id). */
+  memberId: Id;
+  clubId: Id;
+  /** „Über mich" (profile_motto). Leer = nichts eingetragen. */
+  motto?: string;
+  /** Lieblingsdisziplin (profile_favorite_discipline). */
+  favoriteDiscipline?: string;
+  /** „Seit wann läufst du?" als Jahreszahl (profile_skating_since). */
+  skatingSince?: number;
+  /** Publikum des Selbst-Profils; serverseitig durchgesetzt. */
+  visibility: ProfileVisibility;
+}

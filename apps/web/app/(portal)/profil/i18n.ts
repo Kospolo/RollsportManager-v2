@@ -58,6 +58,34 @@ export const profilDict = {
     noChanges: "Es gibt nichts zu speichern.",
     noPermission: "Keine Berechtigung — dein Profil wurde nicht geändert.",
 
+    /* Selbst-Profil (freiwillig, von dir gepflegt) */
+    selfEyebrow: "Selbst-Profil",
+    selfTitle: "Über mich im Verein",
+    selfIntro:
+      "Freiwillig und von dir selbst geschrieben — anders als die Stammdaten oben, die der Verein führt. Wer es sieht, entscheidest du unten.",
+    fMotto: "Über mich",
+    fMottoPh: "Erzähl kurz etwas über dich und dein Rollkunstlaufen …",
+    fMottoHint:
+      "Bitte keine Kontaktdaten (E-Mail, Telefon, Links) — die werden aus Sicherheitsgründen abgelehnt.",
+    fMottoRemaining: "{n} Zeichen übrig",
+    fMottoTooLong: "Höchstens {max} Zeichen.",
+    fDiscipline: "Lieblingsdisziplin",
+    fDisciplinePh: "z. B. Kür, Solotanz oder Paarlauf",
+    fDisciplineTooLong: "Höchstens {max} Zeichen.",
+    fSkating: "Seit wann läufst du?",
+    fSkatingPh: "z. B. 2015",
+    fSkatingHint: "Als Jahreszahl — optional.",
+    errSkating: "Bitte gib ein gültiges Jahr an ({min}–{max}).",
+    visLegend: "Wer sieht dein Selbst-Profil?",
+    visPublicTitle: "Öffentlich",
+    visPublicDesc: "Alle aktiven Mitglieder deines Vereins sehen Motto, Disziplin und „läuft seit“.",
+    visInternalTitle: "Intern",
+    visInternalDesc: "Nur Vorstand und Trainer:innen sehen es — die übrigen Mitglieder nicht.",
+    selfSave: "Selbst-Profil speichern",
+    selfSavedToast: "Dein Selbst-Profil ist aktualisiert",
+    selfNoPermission: "Keine Berechtigung — dein Selbst-Profil wurde nicht geändert.",
+    selfLoadErrorTitle: "Selbst-Profil konnte nicht geladen werden",
+
     /* Profilfoto (nur eigenes Profil) */
     photoEyebrow: "Profilfoto",
     photoTitle: "Dein Foto",
@@ -159,6 +187,33 @@ export const profilDict = {
     savedToast: "Your profile has been updated",
     noChanges: "There is nothing to save.",
     noPermission: "No permission — your profile was not changed.",
+
+    /* Self profile (voluntary, maintained by you) */
+    selfEyebrow: "Self profile",
+    selfTitle: "About me in the club",
+    selfIntro:
+      "Voluntary and written by you — unlike the master data above, which the club maintains. You decide below who gets to see it.",
+    fMotto: "About me",
+    fMottoPh: "Tell everyone a little about you and your skating …",
+    fMottoHint: "Please no contact details (email, phone, links) — they are rejected for safety.",
+    fMottoRemaining: "{n} characters left",
+    fMottoTooLong: "At most {max} characters.",
+    fDiscipline: "Favourite discipline",
+    fDisciplinePh: "e.g. free skating, solo dance or pairs",
+    fDisciplineTooLong: "At most {max} characters.",
+    fSkating: "Skating since",
+    fSkatingPh: "e.g. 2015",
+    fSkatingHint: "As a year — optional.",
+    errSkating: "Please enter a valid year ({min}–{max}).",
+    visLegend: "Who can see your self profile?",
+    visPublicTitle: "Public",
+    visPublicDesc: "All active members of your club can see your motto, discipline and skating-since year.",
+    visInternalTitle: "Internal",
+    visInternalDesc: "Only the board and coaches can see it — other members cannot.",
+    selfSave: "Save self profile",
+    selfSavedToast: "Your self profile has been updated",
+    selfNoPermission: "No permission — your self profile was not changed.",
+    selfLoadErrorTitle: "Self profile could not be loaded",
 
     /* Profile photo (own profile only) */
     photoEyebrow: "Profile photo",

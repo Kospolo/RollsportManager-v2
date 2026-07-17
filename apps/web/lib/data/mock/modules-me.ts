@@ -1,5 +1,11 @@
 import * as mock from "@/lib/mock";
-import type { MyProfile, NotificationPrefs, UserPreferences } from "@/lib/types";
+import type {
+  MyProfile,
+  MySelfProfile,
+  NotificationPrefs,
+  ProfileVisibility,
+  UserPreferences,
+} from "@/lib/types";
 import type { MeRepository } from "../inputs-me";
 import { selfMember } from "./member-store";
 import { MOCK_SELF_PROFILE } from "./seed";
@@ -27,6 +33,24 @@ const profileStore = {
   avatarUrl: self.avatarUrl as string | undefined,
   // Selbst-Profil („Über mich") der eingeloggten Persona.
   aboutMe: self.aboutMe as string | undefined,
+};
+
+/**
+ * Selbst-Profil-Store der eingeloggten Persona (0045/0053). Serverseitig lebt
+ * das auf denselben club_members-Spalten; im Mock spiegeln wir es in einen
+ * eigenen Session-Store, damit der Bearbeiten-Flow auch ohne Dev-Stack greift.
+ * Vorgabe der Sichtbarkeit ist 'internal' (fail-safe, wie in der DB).
+ */
+const selfProfileStore: {
+  motto?: string;
+  favoriteDiscipline?: string;
+  skatingSince?: number;
+  visibility: ProfileVisibility;
+} = {
+  motto: profileStore.aboutMe,
+  favoriteDiscipline: undefined,
+  skatingSince: undefined,
+  visibility: "internal",
 };
 
 /** Präferenz-Store der eingeloggten Persona (Default: DE, System-Theme, alles an). */
@@ -92,6 +116,43 @@ export const moduleRepositoryMe: MeRepository = {
     me.avatarUrl = profileStore.avatarUrl;
     preferencesStore.updatedAt = nowIso();
     return buildProfile();
+  },
+  async getMySelfProfile(): Promise<MySelfProfile | null> {
+    return {
+      memberId: self.id,
+      clubId: mock.club.id,
+      motto: selfProfileStore.motto,
+      favoriteDiscipline: selfProfileStore.favoriteDiscipline,
+      skatingSince: selfProfileStore.skatingSince,
+      visibility: selfProfileStore.visibility,
+    };
+  },
+  async updateMySelfProfile(patch): Promise<MySelfProfile> {
+    if (patch.motto !== undefined) {
+      const trimmed = patch.motto?.trim();
+      selfProfileStore.motto = trimmed ? trimmed : undefined;
+      // „Über mich" ist im Mock dieselbe Angabe wie das Verzeichnis-aboutMe —
+      // durchschreiben, damit die eigene Mitglieder-Karte nicht auseinanderläuft.
+      profileStore.aboutMe = selfProfileStore.motto;
+      selfMember().aboutMe = selfProfileStore.motto;
+    }
+    if (patch.favoriteDiscipline !== undefined) {
+      const trimmed = patch.favoriteDiscipline?.trim();
+      selfProfileStore.favoriteDiscipline = trimmed ? trimmed : undefined;
+    }
+    if (patch.skatingSince !== undefined) {
+      selfProfileStore.skatingSince = patch.skatingSince ?? undefined;
+    }
+    if (patch.visibility !== undefined) selfProfileStore.visibility = patch.visibility;
+    preferencesStore.updatedAt = nowIso();
+    return {
+      memberId: self.id,
+      clubId: mock.club.id,
+      motto: selfProfileStore.motto,
+      favoriteDiscipline: selfProfileStore.favoriteDiscipline,
+      skatingSince: selfProfileStore.skatingSince,
+      visibility: selfProfileStore.visibility,
+    };
   },
   async getMyPreferences(): Promise<UserPreferences> {
     return {
