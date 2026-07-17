@@ -66,10 +66,34 @@ function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url
  * Deshalb zwei Gates statt einem. Ein Gate, das fuenf Spalten auf einmal
  * freigibt, kann eine Anforderung wie "nur diese eine" gar nicht ausdruecken.
  */
-const CONTACT_MEMBER_FIELDS = ['birth_date', 'email', 'valid_until', 'profile_id'] as const;
+// ### 0054: die KONTAKTdaten zerfallen in ZWEI Gruppen, weil sie zwei Publika haben ###
+// Der coach soll die ELTERN seiner Team-Kinder erreichen (E-Mail/Telefon/
+// Anschrift/Geburtstag) — er soll NICHT die Verwaltungs-Innereien (Ablauf des
+// Gastzugangs, die Konto-Verknuepfung profile_id) sehen. "Kontaktdaten fuer den
+// Trainer" heisst genau die vier, nicht "alle PII-Spalten". Ein Gate, das fuenf
+// Spalten auf einmal freigibt, kann diese Anforderung nicht ausdruecken — daher
+// zwei Listen.
+//
+// PARENT: was eine Trainer:in braucht, um die Eltern zu erreichen. Sichtbar fuer
+//   can_manage_members + Plattform-Admin (immer) ODER den coach eines Teams, in
+//   dem die Zielperson Mitglied ist (maySeeContactOf, ZEILENweise).
+const CONTACT_PARENT_FIELDS = ['birth_date', 'email', 'phone', 'postal_address'] as const;
+// ADMIN: Verwaltungs-Kontakt. NUR can_manage_members + Plattform-Admin — NIE ein
+//   coach. valid_until ist der Gast-Ablauf, profile_id die Konto-Verknuepfung;
+//   beides ist Verwaltung, kein Elternkontakt.
+const CONTACT_ADMIN_FIELDS = ['valid_until', 'profile_id'] as const;
 
 /** Eigenes Gate, eigene Liste — siehe oben. */
 const JOINED_ON_FIELDS = ['joined_on'] as const;
+
+/**
+ * Verstecktes Abfrage-Feld: pro Roster-Zeile true, wenn der/die BETRACHTER:IN ein
+ * Team betreut, in dem DIESE Zielperson Mitglied ist (SQL: exists over
+ * team_members ∩ app.coached_team_ids). Von den Roster-/DM-Abfragen mitselektiert,
+ * von maySeeContactOf gelesen und von redactMemberForViewer entfernt (damit es
+ * nicht im Contract landet — memberSchema.parse verwuerfe es ohnehin).
+ */
+const COACH_OF_MEMBER_KEY = '_coach_of_member';
 
 /**
  * Rollen, die das Beitrittsdatum sehen duerfen = "Trainer und hoeher".
@@ -117,22 +141,68 @@ export function maySeeJoinedOn(claims: AuthClaims, clubId: string): boolean {
 }
 
 /**
- * Null out the sensitive columns of a roster row for a non-privileged viewer.
- * The keys stay present (memberSchema requires them, nullable) so the response
- * shape is unchanged — no contract break, just redacted values.
+ * ZEILENWEISE Kontaktdaten-Sichtbarkeit (0054, Kernaufgabe). Anders als
+ * maySeeFullRoster/maySeeJoinedOn (die pro BETRACHTER entscheiden) haengt DIESE
+ * Frage vom PAAR (Betrachter × Zielzeile) ab: "darf dieser coach DIESE Person
+ * sehen?" — und das ist genau dann wahr, wenn der coach ein Team betreut, in dem
+ * die Zielperson Mitglied ist.
  *
- * `joinedOnVisible` defaults to `privileged`: der alte Zwei-Argument-Aufruf
- * verhaelt sich damit exakt wie vorher (joined_on faellt mit den Kontaktdaten).
- * Nur wer das dritte Argument setzt, bekommt die feinere Trennung.
+ * Zwei Wege, wahr zu werden:
+ *   * privilegiert (can_manage_members / Plattform-Admin) — sieht ALLE, wie bisher.
+ *   * der/die Betrachter:in ist coach (CLUB-Rolle 'coach') UND die Zielzeile
+ *     traegt _coach_of_member = true (die SQL-Abfrage hat den Team-Schnitt schon
+ *     unter Impersonation ausgerechnet).
+ *
+ * ⚠️ guest_coach ist BEWUSST DRAUSSEN (wie bei joined_on). Die DB-Funktion
+ * coached_team_ids kennt keinen Rollen-Unterschied — ein Gast-Trainer betreut
+ * team_members role=coach genauso, also waere _coach_of_member fuer ihn auch
+ * true. Der Ausschluss sitzt HIER im Claims-Check (hasClubRole ['coach'], nicht
+ * COACH_ROLES): der Gast ist vereinsEXTERN auf Zeit und hat mit den Eltern-
+ * kontakten der Kinder nichts zu tun. Im Zweifel strenger.
+ *
+ * DIE FUNKTION FUER DIE AGGREGAT-PHASE: pro (viewer, targetMemberRow) aufrufbar.
+ * Die Zeile MUSS _coach_of_member tragen (aus der SQL unten); fehlt es (z.B. ein
+ * frisch angelegter Antrag ohne Team), wertet es als false -> fail-closed.
+ */
+export function maySeeContactOf(
+  claims: AuthClaims,
+  clubId: string,
+  row: Record<string, unknown>,
+): boolean {
+  if (maySeeFullRoster(claims, clubId)) return true;
+  if (!hasClubRole(claims, clubId, ['coach'])) return false;
+  return row[COACH_OF_MEMBER_KEY] === true;
+}
+
+/**
+ * Null out the sensitive columns of a roster row for a viewer. The keys stay
+ * present (memberSchema requires them, nullable) so the response shape is
+ * unchanged — no contract break, just redacted values.
+ *
+ * Drei unabhaengige Achsen, jede mit eigenem Gate:
+ *   * `privileged` (can_manage_members / Plattform-Admin): sieht die VERWALTUNGS-
+ *     Kontaktfelder (valid_until, profile_id) UND — per Default auch — die
+ *     Parent-Kontaktfelder und joined_on.
+ *   * `contactVisible` (Default = privileged): sieht die PARENT-Kontaktfelder
+ *     (birth_date, email, phone, postal_address). Ein coach setzt das ZEILENWEISE
+ *     ueber true (maySeeContactOf), OHNE privileged zu sein — dann kommen die
+ *     Elternkontakte, aber valid_until/profile_id bleiben null.
+ *   * `joinedOnVisible` (Default = privileged): joined_on.
+ *
+ * Alte Zwei-/Drei-Argument-Aufrufe verhalten sich unveraendert: contactVisible
+ * faellt per Default mit privileged, also faellt fuer Nicht-Privilegierte alles.
+ * Das versteckte _coach_of_member wird immer entfernt (Contract-Hygiene).
  */
 export function redactMemberForViewer<T extends Record<string, unknown>>(
   row: T,
   privileged: boolean,
   joinedOnVisible: boolean = privileged,
+  contactVisible: boolean = privileged,
 ): T {
-  if (privileged && joinedOnVisible) return row;
   const out: Record<string, unknown> = { ...row };
-  if (!privileged) for (const field of CONTACT_MEMBER_FIELDS) out[field] = null;
+  delete out[COACH_OF_MEMBER_KEY];
+  if (!contactVisible) for (const field of CONTACT_PARENT_FIELDS) out[field] = null;
+  if (!privileged) for (const field of CONTACT_ADMIN_FIELDS) out[field] = null;
   if (!joinedOnVisible) for (const field of JOINED_ON_FIELDS) out[field] = null;
   return out as T;
 }
@@ -240,10 +310,12 @@ membersRouter.openapi(
       'Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das ' +
       'Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — ' +
       'letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ' +
-      'ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) ' +
-      'sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; ' +
-      'joined_on sieht zusaetzlich der coach ("Trainer und hoeher", ohne guest_coach). ' +
-      'Redigierte Spalten bleiben als null im Ergebnis.',
+      'REDIGIER-Stufen: die Parent-KONTAKTdaten (birth_date, email, phone, postal_address) ' +
+      'sehen can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins IMMER, und ' +
+      'ein coach (NICHT guest_coach) ZEILENWEISE fuer Mitglieder seiner eigenen Teams (um deren ' +
+      'Eltern zu erreichen); die Verwaltungs-Kontaktdaten (valid_until, profile_id) bleiben ' +
+      'can_manage_members vorbehalten (nie dem coach); joined_on sieht zusaetzlich der coach ' +
+      '("Trainer und hoeher", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.',
     security: [{ bearerAuth: [] }],
     request: { params: clubIdParam },
     responses: {
@@ -267,14 +339,29 @@ membersRouter.openapi(
            -- Stufe (c) der Selbst-Profil-Projektion (0053): laeuft impersoniert,
            -- also ist auth.uid() der/die Betrachter:in -> wahr fuer die eigene
            -- Zeile und die der eigenen Kinder.
-           app.can_act_for_member(m.id) as _self_or_guardian
+           app.can_act_for_member(m.id) as _self_or_guardian,
+           -- Zeilenweise Kontakt-Sichtbarkeit (0054): betreut der/die BETRACHTER:IN
+           -- ein Team, in dem DIESE Person Mitglied ist? Laeuft impersoniert ->
+           -- coached_team_ids sieht auth.uid() als Trainer:in. Dieselbe Bauart wie
+           -- die Gesundheitsdaten-Sicht (0040). Der guest_coach-Ausschluss sitzt
+           -- NICHT hier (die Funktion kennt keine Rolle), sondern in maySeeContactOf.
+           exists (
+             select 1 from app.team_members tm
+             where tm.member_id = m.id and tm.deleted_at is null
+               and tm.team_id = any (app.coached_team_ids(m.club_id))
+           ) as _coach_of_member
          from app.club_members m
          where m.club_id = ${clubId} and m.deleted_at is null
          order by m.last_name, m.first_name`,
     );
     const mapped = rows.map((row) =>
       redactSelfProfile(
-        redactMemberForViewer(withAvatar(row), privileged, joinedOnVisible),
+        redactMemberForViewer(
+          withAvatar(row),
+          privileged,
+          joinedOnVisible,
+          maySeeContactOf(claims, clubId, row),
+        ),
         internalProfileViewer,
       ),
     );

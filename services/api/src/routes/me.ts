@@ -46,7 +46,8 @@ async function loadMe(tx: Tx, profileId: string): Promise<unknown> {
 
   const memberships = await tx`
     select m.id, m.club_id, c.name as club_name, c.short_name as club_short_name,
-           m.first_name, m.last_name, m.email, m.birth_date, m.role, m.status,
+           m.first_name, m.last_name, m.email, m.birth_date,
+           m.phone, m.postal_address, m.role, m.status,
            m.joined_on, m.valid_until, m.avatar_key, m.created_at, m.updated_at
     from app.club_members m
     join app.clubs c on c.id = m.club_id and c.deleted_at is null
