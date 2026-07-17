@@ -14,6 +14,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { annualReportSchema, anniversarySchema, reportSummarySchema, uuid } from '../lib/validation.js';
 import { withServiceRole, withUser } from '../db.js';
+import { assertModuleEnabled, isModuleEnabled } from '../lib/module-gate.js';
 import { COACH_ROLES, FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
 // Die EINE Referenz fuer "darf joined_on sehen" — bewusst aus members.ts
 // importiert und hier nicht nachgebaut (siehe /reports/anniversaries unten).
@@ -57,6 +58,11 @@ reportsRouter.openapi(
     const summary = await withServiceRole(
       `club evaluation summary for ${club_id} (caller ${claims.sub})`,
       async (tx) => {
+        // SERVICE-MODE umgeht die restriktiven Finanz-Gates (0061). Ist das
+        // Finanzmodul aus, duerfen die offenen Rechnungen hier NICHT auftauchen
+        // — die Auswertung ist gemischt (Mitglieder/Medaillen bleiben), nur der
+        // Finanzteil wird auf 0 gesetzt. So bleibt 'enforced' auch hier ehrlich.
+        const financeOn = await isModuleEnabled(tx, club_id, 'finance');
         const countRows = await tx`
           select
             (select count(*) from app.club_members
@@ -117,8 +123,8 @@ reportsRouter.openapi(
             member_count: r['member_count'],
           })),
           attendance_rate: counts['attendance_rate'],
-          open_invoices_total_cents: Number(counts['open_invoices_total_cents']),
-          open_invoices_count: counts['open_invoices_count'],
+          open_invoices_total_cents: financeOn ? Number(counts['open_invoices_total_cents']) : 0,
+          open_invoices_count: financeOn ? counts['open_invoices_count'] : 0,
           medals: { gold: counts['gold'], silver: counts['silver'], bronze: counts['bronze'] },
           upcoming_events_count: counts['upcoming_events_count'],
           upcoming_events: upcoming.map((e) => ({
@@ -175,6 +181,10 @@ reportsRouter.openapi(
     const report = await withServiceRole(
       `annual report club=${club_id} year=${year} (caller ${claims.sub})`,
       async (tx) => {
+        // SERVICE-MODE umgeht die Finanz-Gates (0061). Der Jahresabschluss ist
+        // REIN Finanz: ist das Modul aus, gibt es nichts auszuweisen -> 403.
+        await assertModuleEnabled(tx, club_id, 'finance');
+
         // Kassenbuch totals for a given year: income = sum of positive rows,
         // expense = absolute sum of negative rows, net = income - expense.
         const yearTotals = async (y: number) => {

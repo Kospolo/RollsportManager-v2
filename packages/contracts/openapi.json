@@ -183,6 +183,11 @@
               "nullable": true
             }
           },
+          "logo_asset_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -212,6 +217,7 @@
           "discipline",
           "founded_year",
           "settings",
+          "logo_asset_id",
           "created_at",
           "updated_at"
         ]
@@ -3686,6 +3692,11 @@
             "type": "integer",
             "nullable": true
           },
+          "logo_asset_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -3704,6 +3715,7 @@
           "city",
           "discipline",
           "member_count",
+          "logo_asset_id",
           "created_at"
         ]
       },
@@ -3983,6 +3995,65 @@
             }
           }
         }
+      },
+      "SmtpTestResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "dry-run",
+              "error"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "preview": {
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "subject",
+              "text"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "mode",
+          "detail"
+        ]
+      },
+      "SmtpTestRequest": {
+        "type": "object",
+        "properties": {
+          "recipient": {
+            "type": "string",
+            "format": "email",
+            "example": "admin@example.org"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Nur erzeugen und zurueckgeben, nicht senden (Vorschau/Test)."
+          }
+        },
+        "required": [
+          "recipient"
+        ]
       },
       "PlatformEntitlementRow": {
         "type": "object",
@@ -14713,6 +14784,82 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlatformSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/settings/smtp-test": {
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "Send a test email to verify SMTP (platform admin only)",
+        "description": "Sends a small bilingual test mail to the given address so the operator can confirm SMTP works, without triggering a real user flow. dry_run=true only renders the mail and returns it. Rate-limited on the recipient (and account/IP) axis. Always answers 200 with ok:true|false and an honest reason.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmtpTestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Honest test result (sent / dry-run / error)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmtpTestResponse"
                 }
               }
             }

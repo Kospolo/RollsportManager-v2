@@ -58,6 +58,12 @@ export function mapClub(w: M.Club): Club {
     city: w.city ?? "",
     discipline: w.discipline ?? "",
     foundedYear: w.founded_year ?? 0,
+    // Logo (0060): die oeffentliche Serve-Route + Cache-Buster ueber die
+    // Asset-Id, damit ein Wechsel (neue Asset-Id) nicht am Browser-Cache
+    // haengenbleibt. Kein Logo -> null (Ansicht zeigt Initialen).
+    logoUrl: w.logo_asset_id
+      ? `${API_BASE_URL}/public/clubs/${w.id}/logo?v=${w.logo_asset_id}`
+      : null,
   };
 }
 
@@ -145,6 +151,9 @@ export function mapPlatformClub(w: M.PlatformClub): PlatformClubSummary {
     city: w.city ?? "",
     discipline: w.discipline ?? "",
     memberCount: w.member_count ?? 0,
+    logoUrl: w.logo_asset_id
+      ? `${API_BASE_URL}/public/clubs/${w.id}/logo?v=${w.logo_asset_id}`
+      : null,
     createdAt: w.created_at,
   };
 }

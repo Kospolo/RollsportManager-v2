@@ -4,7 +4,7 @@ import { readSession } from "@/lib/auth/storage";
 import { readOperatorClub } from "../operator-club";
 import type { DataRepository, DunningRunOutcome } from "../types";
 import { activeClubId, apiClient } from "./client";
-import { attachRoutineMedia, detachRoutineMedia } from "./media-fetch";
+import { attachRoutineMedia, deleteClubLogo, detachRoutineMedia, uploadClubLogo } from "./media-fetch";
 import { moduleApiRepository } from "./modules";
 import { moduleApiRepositoryBatch2 } from "./modules-batch2";
 import { moduleApiRepositoryBatch3 } from "./modules-batch3";
@@ -137,6 +137,12 @@ export const apiRepository: DataRepository = {
   /* ---------- Verein & Menschen ---------- */
   async getClub() {
     return mapClub(await apiClient.getClubsByClubId(activeClubId()));
+  },
+  async uploadClubLogo(file) {
+    return mapClub(await uploadClubLogo(activeClubId(), file));
+  },
+  async removeClubLogo() {
+    return mapClub(await deleteClubLogo(activeClubId()));
   },
   async getMembers() {
     const roster = await apiClient.getClubsByClubIdMembers(activeClubId());

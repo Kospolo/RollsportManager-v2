@@ -14,6 +14,7 @@ export const club: Club = {
   city: "Neckarsulm",
   discipline: "Rollkunstlauf",
   foundedYear: 1968,
+  logoUrl: null,
 };
 
 const c = club.id;

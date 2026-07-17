@@ -213,6 +213,13 @@ export interface DataRepository
     WettkampfRepository {
   /* ---------- Verein & Menschen ---------- */
   getClub(): Promise<Club>;
+  /**
+   * Vereinslogo setzen/ersetzen (0060). Direkt-Upload, nur owner/admin (der
+   * Server setzt das durch). Liefert den aktualisierten Verein (mit logoUrl).
+   */
+  uploadClubLogo(file: File): Promise<Club>;
+  /** Vereinslogo entfernen (0060). Danach zeigt die Ansicht wieder Initialen. */
+  removeClubLogo(): Promise<Club>;
   getMembers(): Promise<Member[]>;
   getMemberById(id: Id): Promise<Member | undefined>;
   getTeams(): Promise<Team[]>;

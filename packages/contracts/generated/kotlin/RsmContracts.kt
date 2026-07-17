@@ -389,6 +389,14 @@ enum class ClubModuleStateEnforcement {
     @SerialName("menu_only") MENU_ONLY;
 }
 
+/** Inline enum of SmtpTestResponse.mode (hoisted by codegen). */
+@Serializable
+enum class SmtpTestResponseMode {
+    @SerialName("sent") SENT,
+    @SerialName("dry-run") DRY_RUN,
+    @SerialName("error") ERROR;
+}
+
 /** Inline enum of PlatformEntitlementRow.source (hoisted by codegen). */
 @Serializable
 enum class PlatformEntitlementRowSource {
@@ -477,6 +485,13 @@ enum class DunningActionAction {
     @SerialName("none") NONE;
 }
 
+/** Inline object of SmtpTestResponse.preview (hoisted by codegen). */
+@Serializable
+data class SmtpTestResponsePreview(
+    val subject: String,
+    val text: String
+)
+
 /** Inline object of PublicRoutine.markers (hoisted by codegen). */
 @Serializable
 data class PublicRoutineMarkers(
@@ -519,6 +534,7 @@ data class Club(
     val discipline: String?,
     @SerialName("founded_year") val foundedYear: Long?,
     val settings: JsonObject,
+    @SerialName("logo_asset_id") val logoAssetId: String?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -1315,6 +1331,7 @@ data class PlatformClub(
     val city: String?,
     val discipline: String?,
     @SerialName("member_count") val memberCount: Long?,
+    @SerialName("logo_asset_id") val logoAssetId: String?,
     @SerialName("created_at") val createdAt: String
 )
 
@@ -1405,6 +1422,21 @@ data class PlatformSettingsPatch(
     val legal: PlatformLegalPatch? = null,
     val content: PlatformContentPatch? = null,
     @SerialName("feature_flags") val featureFlags: JsonObject? = null
+)
+
+@Serializable
+data class SmtpTestResponse(
+    val ok: Boolean,
+    val mode: SmtpTestResponseMode,
+    val detail: String,
+    @SerialName("message_id") val messageId: String? = null,
+    val preview: SmtpTestResponsePreview? = null
+)
+
+@Serializable
+data class SmtpTestRequest(
+    val recipient: String,
+    @SerialName("dry_run") val dryRun: Boolean? = null
 )
 
 @Serializable

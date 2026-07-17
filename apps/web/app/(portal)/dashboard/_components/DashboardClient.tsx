@@ -10,6 +10,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { formatEUR, formatTime, relativeDays } from "@/lib/format";
 import { errorMessage, isNotImplemented, openInvoices, sumOpenCents } from "@/lib/data";
 import { useData, type DataState } from "@/lib/data/useData";
+import { useModules } from "@/lib/modules";
 import type { Competition, Event, Invoice, Member, Routine } from "@/lib/types";
 import { dashboardDict, type DashboardKey } from "../i18n";
 import {
@@ -108,6 +109,7 @@ function DashboardReady({
   const next = useMemo(() => nextEvent(events), [events]);
   const open = useMemo(() => openInvoices(invoices), [invoices]);
   const openCents = useMemo(() => sumOpenCents(invoices), [invoices]);
+  const financeOn = useModules().isModuleAvailable("finance");
   const pendingCount = useMemo(() => pendingMemberCount(members), [members]);
 
   const greeting = t(greetingKey(new Date().getHours()), { name: me.firstName });
@@ -157,16 +159,20 @@ function DashboardReady({
           sub={membersSub}
           tone="success"
         />
-        <KpiTile
-          label={t("kpiOpen")}
-          value={formatEUR(openCents, locale)}
-          sub={
-            open.length === 1
-              ? t("kpiOpenSubOne")
-              : t("kpiOpenSubMany", { n: open.length })
-          }
-          tone="warn"
-        />
+        {/* MODUL-SCHALTER (0061): „offene Beitraege/Rechnungen" nur, wenn der
+            Verein das Finanzmodul benutzt — sonst nichts Finanzielles zeigen. */}
+        {financeOn && (
+          <KpiTile
+            label={t("kpiOpen")}
+            value={formatEUR(openCents, locale)}
+            sub={
+              open.length === 1
+                ? t("kpiOpenSubOne")
+                : t("kpiOpenSubMany", { n: open.length })
+            }
+            tone="warn"
+          />
+        )}
         <KpiTile
           label={t("kpiNext")}
           value={next ? formatTime(next.startsAt, locale) : "—"}

@@ -31,6 +31,7 @@ import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { FINANCE_ROLES, requireClubRole } from '../lib/guards.js';
 import { requireCap } from '../lib/capabilities.js';
+import { assertModuleEnabled } from '../lib/module-gate.js';
 
 export const budgetsRouter = createRouter();
 
@@ -201,6 +202,9 @@ budgetsRouter.openapi(
     const report = await withServiceRole(
       `budget report club=${club_id} year=${year} (caller ${claims.sub})`,
       async (tx) => {
+        // SERVICE-MODE umgeht die Finanz-Gates (0061): Modul aus -> 403.
+        await assertModuleEnabled(tx, club_id, 'finance');
+
         // Full outer join of plan (budgets) and actual (ledger) per category so
         // a planned-but-unbooked and a booked-but-unplanned category both show.
         const rows = await tx`

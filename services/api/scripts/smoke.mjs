@@ -1520,6 +1520,126 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   assertEq('...beide wieder da', readd.json?.length, 2);
 }
 
+// ============================================================================
+// Vereinslogo (0060) — Upload nur owner/admin, oeffentliche Serve-Route.
+// ============================================================================
+{
+  const owner = await token(SUB.owner, 'owner');
+  const member = await token(SUB.parent, 'member');
+
+  // Ein winziges gueltiges PNG (1x1) als multipart-Datei.
+  const PNG_1x1 = Uint8Array.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+    0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+    0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+    0x42, 0x60, 0x82,
+  ]);
+  const uploadLogo = async (as) => {
+    const form = new FormData();
+    form.append('file', new Blob([PNG_1x1], { type: 'image/png' }), 'logo.png');
+    const res = await fetch(`${BASE}/clubs/${CLUB}/logo`, {
+      method: 'POST',
+      headers: as ? { authorization: `Bearer ${as}` } : {},
+      body: form,
+    });
+    let json;
+    try { json = await res.json(); } catch { json = undefined; }
+    return { status: res.status, json };
+  };
+
+  // Ein normales Mitglied darf KEIN Logo setzen (Vereins-Stammdaten = owner/admin).
+  assertEq('logo: ein normales Mitglied kann KEIN Logo hochladen -> 403',
+    (await uploadLogo(member)).status, 403);
+
+  // Der Inhaber laedt hoch -> 200, logo_asset_id gesetzt.
+  const up = await uploadLogo(owner);
+  assertEq('logo: der Inhaber laedt ein Logo hoch -> 200', up.status, 200);
+  if (typeof up.json?.logo_asset_id === 'string' && up.json.logo_asset_id.length > 0) {
+    ok('logo: die Antwort traegt eine logo_asset_id (serverseitig erzeugt)');
+  } else {
+    fail('logo: die Antwort traegt eine logo_asset_id', JSON.stringify(up.json));
+  }
+
+  // Jedes Mitglied sieht am Verein, dass ein Logo existiert.
+  const clubAsMember = await call('GET', `/clubs/${CLUB}`, { as: member });
+  if (clubAsMember.json?.logo_asset_id) ok('logo: das Mitglied sieht logo_asset_id am Verein (statt Initialen)');
+  else fail('logo: das Mitglied sieht logo_asset_id am Verein', JSON.stringify(clubAsMember.json));
+
+  // Die Serve-Route ist OEFFENTLICH (kein Token) und liefert die Bytes.
+  const publicLogo = await fetch(`${BASE}/public/clubs/${CLUB}/logo`);
+  assertEq('logo: GET /public/clubs/{id}/logo ist oeffentlich abrufbar -> 200', publicLogo.status, 200);
+  assertEq('logo: ...mit content-type image/png',
+    publicLogo.headers.get('content-type'), 'image/png');
+
+  // Entfernen (owner) -> logo_asset_id wieder null (schoener Normalfall = Initialen).
+  const del = await call('DELETE', `/clubs/${CLUB}/logo`, { as: owner });
+  assertEq('logo: der Inhaber entfernt das Logo -> 200', del.status, 200);
+  assertEq('logo: ...logo_asset_id ist wieder null (Normalfall: Initialen)', del.json?.logo_asset_id, null);
+  assertEq('logo: ...danach liefert die oeffentliche Route 404',
+    (await fetch(`${BASE}/public/clubs/${CLUB}/logo`)).status, 404);
+}
+
+// ============================================================================
+// Finanz-Modul abschaltbar (0061) — AUS = per API nichts Finanzielles mehr,
+// die DATEN bleiben, wieder EIN = alles zurueck. members/manage bleiben Kern.
+// ============================================================================
+{
+  const owner = await token(SUB.owner, 'owner');
+  const admin = await token(SUB.admin, 'admin');
+  const setFinance = (as, enabled) =>
+    call('PUT', `/clubs/${CLUB}/modules/finance`, { as, body: { enabled } });
+  const invoicesLen = async (as) => (await call('GET', `/invoices?club_id=${CLUB}`, { as })).json?.length;
+  const feesLen = async (as) => (await call('GET', `/member-fees?club_id=${CLUB}`, { as })).json?.length;
+  const openCount = async (as) =>
+    (await call('GET', `/reports/summary?club_id=${CLUB}`, { as })).json?.open_invoices_count;
+  const financeSection = async (as) =>
+    (await call('GET', `/clubs/${CLUB}/members/${MEMBER.owner}/profile`, { as })).json?.finance;
+
+  // --- AN (Ausgangslage) --- Baseline dynamisch: fruehere Smoke-Abschnitte
+  // koennen Rechnungen angelegt haben; entscheidend ist AUS=0 und danach zurueck.
+  const baseInvoices = await invoicesLen(admin);
+  const baseFees = await feesLen(admin);
+  if (baseInvoices > 0) ok(`finance AN: admin sieht Rechnungen (API, ${baseInvoices})`);
+  else fail('finance AN: admin sieht Rechnungen (API)', String(baseInvoices));
+  if (baseFees > 0) ok(`finance AN: admin sieht Beitraege (API, ${baseFees})`);
+  else fail('finance AN: admin sieht Beitraege (API)', String(baseFees));
+  if ((await openCount(admin)) > 0) ok('finance AN: reports/summary meldet offene Rechnungen (>0)');
+  else fail('finance AN: reports/summary meldet offene Rechnungen (>0)', String(await openCount(admin)));
+  if ((await financeSection(owner)) !== null && (await financeSection(owner)) !== undefined)
+    ok('finance AN: das 360-Profil enthaelt die Finanz-Sektion');
+  else fail('finance AN: das 360-Profil enthaelt die Finanz-Sektion', 'null');
+
+  // --- Abschalten (owner) ---
+  const off = await setFinance(owner, false);
+  assertEq('finance: der Inhaber schaltet finance AUS -> 200 (kein Kernmodul mehr)', off.status, 200);
+  assertEq('finance: ...der Server meldet enabled=false', off.json?.enabled, false);
+
+  assertEq('finance AUS: GET /invoices liefert 0 (RLS-Gate, nicht nur die Kachel)', await invoicesLen(admin), 0);
+  assertEq('finance AUS: GET /member-fees liefert 0', await feesLen(admin), 0);
+  assertEq('finance AUS: reports/summary open_invoices_count = 0 (Service-Mode-Check)', await openCount(admin), 0);
+  assertEq('finance AUS: reports/annual -> 403 (rein finanziell, Modul aus)',
+    (await call('GET', `/reports/annual?club_id=${CLUB}&year=2025`, { as: admin })).status, 403);
+  assertEq('finance AUS: das 360-Profil hat KEINE Finanz-Sektion (null)', await financeSection(owner), null);
+  // Schreiben ueber den Service-Mode-Pfad (Rechnung anlegen) ist ebenfalls dicht.
+  assertEq('finance AUS: POST /invoices -> 403 (Service-Mode-Modulcheck)',
+    (await call('POST', '/invoices', {
+      as: admin,
+      body: { club_id: CLUB, member_id: MEMBER.owner, title: 'Trotzdem', amount_cents: 100 },
+    })).status, 403);
+
+  // --- Wieder EIN -> alles zurueck (die Daten waren nie weg) ---
+  assertEq('finance: der Inhaber schaltet finance wieder EIN -> 200',
+    (await setFinance(owner, true)).status, 200);
+  assertEq('finance wieder AN: die Rechnungen sind zurueck (Daten blieben in der DB)', await invoicesLen(admin), baseInvoices);
+
+  // --- members/manage bleiben Kern: 409, nicht abschaltbar ---
+  assertEq('finance: "members" bleibt Kern -> 409 (nicht abschaltbar)',
+    (await call('PUT', `/clubs/${CLUB}/modules/members`, { as: owner, body: { enabled: false } })).status, 409);
+  assertEq('finance: "manage" bleibt Kern -> 409 (nicht abschaltbar)',
+    (await call('PUT', `/clubs/${CLUB}/modules/manage`, { as: owner, body: { enabled: false } })).status, 409);
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

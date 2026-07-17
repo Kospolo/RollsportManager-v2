@@ -29,6 +29,7 @@ import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { FINANCE_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
 import { requireCap } from '../lib/capabilities.js';
+import { assertModuleEnabled } from '../lib/module-gate.js';
 import type { AuthClaims } from '../middleware/auth.js';
 
 export const donationsRouter = createRouter();
@@ -123,6 +124,8 @@ donationsRouter.openapi(
       `donation create club=${body.club_id} by=${claims.sub}`,
       async (tx) => {
         await assertFinanceRoleInDb(tx, body.club_id, claims); // DB truth, not claims
+        // SERVICE-MODE umgeht die Finanz-Gates (0061): Modul aus -> keine Spende.
+        await assertModuleEnabled(tx, body.club_id, 'finance');
 
         if (body.member_id !== undefined) {
           const members = await tx`

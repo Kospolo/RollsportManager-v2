@@ -662,6 +662,16 @@ export class ApiClient {
   }
 
   /**
+   * Send a test email to verify SMTP (platform admin only)
+   * Sends a small bilingual test mail to the given address so the operator can confirm SMTP works, without triggering a real user flow. dry_run=true only renders the mail and returns it. Rate-limited on the recipient (and account/IP) axis. Always answers 200 with ok:true|false and an honest reason.
+   * 
+   * `POST /platform/settings/smtp-test`
+   */
+  async postPlatformSettingsSmtpTest(body: M.SmtpTestRequest, options?: RequestOptions): Promise<M.SmtpTestResponse> {
+    return this.request<M.SmtpTestResponse>("POST", "/platform/settings/smtp-test", { body, auth: true, options });
+  }
+
+  /**
    * All clubs incl. license tier/status/term (platform admin only)
    * 
    * `GET /platform/entitlements`

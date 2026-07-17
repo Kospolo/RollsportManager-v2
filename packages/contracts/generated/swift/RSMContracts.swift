@@ -375,6 +375,13 @@ public enum ClubModuleStateEnforcement: String, Codable, CaseIterable, Sendable,
     case menuOnly = "menu_only"
 }
 
+/// Inline enum of SmtpTestResponse.mode (hoisted by codegen).
+public enum SmtpTestResponseMode: String, Codable, CaseIterable, Sendable, Equatable {
+    case sent = "sent"
+    case dryRun = "dry-run"
+    case error = "error"
+}
+
 /// Inline enum of PlatformEntitlementRow.source (hoisted by codegen).
 public enum PlatformEntitlementRowSource: String, Codable, CaseIterable, Sendable, Equatable {
     case stripe = "stripe"
@@ -449,6 +456,25 @@ public enum DunningActionAction: String, Codable, CaseIterable, Sendable, Equata
     case auto = "auto"
     case pendingApproval = "pending_approval"
     case none = "none"
+}
+
+/// Inline object of SmtpTestResponse.preview (hoisted by codegen).
+public struct SmtpTestResponsePreview: Codable, Equatable, Sendable {
+    public var subject: String
+    public var text: String
+
+    enum CodingKeys: String, CodingKey {
+        case subject
+        case text
+    }
+
+    public init(
+        subject: String,
+        text: String
+    ) {
+        self.subject = subject
+        self.text = text
+    }
 }
 
 /// Inline object of PublicRoutine.markers (hoisted by codegen).
@@ -559,6 +585,8 @@ public struct Club: Codable, Equatable, Sendable {
     public var discipline: String?
     public var foundedYear: Int?
     public var settings: [String: JSONValue]
+    /// Format: uuid
+    public var logoAssetId: String?
     public var createdAt: String
     public var updatedAt: String
 
@@ -570,6 +598,7 @@ public struct Club: Codable, Equatable, Sendable {
         case discipline
         case foundedYear = "founded_year"
         case settings
+        case logoAssetId = "logo_asset_id"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -582,6 +611,7 @@ public struct Club: Codable, Equatable, Sendable {
         discipline: String? = nil,
         foundedYear: Int? = nil,
         settings: [String: JSONValue],
+        logoAssetId: String? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -592,6 +622,7 @@ public struct Club: Codable, Equatable, Sendable {
         self.discipline = discipline
         self.foundedYear = foundedYear
         self.settings = settings
+        self.logoAssetId = logoAssetId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -3407,6 +3438,8 @@ public struct PlatformClub: Codable, Equatable, Sendable {
     public var city: String?
     public var discipline: String?
     public var memberCount: Int?
+    /// Format: uuid
+    public var logoAssetId: String?
     public var createdAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -3416,6 +3449,7 @@ public struct PlatformClub: Codable, Equatable, Sendable {
         case city
         case discipline
         case memberCount = "member_count"
+        case logoAssetId = "logo_asset_id"
         case createdAt = "created_at"
     }
 
@@ -3426,6 +3460,7 @@ public struct PlatformClub: Codable, Equatable, Sendable {
         city: String? = nil,
         discipline: String? = nil,
         memberCount: Int? = nil,
+        logoAssetId: String? = nil,
         createdAt: String
     ) {
         self.id = id
@@ -3434,6 +3469,7 @@ public struct PlatformClub: Codable, Equatable, Sendable {
         self.city = city
         self.discipline = discipline
         self.memberCount = memberCount
+        self.logoAssetId = logoAssetId
         self.createdAt = createdAt
     }
 }
@@ -3732,6 +3768,55 @@ public struct PlatformSettingsPatch: Codable, Equatable, Sendable {
         self.legal = legal
         self.content = content
         self.featureFlags = featureFlags
+    }
+}
+
+public struct SmtpTestResponse: Codable, Equatable, Sendable {
+    public var ok: Bool
+    public var mode: SmtpTestResponseMode
+    public var detail: String
+    public var messageId: String?
+    public var preview: SmtpTestResponsePreview?
+
+    enum CodingKeys: String, CodingKey {
+        case ok
+        case mode
+        case detail
+        case messageId = "message_id"
+        case preview
+    }
+
+    public init(
+        ok: Bool,
+        mode: SmtpTestResponseMode,
+        detail: String,
+        messageId: String? = nil,
+        preview: SmtpTestResponsePreview? = nil
+    ) {
+        self.ok = ok
+        self.mode = mode
+        self.detail = detail
+        self.messageId = messageId
+        self.preview = preview
+    }
+}
+
+public struct SmtpTestRequest: Codable, Equatable, Sendable {
+    /// Format: email
+    public var recipient: String
+    public var dryRun: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case recipient
+        case dryRun = "dry_run"
+    }
+
+    public init(
+        recipient: String,
+        dryRun: Bool? = nil
+    ) {
+        self.recipient = recipient
+        self.dryRun = dryRun
     }
 }
 

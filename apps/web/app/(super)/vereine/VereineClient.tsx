@@ -160,9 +160,28 @@ function ClubsCard({
       header: t("colClub"),
       footer: t("clubsCount", { n: rows.length }),
       cell: (club) => (
-        <span className="grid min-w-0">
-          <span className="truncate text-[14px] font-bold text-ink">{club.name}</span>
-          <span className="truncate text-[12px] text-ink-faint">{club.shortName}</span>
+        <span className="flex min-w-0 items-center gap-2.5">
+          {/* Vereinslogo (0060) oder Initialen-Fallback (kein kaputtes Bild). */}
+          {club.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={club.logoUrl}
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-8 flex-none rounded-lg border border-line object-cover"
+            />
+          ) : (
+            <span
+              className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-gradient-to-br from-brand to-brand-strong text-[11px] font-extrabold text-brand-contrast"
+              aria-hidden="true"
+            >
+              {(club.shortName || club.name).slice(0, 2)}
+            </span>
+          )}
+          <span className="grid min-w-0">
+            <span className="truncate text-[14px] font-bold text-ink">{club.name}</span>
+            <span className="truncate text-[12px] text-ink-faint">{club.shortName}</span>
+          </span>
         </span>
       ),
     },

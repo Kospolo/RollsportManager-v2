@@ -1,6 +1,7 @@
 "use client";
 
 import { useCapabilities } from "@/lib/capabilities";
+import { useModules } from "@/lib/modules";
 import { MANAGE_NAV_ITEM, MORE_NAV_ITEM, NAV_ITEMS, type NavItem } from "./nav";
 
 /**
@@ -49,6 +50,16 @@ export function useVisibleNavItems(): NavItem[] {
   // Fail-closed bleibt es trotzdem: ohne Auflösung keine Verwaltung, und der
   // Schutz ist ohnehin der Server (RLS + API-DB-Check).
   const isOperator = resolution?.isPlatformAdmin === true;
-  const base = isClubAdmin || isOperator ? [...NAV_ITEMS, MANAGE_NAV_ITEM] : NAV_ITEMS;
+
+  // MODUL-SCHALTER (0061): hat der Verein „Finanzen" abgeschaltet, verschwindet
+  // das Nav-Ziel „Finanzen" — der Nutzer war klar: dann „in keinem bereich was
+  // mit finanzen/rechnungen anzeigen". Ausblenden, NICHT 403: der Server ist
+  // ohnehin dicht (RLS-Gates + Service-Mode-Checks). Fail-open beim Laden.
+  const { isModuleAvailable } = useModules();
+  const items = NAV_ITEMS.filter(
+    (item) => item.href !== "/finanzen" || isModuleAvailable("finance"),
+  );
+
+  const base = isClubAdmin || isOperator ? [...items, MANAGE_NAV_ITEM] : items;
   return [...base, MORE_NAV_ITEM];
 }

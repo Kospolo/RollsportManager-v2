@@ -24,6 +24,7 @@ export interface Club {
   "discipline": string | null;
   "founded_year": number | null;
   "settings": Record<string, unknown>;
+  "logo_asset_id": string | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -814,6 +815,7 @@ export interface PlatformClub {
   "city": string | null;
   "discipline": string | null;
   "member_count": number | null;
+  "logo_asset_id": string | null;
   "created_at": string;
 }
 
@@ -894,6 +896,19 @@ export interface PlatformSettingsPatch {
   "legal"?: PlatformLegalPatch;
   "content"?: PlatformContentPatch;
   "feature_flags"?: Record<string, unknown>;
+}
+
+export interface SmtpTestResponse {
+  "ok": boolean;
+  "mode": "sent" | "dry-run" | "error";
+  "detail": string;
+  "message_id"?: string;
+  "preview"?: { "subject": string; "text": string };
+}
+
+export interface SmtpTestRequest {
+  "recipient": string;
+  "dry_run"?: boolean;
 }
 
 export interface PlatformEntitlementRow {

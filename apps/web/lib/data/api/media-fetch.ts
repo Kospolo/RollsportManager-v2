@@ -1,5 +1,5 @@
 import { ApiError } from "@/lib/api/generated";
-import type { Routine as WireRoutine } from "@/lib/api/generated";
+import type { Club as WireClub, Routine as WireRoutine } from "@/lib/api/generated";
 import { readSession } from "@/lib/auth/storage";
 import type { MediaUploadResult } from "@/lib/types";
 import { API_BASE_URL } from "../config";
@@ -111,6 +111,35 @@ export async function attachRoutineMedia(
   });
   if (!res.ok) throw await mediaError(res, feature);
   return (await res.json()) as WireRoutine;
+}
+
+/**
+ * Vereinslogo setzen/ersetzen — EIN Schritt, multipart DIREKT an
+ * POST /clubs/{id}/logo (KEIN client-gelieferter storage_key; den erzeugt der
+ * Server — dieselbe Lehre wie bei den Kür-Medien). Nur owner/admin (der Server
+ * setzt das durch, sonst 403). Nicht im OpenAPI-Contract -> roher fetch.
+ * Liefert den aktualisierten Verein.
+ */
+export async function uploadClubLogo(clubId: string, file: File): Promise<WireClub> {
+  const form = new FormData();
+  form.set("file", file);
+  const res = await fetch(`${API_BASE_URL}/clubs/${encodeURIComponent(clubId)}/logo`, {
+    method: "POST",
+    headers: { ...authHeaders() },
+    body: form,
+  });
+  if (!res.ok) throw await mediaError(res, "club logo upload");
+  return (await res.json()) as WireClub;
+}
+
+/** Vereinslogo entfernen — DELETE /clubs/{id}/logo (nicht im Contract). */
+export async function deleteClubLogo(clubId: string): Promise<WireClub> {
+  const res = await fetch(`${API_BASE_URL}/clubs/${encodeURIComponent(clubId)}/logo`, {
+    method: "DELETE",
+    headers: { ...authHeaders() },
+  });
+  if (!res.ok) throw await mediaError(res, "club logo remove");
+  return (await res.json()) as WireClub;
 }
 
 /** Kür-Medien lösen — DELETE /routines/{id}/audio|image (nicht im Contract). */

@@ -4,6 +4,7 @@ import { BottomNav } from "@/components/shell/BottomNav";
 import { AuthGate } from "@/components/shell/AuthGate";
 import { ToastProvider } from "@/components/ui/Toast";
 import { CapabilitiesProvider } from "@/lib/capabilities";
+import { ModulesProvider } from "@/lib/modules";
 
 /**
  * Portal-Shell: Sidebar (Desktop) + Topbar + Inhalt + BottomNav (Mobile).
@@ -28,6 +29,7 @@ export default function PortalLayout({
   return (
     <ToastProvider>
       <CapabilitiesProvider>
+       <ModulesProvider>
         <div className="min-h-dvh bg-canvas lg:grid lg:grid-cols-[250px_minmax(0,1fr)]">
           <Sidebar />
           <div className="flex min-h-dvh min-w-0 flex-col">
@@ -38,6 +40,7 @@ export default function PortalLayout({
           </div>
           <BottomNav />
         </div>
+       </ModulesProvider>
       </CapabilitiesProvider>
     </ToastProvider>
   );

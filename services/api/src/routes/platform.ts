@@ -38,7 +38,7 @@ platformRouter.openapi(
     const claims = c.get('claims');
     requirePlatformAdmin(claims);
     const rows = await withServiceRole(`platform-admin clubs overview (caller ${claims.sub})`, (tx) =>
-      tx`select c.id, c.name, c.short_name, c.city, c.discipline, c.created_at,
+      tx`select c.id, c.name, c.short_name, c.city, c.discipline, c.logo_asset_id, c.created_at,
            (select count(*) from app.club_members m
             where m.club_id = c.id and m.deleted_at is null and m.status = 'active')::int as member_count
          from app.clubs c

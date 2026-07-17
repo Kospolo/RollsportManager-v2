@@ -82,6 +82,12 @@ export interface Club {
   city: string;
   discipline: string;
   foundedYear: number;
+  /**
+   * Fertige URL zum Vereinslogo (0060) oder null (dann: Initialen). Die Facade
+   * baut sie: im api-Modus GET /public/clubs/{id}/logo mit Cache-Buster ueber
+   * die Asset-Id; im mock-Modus eine data-URL. Die Ansicht kennt nur die URL.
+   */
+  logoUrl: string | null;
 }
 
 export type MemberRole =
@@ -511,6 +517,8 @@ export interface PlatformClubSummary {
   city: string;
   discipline: string;
   memberCount: number;
+  /** Fertige Logo-URL (0060) oder null (dann Initialen) — wie Club.logoUrl. */
+  logoUrl: string | null;
   createdAt: string;
 }
 

@@ -70,6 +70,7 @@ import { productsRouter } from './modules/billing/products.js';
 import { createWebhooksRouter } from './modules/billing/webhooks.js';
 import { createMediaRouter } from './modules/media/routes.js';
 import { createRoutineMediaRouter } from './modules/media/routine-media.js';
+import { createClubLogoRouter } from './modules/media/club-logo.js';
 import { createExportRouter } from './modules/export/routes.js';
 import { dunningRouter } from './modules/dunning/routes.js';
 
@@ -203,6 +204,11 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   // mehr - das war das Mandanten-Leck, Revert 6dafb38), deshalb NICHT im
   // OpenAPI-Contract. Requires auth: POST/DELETE /routines/{id}/audio|image.
   app.route('/', createRoutineMediaRouter());
+  // plain Hono router - Vereinslogo (0060): multipart-Upload DIREKT (kein
+  // client-Key), owner/admin. Die Serve-Route liegt unter /public/ und ist
+  // damit auth-frei (oeffentliches Marken-Asset), loest aber NUR das Logo auf.
+  // Requires auth: POST/DELETE /clubs/{id}/logo. Public: GET /public/clubs/{id}/logo.
+  app.route('/', createClubLogoRouter());
   // plain Hono router - GoBD/DATEV CSV export; streams text/csv, so deliberately
   // NOT in the OpenAPI contract (like media/webhooks). Requires auth (not in
   // PUBLIC_PATHS): GET /export/ledger.csv, GET /export/datev.

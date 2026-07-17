@@ -82,6 +82,19 @@ export const vereinDict = {
     roCity: "Ort",
     roDiscipline: "Disziplin",
     roEmpty: "—",
+
+    // Vereinslogo (0060)
+    logoEyebrow: "Erscheinungsbild",
+    logoTitle: "Vereinslogo",
+    logoHint:
+      "Erscheint in der Seitenleiste und der Betreiber-Vereinsliste. Bild (PNG, JPG, SVG …), ersetzt das bestehende Logo. Ohne Logo zeigen wir die Initialen.",
+    logoUpload: "Logo hochladen",
+    logoReplace: "Logo ersetzen",
+    logoRemove: "Entfernen",
+    logoBusy: "Wird übertragen …",
+    logoTypeError: "Bitte eine Bilddatei wählen (PNG, JPG, GIF, WebP oder SVG).",
+    logoError: "Das Logo konnte nicht gespeichert werden.",
+    logoAlt: "Vereinslogo",
   },
   en: {
     title: "Club settings",
@@ -151,6 +164,19 @@ export const vereinDict = {
     roCity: "City",
     roDiscipline: "Discipline",
     roEmpty: "—",
+
+    // Club logo (0060)
+    logoEyebrow: "Appearance",
+    logoTitle: "Club logo",
+    logoHint:
+      "Shows in the sidebar and the operator club list. An image (PNG, JPG, SVG …) replaces the current logo. Without a logo we show the initials.",
+    logoUpload: "Upload logo",
+    logoReplace: "Replace logo",
+    logoRemove: "Remove",
+    logoBusy: "Uploading …",
+    logoTypeError: "Please choose an image file (PNG, JPG, GIF, WebP or SVG).",
+    logoError: "The logo could not be saved.",
+    logoAlt: "Club logo",
   },
 } satisfies Dict;
 

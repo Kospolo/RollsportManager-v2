@@ -101,6 +101,11 @@ export const clubSchema = z
     discipline: z.string().nullable(),
     founded_year: z.number().int().nullable(),
     settings: z.record(z.unknown()),
+    // Vereinslogo (0060): Referenz auf app.media_assets. Ist es gesetzt, zeigt
+    // die Oberflaeche das Logo (GET /public/clubs/{id}/logo) statt der
+    // Initialen; ist es null, der schoene Normalfall (Initialen, kein kaputtes
+    // Bild). Gesetzt/entfernt wird es NUR ueber POST/DELETE /clubs/{id}/logo.
+    logo_asset_id: uuid.nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -2076,6 +2081,8 @@ export const platformClubSchema = z
     discipline: z.string().nullable(),
     /** Active, non-deleted membership rows in this club. */
     member_count: z.coerce.number().int(),
+    /** Vereinslogo (0060) oder null — fuer die Betreiber-Vereinsliste. */
+    logo_asset_id: uuid.nullable(),
     created_at: timestamp,
   })
   .openapi('PlatformClub');

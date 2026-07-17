@@ -55,6 +55,8 @@ export const moduleDict = {
       "Ohne Mitglieder ließe sich der Verein nicht mehr verwalten — auch dieser Schalter hinge daran.",
     hintCoreFinance:
       "Aufbewahrungspflicht (GoBD): Buchungsbelege müssen zehn Jahre lang lesbar bleiben.",
+    hintFinanceRetention:
+      "Aus blendet alles Finanzielle aus — es wird NICHTS gelöscht. Das Kassenbuch bleibt aufbewahrt (GoBD-sicher durch die Buchungs-Trigger) und ist beim Wieder-Einschalten sofort zurück.",
     hintCoreManage: "Hier stehen die Schalter selbst — abgeschaltet gäbe es keinen Weg zurück.",
 
     // --- Rückmeldung --------------------------------------------------------
@@ -99,6 +101,8 @@ export const moduleDict = {
       "Without members the club could no longer be administered — including this very switch.",
     hintCoreFinance:
       "Retention duty (GoBD): accounting records must stay readable for ten years.",
+    hintFinanceRetention:
+      "Off hides everything financial — NOTHING is deleted. The cash book stays retained (GoBD-safe via the ledger triggers) and is back the moment you switch it on again.",
     hintCoreManage: "The switches themselves live here — switched off there would be no way back.",
 
     savedOn: "“{title}” is now on.",

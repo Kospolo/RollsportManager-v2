@@ -36,10 +36,13 @@ begin
   perform testkit.is_eq('modules: der Katalog hat 26 Module',
     (select count(*) from app.modules), 26);
 
-  perform testkit.is_eq('modules: 3 Kernmodule (members, finance, manage)',
-    (select count(*) from app.modules where core), 3);
-  perform testkit.is_eq('modules: 20 x enforced',
-    (select count(*) from app.modules where enforcement = 'enforced'), 20);
+  -- Seit 0061 ist 'finance' abschaltbar (enforced) -> nur noch 2 Kernmodule.
+  perform testkit.is_eq('modules: 2 Kernmodule (members, manage) — finance seit 0061 abschaltbar',
+    (select count(*) from app.modules where core), 2);
+  perform testkit.is_eq('modules: genau members + manage sind core',
+    (select count(*) from app.modules where core and key in ('members', 'manage')), 2);
+  perform testkit.is_eq('modules: 21 x enforced (inkl. finance seit 0061)',
+    (select count(*) from app.modules where enforcement = 'enforced'), 21);
   perform testkit.is_eq('modules: 1 x partial (family)',
     (select count(*) from app.modules where enforcement = 'partial'), 1);
   perform testkit.is_eq('modules: 2 x menu_only (chart, anniversaries)',
@@ -262,9 +265,11 @@ begin
   perform testkit.throws('modules: der Admin kann "members" NICHT abschalten (Kernmodul, P0001)',
     $q$insert into app.club_modules (club_id, module_key, enabled)
        values ('c1ab0000-0000-4000-8000-000000000001', 'members', false)$q$, 'P0001');
-  perform testkit.throws('modules: der Admin kann "finance" NICHT abschalten (GoBD-Aufbewahrungspflicht, P0001)',
+  -- finance ist seit 0061 KEIN Kernmodul mehr — Abschalten ist erlaubt (der
+  -- volle Beweis inkl. Datenerhalt steht in 99j_finanz_abschaltbar.sql).
+  perform testkit.succeeds('modules: der Admin DARF "finance" abschalten (seit 0061 abschaltbar, Aufbewahrung sichern die ledger-Trigger)',
     $q$insert into app.club_modules (club_id, module_key, enabled)
-       values ('c1ab0000-0000-4000-8000-000000000001', 'finance', false)$q$, 'P0001');
+       values ('c1ab0000-0000-4000-8000-000000000001', 'finance', false)$q$);
   perform testkit.throws('modules: der Admin kann "manage" NICHT abschalten (sonst kein Weg zurueck, P0001)',
     $q$insert into app.club_modules (club_id, module_key, enabled)
        values ('c1ab0000-0000-4000-8000-000000000001', 'manage', false)$q$, 'P0001');

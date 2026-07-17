@@ -6,6 +6,7 @@ import { useLocale, useT } from "@/lib/i18n";
 import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
 import { dataSource } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
 import { club, currentUser, upcomingEvents } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "./icons";
@@ -24,6 +25,13 @@ export function Sidebar() {
   const pathname = usePathname();
   const eventBadge = upcomingEvents(7).length;
   const navItems = useVisibleNavItems();
+
+  // Vereinslogo (0060): aus der Facade (api: echter Verein, mock: Demo-Verein).
+  // Ist ein Logo gesetzt, zeigt das Badge das Bild statt der Initialen; sonst
+  // der schoene Normalfall (Initialen, kein kaputtes Bild).
+  const clubData = useData((repo) => repo.getClub());
+  const clubLogoUrl = clubData.data?.logoUrl ?? null;
+  const clubShort = clubData.data?.shortName ?? club.shortName;
 
   // Anzeigedaten der User-Card: echte Persona im api-Modus, sonst Demo-Nutzerin
   // (gleiche Ableitung wie im Topbar-UserMenu, damit beide konsistent sind).
@@ -64,12 +72,21 @@ export function Sidebar() {
 
       {/* Vereins-Badge */}
       <div className="mb-2 flex items-center gap-2.5 rounded-lg border border-line bg-canvas px-3 py-2.5">
-        <span
-          className="grid h-10 w-10 flex-none place-items-center rounded-[13px] bg-gradient-to-br from-brand to-brand-strong font-display text-[14px] font-extrabold text-brand-contrast"
-          aria-hidden="true"
-        >
-          {club.shortName}
-        </span>
+        {clubLogoUrl ? (
+          <img
+            src={clubLogoUrl}
+            alt=""
+            aria-hidden="true"
+            className="h-10 w-10 flex-none rounded-[13px] object-cover"
+          />
+        ) : (
+          <span
+            className="grid h-10 w-10 flex-none place-items-center rounded-[13px] bg-gradient-to-br from-brand to-brand-strong font-display text-[14px] font-extrabold text-brand-contrast"
+            aria-hidden="true"
+          >
+            {clubShort}
+          </span>
+        )}
         <span className="min-w-0">
           <b className="block truncate font-display text-[14px] font-extrabold leading-tight tracking-tight text-ink">
             {t("clubName")}

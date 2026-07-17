@@ -30,6 +30,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { memberProfileSchema, uuid } from '../lib/validation.js';
 import { withUser } from '../db.js';
+import { isModuleEnabled } from '../lib/module-gate.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { avatarUrlFor } from '../lib/avatar.js';
@@ -290,8 +291,14 @@ memberProfileRouter.openapi(
       // (die eigene Rechnung/offener Posten, 0002-Privacy). RLS traegt pro Tabelle
       // (invoices: owner/admin/treasurer OR can_act_for_member; member_fees/sepa/
       // donations: can_manage_finance OR can_act_for_member). Kein Service-Mode.
+      //
+      // Modul-Schalter (0061): ist das Finanzmodul aus, wird die ganze Sektion
+      // unterdrueckt (null, nicht leere Listen). Die Gates lieferten via RLS
+      // ohnehin 0 Zeilen — null ist der ehrliche Ausdruck davon: "hier gibt es
+      // keine Finanzen", nicht "alles leer". Die DATEN bleiben in der DB.
+      const financeModuleOn = await isModuleEnabled(tx, clubId, 'finance');
       const finance =
-        isFinance || selfOrGuardian
+        financeModuleOn && (isFinance || selfOrGuardian)
           ? {
               invoices: await tx`
                 select * from app.invoices

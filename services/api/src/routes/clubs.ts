@@ -65,8 +65,8 @@ const TRIAL_DAYS = 30;
  * app.clubs ging, bekam den Code weiterhin. Ein Geheimnis wird nicht dort
  * verteidigt, wo es gelesen wird, sondern dort, wo es liegt (0035).
  */
-const CLUB_COLUMNS = `id, name, short_name, city, discipline, founded_year,
-                      settings, created_at, updated_at`;
+export const CLUB_COLUMNS = `id, name, short_name, city, discipline, founded_year,
+                      settings, logo_asset_id, created_at, updated_at`;
 
 clubsRouter.openapi(
   createRoute({

@@ -137,6 +137,9 @@ export function ModuleClient() {
   /** Die ehrliche Fussnote zur Wirkung — oder nichts, wenn der Schalter wirkt. */
   function hintFor(m: ClubModuleState): string | null {
     if (m.requiresPro && !m.proOk) return t("hintProMissing");
+    // Finanzen (0061): ehrlicher Hinweis, dass Abschalten NICHTS loescht — die
+    // Aufbewahrung sichern die Kassenbuch-Trigger, der Schalter verbirgt nur.
+    if (m.moduleKey === "finance") return t("hintFinanceRetention");
     if (m.enforcement === "menu_only") return t("hintMenuOnly");
     if (m.enforcement === "partial") return t("hintPartial");
     return null;

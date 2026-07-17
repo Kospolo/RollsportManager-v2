@@ -70,6 +70,22 @@ export const mockRepository: DataRepository = {
   async getClub() {
     return clubStore;
   },
+  async uploadClubLogo(file) {
+    // Mock: die Datei als data-URL im Store halten (kein Server). So sieht die
+    // Oberflaeche im Demo-Modus dasselbe Verhalten wie im api-Modus.
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+      reader.readAsDataURL(file);
+    });
+    clubStore = { ...clubStore, logoUrl: dataUrl };
+    return clubStore;
+  },
+  async removeClubLogo() {
+    clubStore = { ...clubStore, logoUrl: null };
+    return clubStore;
+  },
   async getMembers() {
     return memberStore;
   },
@@ -337,6 +353,7 @@ export const mockRepository: DataRepository = {
         city: clubStore.city,
         discipline: clubStore.discipline,
         memberCount: memberStore.length,
+        logoUrl: clubStore.logoUrl,
         createdAt: created,
       },
       {
@@ -346,6 +363,7 @@ export const mockRepository: DataRepository = {
         city: "Heilbronn",
         discipline: "Rollkunstlauf",
         memberCount: 41,
+        logoUrl: null,
         createdAt: "2011-06-01T00:00:00.000Z",
       },
       {
@@ -355,6 +373,7 @@ export const mockRepository: DataRepository = {
         city: "Stuttgart",
         discipline: "Rollhockey",
         memberCount: 68,
+        logoUrl: null,
         createdAt: "2003-09-01T00:00:00.000Z",
       },
     ];
