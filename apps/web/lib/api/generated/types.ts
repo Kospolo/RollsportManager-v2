@@ -787,6 +787,7 @@ export interface Team {
   "club_id": string;
   "name": string;
   "age_group": string | null;
+  "sparte_id": string | null;
   "skater_member_ids": string[];
   "coach_member_ids": string[];
   "created_at": string;
@@ -806,6 +807,46 @@ export interface TeamUpdate {
 export interface TeamMembersSet {
   "skater_member_ids"?: string[];
   "coach_member_ids"?: string[];
+}
+
+export interface Sparte {
+  "id": string;
+  "club_id": string;
+  "name": string;
+  "icon": string | null;
+  "farbe": string | null;
+  "aktiv": boolean;
+  "sortierung": number;
+  "eigene_finanzen": boolean;
+  "member_ids": string[];
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface SparteCreate {
+  "name": string;
+  "icon"?: string | null;
+  "farbe"?: string | null;
+  "aktiv"?: boolean;
+  "sortierung"?: number;
+  "eigene_finanzen"?: boolean;
+}
+
+export interface SparteUpdate {
+  "name"?: string;
+  "icon"?: string | null;
+  "farbe"?: string | null;
+  "aktiv"?: boolean;
+  "sortierung"?: number;
+  "eigene_finanzen"?: boolean;
+}
+
+export interface SparteMembersSet {
+  "member_ids"?: string[];
+}
+
+export interface TeamSparteSet {
+  "sparte_id": string | null;
 }
 
 export interface PlatformClub {

@@ -3335,6 +3335,8 @@ public struct Team: Codable, Equatable, Sendable {
     public var clubId: String
     public var name: String
     public var ageGroup: String?
+    /// Format: uuid
+    public var sparteId: String?
     /// Format: [uuid]
     public var skaterMemberIds: [String]
     /// Format: [uuid]
@@ -3347,6 +3349,7 @@ public struct Team: Codable, Equatable, Sendable {
         case clubId = "club_id"
         case name
         case ageGroup = "age_group"
+        case sparteId = "sparte_id"
         case skaterMemberIds = "skater_member_ids"
         case coachMemberIds = "coach_member_ids"
         case createdAt = "created_at"
@@ -3358,6 +3361,7 @@ public struct Team: Codable, Equatable, Sendable {
         clubId: String,
         name: String,
         ageGroup: String? = nil,
+        sparteId: String? = nil,
         skaterMemberIds: [String],
         coachMemberIds: [String],
         createdAt: String,
@@ -3367,6 +3371,7 @@ public struct Team: Codable, Equatable, Sendable {
         self.clubId = clubId
         self.name = name
         self.ageGroup = ageGroup
+        self.sparteId = sparteId
         self.skaterMemberIds = skaterMemberIds
         self.coachMemberIds = coachMemberIds
         self.createdAt = createdAt
@@ -3427,6 +3432,161 @@ public struct TeamMembersSet: Codable, Equatable, Sendable {
     ) {
         self.skaterMemberIds = skaterMemberIds
         self.coachMemberIds = coachMemberIds
+    }
+}
+
+public struct Sparte: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var icon: String?
+    public var farbe: String?
+    public var aktiv: Bool
+    public var sortierung: Int
+    public var eigeneFinanzen: Bool
+    /// Format: [uuid]
+    public var memberIds: [String]
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case name
+        case icon
+        case farbe
+        case aktiv
+        case sortierung
+        case eigeneFinanzen = "eigene_finanzen"
+        case memberIds = "member_ids"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        name: String,
+        icon: String? = nil,
+        farbe: String? = nil,
+        aktiv: Bool,
+        sortierung: Int,
+        eigeneFinanzen: Bool,
+        memberIds: [String],
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.name = name
+        self.icon = icon
+        self.farbe = farbe
+        self.aktiv = aktiv
+        self.sortierung = sortierung
+        self.eigeneFinanzen = eigeneFinanzen
+        self.memberIds = memberIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct SparteCreate: Codable, Equatable, Sendable {
+    public var name: String
+    public var icon: String?
+    public var farbe: String?
+    public var aktiv: Bool?
+    public var sortierung: Int?
+    public var eigeneFinanzen: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case icon
+        case farbe
+        case aktiv
+        case sortierung
+        case eigeneFinanzen = "eigene_finanzen"
+    }
+
+    public init(
+        name: String,
+        icon: String? = nil,
+        farbe: String? = nil,
+        aktiv: Bool? = true,
+        sortierung: Int? = 0,
+        eigeneFinanzen: Bool? = false
+    ) {
+        self.name = name
+        self.icon = icon
+        self.farbe = farbe
+        self.aktiv = aktiv
+        self.sortierung = sortierung
+        self.eigeneFinanzen = eigeneFinanzen
+    }
+}
+
+public struct SparteUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var icon: String?
+    public var farbe: String?
+    public var aktiv: Bool?
+    public var sortierung: Int?
+    public var eigeneFinanzen: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case icon
+        case farbe
+        case aktiv
+        case sortierung
+        case eigeneFinanzen = "eigene_finanzen"
+    }
+
+    public init(
+        name: String? = nil,
+        icon: String? = nil,
+        farbe: String? = nil,
+        aktiv: Bool? = nil,
+        sortierung: Int? = nil,
+        eigeneFinanzen: Bool? = nil
+    ) {
+        self.name = name
+        self.icon = icon
+        self.farbe = farbe
+        self.aktiv = aktiv
+        self.sortierung = sortierung
+        self.eigeneFinanzen = eigeneFinanzen
+    }
+}
+
+public struct SparteMembersSet: Codable, Equatable, Sendable {
+    /// Format: [uuid]
+    public var memberIds: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case memberIds = "member_ids"
+    }
+
+    public init(
+        memberIds: [String]? = []
+    ) {
+        self.memberIds = memberIds
+    }
+}
+
+public struct TeamSparteSet: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var sparteId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case sparteId = "sparte_id"
+    }
+
+    public init(
+        sparteId: String? = nil
+    ) {
+        self.sparteId = sparteId
     }
 }
 

@@ -31,6 +31,7 @@ import type { Tx } from '../db.js';
 import { withUser } from '../db.js';
 import type { AuthEnv } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
+import { isPlatformAdmin } from './guards.js';
 import { hasOperatorOverride } from './operator-context.js';
 
 /**
@@ -287,6 +288,43 @@ export async function requireClubMemberDb(c: Context<AuthEnv>, clubId: string): 
       403,
       'Forbidden',
       'Keine Mitgliedschaft in diesem Verein. / Not a member of this club.',
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SPARTEN-Schreib-Guard (Migration 0062, Chef-Entscheidung).
+//
+// Spiegelt app.can_manage_sparten EXAKT: is_platform_admin() ODER club-Rolle
+// in {owner, admin, treasurer}. BEWUSST OHNE moderator (Kueren-Moderation, kein
+// Vorstand) — deshalb NICHT requireClubRoleDb(ADMIN_ROLES)/can_manage_finance
+// wiederverwenden, die einen anderen Rollenschnitt haben.
+//
+// DB-aufgeloest (member_role_keys statt Token), damit Mehrfachrollen wirken und
+// der Mitgliedschafts-Gate aus 0025 greift — genau wie requireClubRoleDb.
+// Defense-in-Depth: RLS (sparten_insert/_update) und der Trigger
+// protect_team_sparte tragen die eigentliche Autorisierung; dieser Guard
+// liefert ein ehrliches 403 statt einer RLS-gefilterten Leerantwort.
+// ---------------------------------------------------------------------------
+
+/** Rollen, die Sparten verwalten duerfen — Spiegel von app.can_manage_sparten. */
+export const SPARTEN_MANAGE_ROLES = ['owner', 'admin', 'treasurer'] as const;
+
+export async function requireCanManageSparten(c: Context<AuthEnv>, clubId: string): Promise<void> {
+  // is_platform_admin()-Zweig: die operatorAccess-Middleware hat fuer jeden
+  // Plattform-Admin bereits app.operator_override markiert (und protokolliert),
+  // also stimmt dieser Kurzschluss mit der DB ueberein (can_manage_sparten =
+  // is_platform_admin() OR ...). Ein Nicht-Plattform-Admin faellt in die
+  // DB-aufgeloeste Rollenpruefung.
+  const claims = c.get('claims');
+  if (isPlatformAdmin(claims) || hasOperatorOverride(claims)) return;
+  const caps = await capsFor(c, clubId);
+  if (!caps.roleKeys.some((k) => (SPARTEN_MANAGE_ROLES as readonly string[]).includes(k))) {
+    throw problem(
+      403,
+      'Forbidden',
+      'Sparten verwalten duerfen nur Vorstand, Admin, Kassenwart oder Super-Admin. ' +
+        '/ Managing sparten requires owner, admin, treasurer or platform admin.',
     );
   }
 }

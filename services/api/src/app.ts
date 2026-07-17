@@ -24,6 +24,7 @@ import { meRouter } from './routes/me.js';
 import { rolesRouter } from './routes/roles.js';
 import { modulesRouter } from './routes/modules.js';
 import { teamsRouter } from './routes/teams.js';
+import { spartenRouter } from './routes/sparten.js';
 import { platformRouter } from './routes/platform.js';
 import { platformSettingsRouter } from './routes/platform-settings.js';
 import { platformLicensesRouter } from './routes/platform-licenses.js';
@@ -149,6 +150,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', rolesRouter);
   app.route('/', modulesRouter);
   app.route('/', teamsRouter);
+  app.route('/', spartenRouter);
   app.route('/', platformRouter);
   app.route('/', platformSettingsRouter);
   app.route('/', platformLicensesRouter);
@@ -248,6 +250,7 @@ export const openApiConfig: Parameters<OpenAPIHono['getOpenAPIDocument']>[0] = {
     { name: 'waitlists', description: 'Wartelisten: self-join/leave a scarce resource; trainer manages all' },
     { name: 'budgets', description: 'Budget(-planung): plan per category/year + plan-vs-actual report (finance only)' },
     { name: 'teams', description: 'Teams incl. skater/coach member ids + management' },
+    { name: 'sparten', description: 'Sparten (Verein -> Sparten -> Teams -> Mitglieder): read = member, manage = owner/admin/treasurer' },
     { name: 'departments', description: 'Abteilungen: read = member, manage = club admin, assign members = trainer' },
     { name: 'lockers', description: 'Schließfächer: read = member, master data = club admin, assign/release = trainer' },
     { name: 'platform', description: 'Cross-club super-admin console (platform admin claim only)' },

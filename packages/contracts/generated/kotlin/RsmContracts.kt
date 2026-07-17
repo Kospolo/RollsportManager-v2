@@ -1299,6 +1299,7 @@ data class Team(
     @SerialName("club_id") val clubId: String,
     val name: String,
     @SerialName("age_group") val ageGroup: String?,
+    @SerialName("sparte_id") val sparteId: String?,
     @SerialName("skater_member_ids") val skaterMemberIds: List<String>,
     @SerialName("coach_member_ids") val coachMemberIds: List<String>,
     @SerialName("created_at") val createdAt: String,
@@ -1321,6 +1322,51 @@ data class TeamUpdate(
 data class TeamMembersSet(
     @SerialName("skater_member_ids") val skaterMemberIds: List<String>? = emptyList(),
     @SerialName("coach_member_ids") val coachMemberIds: List<String>? = emptyList()
+)
+
+@Serializable
+data class Sparte(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val icon: String?,
+    val farbe: String?,
+    val aktiv: Boolean,
+    val sortierung: Long,
+    @SerialName("eigene_finanzen") val eigeneFinanzen: Boolean,
+    @SerialName("member_ids") val memberIds: List<String>,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class SparteCreate(
+    val name: String,
+    val icon: String? = null,
+    val farbe: String? = null,
+    val aktiv: Boolean? = true,
+    val sortierung: Long? = 0L,
+    @SerialName("eigene_finanzen") val eigeneFinanzen: Boolean? = false
+)
+
+@Serializable
+data class SparteUpdate(
+    val name: String? = null,
+    val icon: String? = null,
+    val farbe: String? = null,
+    val aktiv: Boolean? = null,
+    val sortierung: Long? = null,
+    @SerialName("eigene_finanzen") val eigeneFinanzen: Boolean? = null
+)
+
+@Serializable
+data class SparteMembersSet(
+    @SerialName("member_ids") val memberIds: List<String>? = emptyList()
+)
+
+@Serializable
+data class TeamSparteSet(
+    @SerialName("sparte_id") val sparteId: String?
 )
 
 @Serializable

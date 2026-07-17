@@ -708,6 +708,12 @@ export const teamSchema = z
     club_id: uuid,
     name: z.string(),
     age_group: z.string().nullable(),
+    /**
+     * Sparte des Teams (1 Team = 1 Sparte; NULL = noch nicht zugeordnet).
+     * Migration 0062. Additiv, deshalb nullable — Bestandsclients ignorieren es.
+     * Setzen/Aendern/Entfernen nur app.can_manage_sparten (PUT .../sparte).
+     */
+    sparte_id: uuid.nullable(),
     /** Member ids with team role 'skater' (app.team_members). */
     skater_member_ids: z.array(uuid),
     /** Member ids with team role 'coach' (app.team_members). */
@@ -743,6 +749,73 @@ export const teamMembersSetSchema = z
 export const deletedSchema = z
   .object({ status: z.literal('deleted'), id: uuid })
   .openapi('Deleted');
+
+// ---------------------------------------------------------------------------
+// Sparten (migration 0062): Verein -> Sparten -> Teams -> Mitglieder.
+// Eine Sparte trennt Mehrsparten-Vereine (z.B. Eiskunstlauf/Rollkunstlauf/
+// Hockey). NICHT zu verwechseln mit departments ("Abteilungen", Mitglieder-
+// Gruppierung). Schreiben = app.can_manage_sparten (owner/admin/treasurer/
+// Plattform-Admin, OHNE moderator); Lesen = is_club_member.
+// ---------------------------------------------------------------------------
+
+/** Hex-Farbe '#RRGGBB' — spiegelt den DB-CHECK sparten_farbe_format. */
+const hexColor = z
+  .string()
+  .regex(/^#[0-9A-Fa-f]{6}$/, 'farbe muss das Format #RRGGBB haben');
+
+export const sparteSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    name: z.string(),
+    /** Icon-Name oder Emoji (optional). */
+    icon: z.string().nullable(),
+    /** Hex-Farbe '#RRGGBB' (optional). */
+    farbe: z.string().nullable(),
+    /** Aktiv-Flag (Anzeige/Zuordnung); soft-delete ist das endgueltige Entfernen. */
+    aktiv: z.boolean(),
+    sortierung: z.number().int(),
+    /** true = eigene Kasse; false (Default) = Vereinskasse. */
+    eigene_finanzen: z.boolean(),
+    /** club_members.id der zugeordneten Mitglieder (n:m, app.sparte_members). */
+    member_ids: z.array(uuid),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('Sparte');
+
+export const sparteCreateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    icon: z.string().max(40).nullable().optional(),
+    farbe: hexColor.nullable().optional(),
+    aktiv: z.boolean().default(true),
+    sortierung: z.number().int().default(0),
+    eigene_finanzen: z.boolean().default(false),
+  })
+  .openapi('SparteCreate');
+
+export const sparteUpdateSchema = z
+  .object({
+    name: z.string().trim().min(1).max(80).optional(),
+    icon: z.string().max(40).nullable().optional(),
+    farbe: hexColor.nullable().optional(),
+    aktiv: z.boolean().optional(),
+    sortierung: z.number().int().optional(),
+    eigene_finanzen: z.boolean().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('SparteUpdate');
+
+/** Full replace der Sparten-Zuordnung eines Mitglieder-Sets (can_manage_sparten). */
+export const sparteMembersSetSchema = z
+  .object({ member_ids: z.array(uuid).default([]) })
+  .openapi('SparteMembersSet');
+
+/** Team einer Sparte zuordnen / die Zuordnung entfernen (sparte_id = null). */
+export const teamSparteSetSchema = z
+  .object({ sparte_id: uuid.nullable() })
+  .openapi('TeamSparteSet');
 
 export const guardianshipSchema = z
   .object({

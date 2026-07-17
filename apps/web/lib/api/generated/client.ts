@@ -616,6 +616,61 @@ export class ApiClient {
   }
 
   /**
+   * List sparten of a club incl. member ids (is_club_member)
+   * 
+   * `GET /clubs/{clubId}/sparten`
+   */
+  async getClubsByClubIdSparten(clubId: string, options?: RequestOptions): Promise<M.Sparte[]> {
+    return this.request<M.Sparte[]>("GET", `/clubs/${encodeURIComponent(clubId)}/sparten`, { auth: true, options });
+  }
+
+  /**
+   * Create a sparte (can_manage_sparten: owner/admin/treasurer)
+   * 
+   * `POST /clubs/{clubId}/sparten`
+   */
+  async postClubsByClubIdSparten(clubId: string, body: M.SparteCreate, options?: RequestOptions): Promise<M.Sparte> {
+    return this.request<M.Sparte>("POST", `/clubs/${encodeURIComponent(clubId)}/sparten`, { body, auth: true, options });
+  }
+
+  /**
+   * Edit / (de)activate a sparte (can_manage_sparten)
+   * 
+   * `PATCH /clubs/{clubId}/sparten/{sparteId}`
+   */
+  async patchClubsByClubIdSpartenBySparteId(clubId: string, sparteId: string, body: M.SparteUpdate, options?: RequestOptions): Promise<M.Sparte> {
+    return this.request<M.Sparte>("PATCH", `/clubs/${encodeURIComponent(clubId)}/sparten/${encodeURIComponent(sparteId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a sparte (can_manage_sparten)
+   * 
+   * `DELETE /clubs/{clubId}/sparten/{sparteId}`
+   */
+  async deleteClubsByClubIdSpartenBySparteId(clubId: string, sparteId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/sparten/${encodeURIComponent(sparteId)}`, { auth: true, options });
+  }
+
+  /**
+   * Replace a sparte roster (can_manage_sparten)
+   * Full replace. Member ids must belong to the sparte's club. Missing members are soft-detached; previously removed members are revived. Assigning/removing is can_manage_sparten only.
+   * 
+   * `PUT /clubs/{clubId}/sparten/{sparteId}/members`
+   */
+  async putClubsByClubIdSpartenBySparteIdMembers(clubId: string, sparteId: string, body: M.SparteMembersSet, options?: RequestOptions): Promise<M.Sparte> {
+    return this.request<M.Sparte>("PUT", `/clubs/${encodeURIComponent(clubId)}/sparten/${encodeURIComponent(sparteId)}/members`, { body, auth: true, options });
+  }
+
+  /**
+   * Assign a team to a sparte (or clear it) (can_manage_sparten)
+   * 
+   * `PUT /clubs/{clubId}/teams/{teamId}/sparte`
+   */
+  async putClubsByClubIdTeamsByTeamIdSparte(clubId: string, teamId: string, body: M.TeamSparteSet, options?: RequestOptions): Promise<M.Team> {
+    return this.request<M.Team>("PUT", `/clubs/${encodeURIComponent(clubId)}/teams/${encodeURIComponent(teamId)}/sparte`, { body, auth: true, options });
+  }
+
+  /**
    * All clubs incl. member count (platform admin only)
    * 
    * `GET /platform/clubs`
