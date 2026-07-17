@@ -24,6 +24,29 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
   `role_permissions`/`member_roles` + Eskalations-Trigger. **Der Kniff:** nicht 110 Policies umgeschrieben, sondern nur der
   Rumpf von `app.has_club_role` (Auflösung **JWT-Claim → Datenbank**) — alle Policies ziehen automatisch nach, sofortwirksam
   ohne Re-Login. Live bewiesen mit EINEM unveränderten Token: nur Matrix geändert → 1 → 6 → 0 → 1 Küren.
+- **Großer Tag 2026-07-16/17 — gebaut, geprüft, committet auf `main` (bis ~1386 SQL-Tests):**
+  - **RBAC Phase 2+3:** Mehrfachrollen wirken durch die API, Küren-Split, **einstellbare Rechte-Matrix** unter
+    Verwaltung → Rollen&Rechte. Dabei zwei Lecks gefunden & geschlossen (Jubiläums-`joined_on`, `team_coaches`-View).
+  - **Registrierung:** Verein legt sich selbst an, **Beitritt per Vereinscode = Antrag → Vorstand gibt frei**,
+    Rotation mit Überlappung, Ablehnung mit Gedächtnis, 3-Achsen-Drossel, Einwilligung (Art. 8 erzwungen). Vereinscode
+    nicht mehr in der Auslieferung (war an jedes Mitglied geleakt). **Art.-9-Leck** (Krankmeldungen von Kindern) zu.
+  - **Chat:** Kinderschutz bei Direktnachrichten (Erwachsene↔fremde Kinder gesperrt). ⚠️ **Offen, deine Entscheidung:**
+    Vorstand/Trainer lesen Team-Chats mit (seit 0011, ein Bestands-Test friert es ein) — Kinder schreiben dort.
+  - **Modul-Schalter pro Verein** (serverseitig, ehrliche „wirkt-noch-nicht"-Etiketten).
+  - **Termine:** Mitglied sieht nur seine Team-Termine + Vereinsveranstaltungen; das Vereinstermin-Häkchen nur Vorstand.
+  - **Betreiberkonsole:** Plattform-Admin sieht/verwaltet alle Vereine — **jeder Zugriff protokolliert**
+    (`app.operator_audit_log`, append-only, auch vom Betreiber nicht löschbar). Support-Tickets, Dashboard,
+    Vereins-Umschalter, Küren-Moderation. **Zweite protokoll-freie Tür geschlossen** (members.ts, Commit heute).
+  - **Mitglieder-Seite:** Redesign (Karten statt Tabelle) + **Selbst-Profil** + Trainingsbeteiligung nur noch
+    read_own für Mitglieder (Lese-Policy umgestellt: `app.can_read_attendance` — schließt die Phase-1-„none sperrt nur
+    Schreiben"-Lücke), `joined_on` jetzt auch für Coach.
+  - **⚠️ Regel-Ausnahme dokumentiert:** 3 Bestands-Tests (93_rbac/93b/93j) wurden geändert (`M`), NICHT nur ergänzt —
+    aber als **Verschärfung** (Wächter der Lücke → Wächter des Fixes), selbst nachgeprüft und abgezeichnet. Das ist
+    die eine legitime Ausnahme von „nur A, kein M": wenn ein Bestands-Test eine behobene Schwäche zementierte.
+- **⚠️ Betrieb: die Platte lief 2× voll und kippte die Live-Prod (ketotracker.de u.a.).** VOR parallelen Agenten-Läufen
+  `df -h /System/Volumes/Data` prüfen (unter 20 GB: nicht parallelisieren). Test-Container/Worktrees nach jedem Lauf
+  abräumen. Harness braucht `HARNESS_HOST_PORT` **und** `HARNESS_CONTAINER`. **KetoTracker-Backup war seit 12.07. tot**
+  (`docker exec pg_dump` scheiterte an voller Platte) — hängt an genau einer Kopie, gehört über TCP :5544 gefixt.
 
 ## 2. Was NOCH zu tun ist (Reihenfolge = „mach weiter")
 > Web zuerst fertig war die Vorgabe — Web ist fertig. Reihenfolge jetzt:
