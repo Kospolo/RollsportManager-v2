@@ -1218,4 +1218,39 @@ from (values
   ('ca100000-0000-4000-8000-000000000005'::uuid,   -60000::bigint, 'Sonstige Ausgaben')
 ) as v(category_id, planned_cents, note);
 
+-- ----------------------------------------------------------------------------
+-- Trainer:innen-Beurteilungen (migration 0055) — damit die Detailseite etwas
+-- zeigt. Autor:innen sind Team-Trainer:innen über Kinder IHRER Teams:
+--   Sandra Vogel  (a-01, coach t-02 Nachwuchs + t-03 Leistung)
+--   Anna-Lena Böhm(a-05, coach t-01 Minis + t-02 Nachwuchs)
+-- Beurteilte: Lina Grünewald (a-07, t-02) + Emma Grünewald (a-08, t-01) —
+-- beide Kinder von Katrin Grünewald (a-09, Mitglied) -> die Detailseite eines
+-- Elternteils zeigt echte Daten. Dazu zwei Leistungs-Skaterinnen aus t-03.
+-- Eine Note bewusst NULL (Ausdruck), um die Optionalität sichtbar zu machen.
+-- Seed läuft als Superuser -> RLS/Autoren-Trigger sind aus, die CHECKs greifen.
+-- ----------------------------------------------------------------------------
+insert into app.member_assessments
+  (club_id, member_id, author_member_id, body, rating_technik, rating_ausdruck, assessed_on)
+values
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001',
+   'Lina zeigt großen Ehrgeiz im Pflichtlauf. Die Bögen sind sauberer geworden, '
+   || 'am Übergang zum Dreier arbeiten wir weiter. Sehr zuverlässig im Training.',
+   4, 3, current_date - 20),
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000005',
+   'Emma ist mit viel Freude bei der Sache und eine echte Stütze der Minis-Gruppe. '
+   || 'Grundschritte sitzen; an der Körperspannung bei der Standwaage üben wir noch.',
+   3, 4, current_date - 12),
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000016', 'a0000000-0000-4000-8000-000000000001',
+   'Maja hat den Flip in dieser Saison stabilisiert und geht die Kür sehr '
+   || 'musikalisch an. Für den nächsten Wettkampf feilen wir an der Landung des Rittberger.',
+   5, 4, current_date - 8),
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000017', 'a0000000-0000-4000-8000-000000000001',
+   'Johanna macht technisch große Fortschritte, traut sich im Ausdruck aber noch '
+   || 'zu wenig. Kurze verbale Rückmeldung ohne Benotung des Ausdrucks für diesmal.',
+   4, null, current_date - 3);
+
 commit;
