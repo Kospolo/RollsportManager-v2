@@ -178,6 +178,28 @@ enum class CompetitionEntryStatus {
 }
 
 @Serializable
+enum class SupportTicketStatus {
+    @SerialName("open") OPEN,
+    @SerialName("in_progress") IN_PROGRESS,
+    @SerialName("waiting_on_club") WAITING_ON_CLUB,
+    @SerialName("closed") CLOSED;
+}
+
+@Serializable
+enum class SupportTicketPriority {
+    @SerialName("low") LOW,
+    @SerialName("normal") NORMAL,
+    @SerialName("high") HIGH,
+    @SerialName("urgent") URGENT;
+}
+
+@Serializable
+enum class SupportActor {
+    @SerialName("club") CLUB,
+    @SerialName("platform") PLATFORM;
+}
+
+@Serializable
 enum class ExerciseCategory {
     @SerialName("warmup") WARMUP,
     @SerialName("stretching") STRETCHING,
@@ -383,6 +405,15 @@ enum class PlatformProductBillingInterval {
     @SerialName("year") YEAR;
 }
 
+/** Inline enum of PlatformRoutineRow.status (hoisted by codegen). */
+@Serializable
+enum class PlatformRoutineRowStatus {
+    @SerialName("draft") DRAFT,
+    @SerialName("ready") READY,
+    @SerialName("competition") COMPETITION,
+    @SerialName("archived") ARCHIVED;
+}
+
 /** Inline enum of PlatformSystemHealth.status (hoisted by codegen). */
 @Serializable
 enum class PlatformSystemHealthStatus {
@@ -528,6 +559,9 @@ data class ClubMember(
     @SerialName("valid_until") val validUntil: String?,
     @SerialName("avatar_url") val avatarUrl: String?,
     @SerialName("team_ids") val teamIds: List<String>,
+    @SerialName("profile_motto") val profileMotto: String?,
+    @SerialName("profile_favorite_discipline") val profileFavoriteDiscipline: String?,
+    @SerialName("profile_skating_since") val profileSkatingSince: Long?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -633,6 +667,13 @@ data class ClubMemberUpdate(
 @Serializable
 data class ClubMemberRoleChange(
     val role: AssignableClubRole
+)
+
+@Serializable
+data class ClubMemberSelfProfileUpdate(
+    val motto: String? = null,
+    @SerialName("favorite_discipline") val favoriteDiscipline: String? = null,
+    @SerialName("skating_since") val skatingSince: Long? = null
 )
 
 @Serializable
@@ -1146,6 +1187,25 @@ data class PlatformProductPatch(
 )
 
 @Serializable
+data class PlatformRoutineRow(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String,
+    val title: String,
+    val status: PlatformRoutineRowStatus,
+    val category: String?,
+    @SerialName("music_title") val musicTitle: String?,
+    @SerialName("music_artist") val musicArtist: String?,
+    @SerialName("music_duration_ms") val musicDurationMs: Long?,
+    @SerialName("audio_asset_id") val audioAssetId: String?,
+    @SerialName("audio_mime_type") val audioMimeType: String?,
+    @SerialName("audio_size_bytes") val audioSizeBytes: Long?,
+    @SerialName("skater_count") val skaterCount: Long?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
 data class PlatformSystemDb(
     val clubs: Long?,
     val users: Long?,
@@ -1468,6 +1528,73 @@ data class NoteUpdate(
     val title: String? = null,
     val body: String? = null,
     @SerialName("club_id") val clubId: String? = null
+)
+
+@Serializable
+data class SupportTicket(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String?,
+    @SerialName("created_by_member_id") val createdByMemberId: String,
+    @SerialName("created_by_name") val createdByName: String?,
+    val subject: String,
+    val status: SupportTicketStatus,
+    val priority: SupportTicketPriority,
+    @SerialName("last_reply_at") val lastReplyAt: String?,
+    @SerialName("last_reply_by") val lastReplyBy: SupportActor,
+    @SerialName("message_count") val messageCount: Long,
+    @SerialName("closed_at") val closedAt: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class SupportMessage(
+    val id: String,
+    @SerialName("ticket_id") val ticketId: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("author_profile_id") val authorProfileId: String,
+    @SerialName("author_name") val authorName: String?,
+    @SerialName("author_kind") val authorKind: SupportActor,
+    val body: String,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class SupportTicketDetail(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String?,
+    @SerialName("created_by_member_id") val createdByMemberId: String,
+    @SerialName("created_by_name") val createdByName: String?,
+    val subject: String,
+    val status: SupportTicketStatus,
+    val priority: SupportTicketPriority,
+    @SerialName("last_reply_at") val lastReplyAt: String?,
+    @SerialName("last_reply_by") val lastReplyBy: SupportActor,
+    @SerialName("message_count") val messageCount: Long,
+    @SerialName("closed_at") val closedAt: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    val messages: List<SupportMessage>
+)
+
+@Serializable
+data class SupportTicketCreate(
+    @SerialName("club_id") val clubId: String,
+    val subject: String,
+    val body: String
+)
+
+@Serializable
+data class SupportMessageCreate(
+    val body: String
+)
+
+@Serializable
+data class SupportTicketUpdate(
+    val status: SupportTicketStatus? = null,
+    val priority: SupportTicketPriority? = null
 )
 
 @Serializable

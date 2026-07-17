@@ -9,14 +9,44 @@
 // Datenbankzugriff, und die Zod-Validierung der Query laeuft noch davor. Damit
 // ist alles hier in-process pruefbar. Der positive Pfad (200 + echte Zeilen)
 // braucht eine Datenbank und ist im Bericht als Live-Beleg ausgewiesen.
+//
+// ### ZUSAMMENFUEHRUNG: die Naht zu Trupp 1 (0051) ###
+// Diese Datei entstand, als es die Audit-Middleware noch nicht gab. Seit 0051
+// haengt operatorAccess global an '*' und schreibt NACH jedem Request eines
+// Plattform-Admins eine Protokollzeile — faellt der Schreib aus, wird die
+// Antwort fail-closed durch 503 ersetzt. Ohne Datenbank traf das hier JEDE
+// Anfrage mit Plattform-Token: aus dem erwarteten 400 wurde ein 503.
+//
+// Das ist kein Fehler der Middleware, sondern eine unvollstaendige Kulisse:
+// in der Produktion GIBT es die Senke, die Protokollzeile geht durch, und der
+// 400 kommt beim Aufrufer an. Der Mock unten stellt genau diese Senke nach —
+// und NUR sie. Der Datenpfad der Route bleibt ohne Datenbank (er wirft
+// weiterhin), damit der Test "der Handler laeuft wirklich" (>= 500) seine
+// Aussage behaelt. Unterschieden wird am `reason`, den withServiceRole
+// ohnehin verlangt.
 // ============================================================================
 
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { SignJWT } from 'jose';
 import { resetConfigForTests } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import type { OpenAPIHono } from '@hono/zod-openapi';
 import type { AuthEnv } from '../src/middleware/auth.js';
+
+vi.mock('../src/db.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/db.js')>();
+  /** Nimmt jedes `tx\`insert …\`` an und liefert leer zurueck — wie eine leere Tabelle. */
+  const sink = (): Promise<never[]> => Promise.resolve([]);
+  return {
+    ...actual,
+    withServiceRole: async <T,>(reason: string, fn: (tx: unknown) => Promise<T>): Promise<T> => {
+      // Nur die Audit-Senke aus middleware/operator-access.ts.
+      if (reason.startsWith('operator audit log')) return fn(sink);
+      // Alles andere (der Datenpfad der Route) bleibt bewusst ohne Datenbank.
+      throw new Error('keine Datenbank im Unit-Test (Absicht, siehe Dateikopf)');
+    },
+  };
+});
 
 const TEST_SECRET = 'test-secret-for-vitest-0123456789abcdef';
 const CLUB = '11111111-1111-4111-8111-111111111111';

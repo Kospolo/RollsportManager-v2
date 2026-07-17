@@ -140,8 +140,21 @@ begin
     (select case when app.has_cap('c1ab0000-0000-4000-8000-000000000001','members','manage') then 1 else 0 end), 1);
   perform testkit.is_eq('0051/Einsicht: has_cap(members,manage) auch in club B (mandantenuebergreifend)',
     (select case when app.has_cap('deadbeef-0000-4000-8000-000000000001','members','manage') then 1 else 0 end), 1);
-  perform testkit.is_eq('0051/Einsicht: sieht den Roster BEIDER Vereine',
-    (select count(distinct club_id) from app.club_members), 2);
+  -- ZUSAMMENFUEHRUNG: hier stand `count(distinct club_id) … = 2` — die Zahl
+  -- meinte "Verein A + Verein B, mehr gibt es nicht". Das stimmte, als dieser
+  -- Trupp startete (Stand 0034). Inzwischen legen 99d_registrierung und
+  -- 99e_einwilligung Vereine an und COMMITTEN sie; vor dieser Suite stehen
+  -- daher 4 statt 2. Der Zaehler mass also gar nicht mehr die Zusage, sondern
+  -- die Reihenfolge der Suiten.
+  -- Die Zusage lautet "sieht den Roster BEIDER Vereine" — also werden BEIDE
+  -- Vereine benannt statt gezaehlt. Das ist schaerfer, nicht laxer: die alte
+  -- Fassung waere auch mit zwei BELIEBIGEN Vereinen gruen geworden, diese
+  -- verlangt genau A und B. Und sie rostet nicht, wenn eine weitere Suite
+  -- einen Verein committet.
+  perform testkit.is_eq('0051/Einsicht: sieht den Roster BEIDER Vereine (A und B, namentlich)',
+    (select count(distinct club_id) from app.club_members
+      where club_id in ('c1ab0000-0000-4000-8000-000000000001',
+                        'deadbeef-0000-4000-8000-000000000001')), 2);
 
   -- ---- SCHREIBEN (der ausdrueckliche Wunsch: "verwalten … schreiben") -------
   insert into app.club_members (club_id, first_name, last_name, role, status)

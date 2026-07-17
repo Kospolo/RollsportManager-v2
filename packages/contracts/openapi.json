@@ -402,6 +402,18 @@
               "format": "uuid"
             }
           },
+          "profile_motto": {
+            "type": "string",
+            "nullable": true
+          },
+          "profile_favorite_discipline": {
+            "type": "string",
+            "nullable": true
+          },
+          "profile_skating_since": {
+            "type": "integer",
+            "nullable": true
+          },
           "created_at": {
             "anyOf": [
               {
@@ -437,6 +449,9 @@
           "valid_until",
           "avatar_url",
           "team_ids",
+          "profile_motto",
+          "profile_favorite_discipline",
+          "profile_skating_since",
           "created_at",
           "updated_at"
         ]
@@ -827,6 +842,27 @@
         "required": [
           "role"
         ]
+      },
+      "ClubMemberSelfProfileUpdate": {
+        "type": "object",
+        "properties": {
+          "motto": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 140
+          },
+          "favorite_discipline": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 60
+          },
+          "skating_since": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1900,
+            "maximum": 2027
+          }
+        }
       },
       "ChildCreated": {
         "type": "object",
@@ -2784,6 +2820,104 @@
           }
         }
       },
+      "PlatformRoutineRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "ready",
+              "competition",
+              "archived"
+            ]
+          },
+          "category": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_title": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_artist": {
+            "type": "string",
+            "nullable": true
+          },
+          "music_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "audio_asset_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "audio_mime_type": {
+            "type": "string",
+            "nullable": true
+          },
+          "audio_size_bytes": {
+            "type": "integer",
+            "nullable": true
+          },
+          "skater_count": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "club_name",
+          "title",
+          "status",
+          "category",
+          "music_title",
+          "music_artist",
+          "music_duration_ms",
+          "audio_asset_id",
+          "audio_mime_type",
+          "audio_size_bytes",
+          "skater_count",
+          "created_at",
+          "updated_at"
+        ]
+      },
       "PlatformSystemDb": {
         "type": "object",
         "properties": {
@@ -4203,6 +4337,342 @@
             "type": "string",
             "nullable": true,
             "format": "uuid"
+          }
+        }
+      },
+      "SupportTicketStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_progress",
+          "waiting_on_club",
+          "closed"
+        ]
+      },
+      "SupportTicketPriority": {
+        "type": "string",
+        "enum": [
+          "low",
+          "normal",
+          "high",
+          "urgent"
+        ]
+      },
+      "SupportActor": {
+        "type": "string",
+        "nullable": true,
+        "enum": [
+          "club",
+          "platform"
+        ]
+      },
+      "SupportTicket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_by_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_by_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/SupportTicketPriority"
+          },
+          "last_reply_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "last_reply_by": {
+            "$ref": "#/components/schemas/SupportActor"
+          },
+          "message_count": {
+            "type": "integer"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "club_name",
+          "created_by_member_id",
+          "created_by_name",
+          "subject",
+          "status",
+          "priority",
+          "last_reply_at",
+          "last_reply_by",
+          "message_count",
+          "closed_at",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "SupportMessage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ticket_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_profile_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "author_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "author_kind": {
+            "$ref": "#/components/schemas/SupportActor"
+          },
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "ticket_id",
+          "club_id",
+          "author_profile_id",
+          "author_name",
+          "author_kind",
+          "body",
+          "created_at"
+        ]
+      },
+      "SupportTicketDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_by_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "created_by_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/SupportTicketPriority"
+          },
+          "last_reply_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "last_reply_by": {
+            "$ref": "#/components/schemas/SupportActor"
+          },
+          "message_count": {
+            "type": "integer"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupportMessage"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "club_name",
+          "created_by_member_id",
+          "created_by_name",
+          "subject",
+          "status",
+          "priority",
+          "last_reply_at",
+          "last_reply_by",
+          "message_count",
+          "closed_at",
+          "created_at",
+          "updated_at",
+          "messages"
+        ]
+      },
+      "SupportTicketCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "club_id",
+          "subject",
+          "body"
+        ]
+      },
+      "SupportMessageCreate": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "SupportTicketUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "priority": {
+            "$ref": "#/components/schemas/SupportTicketPriority"
           }
         }
       },
@@ -9567,7 +10037,7 @@
           "members"
         ],
         "summary": "List the club roster (sensitive columns redacted for non-managers)",
-        "description": "Every club member sees the name list. For viewers WITHOUT can_manage_members (plain member / guest_coach) the sensitive columns are nulled: birth_date, email, valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) and platform admins get the full rows.",
+        "description": "Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; joined_on sieht zusaetzlich der coach (\"Trainer und hoeher\", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.",
         "security": [
           {
             "bearerAuth": []
@@ -10195,6 +10665,102 @@
                 "schema": {
                   "type": "object",
                   "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/members/{memberId}/profile": {
+      "patch": {
+        "tags": [
+          "members"
+        ],
+        "summary": "Edit the SELF profile (own row or own child; never by managers)",
+        "description": "Das Selbst-Profil pflegt die Person SELBST — bei Kindern ohne Konto ihre Erziehungsberechtigten (app.guardianships). Schreibrecht ist ausdruecklich KEIN Verwaltungsrecht: owner/admin/moderator koennen fremde Profile NICHT beschreiben (sie duerfen sie leeren — Moderation). Felder: motto (max. 140), favorite_discipline (max. 60), skating_since (Jahreszahl). Fehlender Schluessel = unveraendert, null oder \"\" = Angabe loeschen. Die Inhalte sind fuer ALLE aktiven Mitglieder des Vereins sichtbar — serverseitig werden hineinkopierte E-Mail-Adressen, Links und Telefonnummern am Stueck abgelehnt (422).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "memberId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubMemberSelfProfileUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated membership",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubMember"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }
@@ -13984,6 +14550,128 @@
         }
       }
     },
+    "/platform/routines": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "All routines across all clubs, for moderation (platform admin only)",
+        "description": "Cross-club routine list for content moderation (music/title review). Optional filters: club_id, status, free text q over title/music_title/music_artist. Skater names are deliberately NOT returned — see PlatformRoutineRow.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "ready",
+                "competition",
+                "archived"
+              ]
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "nullable": true,
+              "minimum": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Routines across all clubs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlatformRoutineRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/platform/system": {
       "get": {
         "tags": [
@@ -16132,6 +16820,484 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Support tickets of one club (club board only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tickets of the club, most recent activity first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupportTicket"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Open a support ticket (club board only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created ticket incl. its opening message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTicketDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets/{ticketId}": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "One ticket incl. its message history (club board or operator)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ticketId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The ticket and its messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTicketDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Set status/priority of a ticket (platform operator only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ticketId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated ticket",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTicketDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/support/tickets/{ticketId}/messages": {
+      "post": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Reply to a ticket (club board or operator)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "ticketId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportMessageCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The ticket incl. the new message",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTicketDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/platform/support/tickets": {
+      "get": {
+        "tags": [
+          "platform",
+          "support"
+        ],
+        "summary": "All support tickets across all clubs (platform admin only)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All tickets, most recent activity first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupportTicket"
+                  }
                 }
               }
             }

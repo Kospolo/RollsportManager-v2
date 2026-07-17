@@ -2889,28 +2889,42 @@ export const supportTicketPrioritySchema = z
 /** Seite, von der eine Nachricht stammt (app.support_actor). */
 export const supportActorSchema = z.enum(['club', 'platform']).openapi('SupportActor');
 
-export const supportTicketSchema = z
-  .object({
-    id: uuid,
-    club_id: uuid,
-    /** Anzeigename des Vereins — der Betreiber sieht Tickets mandantenuebergreifend. */
-    club_name: z.string().nullable(),
-    created_by_member_id: uuid,
-    /** Wer es aufgemacht hat, als fertiger Anzeigename ("Thomas Krueger"). */
-    created_by_name: z.string().nullable(),
-    subject: z.string(),
-    status: supportTicketStatusSchema,
-    priority: supportTicketPrioritySchema,
-    /** Zeitpunkt der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
-    last_reply_at: timestamp.nullable(),
-    /** Seite der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
-    last_reply_by: supportActorSchema.nullable(),
-    message_count: z.number().int(),
-    closed_at: timestamp.nullable(),
-    created_at: timestamp,
-    updated_at: timestamp,
-  })
-  .openapi('SupportTicket');
+/**
+ * Die Felder eines Tickets als blosse Shape — NICHT als registriertes Schema.
+ *
+ * ZUSAMMENFUEHRUNG: hier stand `supportTicketSchema.extend({messages})`. Das
+ * ist das einzige .extend() auf einem bereits mit .openapi() registrierten
+ * Schema in dieser Datei gewesen, und es erzeugt im Vertrag ein
+ * `allOf: [$ref SupportTicket, {messages}]`. Der Codegen kann diese Form nicht
+ * (codegen/lib/spec.mjs:85-99 kennt allOf nur als "$ref mit default") und ist
+ * daran gescheitert — aufgefallen erst hier, weil der Codegen bewusst zuletzt
+ * laeuft. Das Hausmuster in dieser Datei ist ueberall sonst das flache Objekt
+ * mit geschachtelter Liste (meSchema:267, competitionSchema:1385, …).
+ * Die gemeinsame Shape haelt beide Schemata zusammen, ohne den Vertrag zu
+ * verbiegen und ohne ein Feld doppelt zu pflegen.
+ */
+const supportTicketFields = {
+  id: uuid,
+  club_id: uuid,
+  /** Anzeigename des Vereins — der Betreiber sieht Tickets mandantenuebergreifend. */
+  club_name: z.string().nullable(),
+  created_by_member_id: uuid,
+  /** Wer es aufgemacht hat, als fertiger Anzeigename ("Thomas Krueger"). */
+  created_by_name: z.string().nullable(),
+  subject: z.string(),
+  status: supportTicketStatusSchema,
+  priority: supportTicketPrioritySchema,
+  /** Zeitpunkt der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
+  last_reply_at: timestamp.nullable(),
+  /** Seite der letzten Nachricht (Trigger-gepflegt, nie vom Client). */
+  last_reply_by: supportActorSchema.nullable(),
+  message_count: z.number().int(),
+  closed_at: timestamp.nullable(),
+  created_at: timestamp,
+  updated_at: timestamp,
+} as const;
+
+export const supportTicketSchema = z.object(supportTicketFields).openapi('SupportTicket');
 
 export const supportMessageSchema = z
   .object({
@@ -2926,9 +2940,9 @@ export const supportMessageSchema = z
   })
   .openapi('SupportMessage');
 
-/** Ein Ticket samt Verlauf (GET /support/tickets/{id}). */
-export const supportTicketDetailSchema = supportTicketSchema
-  .extend({ messages: z.array(supportMessageSchema) })
+/** Ein Ticket samt Verlauf (GET /support/tickets/{id}). Siehe supportTicketFields. */
+export const supportTicketDetailSchema = z
+  .object({ ...supportTicketFields, messages: z.array(supportMessageSchema) })
   .openapi('SupportTicketDetail');
 
 /**

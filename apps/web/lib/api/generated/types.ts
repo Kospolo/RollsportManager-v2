@@ -72,6 +72,9 @@ export interface ClubMember {
   "valid_until": string | null;
   "avatar_url": string | null;
   "team_ids": string[];
+  "profile_motto": string | null;
+  "profile_favorite_discipline": string | null;
+  "profile_skating_since": number | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -167,6 +170,12 @@ export interface ClubMemberUpdate {
 
 export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
+}
+
+export interface ClubMemberSelfProfileUpdate {
+  "motto"?: string | null;
+  "favorite_discipline"?: string | null;
+  "skating_since"?: number | null;
 }
 
 export interface ChildCreated {
@@ -653,6 +662,24 @@ export interface PlatformProductPatch {
   "description"?: string | null;
 }
 
+export interface PlatformRoutineRow {
+  "id": string;
+  "club_id": string;
+  "club_name": string;
+  "title": string;
+  "status": "draft" | "ready" | "competition" | "archived";
+  "category": string | null;
+  "music_title": string | null;
+  "music_artist": string | null;
+  "music_duration_ms": number | null;
+  "audio_asset_id": string | null;
+  "audio_mime_type": string | null;
+  "audio_size_bytes": number | null;
+  "skater_count": number | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
 export interface PlatformSystemDb {
   "clubs": number | null;
   "users": number | null;
@@ -965,6 +992,76 @@ export interface NoteUpdate {
   "title"?: string;
   "body"?: string;
   "club_id"?: string | null;
+}
+
+export type SupportTicketStatus = "open" | "in_progress" | "waiting_on_club" | "closed";
+export const SupportTicketStatusValues: readonly SupportTicketStatus[] = ["open", "in_progress", "waiting_on_club", "closed"] as const;
+
+export type SupportTicketPriority = "low" | "normal" | "high" | "urgent";
+export const SupportTicketPriorityValues: readonly SupportTicketPriority[] = ["low", "normal", "high", "urgent"] as const;
+
+export type SupportActor = "club" | "platform";
+export const SupportActorValues: readonly SupportActor[] = ["club", "platform"] as const;
+
+export interface SupportTicket {
+  "id": string;
+  "club_id": string;
+  "club_name": string | null;
+  "created_by_member_id": string;
+  "created_by_name": string | null;
+  "subject": string;
+  "status": SupportTicketStatus;
+  "priority": SupportTicketPriority;
+  "last_reply_at": string | null;
+  "last_reply_by": SupportActor;
+  "message_count": number;
+  "closed_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface SupportMessage {
+  "id": string;
+  "ticket_id": string;
+  "club_id": string;
+  "author_profile_id": string;
+  "author_name": string | null;
+  "author_kind": SupportActor;
+  "body": string;
+  "created_at": string;
+}
+
+export interface SupportTicketDetail {
+  "id": string;
+  "club_id": string;
+  "club_name": string | null;
+  "created_by_member_id": string;
+  "created_by_name": string | null;
+  "subject": string;
+  "status": SupportTicketStatus;
+  "priority": SupportTicketPriority;
+  "last_reply_at": string | null;
+  "last_reply_by": SupportActor;
+  "message_count": number;
+  "closed_at": string | null;
+  "created_at": string;
+  "updated_at": string;
+  "messages": SupportMessage[];
+}
+
+export interface SupportTicketCreate {
+  "club_id": string;
+  "subject": string;
+  "body": string;
+}
+
+export interface SupportMessageCreate {
+  "body": string;
+}
+
+export interface SupportTicketUpdate {
+  "status"?: SupportTicketStatus;
+  "priority"?: SupportTicketPriority;
 }
 
 export type ExerciseCategory = "warmup" | "stretching" | "strength" | "jump" | "spin" | "steps" | "combination";

@@ -193,6 +193,25 @@ public enum CompetitionEntryStatus: String, Codable, CaseIterable, Sendable, Equ
     case withdrawn = "withdrawn"
 }
 
+public enum SupportTicketStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case open = "open"
+    case inProgress = "in_progress"
+    case waitingOnClub = "waiting_on_club"
+    case closed = "closed"
+}
+
+public enum SupportTicketPriority: String, Codable, CaseIterable, Sendable, Equatable {
+    case low = "low"
+    case normal = "normal"
+    case high = "high"
+    case urgent = "urgent"
+}
+
+public enum SupportActor: String, Codable, CaseIterable, Sendable, Equatable {
+    case club = "club"
+    case platform = "platform"
+}
+
 public enum ExerciseCategory: String, Codable, CaseIterable, Sendable, Equatable {
     case warmup = "warmup"
     case stretching = "stretching"
@@ -368,6 +387,14 @@ public enum PlatformProductKind: String, Codable, CaseIterable, Sendable, Equata
 public enum PlatformProductBillingInterval: String, Codable, CaseIterable, Sendable, Equatable {
     case month = "month"
     case year = "year"
+}
+
+/// Inline enum of PlatformRoutineRow.status (hoisted by codegen).
+public enum PlatformRoutineRowStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case draft = "draft"
+    case ready = "ready"
+    case competition = "competition"
+    case archived = "archived"
 }
 
 /// Inline enum of PlatformSystemHealth.status (hoisted by codegen).
@@ -674,6 +701,9 @@ public struct ClubMember: Codable, Equatable, Sendable {
     public var avatarUrl: String?
     /// Format: [uuid]
     public var teamIds: [String]
+    public var profileMotto: String?
+    public var profileFavoriteDiscipline: String?
+    public var profileSkatingSince: Int?
     public var createdAt: String
     public var updatedAt: String
 
@@ -691,6 +721,9 @@ public struct ClubMember: Codable, Equatable, Sendable {
         case validUntil = "valid_until"
         case avatarUrl = "avatar_url"
         case teamIds = "team_ids"
+        case profileMotto = "profile_motto"
+        case profileFavoriteDiscipline = "profile_favorite_discipline"
+        case profileSkatingSince = "profile_skating_since"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -709,6 +742,9 @@ public struct ClubMember: Codable, Equatable, Sendable {
         validUntil: String? = nil,
         avatarUrl: String? = nil,
         teamIds: [String],
+        profileMotto: String? = nil,
+        profileFavoriteDiscipline: String? = nil,
+        profileSkatingSince: Int? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -725,6 +761,9 @@ public struct ClubMember: Codable, Equatable, Sendable {
         self.validUntil = validUntil
         self.avatarUrl = avatarUrl
         self.teamIds = teamIds
+        self.profileMotto = profileMotto
+        self.profileFavoriteDiscipline = profileFavoriteDiscipline
+        self.profileSkatingSince = profileSkatingSince
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -1077,6 +1116,28 @@ public struct ClubMemberRoleChange: Codable, Equatable, Sendable {
         role: AssignableClubRole
     ) {
         self.role = role
+    }
+}
+
+public struct ClubMemberSelfProfileUpdate: Codable, Equatable, Sendable {
+    public var motto: String?
+    public var favoriteDiscipline: String?
+    public var skatingSince: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case motto
+        case favoriteDiscipline = "favorite_discipline"
+        case skatingSince = "skating_since"
+    }
+
+    public init(
+        motto: String? = nil,
+        favoriteDiscipline: String? = nil,
+        skatingSince: Int? = nil
+    ) {
+        self.motto = motto
+        self.favoriteDiscipline = favoriteDiscipline
+        self.skatingSince = skatingSince
     }
 }
 
@@ -2837,6 +2898,79 @@ public struct PlatformProductPatch: Codable, Equatable, Sendable {
     }
 }
 
+public struct PlatformRoutineRow: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String
+    public var title: String
+    public var status: PlatformRoutineRowStatus
+    public var category: String?
+    public var musicTitle: String?
+    public var musicArtist: String?
+    public var musicDurationMs: Int?
+    /// Format: uuid
+    public var audioAssetId: String?
+    public var audioMimeType: String?
+    public var audioSizeBytes: Int?
+    public var skaterCount: Int?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case title
+        case status
+        case category
+        case musicTitle = "music_title"
+        case musicArtist = "music_artist"
+        case musicDurationMs = "music_duration_ms"
+        case audioAssetId = "audio_asset_id"
+        case audioMimeType = "audio_mime_type"
+        case audioSizeBytes = "audio_size_bytes"
+        case skaterCount = "skater_count"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        clubName: String,
+        title: String,
+        status: PlatformRoutineRowStatus,
+        category: String? = nil,
+        musicTitle: String? = nil,
+        musicArtist: String? = nil,
+        musicDurationMs: Int? = nil,
+        audioAssetId: String? = nil,
+        audioMimeType: String? = nil,
+        audioSizeBytes: Int? = nil,
+        skaterCount: Int? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.clubName = clubName
+        self.title = title
+        self.status = status
+        self.category = category
+        self.musicTitle = musicTitle
+        self.musicArtist = musicArtist
+        self.musicDurationMs = musicDurationMs
+        self.audioAssetId = audioAssetId
+        self.audioMimeType = audioMimeType
+        self.audioSizeBytes = audioSizeBytes
+        self.skaterCount = skaterCount
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
 public struct PlatformSystemDb: Codable, Equatable, Sendable {
     public var clubs: Int?
     public var users: Int?
@@ -4003,6 +4137,249 @@ public struct NoteUpdate: Codable, Equatable, Sendable {
         self.title = title
         self.body = body
         self.clubId = clubId
+    }
+}
+
+public struct SupportTicket: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String?
+    /// Format: uuid
+    public var createdByMemberId: String
+    public var createdByName: String?
+    public var subject: String
+    public var status: SupportTicketStatus
+    public var priority: SupportTicketPriority
+    public var lastReplyAt: String?
+    public var lastReplyBy: SupportActor
+    public var messageCount: Int
+    public var closedAt: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case createdByMemberId = "created_by_member_id"
+        case createdByName = "created_by_name"
+        case subject
+        case status
+        case priority
+        case lastReplyAt = "last_reply_at"
+        case lastReplyBy = "last_reply_by"
+        case messageCount = "message_count"
+        case closedAt = "closed_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        clubName: String? = nil,
+        createdByMemberId: String,
+        createdByName: String? = nil,
+        subject: String,
+        status: SupportTicketStatus,
+        priority: SupportTicketPriority,
+        lastReplyAt: String? = nil,
+        lastReplyBy: SupportActor,
+        messageCount: Int,
+        closedAt: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.clubName = clubName
+        self.createdByMemberId = createdByMemberId
+        self.createdByName = createdByName
+        self.subject = subject
+        self.status = status
+        self.priority = priority
+        self.lastReplyAt = lastReplyAt
+        self.lastReplyBy = lastReplyBy
+        self.messageCount = messageCount
+        self.closedAt = closedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct SupportMessage: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var ticketId: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var authorProfileId: String
+    public var authorName: String?
+    public var authorKind: SupportActor
+    public var body: String
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case ticketId = "ticket_id"
+        case clubId = "club_id"
+        case authorProfileId = "author_profile_id"
+        case authorName = "author_name"
+        case authorKind = "author_kind"
+        case body
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        ticketId: String,
+        clubId: String,
+        authorProfileId: String,
+        authorName: String? = nil,
+        authorKind: SupportActor,
+        body: String,
+        createdAt: String
+    ) {
+        self.id = id
+        self.ticketId = ticketId
+        self.clubId = clubId
+        self.authorProfileId = authorProfileId
+        self.authorName = authorName
+        self.authorKind = authorKind
+        self.body = body
+        self.createdAt = createdAt
+    }
+}
+
+public struct SupportTicketDetail: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String?
+    /// Format: uuid
+    public var createdByMemberId: String
+    public var createdByName: String?
+    public var subject: String
+    public var status: SupportTicketStatus
+    public var priority: SupportTicketPriority
+    public var lastReplyAt: String?
+    public var lastReplyBy: SupportActor
+    public var messageCount: Int
+    public var closedAt: String?
+    public var createdAt: String
+    public var updatedAt: String
+    public var messages: [SupportMessage]
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case createdByMemberId = "created_by_member_id"
+        case createdByName = "created_by_name"
+        case subject
+        case status
+        case priority
+        case lastReplyAt = "last_reply_at"
+        case lastReplyBy = "last_reply_by"
+        case messageCount = "message_count"
+        case closedAt = "closed_at"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+        case messages
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        clubName: String? = nil,
+        createdByMemberId: String,
+        createdByName: String? = nil,
+        subject: String,
+        status: SupportTicketStatus,
+        priority: SupportTicketPriority,
+        lastReplyAt: String? = nil,
+        lastReplyBy: SupportActor,
+        messageCount: Int,
+        closedAt: String? = nil,
+        createdAt: String,
+        updatedAt: String,
+        messages: [SupportMessage]
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.clubName = clubName
+        self.createdByMemberId = createdByMemberId
+        self.createdByName = createdByName
+        self.subject = subject
+        self.status = status
+        self.priority = priority
+        self.lastReplyAt = lastReplyAt
+        self.lastReplyBy = lastReplyBy
+        self.messageCount = messageCount
+        self.closedAt = closedAt
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.messages = messages
+    }
+}
+
+public struct SupportTicketCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var subject: String
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case subject
+        case body
+    }
+
+    public init(
+        clubId: String,
+        subject: String,
+        body: String
+    ) {
+        self.clubId = clubId
+        self.subject = subject
+        self.body = body
+    }
+}
+
+public struct SupportMessageCreate: Codable, Equatable, Sendable {
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+        case body
+    }
+
+    public init(
+        body: String
+    ) {
+        self.body = body
+    }
+}
+
+public struct SupportTicketUpdate: Codable, Equatable, Sendable {
+    public var status: SupportTicketStatus?
+    public var priority: SupportTicketPriority?
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case priority
+    }
+
+    public init(
+        status: SupportTicketStatus? = nil,
+        priority: SupportTicketPriority? = nil
+    ) {
+        self.status = status
+        self.priority = priority
     }
 }
 

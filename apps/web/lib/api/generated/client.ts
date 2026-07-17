@@ -201,7 +201,7 @@ export class ApiClient {
 
   /**
    * List the club roster (sensitive columns redacted for non-managers)
-   * Every club member sees the name list. For viewers WITHOUT can_manage_members (plain member / guest_coach) the sensitive columns are nulled: birth_date, email, valid_until, profile_id, joined_on. can_manage_members (treasurer/moderator/admin/owner) and platform admins get the full rows.
+   * Jedes Vereinsmitglied sieht die Namensliste, das Foto (avatar_url) und das Selbst-Profil (profile_motto, profile_favorite_discipline, profile_skating_since) — letzteres pflegt die Person selbst und veroeffentlicht es damit bewusst im Verein. ZWEI Redigier-Stufen: die KONTAKTdaten (birth_date, email, valid_until, profile_id) sehen nur can_manage_members (treasurer/moderator/admin/owner) + Plattform-Admins; joined_on sieht zusaetzlich der coach ("Trainer und hoeher", ohne guest_coach). Redigierte Spalten bleiben als null im Ergebnis.
    * 
    * `GET /clubs/{clubId}/members`
    */
@@ -266,6 +266,16 @@ export class ApiClient {
    */
   async patchClubsByClubIdMembersByMemberIdRole(clubId: string, memberId: string, body: M.ClubMemberRoleChange, options?: RequestOptions): Promise<M.ClubMember> {
     return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/role`, { body, auth: true, options });
+  }
+
+  /**
+   * Edit the SELF profile (own row or own child; never by managers)
+   * Das Selbst-Profil pflegt die Person SELBST — bei Kindern ohne Konto ihre Erziehungsberechtigten (app.guardianships). Schreibrecht ist ausdruecklich KEIN Verwaltungsrecht: owner/admin/moderator koennen fremde Profile NICHT beschreiben (sie duerfen sie leeren — Moderation). Felder: motto (max. 140), favorite_discipline (max. 60), skating_since (Jahreszahl). Fehlender Schluessel = unveraendert, null oder "" = Angabe loeschen. Die Inhalte sind fuer ALLE aktiven Mitglieder des Vereins sichtbar — serverseitig werden hineinkopierte E-Mail-Adressen, Links und Telefonnummern am Stueck abgelehnt (422).
+   * 
+   * `PATCH /clubs/{clubId}/members/{memberId}/profile`
+   */
+  async patchClubsByClubIdMembersByMemberIdProfile(clubId: string, memberId: string, body: M.ClubMemberSelfProfileUpdate, options?: RequestOptions): Promise<M.ClubMember> {
+    return this.request<M.ClubMember>("PATCH", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/profile`, { body, auth: true, options });
   }
 
   /**
@@ -688,6 +698,16 @@ export class ApiClient {
   }
 
   /**
+   * All routines across all clubs, for moderation (platform admin only)
+   * Cross-club routine list for content moderation (music/title review). Optional filters: club_id, status, free text q over title/music_title/music_artist. Skater names are deliberately NOT returned — see PlatformRoutineRow.
+   * 
+   * `GET /platform/routines`
+   */
+  async getPlatformRoutines(query?: { "club_id"?: string; "status"?: "draft" | "ready" | "competition" | "archived"; "q"?: string; "limit"?: number; "offset"?: number | null }, options?: RequestOptions): Promise<M.PlatformRoutineRow[]> {
+    return this.request<M.PlatformRoutineRow[]>("GET", "/platform/routines", { query, auth: true, options });
+  }
+
+  /**
    * System health: version, DB figures, migrations, health (platform admin only)
    * 
    * `GET /platform/system`
@@ -939,6 +959,60 @@ export class ApiClient {
    */
   async deleteNotesByNoteId(noteId: string, options?: RequestOptions): Promise<M.Deleted> {
     return this.request<M.Deleted>("DELETE", `/notes/${encodeURIComponent(noteId)}`, { auth: true, options });
+  }
+
+  /**
+   * Support tickets of one club (club board only)
+   * 
+   * `GET /support/tickets`
+   */
+  async getSupportTickets(query: { "club_id": string }, options?: RequestOptions): Promise<M.SupportTicket[]> {
+    return this.request<M.SupportTicket[]>("GET", "/support/tickets", { query, auth: true, options });
+  }
+
+  /**
+   * Open a support ticket (club board only)
+   * 
+   * `POST /support/tickets`
+   */
+  async postSupportTickets(body: M.SupportTicketCreate, options?: RequestOptions): Promise<M.SupportTicketDetail> {
+    return this.request<M.SupportTicketDetail>("POST", "/support/tickets", { body, auth: true, options });
+  }
+
+  /**
+   * One ticket incl. its message history (club board or operator)
+   * 
+   * `GET /support/tickets/{ticketId}`
+   */
+  async getSupportTicketsByTicketId(ticketId: string, options?: RequestOptions): Promise<M.SupportTicketDetail> {
+    return this.request<M.SupportTicketDetail>("GET", `/support/tickets/${encodeURIComponent(ticketId)}`, { auth: true, options });
+  }
+
+  /**
+   * Set status/priority of a ticket (platform operator only)
+   * 
+   * `PATCH /support/tickets/{ticketId}`
+   */
+  async patchSupportTicketsByTicketId(ticketId: string, body: M.SupportTicketUpdate, options?: RequestOptions): Promise<M.SupportTicketDetail> {
+    return this.request<M.SupportTicketDetail>("PATCH", `/support/tickets/${encodeURIComponent(ticketId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Reply to a ticket (club board or operator)
+   * 
+   * `POST /support/tickets/{ticketId}/messages`
+   */
+  async postSupportTicketsByTicketIdMessages(ticketId: string, body: M.SupportMessageCreate, options?: RequestOptions): Promise<M.SupportTicketDetail> {
+    return this.request<M.SupportTicketDetail>("POST", `/support/tickets/${encodeURIComponent(ticketId)}/messages`, { body, auth: true, options });
+  }
+
+  /**
+   * All support tickets across all clubs (platform admin only)
+   * 
+   * `GET /platform/support/tickets`
+   */
+  async getPlatformSupportTickets(query?: { "club_id"?: string }, options?: RequestOptions): Promise<M.SupportTicket[]> {
+    return this.request<M.SupportTicket[]>("GET", "/platform/support/tickets", { query, auth: true, options });
   }
 
   /**
