@@ -51,10 +51,16 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 ## 2. Was NOCH zu tun ist (Reihenfolge = „mach weiter")
 > Web zuerst fertig war die Vorgabe — Web ist fertig. Reihenfolge jetzt:
 
-### 🔜 PROFIL-AUSBAU (beauftragt 2026-07-17, Entscheidungen getroffen) — baut auf 2 laufende Läufe auf
-> **Erst bauen, wenn `wolyp23l7` (Mitglieder-Karten-Politur) UND `wuvc7fi08` (Profil-Sichtbarkeit öffentlich/intern)
-> gelandet sind** — sie sitzen in `members.ts`, der Kontakt-Projektion, dem Seed und der Detailseite. Sonst Kollision.
-> Danach die Detailseite eines Mitglieds füllen, auf der **fertigen** Karte + der **fertigen** Projektion:
+### 🔜 360°-ATHLET:INNEN-PROFIL (beauftragt 2026-07-17 — Marcel: „das ist mir zu wenig für was das System hergibt")
+> **UMFANG = das VOLLE Profil, noch größer, ALLES AM STÜCK** (Marcel-Entscheidung, Mockup abgesegnet).
+> **Erst bauen, wenn `wolyp23l7` (Karten-Politur) UND `wuvc7fi08` (Sichtbarkeit öffentlich/intern) committet sind** —
+> sie sitzen in `members.ts`, `validation.ts`, Contracts, Seed, Detailseite (Migr. 0053 = `0053_selbstprofil_publikum`).
+> Die Detailseite `[id]/` wird zum digitalen Vereinsausweis + Steckbrief. Sektionen (alle serverseitig rollen-gestaffelt):
+> **Zusätzlich zu den 6 Punkten unten (noch größer, Marcel):** Notenverlauf als DIAGRAMM (routine_scores über Zeit),
+> persönliche BESTLEISTUNGEN, Trainingsplan/Übungen-Fortschritt (training_slots/exercises), Check-in-Historie (checkins),
+> Termine der Person kommend+Historie (event_rsvps, 28 Stück), Ausrüstung (equipment_reservations), VOLLE Finanz-Sektion
+> nur Kasse/Vorstand (invoices/member_fees/sepa_mandates/donations/Mahnstatus), Rollen (member_roles), Abteilungen
+> (departments), Konsent-Übersicht (was hat die Person eingewilligt), QR-Vereinsausweis (checkins nutzt schon QR).
 1. **Kontaktdaten** E-Mail/Geburtstag/**Telefon (neu)**/**Postanschrift (neu)**: sichtbar für Vorstand/Admin/Moderator/Kasse
    (wie heute) **+ Trainer:in — aber NUR für Mitglieder IHRER eigenen Teams** (Marcel 2026-07-17). Der Trainer sieht
    die Adresse fremder Kinder aus nicht-betreuten Teams NICHT. Felder auch im Profil eintragbar.
