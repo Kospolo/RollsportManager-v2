@@ -116,6 +116,18 @@ insert into app.clubs (id, name, short_name, city, discipline, founded_year, joi
   ('c1ab0000-0000-4000-8000-000000000001', 'RSV Neckarsulm', 'RSV', 'Neckarsulm', 'Rollkunstlauf', 1968, 'RSV-DEMO-2026');
 
 -- ----------------------------------------------------------------------------
+-- Sparte (migration 0062) — RSV Neckarsulm ist ein Einsparten-Verein
+-- (Rollkunstlauf). Die eine Sparte entspricht dem club.discipline-Freitext,
+-- genau wie der Produktions-Backfill sie anlegen wuerde. Teams und Mitglieder
+-- haengen darunter (siehe teams.sparte_id + app.sparte_members weiter unten).
+-- Als Superuser geseedet -> RLS/Trigger-Autorisierung greift nicht (auth.uid()
+-- ist null), die Integritaet (gleicher Verein) gilt trotzdem.
+-- ----------------------------------------------------------------------------
+insert into app.sparten (id, club_id, name, icon, farbe, aktiv, sortierung, eigene_finanzen) values
+  ('5a5a0000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'Rollkunstlauf', 'skate', '#2563EB', true, 0, false);
+
+-- ----------------------------------------------------------------------------
 -- Members (mock m-01 … m-24)
 -- ----------------------------------------------------------------------------
 insert into app.club_members
@@ -248,10 +260,11 @@ update app.club_members set phone = '+49 7132 776655',   postal_address = 'Öhri
 -- ----------------------------------------------------------------------------
 -- Teams + memberships (skaters and coaches)
 -- ----------------------------------------------------------------------------
-insert into app.teams (id, club_id, name, age_group) values
-  ('b0000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'Minis & Anfänger',    'U8–U10'),
-  ('b0000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'Nachwuchs Pflicht',   'U12–U15'),
-  ('b0000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'Kürgruppe Leistung',  'U15+');
+-- Alle drei Teams gehoeren zur einen Sparte "Rollkunstlauf" (0062).
+insert into app.teams (id, club_id, name, age_group, sparte_id) values
+  ('b0000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', 'Minis & Anfänger',    'U8–U10',   '5a5a0000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', 'Nachwuchs Pflicht',   'U12–U15',  '5a5a0000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001', 'Kürgruppe Leistung',  'U15+',     '5a5a0000-0000-4000-8000-000000000001');
 
 insert into app.team_members (club_id, team_id, member_id, role)
 select 'c1ab0000-0000-4000-8000-000000000001', t.id, m.id, v.role::app.team_role
@@ -283,6 +296,20 @@ from (values
 ) as v(team_id, member_id, role)
 join app.teams t on t.id = v.team_id::uuid
 join app.club_members m on m.id = v.member_id::uuid;
+
+-- ----------------------------------------------------------------------------
+-- Sparte-Mitgliedschaften (migration 0062) — RSV ist ein Einsparten-Verein,
+-- also gehoert JEDES aktive/pending Mitglied zur Sparte "Rollkunstlauf".
+-- (Der n:m-Bau erlaubt spaeter Mitglieder in mehreren Sparten; hier ist es
+-- eine 1:1-Abbildung, weil es nur eine Sparte gibt.)
+-- ----------------------------------------------------------------------------
+insert into app.sparte_members (club_id, sparte_id, member_id)
+select 'c1ab0000-0000-4000-8000-000000000001',
+       '5a5a0000-0000-4000-8000-000000000001',
+       m.id
+from app.club_members m
+where m.club_id = 'c1ab0000-0000-4000-8000-000000000001'
+  and m.deleted_at is null;
 
 -- ----------------------------------------------------------------------------
 -- Competitions (Bezirksmeisterschaft in 9 days, Kreispokal 3 weeks ago)
