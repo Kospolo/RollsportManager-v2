@@ -110,10 +110,10 @@ struct MembersListView: View {
                 NavigationLink {
                     MemberDetailView(memberId: member.id, viewModel: viewModel)
                 } label: {
+                    // Ohne Beitragsampel — siehe MemberRowView (Würde-Befund).
                     MemberRowView(
                         member: member,
-                        teamNames: viewModel.teamNames(for: member),
-                        feeStatus: viewModel.feeStatus(for: member)
+                        teamNames: viewModel.teamNames(for: member)
                     )
                 }
                 .buttonStyle(.plain)

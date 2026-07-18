@@ -139,12 +139,18 @@ struct MembersFilterChip: View {
 
 // MARK: - Listenzeile
 
-/// Zeile der Mitgliederliste: Avatar · Name + Team · Rollen-Pill ·
-/// Beitragsampel (nur wo Rechnungen sichtbar sind).
+/// Zeile der Mitgliederliste: Avatar · Name + Team · Rollen-Pill.
+///
+/// WAS HIER BEWUSST NICHT MEHR STEHT: die BEITRAGSAMPEL (Mahnstufe/„bezahlt“).
+/// Das Web hat sie im Verzeichnis schon gestrichen (MembersClient.tsx) — iOS
+/// zieht nach. Eine Mahnstufe neben einem Kindernamen ist ein Würde-Problem:
+/// das Verzeichnis ist der Ort, an dem sich der Verein begegnet, nicht die
+/// Debitorenliste. Der Zahlungsstand war NIE ein Leck (RLS zeigt jedem nur die
+/// eigene Familie) — er gehört nur nicht hierher. Beiträge leben im
+/// Kassenbereich; die Logik (MembersViewModel.feeStatus) bleibt unangetastet.
 struct MemberRowView: View {
     let member: ClubMember
     let teamNames: String?
-    let feeStatus: MembersViewModel.FeeStatus?
 
     /// Ab den Accessibility-Stufen ist nebeneinander kein Platz mehr: Name,
     /// Team UND Rollen-Pill in einer Zeile zwingen den Namen ins Abschneiden
@@ -202,9 +208,6 @@ struct MemberRowView: View {
             text: MembersL10n.roleKey(member.role),
             kind: MembersL10n.roleKind(member.role)
         )
-        if let feeStatus {
-            MembersFeePill(status: feeStatus)
-        }
     }
 
     private var chevron: some View {
