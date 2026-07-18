@@ -77,7 +77,7 @@ jobs:
         run: node packages/contracts/codegen/check.mjs --require-spec-regen
 
   # Optional: end-to-end smoke against a throwaway Postgres (needs Docker).
-  # Boots postgres:16-alpine as rsm2-pg-test on 127.0.0.1:55432, always
+  # Boots postgres:16-alpine as rsm2-pg-test on 127.0.0.1:55436, always
   # removed via trap - see services/api/scripts/api-db-test.sh.
   db-test:
     runs-on: ubuntu-latest

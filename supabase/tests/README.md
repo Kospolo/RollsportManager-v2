@@ -23,7 +23,7 @@ Das Script
   `supabase/scripts/lib/pg-harness.sh` (genutzt von `db-test.sh`,
   `run-tests.sh` und `services/api/scripts/api-db-test.sh`) einen
   **Wegwerf-Container** `rsm2-pg-test` (`postgres:16-alpine`,
-  `127.0.0.1:55432`, `--rm`),
+  `127.0.0.1:55436`, `--rm`),
 - installiert den minimalen Supabase-Shim (`auth`-Schema, `auth.uid()`,
   `auth.jwt()`, Rollen `anon`/`authenticated`/`service_role`),
 - spielt **alle** Migrationen aus `supabase/migrations` + `supabase/seed/seed.sql`

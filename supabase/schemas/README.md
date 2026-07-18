@@ -198,7 +198,7 @@ Nur für Dev/Staging — der Seed legt Demo-Zeilen in `auth.users` an.
 supabase/scripts/db-test.sh
 ```
 
-- startet `rsm2-pg-test` (postgres:16-alpine) auf **127.0.0.1:55432**, `--rm`,
+- startet `rsm2-pg-test` (postgres:16-alpine) auf **127.0.0.1:55436**, `--rm`,
   Aufräumen per `trap` garantiert — berührt keine Produktions-Container.
 - installiert den Supabase-Shim (auth-Schema, `auth.uid()`/`auth.jwt()`,
   `anon`/`authenticated`/`service_role`), spielt alle Migrations + Seed ein.

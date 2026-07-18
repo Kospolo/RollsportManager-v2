@@ -3,7 +3,7 @@
 # db-test.sh — RollsportManager v2 schema test harness (local, throwaway)
 #
 # Boots the SHARED throwaway harness (see lib/pg-harness.sh: postgres:16-alpine
-# as rsm2-pg-test on 127.0.0.1:55432, Supabase shim, all migrations + seed),
+# as rsm2-pg-test on 127.0.0.1:55436, Supabase shim, all migrations + seed),
 # then runs assertions: seed counts/sums, RLS tenant isolation, the closed v1
 # gaps (role self-change, entitlement writes, ledger immutability, guest expiry).
 #
@@ -60,11 +60,54 @@ begin
 end;
 $fn$;
 
--- structure: all expected tables exist, RLS enabled everywhere
-select pg_temp.assert_eq('tables in schema app',
-  (select count(*) from pg_tables where schemaname = 'app'), 23);
-select pg_temp.assert_eq('tables in schema internal',
-  (select count(*) from pg_tables where schemaname = 'internal'), 1);
+-- ---------------------------------------------------------------------------
+-- STRUKTUR
+--
+-- Hier stand bis 0067 `count(*) from pg_tables where schemaname='app' = 23` —
+-- eine Zahl aus dem allerersten Commit, die nach ~60 Migrationen (75 Tabellen)
+-- nur noch die Suite blockierte und NICHTS aussagte: sie waere bei jeder neuen
+-- Migration rot geworden, egal ob die Migration gut oder kaputt war. Eine
+-- nachgezogene Zahl (75) haette exakt dasselbe Problem am naechsten Tag.
+--
+-- Ersetzt durch drei Pruefungen, die tatsaechlich etwas WERT sind, weil sie
+-- auf Fehler zeigen statt auf Wachstum:
+--   (a) KERN-TABELLEN: keine davon darf je verschwinden/umbenannt werden.
+--   (b) RLS an JEDER Tabelle in app/internal (unveraendert — der Kernschutz).
+--   (c) KEINE app-Tabelle ohne Policy: RLS an + null Policies heisst fuer
+--       Clients "unsichtbar". Fail-closed ist sicher, aber es ist der typische
+--       halbfertige Migrations-Fehler (Tabelle da, Policy vergessen) und faellt
+--       sonst erst im UI auf. Ausgenommen sind nur die dokumentierten
+--       Zaehler-Tabellen, die absichtlich NUR ueber SECURITY-DEFINER-
+--       Funktionen laufen. internal.* ist bewusst komplett client-dicht.
+-- ---------------------------------------------------------------------------
+
+-- (a) Kern-Tabellen — namentlich, damit ein Drop/Rename sofort auffliegt.
+do $fn$
+declare
+  expected text[] := array[
+    'app.clubs', 'app.profiles', 'app.club_members', 'app.guardianships',
+    'app.teams', 'app.team_members', 'app.events', 'app.event_teams',
+    'app.event_rsvps', 'app.attendance', 'app.media_assets', 'app.routines',
+    'app.routine_skaters', 'app.routine_markers', 'app.routine_scores',
+    'app.competitions', 'app.competition_entries', 'app.invoices',
+    'app.ledger_entries', 'app.tasks', 'app.products', 'app.entitlements',
+    'app.sparten', 'app.sparte_members', 'app.event_rides',
+    'app.event_ride_riders', 'app.event_ride_contacts',
+    'internal.webhook_events'
+  ];
+  missing text[];
+begin
+  select array_agg(t) into missing
+    from unnest(expected) as t
+   where to_regclass(t) is null;
+  if missing is not null then
+    raise exception 'ASSERT "Kern-Tabellen" failed: fehlen: %', array_to_string(missing, ', ');
+  end if;
+  raise notice 'ok: alle % Kern-Tabellen vorhanden', array_length(expected, 1);
+end;
+$fn$;
+
+-- (b) RLS ueberall
 select pg_temp.assert_eq('tables WITHOUT row level security (must be 0)',
   (select count(*)
    from pg_class c
@@ -73,20 +116,52 @@ select pg_temp.assert_eq('tables WITHOUT row level security (must be 0)',
      and c.relkind = 'r'
      and not c.relrowsecurity), 0);
 
+-- (c) keine app-Tabelle ohne Policy (ausser den Zaehler-Tabellen)
+do $fn$
+declare orphans text;
+begin
+  select string_agg(c.relname, ', ' order by c.relname) into orphans
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'app'
+     and c.relkind = 'r'
+     and c.relname not in ('invoice_counters', 'donation_receipt_counters')
+     and not exists (select 1 from pg_policy p where p.polrelid = c.oid);
+  if orphans is not null then
+    raise exception 'ASSERT "app-Tabellen ohne Policy" failed: % (RLS an, aber keine Policy -> fuer Clients unsichtbar; Migration unvollstaendig?)', orphans;
+  end if;
+  raise notice 'ok: jede app-Tabelle hat mindestens eine Policy';
+end;
+$fn$;
+
+-- (d) Speicher-Keys sind FLACH. Genau die Invariante, an der Kuer-Musik UND
+-- Kuer-Bild gescheitert sind: GET /media/:key ist ein EIN-Segment-Pfad und
+-- assertValidKey() (modules/media/storage.ts) verbietet '/' als
+-- Traversal-Schutz. Ein verschachtelter Seed-Key ist damit tote Ware.
+select pg_temp.assert_eq('media_assets mit verschachteltem storage_path (muss 0 sein)',
+  (select count(*) from app.media_assets where storage_path like '%/%'), 0);
+select pg_temp.assert_eq('media_assets mit nicht-key-konformem storage_path (muss 0 sein)',
+  (select count(*) from app.media_assets where storage_path !~ '^[A-Za-z0-9._-]+$'), 0);
+
 -- seed counts (consistent with apps/web/lib/mock)
 select pg_temp.assert_eq('clubs',               (select count(*) from app.clubs), 1);
-select pg_temp.assert_eq('profiles',            (select count(*) from app.profiles), 9);
+select pg_temp.assert_eq('profiles',            (select count(*) from app.profiles), 11);
 select pg_temp.assert_eq('club_members',        (select count(*) from app.club_members), 24);
 select pg_temp.assert_eq('guardianships',       (select count(*) from app.guardianships), 5);
 select pg_temp.assert_eq('teams',               (select count(*) from app.teams), 3);
 select pg_temp.assert_eq('team_members',        (select count(*) from app.team_members), 20);
-select pg_temp.assert_eq('events',              (select count(*) from app.events), 15);
-select pg_temp.assert_eq('event_teams',         (select count(*) from app.event_teams), 21);
+select pg_temp.assert_eq('events',              (select count(*) from app.events), 16);
+select pg_temp.assert_eq('event_teams',         (select count(*) from app.event_teams), 18);
 select pg_temp.assert_eq('event_rsvps',         (select count(*) from app.event_rsvps), 28);
 select pg_temp.assert_eq('attendance',          (select count(*) from app.attendance), 11);
-select pg_temp.assert_eq('media_assets',        (select count(*) from app.media_assets), 6);
+-- 6 Audio (eine pro Kuer) + 2 Kuer-Bilder (0057) = 8, alle mit ECHTEN Bytes
+-- unter supabase/seed/media/.
+select pg_temp.assert_eq('media_assets',        (select count(*) from app.media_assets), 8);
+select pg_temp.assert_eq('media_assets: Kuer-Audio',  (select count(*) from app.media_assets where mime_type like 'audio/%'), 6);
+select pg_temp.assert_eq('media_assets: Kuer-Bilder', (select count(*) from app.media_assets where mime_type like 'image/%'), 2);
+select pg_temp.assert_eq('Kueren MIT Bild',           (select count(*) from app.routines where image_asset_id is not null), 2);
 select pg_temp.assert_eq('routines',            (select count(*) from app.routines), 6);
-select pg_temp.assert_eq('routine_skaters',     (select count(*) from app.routine_skaters), 7);
+select pg_temp.assert_eq('routine_skaters',     (select count(*) from app.routine_skaters), 8);
 select pg_temp.assert_eq('routine_markers',     (select count(*) from app.routine_markers), 22);
 select pg_temp.assert_eq('routine_scores',      (select count(*) from app.routine_scores), 8);
 select pg_temp.assert_eq('competitions',        (select count(*) from app.competitions), 2);
@@ -106,8 +181,12 @@ select pg_temp.assert_eq('tasks',               (select count(*) from app.tasks)
 select pg_temp.assert_eq('open tasks',          (select count(*) from app.tasks where not done), 5);
 select pg_temp.assert_eq('products',            (select count(*) from app.products), 4);
 select pg_temp.assert_eq('entitlements',        (select count(*) from app.entitlements), 1);
+-- Nur Audio traegt eine Waveform; die Bild-Assets haben keine (NULL). Ohne
+-- die Einschraenkung wuerde min() die NULLs still ignorieren.
 select pg_temp.assert_eq('waveform peaks per audio asset',
-  (select min(jsonb_array_length(waveform_peaks)) from app.media_assets), 96);
+  (select min(jsonb_array_length(waveform_peaks)) from app.media_assets where mime_type like 'audio/%'), 96);
+select pg_temp.assert_eq('Bild-Assets ohne Waveform (erwartet 2)',
+  (select count(*) from app.media_assets where mime_type like 'image/%' and waveform_peaks is null), 2);
 
 -- invoice number generator is race-free and continues after the seed (0090 → 0091)
 do $fn$
@@ -133,7 +212,11 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 select pg_temp.assert_eq('RLS coach: sees own club',        (select count(*) from app.clubs), 1);
 select pg_temp.assert_eq('RLS coach: sees roster (24)',     (select count(*) from app.club_members), 24);
-select pg_temp.assert_eq('RLS coach: sees events (15)',     (select count(*) from app.events), 15);
+-- 16 Termine im Seed, 13 fuer die Trainerin sichtbar: die Zielgruppen-Filter
+-- aus 0050 blenden die uebrigen aus. (Stand vor der Reparatur: 15 — die Zahl
+-- war seit dem ersten Commit nicht nachgezogen worden.)
+select pg_temp.assert_eq('RLS coach: sees events (13 von 16, Zielgruppe 0050)',
+  (select count(*) from app.events), 13);
 select pg_temp.assert_eq('RLS coach: sees routines (6)',    (select count(*) from app.routines), 6);
 select pg_temp.assert_eq('RLS coach: ledger hidden (0)',    (select count(*) from app.ledger_entries), 0);
 select pg_temp.assert_eq('RLS coach: sees club entitlement',(select count(*) from app.entitlements), 1);
@@ -157,6 +240,18 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 select pg_temp.assert_eq('RLS parent: sees only own invoices (2)', (select count(*) from app.invoices), 2);
 select pg_temp.assert_eq('RLS parent: ledger hidden (0)',          (select count(*) from app.ledger_entries), 0);
+-- ⚠️ KINDERDATEN — der Grund fuer den Join in GET /media/:key
+-- (services/api/src/modules/media/routes.ts). Ein einfaches Mitglied sieht
+-- unter can_read_routine NUR die eigene Kuer, media_assets_select haengt aber
+-- allein an is_club_member und zeigt ihm ALLE Medien-Zeilen. Die DB-Policy
+-- ist also BREITER als die Kuer. Deshalb darf die Ausliefer-Route sich
+-- niemals auf media_assets allein stuetzen, sondern joint auf app.routines.
+-- Faellt eine der beiden Zahlen, ist diese Annahme hinfaellig und der
+-- Media-Endpunkt gehoert neu geprueft.
+select pg_temp.assert_eq('RLS parent: sieht nur die EIGENE Kuer (1)',
+  (select count(*) from app.routines), 1);
+select pg_temp.assert_eq('RLS parent: media_assets-Policy ist BREITER (8) -> API-Join noetig',
+  (select count(*) from app.media_assets), 8);
 rollback;
 
 -- tenant isolation: valid token of ANOTHER club sees nothing

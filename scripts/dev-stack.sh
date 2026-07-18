@@ -14,7 +14,7 @@
 #
 # Nutzt die geteilte Harness-Lib (supabase/scripts/lib/pg-harness.sh) im
 # persistenten Modus (HARNESS_PERSIST_DIR). Der Test-Container rsm2-pg-test
-# (55432) der Test-Scripts wird hiervon NICHT berührt; Prod-Container sowieso
+# (55436) der Test-Scripts wird hiervon NICHT berührt; Prod-Container sowieso
 # nicht. Alles Laufzeit-Zeug liegt unter .dev/ (gitignored):
 #   .dev/pgdata       Postgres-Datenverzeichnis (Bind-Mount)
 #   .dev/secrets.env  generiertes Dev-HS256-Secret (AUTH_JWT_SECRET)

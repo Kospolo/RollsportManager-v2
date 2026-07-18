@@ -70,7 +70,7 @@ lassen.** Ein grünes SQL-Gate sagt darüber nichts aus.
 > aussagekräftig — er ist nicht idempotent.
 
 Alle drei Shell-Harnesse teilen sich `supabase/scripts/lib/pg-harness.sh`
-(Container `rsm2-pg-test`, `postgres:16-alpine`, `127.0.0.1:55432`, `--rm`) —
+(Container `rsm2-pg-test`, `postgres:16-alpine`, `127.0.0.1:55436`, `--rm`) —
 sie dürfen nicht gleichzeitig laufen und fassen nie Produktions-Container an.
 
 ## Eiserne Regeln dieser Phase

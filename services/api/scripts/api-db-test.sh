@@ -3,7 +3,7 @@
 # api-db-test.sh - end-to-end smoke test of the API against a THROWAWAY DB.
 #
 # Boots the SHARED throwaway harness (supabase/scripts/lib/pg-harness.sh:
-# postgres:16-alpine as rsm2-pg-test on 127.0.0.1:55432, Supabase shim, all
+# postgres:16-alpine as rsm2-pg-test on 127.0.0.1:55436, Supabase shim, all
 # migrations + seed), then starts the API (tsx, port 3123) with dev HS256 auth
 # and runs scripts/smoke.mjs (positive + negative RLS cases through HTTP).
 #

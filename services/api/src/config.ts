@@ -131,7 +131,10 @@ export function loadConfig(): ApiConfig {
   }
   const config: ApiConfig = {
     port: Number.parseInt(env('PORT', '3022'), 10),
-    databaseUrl: env('DATABASE_URL', 'postgres://postgres:rsm2-local-test@127.0.0.1:55432/rsm2'),
+    // Fallback = der lokale Dev-Stack (rsm2-pg-dev, scripts/dev-stack.sh).
+    // War 55432 — auf Entwicklermaschinen die FREMDE rapportmanager-Postgres;
+    // eine API ohne DATABASE_URL haette dorthin verbunden.
+    databaseUrl: env('DATABASE_URL', 'postgres://postgres:rsm2-local-test@127.0.0.1:55433/rsm2'),
     // Ohne abschliessenden Schraegstrich normalisiert (der Pfad-Erzeuger setzt
     // ihn). Dev-Vorgabe: das lokale Web-Portal.
     appBaseUrl: env('APP_BASE_URL', 'http://localhost:3021').replace(/\/+$/, ''),

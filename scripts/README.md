@@ -50,7 +50,7 @@ löscht zusätzlich `.dev/pgdata` und baut die Seed-DB frisch auf.
 | Web-Portal (Next.js) | 3021 |
 | API (Hono, Dev) | 3022 |
 | Dev-DB `rsm2-pg-dev` | 55433 |
-| Test-DB `rsm2-pg-test` (nur Test-Scripts, throwaway) | 55432 |
+| Test-DB `rsm2-pg-test` (nur Test-Scripts, throwaway) | 55436 |
 
 Der Dev-Stack und die Test-Scripts (`supabase/scripts/db-test.sh`,
 `supabase/tests/run-tests.sh`, `services/api/scripts/api-db-test.sh`) laufen

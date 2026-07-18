@@ -7,7 +7,7 @@
 #   * services/api/scripts/api-db-test.sh (API end-to-end smoke)
 #
 # One single source of truth for the harness conventions:
-#   container rsm2-pg-test, postgres:16-alpine, 127.0.0.1:55432, --rm,
+#   container rsm2-pg-test, postgres:16-alpine, 127.0.0.1:55436, --rm,
 #   minimal Supabase shim (auth schema, auth.uid()/auth.jwt(), client roles),
 #   all migrations + seed applied in order.
 #
@@ -18,7 +18,13 @@
 #   HARNESS_LOG_PREFIX   optional log tag (defaults to pg-harness)
 #   SUPABASE_DIR         required by harness_apply_migrations_and_seed
 #   HARNESS_CONTAINER    optional container name override (default rsm2-pg-test)
-#   HARNESS_HOST_PORT    optional host port override (default 55432)
+#   HARNESS_HOST_PORT    optional host port override (default 55436)
+#                        ⚠️ Der Default war 55432 — dort laeuft auf Entwickler-
+#                        maschinen ein FREMDER Container (rapportmanager-
+#                        postgres-1). Die Suiten waren deshalb schlicht nicht
+#                        startbar. 55436 ist frei und liegt neben dem Dev-Stack
+#                        (rsm2-pg-dev auf 55433). Bestehende Overrides bleiben
+#                        unveraendert gueltig; wer 55432 will, setzt es explizit.
 #   HARNESS_PERSIST_DIR  optional: host dir bind-mounted to /var/lib/postgresql/data.
 #                        When set, harness_start becomes IDEMPOTENT and PERSISTENT:
 #                        a running container is reused, a stopped one is started,
@@ -31,7 +37,7 @@
 # =============================================================================
 
 CONTAINER="${HARNESS_CONTAINER:-rsm2-pg-test}"
-HOST_PORT="${HARNESS_HOST_PORT:-55432}"
+HOST_PORT="${HARNESS_HOST_PORT:-55436}"
 DB="rsm2"
 # throwaway credential for the ephemeral test container only — not a real secret
 PGPASS="${RSM2_TEST_PGPASSWORD:-rsm2-local-test}"
@@ -43,6 +49,20 @@ _harness_fail() { printf '\033[1;31m[%s] FAIL:\033[0m %s\n' "${HARNESS_LOG_PREFI
 pgexec() {
   docker exec -i -e PGPASSWORD="$PGPASS" "$CONTAINER" \
     psql -h 127.0.0.1 -U postgres -d "$DB" -v ON_ERROR_STOP=1 -q "$@"
+}
+
+# Ist HOST_PORT von einem FREMDEN Prozess belegt? Dann sofort und verstaendlich
+# abbrechen statt in einen Docker-Bind-Fehler zu laufen. Nennt, wenn moeglich,
+# den Container, dem der Port gehoert — angefasst wird er nie.
+_harness_assert_port_free() {
+  if ! nc -z 127.0.0.1 "$HOST_PORT" >/dev/null 2>&1; then
+    return 0
+  fi
+  local owner
+  owner="$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
+            | grep -E "(^|[^0-9])${HOST_PORT}->" | awk '{print $1}' | head -1 || true)"
+  _harness_fail "host port $HOST_PORT is already in use${owner:+ by container '$owner'} — \
+that container is NOT touched. Re-run with an override, e.g. HARNESS_HOST_PORT=55437 $0"
 }
 
 harness_teardown() {
@@ -74,6 +94,11 @@ harness_start() {
   else
     _harness_log "starting $CONTAINER (postgres:16-alpine on 127.0.0.1:$HOST_PORT) ..."
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+    # Preflight: der eigene Container ist jetzt weg — wenn der Port TROTZDEM
+    # antwortet, gehoert er jemand anderem. Frueher lief das in einen kryptischen
+    # docker-Bind-Fehler; jetzt sagt die Suite, WAS zu tun ist. Fremde Container
+    # werden NICHT angefasst.
+    _harness_assert_port_free
     docker run -d --rm --name "$CONTAINER" \
       -p "127.0.0.1:${HOST_PORT}:5432" \
       -e POSTGRES_PASSWORD="$PGPASS" \

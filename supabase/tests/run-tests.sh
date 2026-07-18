@@ -3,7 +3,7 @@
 # run-tests.sh — RollsportManager v2 SQL security test suite (RLS / tenancy)
 #
 # Boots the SHARED throwaway harness (scripts/lib/pg-harness.sh: postgres:16-
-# alpine as rsm2-pg-test on 127.0.0.1:55432, Supabase shim, all migrations +
+# alpine as rsm2-pg-test on 127.0.0.1:55436, Supabase shim, all migrations +
 # seed), then runs every tests/sql/*.sql suite in order.
 #
 # Why an own boot instead of reusing db-test.sh: db-test.sh mutates the seed
