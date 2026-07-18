@@ -11,6 +11,10 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = ProfileViewModel()
+    /// Öffentliches Selbst-Profil (Motto/Disziplin/„seit wann" + Sichtbarkeit).
+    /// Eigenes ViewModel, weil es an einem ANDEREN Endpunkt hängt
+    /// (club-/mitglieds-gebunden) als die Stammdaten (`/me`).
+    @StateObject private var selfProfile = ProfileSelfViewModel()
 
     var body: some View {
         Group {
@@ -27,7 +31,17 @@ struct ProfileView: View {
         .navigationTitle(Text("module.profile.title"))
         .navigationBarTitleDisplayMode(.large)
         .preferredColorScheme(viewModel.themeColorScheme)
-        .task { await viewModel.loadIfNeeded(api: session.api) }
+        .task {
+            await viewModel.loadIfNeeded(api: session.api)
+            await selfProfile.loadIfNeeded(
+                api: session.api,
+                clubId: session.clubId,
+                memberId: session.session?.profile.memberId
+            )
+#if DEBUG
+            await applySelfProfileDevHook()
+#endif
+        }
         .alert("profil.error.saveTitle", isPresented: saveErrorBinding) {
             Button("profil.error.ok", role: .cancel) {}
         } message: {
@@ -38,7 +52,13 @@ struct ProfileView: View {
         } message: {
             Text(verbatim: viewModel.settingsError ?? "")
         }
+        .alert("profil.self.saveErrorTitle", isPresented: selfErrorBinding) {
+            Button("profil.error.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: selfProfile.saveError ?? "")
+        }
         .onChange(of: viewModel.profileSaved) { autoHideSavedConfirmation() }
+        .onChange(of: selfProfile.saved) { autoHideSelfSavedConfirmation() }
     }
 
     // MARK: - Inhalt
@@ -55,6 +75,9 @@ struct ProfileView: View {
                 if viewModel.primaryMembership != nil {
                     ProfileEditCard(viewModel: viewModel) {
                         _Concurrency.Task { await viewModel.saveProfile(api: session.api) }
+                    }
+                    ProfileSelfCard(viewModel: selfProfile) {
+                        _Concurrency.Task { await selfProfile.save(api: session.api) }
                     }
                 } else {
                     noMembershipCard
@@ -80,7 +103,10 @@ struct ProfileView: View {
             }
             .padding(Theme.Spacing.s5)
         }
-        .refreshable { await viewModel.load(api: session.api) }
+        .refreshable {
+            await viewModel.load(api: session.api)
+            await selfProfile.load()
+        }
     }
 
     private var noMembershipCard: some View {
@@ -160,11 +186,49 @@ struct ProfileView: View {
         )
     }
 
+    private var selfErrorBinding: Binding<Bool> {
+        Binding(
+            get: { selfProfile.saveError != nil },
+            set: { if !$0 { selfProfile.saveError = nil } }
+        )
+    }
+
     private var settingsErrorBinding: Binding<Bool> {
         Binding(
             get: { viewModel.settingsError != nil },
             set: { if !$0 { viewModel.settingsError = nil } }
         )
+    }
+
+#if DEBUG
+    /// NUR DEBUG/Smoke-Test: `-devSelfProfileMotto "<Text>"` (optional
+    /// `-devSelfProfileVisibility public|internal`) füllt das Selbst-Profil-
+    /// Formular und löst GENAU denselben Speicher-Pfad aus wie die Schaltfläche
+    /// „Angaben speichern". Ohne Argument passiert nichts.
+    private func applySelfProfileDevHook() async {
+        let defaults = UserDefaults.standard
+        guard let motto = defaults.string(forKey: "devSelfProfileMotto") else { return }
+        selfProfile.motto = motto
+        if let raw = defaults.string(forKey: "devSelfProfileVisibility"),
+           let visibility = ProfileVisibility(rawValue: raw) {
+            selfProfile.visibility = visibility
+        }
+        if let discipline = defaults.string(forKey: "devSelfProfileDiscipline") {
+            selfProfile.discipline = discipline
+        }
+        await selfProfile.save(api: session.api)
+    }
+#endif
+
+    /// Erfolgs-Bestätigung des Selbst-Profils nach kurzer Zeit ausblenden.
+    private func autoHideSelfSavedConfirmation() {
+        guard selfProfile.saved else { return }
+        _Concurrency.Task {
+            try? await _Concurrency.Task.sleep(nanoseconds: 2_400_000_000)
+            withAnimation(.easeOut(duration: Theme.Motion.standard)) {
+                selfProfile.saved = false
+            }
+        }
     }
 
     /// Erfolgs-Bestätigung nach kurzer Zeit wieder ausblenden.

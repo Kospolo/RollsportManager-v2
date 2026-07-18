@@ -57,10 +57,16 @@ struct ProfileHeaderCard: View {
     @ViewBuilder
     private func clubLine(for m: MeMembership) -> some View {
         let joined = m.joinedOn.map { ProfileFormat.day($0) }
-        Text(clubText(clubName: m.clubName, joined: joined))
-            .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
-            .lineLimit(2)
+        HStack(spacing: Theme.Spacing.s2) {
+            // Vereinslogo (Migration 0060) — öffentliche Route, ohne Token.
+            // Hat der Verein keines, wird hier NICHTS gerendert (kein leerer
+            // Platzhalter neben dem Vereinsnamen).
+            RSMClubLogoView(clubId: m.clubId, size: 24, hidesWhenMissing: true)
+            Text(clubText(clubName: m.clubName, joined: joined))
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkFaint)
+                .lineLimit(2)
+        }
     }
 
     private func clubText(clubName: String, joined: String?) -> String {

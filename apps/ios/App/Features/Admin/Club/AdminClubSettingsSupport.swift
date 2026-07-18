@@ -142,6 +142,13 @@ struct AdminClubReadOnlyView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                // Logo: ANZEIGEN darf jede:r (öffentliche Route) — Setzen/
+                // Entfernen bleibt owner/admin vorbehalten, deshalb canEdit=false.
+                AdminClubLogoCard(
+                    clubId: club.id,
+                    canEdit: false,
+                    initialHasLogo: club.logoAssetId != nil
+                )
                 RSMCard {
                     HStack(alignment: .top, spacing: Theme.Spacing.s3) {
                         Image(systemName: "lock.fill")

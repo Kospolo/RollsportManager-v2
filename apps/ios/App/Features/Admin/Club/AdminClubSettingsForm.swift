@@ -12,6 +12,13 @@ struct AdminClubSettingsForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                if let club = model.club {
+                    AdminClubLogoCard(
+                        clubId: club.id,
+                        canEdit: true,
+                        initialHasLogo: club.logoAssetId != nil
+                    )
+                }
                 coreCard
                 contactCard
                 bankCard

@@ -111,6 +111,15 @@ enum MehrCatalog {
             systemImage: "square.stack.3d.up.fill", tone: .brand, isNew: true,
             destination: AnyView(SpartenRootView())
         ),
+        // Teams: LESENDER Bereich für ALLE Mitglieder (Kader ansehen, Mitglied
+        // antippen → Profil). Die Team-VERWALTUNG liegt weiterhin in der
+        // Verwaltung (is_club_admin) — hier gibt es bewusst keine Aktionen.
+        MehrTile(
+            id: "teams",
+            titleKey: "module.teams.title", descKey: "module.teams.desc",
+            systemImage: "person.3.fill", tone: .brand, isNew: true,
+            destination: AnyView(TeamsRootView())
+        ),
         MehrTile(
             id: "anniversaries",
             titleKey: "module.anniversaries.title", descKey: "module.anniversaries.desc",
