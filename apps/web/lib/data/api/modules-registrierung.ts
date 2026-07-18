@@ -1,4 +1,7 @@
 import type {
+  AcceptInvitationInput,
+  AcceptedInvitation,
+  InvitationInfo,
   JoinClubInput,
   JoinCodeState,
   JoinRequestResult,
@@ -122,6 +125,28 @@ export const moduleApiRepositoryRegistrierung: RegistrierungRepository = {
       joinCode: null,
       expiresAt: null,
       revokedAt: res.join_code_revoked_at,
+    };
+  },
+
+  async getInvitation(token: string): Promise<InvitationInfo> {
+    // Oeffentlich (auth:false im generierten Client). Ungueltiger Token -> der
+    // Server wirft 404, das reicht die Facade als Fehler durch.
+    const res = await apiClient.getPublicInvitationsByToken(token);
+    return { clubName: res.club_name, role: res.role };
+  },
+
+  async acceptInvitation(input: AcceptInvitationInput): Promise<AcceptedInvitation> {
+    const res = await apiClient.postInvitationsByTokenAccept(input.token, {
+      first_name: input.firstName,
+      last_name: input.lastName,
+      accept_terms: true,
+      accept_privacy: true,
+    });
+    return {
+      clubId: res.club_id,
+      clubName: res.club_name,
+      memberId: res.member_id,
+      status: res.status,
     };
   },
 };

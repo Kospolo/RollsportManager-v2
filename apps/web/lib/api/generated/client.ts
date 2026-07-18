@@ -220,8 +220,8 @@ export class ApiClient {
   }
 
   /**
-   * Invite a person by e-mail (stub, can_manage_members)
-   * Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.
+   * Einladung per E-Mail verschicken / Invite a person by e-mail (can_manage_members)
+   * Legt eine Einladung an (nur der Token-HASH landet in der DB, Klartext nur in der Mail) und verschickt einen Annahme-Link. ENUMERATIONSSICHER: antwortet IMMER 202, egal ob die Adresse schon Mitglied ist, neu eingeladen oder eine offene Einladung aufgefrischt wurde. Empfaenger-gedrosselt (recipient-Achse). Ohne SMTP-Konfiguration bleibt die Einladung bestehen (resend-bar) und der Fehler wird sprechend geloggt statt zu crashen. Erfordert members:manage; die Zielrolle muss der Aufrufer vergeben duerfen (canAssignRole).
    * 
    * `POST /clubs/{clubId}/members/invite`
    */
@@ -286,6 +286,26 @@ export class ApiClient {
    */
   async getClubsByClubIdMembersByMemberIdProfile(clubId: string, memberId: string, options?: RequestOptions): Promise<M.MemberProfile> {
     return this.request<M.MemberProfile>("GET", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}/profile`, { auth: true, options });
+  }
+
+  /**
+   * Einladung ansehen (oeffentlich) / Look up an invitation (public)
+   * Unauthentifiziert. Loest einen Einladungs-Token zu Vereinsname und Zielrolle auf — mehr nicht. Ein unbekannter, abgelaufener, widerrufener oder bereits angenommener Token liefert 404 (keine Auskunft, welcher Fall es war, kein Hinweis auf Mitgliedschaft).
+   * 
+   * `GET /public/invitations/{token}`
+   */
+  async getPublicInvitationsByToken(token: string, options?: RequestOptions): Promise<M.InvitationInfo> {
+    return this.request<M.InvitationInfo>("GET", `/public/invitations/${encodeURIComponent(token)}`, { auth: false, options });
+  }
+
+  /**
+   * Einladung annehmen / Accept an invitation
+   * Erfordert Login. Legt token-geprueft (app.accept_invitation, SECURITY DEFINER) eine AKTIVE Mitgliedschaft fuer die angemeldete Person an und verbraucht den Token. Erfasst die Kenntnisnahme von Nutzungsbedingungen und Datenschutzerklaerung (Pflicht, alterslos — KEINE echte Einwilligung). Ein ungueltiger/abgelaufener/bereits benutzter Token liefert dieselbe 404 wie die oeffentliche Vorschau.
+   * 
+   * `POST /invitations/{token}/accept`
+   */
+  async postInvitationsByTokenAccept(token: string, body: M.InvitationAcceptInput, options?: RequestOptions): Promise<M.InvitationAcceptResult> {
+    return this.request<M.InvitationAcceptResult>("POST", `/invitations/${encodeURIComponent(token)}/accept`, { body, auth: true, options });
   }
 
   /**

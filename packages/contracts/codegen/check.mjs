@@ -46,6 +46,9 @@ const PUBLIC_ROUTES = new Set([
   // Login-free Kür token view: opaque token in, minimal non-personal data out.
   // Handler resolves the token in service mode (routes/public-routines.ts).
   "GET /public/routines/{token}",
+  // Login-free invitation preview: token in, club name + target role out.
+  // Handler resolves the token in service mode (routes/invitations.ts).
+  "GET /public/invitations/{token}",
 ]);
 
 let failures = 0;

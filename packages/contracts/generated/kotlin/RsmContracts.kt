@@ -705,6 +705,28 @@ data class ClubMemberSelfProfileUpdate(
 )
 
 @Serializable
+data class InvitationInfo(
+    @SerialName("club_name") val clubName: String,
+    val role: ClubRole
+)
+
+@Serializable
+data class InvitationAcceptResult(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("member_id") val memberId: String,
+    val status: MemberStatus
+)
+
+@Serializable
+data class InvitationAcceptInput(
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
+    @SerialName("accept_terms") val acceptTerms: Boolean,
+    @SerialName("accept_privacy") val acceptPrivacy: Boolean
+)
+
+@Serializable
 data class MemberRoleRef(
     @SerialName("role_id") val roleId: String,
     val key: String,

@@ -61,6 +61,15 @@ export interface ApiConfig {
     /** Optional audience check (empty string = skip). GoTrue default: "authenticated". */
     audience: string;
   };
+  /**
+   * BASIS-URL DER WEB-OBERFLAECHE — die Wurzel, an die der Server oeffentliche
+   * Links baut (heute: der Annahme-Link einer Einladung, {base}/einladung/{token}).
+   * Kein Personendatum, keine Geheimnisse: nur der oeffentliche Ursprung des
+   * Portals. Dev-Vorgabe ist das lokale Portal (localhost:3021); in Produktion
+   * setzt der Betreiber die echte Domain (APP_BASE_URL). Ohne abschliessenden
+   * Schraegstrich — den setzt der Erzeuger des Pfads.
+   */
+  appBaseUrl: string;
   mail: {
     /**
      * smtp (Vorgabe) oder dry-run. AUTH_MODE=prod VERWEIGERT den Start mit
@@ -123,6 +132,9 @@ export function loadConfig(): ApiConfig {
   const config: ApiConfig = {
     port: Number.parseInt(env('PORT', '3022'), 10),
     databaseUrl: env('DATABASE_URL', 'postgres://postgres:rsm2-local-test@127.0.0.1:55432/rsm2'),
+    // Ohne abschliessenden Schraegstrich normalisiert (der Pfad-Erzeuger setzt
+    // ihn). Dev-Vorgabe: das lokale Web-Portal.
+    appBaseUrl: env('APP_BASE_URL', 'http://localhost:3021').replace(/\/+$/, ''),
     db: {
       poolMax: Number.parseInt(env('DATABASE_POOL_MAX', '20'), 10),
       statementTimeoutMs: Number.parseInt(env('DATABASE_STATEMENT_TIMEOUT_MS', '30000'), 10),

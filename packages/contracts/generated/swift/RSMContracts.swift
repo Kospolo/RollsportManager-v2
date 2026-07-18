@@ -1201,6 +1201,78 @@ public struct ClubMemberSelfProfileUpdate: Codable, Equatable, Sendable {
     }
 }
 
+public struct InvitationInfo: Codable, Equatable, Sendable {
+    public var clubName: String
+    public var role: ClubRole
+
+    enum CodingKeys: String, CodingKey {
+        case clubName = "club_name"
+        case role
+    }
+
+    public init(
+        clubName: String,
+        role: ClubRole
+    ) {
+        self.clubName = clubName
+        self.role = role
+    }
+}
+
+public struct InvitationAcceptResult: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var clubName: String
+    /// Format: uuid
+    public var memberId: String
+    public var status: MemberStatus
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case clubName = "club_name"
+        case memberId = "member_id"
+        case status
+    }
+
+    public init(
+        clubId: String,
+        clubName: String,
+        memberId: String,
+        status: MemberStatus
+    ) {
+        self.clubId = clubId
+        self.clubName = clubName
+        self.memberId = memberId
+        self.status = status
+    }
+}
+
+public struct InvitationAcceptInput: Codable, Equatable, Sendable {
+    public var firstName: String
+    public var lastName: String
+    public var acceptTerms: Bool
+    public var acceptPrivacy: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case acceptTerms = "accept_terms"
+        case acceptPrivacy = "accept_privacy"
+    }
+
+    public init(
+        firstName: String,
+        lastName: String,
+        acceptTerms: Bool,
+        acceptPrivacy: Bool
+    ) {
+        self.firstName = firstName
+        self.lastName = lastName
+        self.acceptTerms = acceptTerms
+        self.acceptPrivacy = acceptPrivacy
+    }
+}
+
 public struct MemberRoleRef: Codable, Equatable, Sendable {
     /// Format: uuid
     public var roleId: String

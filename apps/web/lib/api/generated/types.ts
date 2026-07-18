@@ -188,6 +188,25 @@ export interface ClubMemberSelfProfileUpdate {
   "visibility"?: ProfileVisibility;
 }
 
+export interface InvitationInfo {
+  "club_name": string;
+  "role": ClubRole;
+}
+
+export interface InvitationAcceptResult {
+  "club_id": string;
+  "club_name": string;
+  "member_id": string;
+  "status": MemberStatus;
+}
+
+export interface InvitationAcceptInput {
+  "first_name": string;
+  "last_name": string;
+  "accept_terms": boolean;
+  "accept_privacy": boolean;
+}
+
 export interface MemberRoleRef {
   "role_id": string;
   "key": string;

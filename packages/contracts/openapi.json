@@ -908,6 +908,81 @@
           }
         }
       },
+      "InvitationInfo": {
+        "type": "object",
+        "properties": {
+          "club_name": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/ClubRole"
+          }
+        },
+        "required": [
+          "club_name",
+          "role"
+        ]
+      },
+      "InvitationAcceptResult": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_name": {
+            "type": "string"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MemberStatus"
+          }
+        },
+        "required": [
+          "club_id",
+          "club_name",
+          "member_id",
+          "status"
+        ]
+      },
+      "InvitationAcceptInput": {
+        "type": "object",
+        "properties": {
+          "first_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+          },
+          "last_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[^\\u0000-\\u001F\\u007F]+$"
+          },
+          "accept_terms": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "accept_privacy": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "first_name",
+          "last_name",
+          "accept_terms",
+          "accept_privacy"
+        ]
+      },
       "MemberRoleRef": {
         "type": "object",
         "properties": {
@@ -11024,8 +11099,8 @@
         "tags": [
           "members"
         ],
-        "summary": "Invite a person by e-mail (stub, can_manage_members)",
-        "description": "Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.",
+        "summary": "Einladung per E-Mail verschicken / Invite a person by e-mail (can_manage_members)",
+        "description": "Legt eine Einladung an (nur der Token-HASH landet in der DB, Klartext nur in der Mail) und verschickt einen Annahme-Link. ENUMERATIONSSICHER: antwortet IMMER 202, egal ob die Adresse schon Mitglied ist, neu eingeladen oder eine offene Einladung aufgefrischt wurde. Empfaenger-gedrosselt (recipient-Achse). Ohne SMTP-Konfiguration bleibt die Einladung bestehen (resend-bar) und der Fehler wird sprechend geloggt statt zu crashen. Erfordert members:manage; die Zielrolle muss der Aufrufer vergeben duerfen (canAssignRole).",
         "security": [
           {
             "bearerAuth": []
@@ -11054,7 +11129,7 @@
         },
         "responses": {
           "202": {
-            "description": "Invite accepted (stub)",
+            "description": "Einladung angenommen (immer identisch, kein Enumerations-Leck)",
             "content": {
               "application/json": {
                 "schema": {
@@ -11095,6 +11170,26 @@
           },
           "404": {
             "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Rolle per E-Mail nicht einladbar (z.B. guest_coach)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Zu viele Einladungen (RFC 7807 + Retry-After)",
             "content": {
               "application/json": {
                 "schema": {
@@ -11653,6 +11748,147 @@
           },
           "404": {
             "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/invitations/{token}": {
+      "get": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Einladung ansehen (oeffentlich) / Look up an invitation (public)",
+        "description": "Unauthentifiziert. Loest einen Einladungs-Token zu Vereinsname und Zielrolle auf — mehr nicht. Ein unbekannter, abgelaufener, widerrufener oder bereits angenommener Token liefert 404 (keine Auskunft, welcher Fall es war, kein Hinweis auf Mitgliedschaft).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Vereinsname und Zielrolle der Einladung",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token unbekannt, abgelaufen, widerrufen oder verbraucht",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invitations/{token}/accept": {
+      "post": {
+        "tags": [
+          "registration"
+        ],
+        "summary": "Einladung annehmen / Accept an invitation",
+        "description": "Erfordert Login. Legt token-geprueft (app.accept_invitation, SECURITY DEFINER) eine AKTIVE Mitgliedschaft fuer die angemeldete Person an und verbraucht den Token. Erfasst die Kenntnisnahme von Nutzungsbedingungen und Datenschutzerklaerung (Pflicht, alterslos — KEINE echte Einwilligung). Ein ungueltiger/abgelaufener/bereits benutzter Token liefert dieselbe 404 wie die oeffentliche Vorschau.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvitationAcceptInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mitgliedschaft angelegt (status=active)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationAcceptResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Rechtstext-Fassung fehlt (Kenntnisnahme nicht nachweisbar)",
             "content": {
               "application/json": {
                 "schema": {

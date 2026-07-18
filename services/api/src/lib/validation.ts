@@ -2850,6 +2850,64 @@ export const clubJoinResultSchema = z
   })
   .openapi('ClubJoinResult');
 
+// ---------------------------------------------------------------------------
+// EINLADUNG per E-Mail (Migration 0065). Gegenpol zum Vereinscode: gezielt an
+// EINE Adresse, Einmal-Token, Annahme legt sofort eine AKTIVE Mitgliedschaft an
+// (der Vorstand hat schon gewaehlt — der Token IST die Freigabe).
+// ---------------------------------------------------------------------------
+
+/**
+ * Antwort des Einladungs-Versands. ENUMERATIONSSICHER: immer identisch (202),
+ * egal ob die Adresse schon Mitglied war, neu eingeladen wurde oder eine offene
+ * Einladung aufgefrischt wurde. Der Klartext-Token ist NICHT dabei — er geht
+ * ausschliesslich in die Mail. email ist der vom Aufrufer selbst uebergebene
+ * Wert (normalisiert), also kein Leck.
+ */
+export const inviteQueuedSchema = z
+  .object({
+    status: z.literal('queued'),
+    email: z.string(),
+  })
+  .openapi('InviteQueued');
+
+/**
+ * Oeffentliche Sicht auf eine Einladung (GET /public/invitations/{token}): nur
+ * das, was die Annahme-Seite ANZEIGEN muss — Vereinsname und Zielrolle. Kein
+ * Personendatum, keine Absender-Identitaet, kein Hinweis darauf, ob die Adresse
+ * bereits Mitglied ist. Ein unbekannter/abgelaufener/verbrauchter Token -> 404.
+ */
+export const invitationInfoSchema = z
+  .object({
+    club_name: z.string(),
+    role: clubRoleSchema,
+  })
+  .openapi('InvitationInfo');
+
+/**
+ * Eine Einladung ANNEHMEN. Spiegelt clubJoinInputSchema: Name (Stammdaten der
+ * neuen Mitgliedszeile) + die beiden PFLICHT-Kenntnisnahmen (Vertrag/Art. 13,
+ * z.literal(true), siehe Kopplungsverbot-Kommentar dort). KEINE echte
+ * Einwilligung hier — die bleibt der Familien-/Einwilligungspfad (Art. 8).
+ */
+export const invitationAcceptInputSchema = z
+  .object({
+    first_name: applicantName,
+    last_name: applicantName,
+    accept_terms: z.literal(true),
+    accept_privacy: z.literal(true),
+  })
+  .openapi('InvitationAcceptInput');
+
+/** Ergebnis der Annahme: die frisch entstandene (oder bestehende) Mitgliedschaft. */
+export const invitationAcceptResultSchema = z
+  .object({
+    club_id: uuid,
+    club_name: z.string(),
+    member_id: uuid,
+    status: memberStatusSchema,
+  })
+  .openapi('InvitationAcceptResult');
+
 /**
  * Antwort auf das Rotieren des Einladungscodes.
  *

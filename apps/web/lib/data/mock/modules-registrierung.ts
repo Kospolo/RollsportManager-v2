@@ -1,5 +1,8 @@
 import { ApiError } from "../errors";
 import type {
+  AcceptInvitationInput,
+  AcceptedInvitation,
+  InvitationInfo,
   JoinClubInput,
   JoinCodeState,
   JoinRequestResult,
@@ -175,4 +178,32 @@ export const moduleRepositoryRegistrierung: RegistrierungRepository = {
     state.revokedAt = new Date().toISOString();
     return this.getJoinCodeState();
   },
+
+  // Einladungen im Mock: EIN verbrauchbarer Demo-Token, damit die Annahme-Seite
+  // real durchgespielt werden kann (inkl. "Token schon benutzt" -> dieselbe
+  // 404 wie im Server). Der Token "invalid" ist immer ungueltig.
+  async getInvitation(token: string): Promise<InvitationInfo> {
+    if (token === "invalid" || usedInviteTokens.has(token)) invalidInvitation();
+    return { clubName: DEMO_CLUB.name, role: "member" };
+  },
+
+  async acceptInvitation(input: AcceptInvitationInput): Promise<AcceptedInvitation> {
+    if (input.token === "invalid" || usedInviteTokens.has(input.token)) invalidInvitation();
+    usedInviteTokens.add(input.token);
+    return {
+      clubId: DEMO_CLUB.id,
+      clubName: DEMO_CLUB.name,
+      memberId: `a0000000-0000-4000-8000-${Date.now().toString(16).slice(-12)}`,
+      status: "active",
+    };
+  },
 };
+
+/** Bereits eingeloeste Demo-Token (Einmal-Charakter wie im Server). */
+const usedInviteTokens = new Set<string>();
+
+/** Dieselbe neutrale 404 wie der Server (invitations.ts invalidInvitation). */
+function invalidInvitation(): never {
+  const detail = "Diese Einladung ist nicht (mehr) gültig. / This invitation is no longer valid.";
+  throw new ApiError(404, { type: "about:blank", title: "Not Found", status: 404, detail }, detail);
+}

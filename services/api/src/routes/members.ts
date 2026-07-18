@@ -9,22 +9,29 @@
 // fires as second line of defense.
 // ============================================================================
 
+import { createHash, randomBytes } from 'node:crypto';
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
   guardianshipSchema,
+  inviteQueuedSchema,
   inviteSchema,
   memberCreateSchema,
   memberSchema,
   memberSelfProfileUpdateSchema,
   memberUpdateSchema,
+  problemSchema,
   roleChangeSchema,
   uuid,
 } from '../lib/validation.js';
 import { withUser } from '../db.js';
 import type { Tx } from '../db.js';
+import { getConfig } from '../config.js';
 import { problem } from '../middleware/error.js';
 import { avatarUrlFor } from '../lib/avatar.js';
+import { sendMail, MailConfigError } from '../lib/mailer.js';
+import { renderClubInvitation } from '../lib/mail-templates/index.js';
+import { clientIp, enforceRateLimits } from '../lib/rate-limit.js';
 import {
   ADMIN_ROLES,
   MANAGE_MEMBER_ROLES,
@@ -34,8 +41,11 @@ import {
   isPlatformAdmin,
   requireClubRole,
 } from '../lib/guards.js';
-import { requireClubMemberDb } from '../lib/capabilities.js';
+import { capsFor, requireClubMemberDb, requireClubRoleDb } from '../lib/capabilities.js';
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
+
+/** Gueltigkeitsdauer einer Einladung: 14 Tage (wie im Auftrag vorgesehen). */
+const INVITE_TTL_DAYS = 14;
 
 export const membersRouter = createRouter();
 
@@ -417,33 +427,183 @@ membersRouter.openapi(
     method: 'post',
     path: '/clubs/{clubId}/members/invite',
     tags: ['members'],
-    summary: 'Invite a person by e-mail (stub, can_manage_members)',
+    summary: 'Einladung per E-Mail verschicken / Invite a person by e-mail (can_manage_members)',
     description:
-      'Phase-1 stub: validates and logs the invite. Mail delivery + join-code flow land with the portal phase.',
+      'Legt eine Einladung an (nur der Token-HASH landet in der DB, Klartext nur in der Mail) und verschickt einen ' +
+      'Annahme-Link. ENUMERATIONSSICHER: antwortet IMMER 202, egal ob die Adresse schon Mitglied ist, neu ' +
+      'eingeladen oder eine offene Einladung aufgefrischt wurde. Empfaenger-gedrosselt (recipient-Achse). Ohne ' +
+      'SMTP-Konfiguration bleibt die Einladung bestehen (resend-bar) und der Fehler wird sprechend geloggt statt ' +
+      'zu crashen. Erfordert members:manage; die Zielrolle muss der Aufrufer vergeben duerfen (canAssignRole).',
     security: [{ bearerAuth: [] }],
     request: {
       params: clubIdParam,
       body: { content: { 'application/json': { schema: inviteSchema } }, required: true },
     },
     responses: {
-      202: jsonContent(
-        z.object({ status: z.literal('queued'), email: z.string() }).openapi('InviteQueued'),
-        'Invite accepted (stub)',
-      ),
+      202: jsonContent(inviteQueuedSchema, 'Einladung angenommen (immer identisch, kein Enumerations-Leck)'),
+      422: jsonContent(problemSchema, 'Rolle per E-Mail nicht einladbar (z.B. guest_coach)'),
+      429: jsonContent(problemSchema, 'Zu viele Einladungen (RFC 7807 + Retry-After)'),
       ...errorResponses,
     },
   }),
-  (c) => {
+  async (c) => {
     const { clubId } = c.req.valid('param');
     const body = c.req.valid('json');
-    const callerRole = requireClubRole(c.get('claims'), clubId, MANAGE_MEMBER_ROLES);
-    if (!canAssignRole(callerRole, body.role)) {
-      throw problem(403, 'Forbidden', `Your role (${callerRole}) may not invite role '${body.role}'`);
+    const claims = c.get('claims');
+
+    // guest_coach ist ein vereinsEXTERNER Zeitzugang: club_members verlangt fuer
+    // ihn valid_until (0002, club_members_guest_coach_needs_expiry). Eine
+    // E-Mail-Einladung traegt kein Ablaufdatum -> die Annahme wuerde am CHECK
+    // scheitern. Also hier klar abweisen statt spaeter unverstaendlich zu
+    // scheitern.
+    if (body.role === 'guest_coach') {
+      throw problem(
+        422,
+        'Unprocessable Entity',
+        'guest_coach kann nicht per E-Mail eingeladen werden (er braucht ein Ablaufdatum). ' +
+          '/ guest_coach cannot be invited by e-mail (it requires an explicit expiry).',
+      );
     }
-    console.info(
-      `[members] invite stub: club=${clubId} email=${body.email} role=${body.role} (request ${c.get('requestId')})`,
-    );
-    return c.json({ status: 'queued' as const, email: body.email }, 202);
+
+    // Gate DB-aufgeloest (MANAGE_MEMBER_ROLES = Vorstand/Verwaltung), NICHT aus
+    // dem Token: so kann auch der frisch angelegte Inhaber sofort einladen (sein
+    // Token kennt den neuen Verein noch nicht) — dieselbe Begruendung wie bei
+    // approve (registration.ts). Rollenbasiert und deckungsgleich mit der RLS
+    // der Einladungstabelle (invitations_insert, 0065): 'members:manage' ist
+    // write_only und darf die LESE-Policy nicht gaten (93j).
+    await requireClubRoleDb(c, clubId, MANAGE_MEMBER_ROLES);
+
+    // Rollen-Rang: darf DIESE Person die ZIELrolle vergeben? Mehrfachrollen
+    // zaehlen — irgendeine der eigenen Rollen muss reichen. Ohne diese Pruefung
+    // koennte ein Kassenwart (members:manage) eine admin-Einladung verschicken.
+    const caps = await capsFor(c, clubId);
+    const callerRoles = caps.roleKeys as ClubRole[];
+    const mayAssign =
+      isPlatformAdmin(claims) || callerRoles.some((r) => canAssignRole(r, body.role));
+    if (!mayAssign) {
+      throw problem(403, 'Forbidden', `Deine Rolle darf die Rolle '${body.role}' nicht einladen.`);
+    }
+
+    const email = body.email.trim().toLowerCase();
+
+    // Empfaenger-Drossel (die vierte Achse, rate-limit.ts): schuetzt die
+    // EINGELADENE Adresse vor Zumuellung — unabhaengig davon, wer sendet.
+    // account/ip bremsen zusaetzlich den einen Absender.
+    await enforceRateLimits(c, [
+      { scope: 'account', identifier: claims.sub, limit: 60, window: '1 hour' },
+      { scope: 'ip', identifier: clientIp(c), limit: 120, window: '1 hour' },
+      { scope: 'recipient', identifier: email, limit: 5, window: '1 hour' },
+    ]);
+
+    // 256 Bit CSPRNG. Der Klartext lebt NUR hier (und gleich in der Mail); die
+    // DB bekommt ausschliesslich den SHA-256.
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = createHash('sha256').update(token).digest('base64url');
+
+    // Alles in EINER RLS-Transaktion. Der Einladende HAT members:manage — die
+    // Policies invitations_insert/_update lassen ihn also durch (zweite Linie).
+    const outcome = await withUser(claims, async (tx) => {
+      // Schon Mitglied (per E-Mail-Spalte, jeder Status)? Dann NICHTS tun und
+      // trotzdem 202 — die Antwort verraet nicht, dass es die Adresse schon
+      // gibt (Enumerationsschutz).
+      const already = await tx<{ one: number }[]>`
+        select 1 as one from app.club_members
+        where club_id = ${clubId} and lower(email) = ${email} and deleted_at is null
+        limit 1`;
+      if (already.length > 0) return { kind: 'already_member' as const };
+
+      // Abgelaufene offene Einladungen dieser Adresse auf 'expired' drehen,
+      // damit der Teil-Index (eine OFFENE je Adresse) einer Neu-Einladung nicht
+      // im Weg steht.
+      await tx`
+        update app.invitations set status = 'expired'
+        where club_id = ${clubId} and email = ${email}
+          and status = 'pending' and expires_at <= now()`;
+
+      // Offene Einladung AUFFRISCHEN (neuer Token/Ablauf/Rolle) ODER neu anlegen.
+      // expires_at wird in SQL gerechnet (now() + Intervall), NICHT als
+      // JS-Date gebunden: der Treiber (db.ts, custom date-Typ) erwartet fuer
+      // Zeitstempel einen String — ein Date-Objekt bricht den Bind. Dieselbe
+      // Schreibweise wie beim Code-Rotieren (registration.ts).
+      const refreshed = await tx<{ id: string }[]>`
+        update app.invitations
+           set token_hash            = ${tokenHash},
+               target_role           = ${body.role},
+               expires_at            = now() + (${INVITE_TTL_DAYS} || ' days')::interval,
+               invited_by_member_id  = app.own_member_id(${clubId}),
+               invited_by_profile_id = ${claims.sub}
+         where club_id = ${clubId} and email = ${email} and status = 'pending'
+        returning id`;
+      if (refreshed.length === 0) {
+        await tx`
+          insert into app.invitations
+            (club_id, email, target_role, token_hash, invited_by_member_id, invited_by_profile_id, expires_at)
+          values
+            (${clubId}, ${email}, ${body.role}, ${tokenHash},
+             app.own_member_id(${clubId}), ${claims.sub},
+             now() + (${INVITE_TTL_DAYS} || ' days')::interval)`;
+      }
+
+      // Vereinsname + Einlader-Name fuer die Mail (beides darf der Einladende
+      // sehen: eigener Verein, eigene Mitgliedszeile).
+      const meta = await tx<{ club_name: string; inviter: string | null }[]>`
+        select c.name as club_name,
+               (select m.first_name || ' ' || m.last_name
+                  from app.club_members m
+                 where m.id = app.own_member_id(${clubId})) as inviter
+        from app.clubs c
+        where c.id = ${clubId} and c.deleted_at is null`;
+      return {
+        kind: 'invited' as const,
+        clubName: meta[0]?.club_name ?? '',
+        inviter: meta[0]?.inviter ?? undefined,
+      };
+    });
+
+    // Mail NUR bei echter Einladung und AUSSERHALB der Transaktion (SMTP wuerde
+    // sonst die DB-Verbindung halten). Der Klartext-Token geht in den Link.
+    if (outcome.kind === 'invited') {
+      const acceptUrl = `${getConfig().appBaseUrl}/einladung/${token}`;
+      const mail = renderClubInvitation({
+        clubName: outcome.clubName,
+        acceptUrl,
+        // exactOptionalPropertyTypes: nur setzen, wenn vorhanden (kein
+        // explizites undefined uebergeben).
+        ...(outcome.inviter ? { inviterName: outcome.inviter } : {}),
+      });
+      try {
+        const result = await sendMail(email, mail);
+        if (result.mode === 'dry-run') {
+          // Im Trockenlauf steht der Annahme-Link im Log — so ist die Kette
+          // ohne echten Mailserver testbar.
+          console.info(`[members] invite dry-run club=${clubId} accept-link: ${acceptUrl}`);
+        } else {
+          console.info(
+            `[members] invite sent club=${clubId} accepted=${result.accepted.length} ` +
+              `rejected=${result.rejected.length} (request ${c.get('requestId')})`,
+          );
+        }
+      } catch (err) {
+        // SAUBERER DEV-FALLBACK, KEIN CRASH. Fehlt die SMTP-Config
+        // (MailConfigError), bleibt die Einladung bestehen (sie ist resend-bar)
+        // und wir loggen SPRECHEND. Ein echter SMTP-/Netzfehler wird ebenfalls
+        // geloggt — die Antwort bleibt 202, damit sie kein Enumerations-Orakel
+        // wird. In dev/dry-run zusaetzlich der Annahme-Link, damit die Kette
+        // ohne Postfach pruefbar bleibt.
+        const isConfig = err instanceof MailConfigError;
+        console.warn(
+          `[members] invite: Mailversand ${isConfig ? 'nicht konfiguriert' : 'fehlgeschlagen'} ` +
+            `(Einladung bleibt bestehen, resend moeglich): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        const cfg = getConfig();
+        if (cfg.auth.mode === 'dev' || cfg.mail.transport === 'dry-run') {
+          console.info(`[members] invite dev accept-link: ${acceptUrl}`);
+        }
+      }
+    }
+
+    // IMMER dieselbe Antwort. 202 = "angenommen, wird verarbeitet".
+    return c.json({ status: 'queued' as const, email }, 202);
   },
 );
 

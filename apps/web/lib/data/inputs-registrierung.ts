@@ -70,6 +70,35 @@ export interface JoinCodeState {
   revokedAt: string | null;
 }
 
+/**
+ * Oeffentliche Vorschau einer Einladung (GET /public/invitations/{token}).
+ * Nur Vereinsname und Zielrolle — kein Personendatum, kein Absender, kein
+ * Hinweis auf Mitgliedschaft. Ungueltig/abgelaufen/verbraucht -> Fehler (404).
+ */
+export interface InvitationInfo {
+  clubName: string;
+  /** Rolle, die die Mitgliedschaft bei Annahme bekommt (z.B. "member"). */
+  role: string;
+}
+
+/** Eine Einladung annehmen. Token aus der URL + Name + die beiden Pflicht-Haken. */
+export interface AcceptInvitationInput {
+  token: string;
+  firstName: string;
+  lastName: string;
+  acceptTerms: boolean;
+  acceptPrivacy: boolean;
+}
+
+/** Ergebnis der Annahme: die frisch entstandene AKTIVE Mitgliedschaft. */
+export interface AcceptedInvitation {
+  clubId: string;
+  clubName: string;
+  memberId: string;
+  /** Immer "active" — die Einladung IST die Freigabe (anders als der Code). */
+  status: string;
+}
+
 export interface RegistrierungRepository {
   /** Verein selbst anlegen — der Aufrufer wird Inhaber (owner, active). */
   registerClub(input: RegisterClubInput): Promise<RegisteredClub>;
@@ -87,4 +116,11 @@ export interface RegistrierungRepository {
   rotateJoinCode(expiresInDays?: number | null): Promise<JoinCodeState>;
   /** Code sperren, ohne einen neuen zu erzeugen. */
   revokeJoinCode(): Promise<JoinCodeState>;
+  /**
+   * Oeffentliche Vorschau einer Einladung (kein Login noetig). Ungueltiger
+   * Token -> Fehler; die Annahme-Seite zeigt dann eine neutrale Meldung.
+   */
+  getInvitation(token: string): Promise<InvitationInfo>;
+  /** Einladung annehmen -> aktive Mitgliedschaft. Der Token ist danach verbraucht. */
+  acceptInvitation(input: AcceptInvitationInput): Promise<AcceptedInvitation>;
 }
