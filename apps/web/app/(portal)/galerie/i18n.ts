@@ -37,6 +37,12 @@ export const galerieDict = {
 
     loadErrorTitle: "Galerie konnte nicht geladen werden",
     loadErrorRetry: "Erneut versuchen",
+    // Modul-Gate (0068): zubuchbar, hier NICHT gebucht -> ModuleNotBookedCard.
+    notBookedEyebrow: "Zusatzmodul",
+    notBookedTitle: "Galerie ist nicht gebucht",
+    notBookedBody: "Die Galerie ist ein zubuchbares Modul. Für diesen Verein ist sie derzeit nicht gebucht — es werden keine Fotos und Videos geladen.",
+    notBookedHint: "Ein Vereins-Admin kann die Galerie unter Verwaltung › Module einschalten. Zusätzlich wird eine aktive PRO-Lizenz benötigt.",
+    notBookedBadge: "Nicht gebucht",
     niTitle: "Noch nicht angebunden",
     niBody: "Dieser Bereich hat im api-Modus noch keinen Endpoint.",
 
@@ -151,6 +157,12 @@ export const galerieDict = {
 
     loadErrorTitle: "Gallery could not be loaded",
     loadErrorRetry: "Try again",
+    // Modul-Gate (0068): zubuchbar, hier NICHT gebucht -> ModuleNotBookedCard.
+    notBookedEyebrow: "Add-on module",
+    notBookedTitle: "Gallery is not booked",
+    notBookedBody: "The gallery is an add-on module. It is currently not booked for this club — no photos or videos are loaded.",
+    notBookedHint: "A club admin can switch the gallery on under Administration › Modules. An active PRO licence is required as well.",
+    notBookedBadge: "Not booked",
     niTitle: "Not connected yet",
     niBody: "This area has no endpoint in api mode yet.",
 

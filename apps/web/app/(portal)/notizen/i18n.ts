@@ -19,6 +19,12 @@ export const notesDict = {
 
     // Lade- & Fehlerzustände
     retry: "Erneut versuchen",
+    // Modul-Gate (0068): zubuchbar, hier NICHT gebucht -> ModuleNotBookedCard.
+    notBookedEyebrow: "Zusatzmodul",
+    notBookedTitle: "Notizen sind nicht gebucht",
+    notBookedBody: "Notizen sind ein zubuchbares Modul. Für diesen Verein sind sie derzeit nicht gebucht — es werden keine Vereins-Notizen geladen.",
+    notBookedHint: "Ein Vereins-Admin kann Notizen unter Verwaltung › Module einschalten.",
+    notBookedBadge: "Nicht gebucht",
     loadErrorTitle: "Notizen konnten nicht geladen werden",
     loadErrorBody: "Deine Notizen ließen sich gerade nicht laden — bitte erneut versuchen.",
     genericError: "Etwas ist schiefgelaufen — bitte erneut versuchen.",
@@ -71,6 +77,12 @@ export const notesDict = {
     notesCount: "{n} notes",
 
     retry: "Try again",
+    // Modul-Gate (0068): zubuchbar, hier NICHT gebucht -> ModuleNotBookedCard.
+    notBookedEyebrow: "Add-on module",
+    notBookedTitle: "Notes are not booked",
+    notBookedBody: "Notes are an add-on module. They are currently not booked for this club — no club notes are loaded.",
+    notBookedHint: "A club admin can switch notes on under Administration › Modules.",
+    notBookedBadge: "Not booked",
     loadErrorTitle: "Notes could not be loaded",
     loadErrorBody: "Your notes could not be loaded right now — please try again.",
     genericError: "Something went wrong — please try again.",

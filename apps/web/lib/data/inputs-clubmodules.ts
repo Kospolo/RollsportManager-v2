@@ -60,6 +60,18 @@ export interface ClubModuleState {
   requiresPro: boolean;
   /** Was der Schalter wirklich bewirkt — für die Beschriftung. null <=> core. */
   enforcement: ModuleEnforcement | null;
+  /**
+   * Voreinstellung für einen Verein OHNE eigene Schalter-Zeile
+   * (app.modules.default_enabled, Migration 0068).
+   *
+   * `false` = ZUBUCHBARES Modul (Galerie, Dokumente, Notizen): ein neuer Verein
+   * hat es AUS, bis er es bucht. `true`/fehlend = die Regel (von Haus aus an).
+   *
+   * Nur für die BESCHRIFTUNG: die Oberfläche unterscheidet damit „aus, weil der
+   * Verein es abgeschaltet hat" von „nie gebucht" — zwei Sätze, zwei Auswege.
+   * Autorisierung passiert hier nicht; das Gate ist die restriktive RLS-Policy.
+   */
+  defaultEnabled?: boolean;
   /** Die Schalterstellung. Nie angefasst = an (fehlende Zeile = an, 0044). */
   enabled: boolean;
   /** Entitlement erfüllt? Bei requiresPro=false immer true. */

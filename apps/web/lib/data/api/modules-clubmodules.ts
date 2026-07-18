@@ -42,6 +42,8 @@ interface ClubModuleStateWire {
   core: boolean;
   requires_pro: boolean;
   enforcement: ModuleEnforcement | null;
+  /** Voreinstellung ohne eigene Schalter-Zeile (0068) — false = zubuchbar. */
+  default_enabled: boolean;
   enabled: boolean;
   pro_ok: boolean;
   available: boolean;
@@ -58,6 +60,7 @@ function mapState(m: ClubModuleStateWire): ClubModuleState {
     core: m.core,
     requiresPro: m.requires_pro,
     enforcement: m.enforcement,
+    defaultEnabled: m.default_enabled,
     enabled: m.enabled,
     proOk: m.pro_ok,
     available: m.available,

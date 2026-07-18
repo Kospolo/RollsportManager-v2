@@ -40,6 +40,8 @@ export const moduleDict = {
     // --- Die ehrlichen Etiketten (0044) -------------------------------------
     badgePro: "PRO",
     badgeCore: "Kernmodul",
+    badgeBookable: "Zusatzmodul",
+    hintBookable: "Zubuchbares Modul: für neue Vereine voreingestellt AUS. Erst einschalten, dann steht es dem Verein zur Verfügung.",
     /** enforcement = 'partial' */
     badgePartial: "wirkt nur teilweise",
     /** enforcement = 'menu_only' */
@@ -89,6 +91,8 @@ export const moduleDict = {
 
     badgePro: "PRO",
     badgeCore: "Core module",
+    badgeBookable: "Add-on module",
+    hintBookable: "Add-on module: switched OFF by default for new clubs. Switch it on to make it available to the club.",
     badgePartial: "only partly effective",
     badgeMenuOnly: "hides the tile only",
 

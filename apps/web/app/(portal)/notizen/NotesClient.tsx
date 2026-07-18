@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { errorMessage } from "@/lib/data";
+import { errorMessage, isClubModuleDisabled } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Note } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ModuleNotBookedCard } from "@/components/ui/ModuleNotBookedCard";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { notesDict } from "./i18n";
@@ -50,6 +51,19 @@ export function NotesClient() {
           <SkeletonCard lines={4} />
         </div>
       </div>
+    );
+  } else if (state.status === "error" && isClubModuleDisabled(state.error)) {
+    // 403 club_module_disabled: der Verein hat "Notizen" nicht gebucht (0068).
+    // Ehrlicher Zustand statt "konnten nicht geladen werden" — es ist nichts
+    // kaputt, es ist nichts gebucht.
+    body = (
+      <ModuleNotBookedCard
+        eyebrow={t("notBookedEyebrow")}
+        title={t("notBookedTitle")}
+        body={t("notBookedBody")}
+        hint={t("notBookedHint")}
+        badge={t("notBookedBadge")}
+      />
     );
   } else if (state.status === "error") {
     body = (

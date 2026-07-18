@@ -137,6 +137,9 @@ export function ModuleClient() {
   /** Die ehrliche Fussnote zur Wirkung — oder nichts, wenn der Schalter wirkt. */
   function hintFor(m: ClubModuleState): string | null {
     if (m.requiresPro && !m.proOk) return t("hintProMissing");
+    // Zubuchbar und noch nicht gebucht: der Grund ist keine fehlende Lizenz,
+    // sondern eine ausstehende Buchung — anderer Satz, anderer Ausweg (0068).
+    if (m.defaultEnabled === false && !m.enabled) return t("hintBookable");
     // Finanzen (0061): ehrlicher Hinweis, dass Abschalten NICHTS loescht — die
     // Aufbewahrung sichern die Kassenbuch-Trigger, der Schalter verbirgt nur.
     if (m.moduleKey === "finance") return t("hintFinanceRetention");
@@ -178,6 +181,10 @@ export function ModuleClient() {
                       {label(m)}
                     </b>
                     {m.requiresPro && <Badge tone="warn">{t("badgePro")}</Badge>}
+                    {/* Zubuchbar (0068): der Verein hat es NICHT von Haus aus. */}
+                    {m.defaultEnabled === false && (
+                      <Badge tone="neutral">{t("badgeBookable")}</Badge>
+                    )}
                     {/* Die ehrlichen Etiketten — nur wo der Schalter NICHT voll wirkt. */}
                     {m.enforcement === "menu_only" && (
                       <Badge tone="neutral">{t("badgeMenuOnly")}</Badge>

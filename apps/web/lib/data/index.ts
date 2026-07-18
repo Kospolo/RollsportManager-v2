@@ -195,6 +195,7 @@ export {
   ClubProRequiredError,
   NotImplementedError,
   errorMessage,
+  isClubModuleDisabled,
   isClubProRequired,
   isForbidden,
   isNotImplemented,

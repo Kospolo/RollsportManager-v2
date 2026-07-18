@@ -56,6 +56,30 @@ export function isClubProRequired(error: unknown): boolean {
   );
 }
 
+/**
+ * Modul-Gate: der Verein hat dieses Modul NICHT GEBUCHT bzw. abgeschaltet. Die
+ * API antwortet mit HTTP 403 (detail-Prefix 'club_module_disabled',
+ * services/api/src/lib/module-gate.ts).
+ *
+ * WARUM DAS NICHT DASSELBE IST WIE isClubProRequired: 402 heißt „nicht
+ * lizenziert — der Betreiber muss freischalten", 403 hier heißt „nicht gebucht —
+ * ein Vereins-Admin kann es unter Verwaltung › Module einschalten". Zwei
+ * Ursachen, zwei Auswege. Wer beides zusammenwirft, nennt dem Nutzer den
+ * falschen Weg. Bei Galerie/Dokumente können BEIDE zutreffen; die API prüft
+ * deshalb erst PRO, dann das Modul.
+ *
+ * WARUM NICHT NUR isForbidden: ein generisches 403 („keine Berechtigung") würde
+ * einem Vereins-Admin sagen, er dürfe nicht — dabei darf er, es ist nur nichts
+ * gebucht. Deshalb ein eigener, am Präfix erkannter Fall.
+ */
+export function isClubModuleDisabled(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.status === 403 &&
+    (error.problem?.detail ?? "").startsWith("club_module_disabled")
+  );
+}
+
 /** 403? — für „Keine Berechtigung"-Toasts der Schreibpfade. */
 export function isForbidden(error: unknown): boolean {
   return error instanceof ApiError && error.status === 403;

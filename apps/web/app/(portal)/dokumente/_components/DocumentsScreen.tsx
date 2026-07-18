@@ -11,6 +11,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import {
   dataSource,
   errorMessage,
+  isClubModuleDisabled,
   isClubProRequired,
   isNotImplemented,
   permissions,
@@ -23,6 +24,7 @@ import { DocumentsTable } from "./DocumentsTable";
 import { DocumentUploadDialog } from "./DocumentUploadDialog";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { ProUpgradeCard } from "./ProUpgradeCard";
+import { ModuleNotBookedCard } from "@/components/ui/ModuleNotBookedCard";
 
 /** Stabiler Leer-Fallback, solange die Facade lädt (kein useMemo-Flackern). */
 const NO_DOCS: DocumentItem[] = [];
@@ -104,6 +106,16 @@ export function DocumentsScreen() {
         {header}
         {isClubProRequired(core.error) ? (
           <ProUpgradeCard />
+        ) : isClubModuleDisabled(core.error) ? (
+          // 403 club_module_disabled: NICHT GEBUCHT, nicht "kaputt" und nicht
+          // "leer". Reihenfolge wie in der API: erst Lizenz (402), dann Buchung.
+          <ModuleNotBookedCard
+          eyebrow={t("notBookedEyebrow")}
+          title={t("notBookedTitle")}
+          body={t("notBookedBody")}
+          hint={t("notBookedHint")}
+          badge={t("notBookedBadge")}
+        />
         ) : isNotImplemented(core.error) ? (
           <EmptyState icon="sparkle" title={t("niTitle")} body={t("niBody")} />
         ) : (
