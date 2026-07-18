@@ -17,6 +17,11 @@ Fach-Agenten + Angreifer-Gegenprüfung vor dem „fertig". Genutzte Skills: data
 senior-backend/-frontend, api-design-reviewer, ui-ux-pro-max, frontend-design, gdpr-dsgvo-expert,
 code-reviewer, web-design-guidelines (via `find-skills` / `~/.claude/skills/`).
 
+**📘 Original nachschlagen statt neu erklären: [`blueprint/ORIGINAL-VOLLREFERENZ.md`](ORIGINAL-VOLLREFERENZ.md)** —
+vollständige v1-Referenz mit Fundstellen: Geschäftsmodell, alle Preise/Limits (inkl. **Schließfach-Miete
+pro Fach + abweichendem Preis pro Vermietung**), Funktions-Inventar je Plattform, Datenmodell, Chef-Regeln,
+priorisierte Lücken v1→v2.
+
 **🟢 SPARTEN — Mehrsparten-Vereine (z. B. REV Heilbronn = Eiskunstlauf + Rollkunstlauf + Hockey).**
 Marcel 2026-07-18: „Abteilungen" waren falsch — eine Abteilung ist eine **Sparte** (Sportbereich), nicht
 eine Mitglieder-Gruppe. Die v1-App konnte das schon; v2 hatte es verloren.
