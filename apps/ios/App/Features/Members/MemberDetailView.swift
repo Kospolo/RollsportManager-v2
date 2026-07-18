@@ -17,6 +17,7 @@ struct MemberDetailView: View {
                 VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                     headerCard(member)
                     masterDataCard(member)
+                    MemberSpartenCard(memberId: member.id, memberName: member.membersFullName)
                     familyCard(member)
                     if viewerIsBoard { roleCard(member) }
                 }

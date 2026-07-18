@@ -101,6 +101,16 @@ enum MehrCatalog {
             systemImage: "square.grid.2x2.fill", tone: .success, isNew: true,
             destination: AnyView(DepartmentsRootView())
         ),
+        // Sparten: für ALLE Mitglieder sichtbar (Lesen). Die Verwaltungs-
+        // Aktionen im Screen sind rollen-gegated (can_manage_sparten =
+        // owner/admin/treasurer + Plattform-Admin) — normale Mitglieder sehen
+        // die Sparten nur lesend.
+        MehrTile(
+            id: "sparten",
+            titleKey: "module.sparten.title", descKey: "module.sparten.desc",
+            systemImage: "square.stack.3d.up.fill", tone: .brand, isNew: true,
+            destination: AnyView(SpartenRootView())
+        ),
         MehrTile(
             id: "anniversaries",
             titleKey: "module.anniversaries.title", descKey: "module.anniversaries.desc",

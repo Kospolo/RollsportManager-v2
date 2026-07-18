@@ -23,7 +23,7 @@ struct MainTabView: View {
         case news, chat, medals, trainingplan
         case exercises, family, hours, chart
         case wettkampf, belegung, ausruestung, checkin
-        case notes, events, departments, anniversaries
+        case notes, events, departments, anniversaries, sparten
         case lockers, waitlists, budget, profile
         case gallery, documents
         case kassenbuch, rechnungen, mahnungen
@@ -101,6 +101,7 @@ struct MainTabView: View {
                         case .notes: NotesRootView()
                         case .events: RegionalEventsRootView()
                         case .departments: DepartmentsRootView()
+                        case .sparten: SpartenRootView()
                         case .anniversaries: AnniversariesRootView()
                         case .lockers: LockersRootView()
                         case .waitlists: WaitlistsRootView()

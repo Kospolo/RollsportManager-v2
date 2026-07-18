@@ -7,6 +7,8 @@ import SwiftUI
 struct TeamCardView: View {
     let team: Team
     let roster: AdminTeamRoster
+    /// Zugeordnete Sparte (nil = keine / nicht sichtbar) — als Badge im Kopf.
+    var sparte: Sparte?
     let canManage: Bool
     let onRoster: () -> Void
     let onEdit: () -> Void
@@ -19,11 +21,34 @@ struct TeamCardView: View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
                 header
+                if let sparte { sparteRow(sparte) }
                 coachRow
                 countCaption
                 if canManage { actions }
             }
         }
+    }
+
+    // MARK: - Sparte-Zeile
+
+    private func sparteRow(_ sparte: Sparte) -> some View {
+        let accent = SparteColorCatalog.color(for: sparte.farbe)
+        return HStack(spacing: Theme.Spacing.s2) {
+            Image(systemName: SparteIconCatalog.symbol(for: sparte.icon))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(accent)
+                .frame(width: 24, height: 24)
+                .background(accent.opacity(0.16))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.s, style: .continuous))
+                .accessibilityHidden(true)
+            Text(verbatim: sparte.name)
+                .font(Theme.Fonts.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.inkSoft)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text("teams.card.sparte.a11y \(sparte.name)"))
     }
 
     // MARK: - Kopf (Icon-Kachel · Name · Altersklasse)

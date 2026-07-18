@@ -38,6 +38,10 @@ final class AdminTeamsViewModel: ObservableObject {
     @Published private(set) var state: State = .loading
     @Published private(set) var teams: [Team] = []
     @Published private(set) var members: [ClubMember] = []
+    /// Sparten des Vereins — nur für die Sparten-Zuordnung im Team-Formular
+    /// (Team → Sparte) und die Sparte-Zeile auf der Karte. Best-effort: ein
+    /// Fehler darf die Team-Liste nicht verhindern (jedes Mitglied darf lesen).
+    @Published private(set) var sparten: [Sparte] = []
     /// Fehler bei Pull-to-Refresh oder beim Löschen (Alert statt Fehler-Screen,
     /// solange schon Daten stehen).
     @Published var alertMessage: String?
@@ -53,6 +57,14 @@ final class AdminTeamsViewModel: ObservableObject {
     /// verwalten; sonst blenden wir die Aktionen aus (Server verweigert 403).
     var canManage: Bool {
         permissions(clubRole).isClubAdmin
+    }
+
+    /// can_manage_sparten = owner/admin/treasurer (+ Plattform-Admin). Steuert
+    /// die Sichtbarkeit der Sparten-Zuordnung im Team-Formular. Ein Moderator
+    /// (is_club_admin, aber NICHT can_manage_sparten) darf Teams verwalten, aber
+    /// KEINER Sparte zuordnen — die Auswahl bleibt für ihn ausgeblendet.
+    var canManageSparten: Bool {
+        permissions(clubRole).canManageSparten
     }
 
     // MARK: - Laden
@@ -81,12 +93,16 @@ final class AdminTeamsViewModel: ObservableObject {
             // Mitglieder sind Beiwerk (Namen/Kader) — ein RLS-403 darf die
             // Team-Liste nicht verhindern.
             async let membersCall = api.members(clubId: clubId)
+            // Sparten ebenfalls Beiwerk (Team → Sparte-Zuordnung/Anzeige).
+            async let spartenCall = api.listSparten(clubId: clubId)
 
             let teams = try await teamsCall
             let members = (try? await membersCall) ?? []
+            let sparten = (try? await spartenCall) ?? []
 
             self.teams = Self.sortTeams(teams)
             self.members = Self.sortMembers(members)
+            self.sparten = SpartenViewModel.sort(sparten)
             state = .loaded
         } catch {
             let message = Self.friendlyMessage(error)
@@ -160,6 +176,12 @@ final class AdminTeamsViewModel: ObservableObject {
         for coach in current.coaches { roles[coach.id] = .coach }
         for skater in current.skaters { roles[skater.id] = .skater }
         return roles
+    }
+
+    /// Zugeordnete Sparte eines Teams (nil = keine / nicht sichtbar).
+    func sparte(of team: Team) -> Sparte? {
+        guard let sparteId = team.sparteId else { return nil }
+        return sparten.first { $0.id == sparteId }
     }
 
     // MARK: - Helfer

@@ -14,10 +14,11 @@ struct TeamFormSheet: View {
         mode: TeamFormMode,
         api: APIClient,
         clubId: String,
+        sparten: [Sparte] = [],
         onSaved: @escaping (Team) -> Void
     ) {
         _model = StateObject(wrappedValue: TeamFormViewModel(
-            mode: mode, api: api, clubId: clubId, onSaved: onSaved
+            mode: mode, api: api, clubId: clubId, sparten: sparten, onSaved: onSaved
         ))
     }
 
@@ -30,6 +31,7 @@ struct TeamFormSheet: View {
                             RSMSectionHeader(eyebrow: model.eyebrowKey, title: model.titleKey)
                             nameField
                             ageField
+                            if !model.sparten.isEmpty { sparteField }
                         }
                     }
                     submitButton
@@ -99,6 +101,63 @@ struct TeamFormSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// Sparten-Zuordnung (Einfachauswahl inkl. „Keine Sparte"). Nur sichtbar,
+    /// wenn Sparten übergeben wurden — der Aufrufer übergibt sie nur bei
+    /// can_manage_sparten, sonst bleibt die Auswahl bewusst ausgeblendet.
+    private var sparteField: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+            Text("teams.form.sparte.label")
+                .font(Theme.Fonts.bodyStrong)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+            Menu {
+                Button {
+                    model.selectedSparteId = nil
+                } label: {
+                    if model.selectedSparteId == nil {
+                        Label("teams.form.sparte.none", systemImage: "checkmark")
+                    } else {
+                        Text("teams.form.sparte.none")
+                    }
+                }
+                ForEach(model.sparten, id: \.id) { sparte in
+                    Button {
+                        model.selectedSparteId = sparte.id
+                    } label: {
+                        if model.selectedSparteId == sparte.id {
+                            Label(sparte.name, systemImage: "checkmark")
+                        } else {
+                            Text(verbatim: sparte.name)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: Theme.Spacing.s2) {
+                    if let selected = model.selectedSparte {
+                        Image(systemName: SparteIconCatalog.symbol(for: selected.icon))
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(SparteColorCatalog.color(for: selected.farbe))
+                        Text(verbatim: selected.name)
+                            .foregroundStyle(Theme.Colors.inkPrimary)
+                    } else {
+                        Text("teams.form.sparte.none")
+                            .foregroundStyle(Theme.Colors.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.Colors.inkFaint)
+                }
+                .font(Theme.Fonts.body)
+                .modifier(TeamFieldChrome())
+            }
+            .accessibilityLabel(Text("teams.form.sparte.label"))
+            Text("teams.form.sparte.hint")
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkFaint)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var submitButton: some View {
         RSMPrimaryButton(title: model.submitKey, isLoading: model.isSaving) {
             _Concurrency.Task {
@@ -133,28 +192,47 @@ final class TeamFormViewModel: ObservableObject {
 
     @Published var name: String
     @Published var ageGroup: String
+    /// Ausgewählte Sparte (nil = „Keine Sparte"). Nur relevant, wenn `sparten`
+    /// nicht leer ist (Aufrufer übergibt sie nur bei can_manage_sparten).
+    @Published var selectedSparteId: String?
     @Published var nameError: LocalizedStringKey?
     @Published private(set) var isSaving = false
     @Published var submitError: String?
+
+    /// Verfügbare Sparten für die Zuordnung (leer ⇒ Auswahl ausgeblendet).
+    let sparten: [Sparte]
 
     private let mode: TeamFormMode
     private let api: APIClient
     private let clubId: String
     private let onSaved: (Team) -> Void
+    /// Ursprüngliche Sparte-Zuordnung — zum Erkennen einer Änderung beim Speichern.
+    private let originalSparteId: String?
 
-    init(mode: TeamFormMode, api: APIClient, clubId: String, onSaved: @escaping (Team) -> Void) {
+    init(mode: TeamFormMode, api: APIClient, clubId: String, sparten: [Sparte] = [], onSaved: @escaping (Team) -> Void) {
         self.mode = mode
         self.api = api
         self.clubId = clubId
+        self.sparten = sparten
         self.onSaved = onSaved
         switch mode {
         case .create:
             self.name = ""
             self.ageGroup = ""
+            self.selectedSparteId = nil
+            self.originalSparteId = nil
         case .edit(let team):
             self.name = team.name
             self.ageGroup = team.ageGroup ?? ""
+            self.selectedSparteId = team.sparteId
+            self.originalSparteId = team.sparteId
         }
+    }
+
+    /// Aufgelöste Auswahl (für das Menu-Label).
+    var selectedSparte: Sparte? {
+        guard let id = selectedSparteId else { return nil }
+        return sparten.first { $0.id == id }
     }
 
     var isEdit: Bool { if case .edit = mode { return true } else { return false } }
@@ -177,7 +255,7 @@ final class TeamFormViewModel: ObservableObject {
         isSaving = true
         defer { isSaving = false }
         do {
-            let result: Team
+            var result: Team
             switch mode {
             case .create:
                 result = try await api.createTeam(clubId: clubId, TeamCreate(name: trimmedName, ageGroup: age))
@@ -186,6 +264,16 @@ final class TeamFormViewModel: ObservableObject {
                     clubId: clubId,
                     teamId: team.id,
                     TeamUpdate(name: trimmedName, ageGroup: age)
+                )
+            }
+            // Team → Sparte als separater Call (eigener Endpoint, eigenes Recht
+            // can_manage_sparten). Nur anfassen, wenn sich die Zuordnung geändert
+            // hat (bei „create" ist die Ausgangslage „keine Sparte").
+            if selectedSparteId != originalSparteId {
+                result = try await api.setTeamSparte(
+                    clubId: clubId,
+                    teamId: result.id,
+                    TeamSparteSet(sparteId: selectedSparteId)
                 )
             }
             onSaved(result)

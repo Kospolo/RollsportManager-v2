@@ -84,6 +84,7 @@ struct AdminTeamsView: View {
                 mode: .create,
                 api: session.api,
                 clubId: session.clubId,
+                sparten: model.canManageSparten ? model.sparten : [],
                 onSaved: { model.upsert($0) }
             )
         case .edit(let team):
@@ -91,6 +92,7 @@ struct AdminTeamsView: View {
                 mode: .edit(team),
                 api: session.api,
                 clubId: session.clubId,
+                sparten: model.canManageSparten ? model.sparten : [],
                 onSaved: { model.upsert($0) }
             )
         case .roster(let team):
@@ -162,6 +164,7 @@ struct AdminTeamsView: View {
                         TeamCardView(
                             team: team,
                             roster: model.roster(of: team),
+                            sparte: model.sparte(of: team),
                             canManage: model.canManage,
                             onRoster: { route = .roster(team) },
                             onEdit: { route = .edit(team) },

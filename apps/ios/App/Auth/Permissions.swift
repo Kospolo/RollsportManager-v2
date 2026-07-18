@@ -26,6 +26,12 @@ import Foundation
 private let clubAdminRoles: Set<ClubRole> = [.owner, .admin, .moderator]
 /// Rollen mit Mitglieder-/Finanz-Verwaltung.
 private let manageRoles: Set<ClubRole> = [.owner, .admin, .moderator, .treasurer]
+/// Rollen mit Sparten-Verwaltung — can_manage_sparten. BEWUSST OHNE moderator
+/// (anders als `manageRoles`): nur owner/admin/treasurer (+ Plattform-Admin,
+/// separat) dürfen Sparten anlegen/ändern/(de)aktivieren/löschen/zuordnen.
+/// Spiegelt Migration 0062–0064 (Web-Referenz: sparten/i18n.ts). Lesen darf
+/// jedes Mitglied.
+private let manageSpartenRoles: Set<ClubRole> = [.owner, .admin, .treasurer]
 /// Trainerstab (guest_coach ist team-/zeitgebunden ⇒ hier nicht enthalten).
 private let trainerRoles: Set<ClubRole> = [.owner, .admin, .moderator, .coach]
 /// Ziele, die ein Moderator NICHT umstufen darf.
@@ -45,6 +51,14 @@ struct Permissions {
     let canManageFinance: Bool
     /// Plattform-Super-Admin (Token-Claim, keine Club-Rolle).
     let isPlatformAdmin: Bool
+
+    /// can_manage_sparten = owner/admin/treasurer ODER Plattform-Admin —
+    /// NICHT moderator/coach/member. Steuert die Sichtbarkeit ALLER Sparten-
+    /// Verwaltungsaktionen (anlegen/ändern/(de)aktivieren/löschen/zuordnen);
+    /// das Lesen der Sparten bleibt für alle Mitglieder offen.
+    var canManageSparten: Bool {
+        isPlatformAdmin || role.map { manageSpartenRoles.contains($0) } ?? false
+    }
 
     /// owner/admin ⇒ jede Rolle darf umgesetzt werden (letzter Owner bleibt
     /// serverseitig via 409 geschützt). moderator ⇒ nur ranktiefere Ziele.
