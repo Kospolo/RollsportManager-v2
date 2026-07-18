@@ -1365,18 +1365,33 @@ values
    'a0000000-0000-4000-8000-000000000001');
 
 -- ----------------------------------------------------------------------------
--- Küren-Bilder (migration 0057) — 2 Bild-Assets (Metadaten, Blueprint §4) +
--- Verknüpfung an zwei Küren. Die übrigen Küren bleiben ohne Bild (Normalfall).
+-- Küren-Bilder (migration 0057) — 2 Bild-Assets MIT ECHTEN BYTES (Blueprint §4)
+-- + Verknüpfung an zwei Küren. Die übrigen Küren bleiben ohne Bild (Normalfall).
+--
+-- WICHTIG (derselbe Fehler wie bei der Kür-Musik, siehe oben bei media_assets):
+-- storage_path muss ein FLACHER Key sein.
+--   * GET /media/:key ist ein EIN-Segment-Pfad — 'clubs/a/b.png' erreicht die
+--     Route nie ("No route for GET /media/clubs/...").
+--   * assertValidKey() (modules/media/storage.ts) verbietet '/' als
+--     Traversal-Schutz — ein verschachtelter Key wird auch dort abgewiesen.
+--   * generateStorageKey() erzeugt beim Upload ebenfalls flache Keys.
+-- Der frühere Seed nutzte verschachtelte Pfade UND es lagen gar keine Dateien
+-- dazu; das Kür-Bild war damit serverseitig nicht abrufbar.
+--
+-- Die PNGs liegen real in supabase/seed/media/ (readBytes() fällt dorthin
+-- zurück). Es sind SYNTHETISCHE Farbverläufe (scripts/dev/gen-seed-images.sh),
+-- ausdrücklich KEINE Fotos — hier turnen Kinder, ein Seed-Bild zeigt niemals
+-- eine echte Person. size_bytes und sha256 entsprechen exakt den Dateien.
 -- ----------------------------------------------------------------------------
 insert into app.media_assets (id, club_id, bucket, storage_path, mime_type, size_bytes, sha256, created_by)
 values
   ('ab000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
-   'routine-image', 'clubs/rsv-neckarsulm/routines/feuervogel-cover.png', 'image/png',
-   84210, encode(sha256('rsm2-demo-feuervogel-cover'::bytea), 'hex'),
+   'routine-image', 'seed-routine-feuervogel-cover.png', 'image/png',
+   12608, 'c89160a650dd56ed23c48079e29e569ca21f4837a9ccf9ec583e9fd2cf8f66f4',
    '90000000-0000-4000-8000-000000000001'),
   ('ab000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
-   'routine-image', 'clubs/rsv-neckarsulm/routines/sommerregen-cover.png', 'image/png',
-   77120, encode(sha256('rsm2-demo-sommerregen-cover'::bytea), 'hex'),
+   'routine-image', 'seed-routine-sommerregen-cover.png', 'image/png',
+   32895, '70060501c0b8eb1f82d22572d1cf758661957cbac09cd94fe6f47bbec758faa9',
    '90000000-0000-4000-8000-000000000001');
 
 update app.routines set image_asset_id = 'ab000000-0000-4000-8000-000000000001'

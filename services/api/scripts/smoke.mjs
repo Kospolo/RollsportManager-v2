@@ -1057,6 +1057,48 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   assertEq('DELETE /routines/{id}/audio -> 200', del.status, 200);
   assertEq('...audio_asset_id ist wieder null', del.json?.audio_asset_id, null);
   assertEq('geloeste Musik ist nicht mehr abrufbar -> 404', (await serve(t.coach, audioKey)).status, 404);
+
+  // --- Die GESEEDETEN Kuer-Medien (Musik UND Bild) --------------------------
+  // ⚠️ KINDERDATEN. Diese Zeilen sind der Regressionsschutz fuer zwei Fehler,
+  // die zweimal denselben Weg genommen sind (erst Musik, dann Bild):
+  //
+  //  1. PFAD: der Seed legte storage_path verschachtelt ab
+  //     ('clubs/rsv-neckarsulm/routines/feuervogel-cover.png'). GET /media/:key
+  //     ist ein EIN-Segment-Pfad, und assertValidKey() verbietet '/' als
+  //     Traversal-Schutz — der Key war damit tote Ware, ausgeliefert wurde nie
+  //     ein Byte. Der Schutz ist richtig, der SEED war falsch: flache Keys.
+  //  2. RECHTE: der media_assets-Zweig der Route haengt an app.routines
+  //     (can_read_routine), NICHT an media_assets_select (is_club_member) —
+  //     letzteres ist breiter und wuerde jedem Vereinsmitglied die Medien
+  //     JEDER Kuer geben, auch die fremder Kinder.
+  //
+  // Solange kein Byte floss, war Punkt 2 nicht pruefbar. Jetzt ist er es.
+  const SEED_COVERS = [
+    ['seed-routine-feuervogel-cover.png', 'image/png', 12608],
+    ['seed-routine-sommerregen-cover.png', 'image/png', 32895],
+  ];
+  for (const [key, type, size] of SEED_COVERS) {
+    const res = await fetch(`${BASE}/media/${key}`, {
+      headers: { authorization: `Bearer ${t.coach}` },
+    });
+    const bytes = await res.arrayBuffer();
+    assertEq(`Seed-Kuerbild ${key}: Trainerin -> 200`, res.status, 200);
+    assertEq(`...content-type`, res.headers.get('content-type'), type);
+    assertEq(`...echte Bytes (keine Platzhalterdatei)`, bytes.byteLength, size);
+    // Katrin Gruenewald ist einfaches Mitglied: sie sieht in /routines NUR die
+    // Kuer ihrer Tochter. Die Bilder der anderen Kinder muessen 404 sein.
+    assertEq(`Seed-Kuerbild ${key}: fremdes Mitglied -> 404`,
+      (await serve(t.parent, key)).status, 404);
+    assertEq(`Seed-Kuerbild ${key}: ohne Token -> 401`,
+      (await fetch(`${BASE}/media/${key}`)).status, 401);
+    assertEq(`Seed-Kuerbild ${key}: fremder Verein -> 404`,
+      (await serve(t.foreign, key)).status, 404);
+  }
+  // GEGENPROBE — sonst bewiese der 404 oben nur eine pauschale Sperre.
+  // Dieselbe Katrin ist Laeuferin der oben angelegten Kuer, darf sie also
+  // LESEN (read_own) — und bekommt deren Bild dementsprechend ausgeliefert.
+  assertEq('Mitglied bekommt das Bild der Kuer, an der es SELBST beteiligt ist -> 200',
+    (await serve(t.parent, imgKey)).status, 200);
 }
 
 // ============================================================================
