@@ -10,7 +10,9 @@ import { closePool } from './db.js';
 const config = getConfig();
 const app = createApp();
 
-const server = serve({ fetch: app.fetch, port: config.port, hostname: '127.0.0.1' }, (info) => {
+// Bind-Host: Default loopback (sicher). API_HOST=0.0.0.0 macht die Dev-API im LAN
+// erreichbar (z.B. fuer den iPhone-Geraetetest gegen die Mac-IP).
+const server = serve({ fetch: app.fetch, port: config.port, hostname: process.env.API_HOST ?? '127.0.0.1' }, (info) => {
   console.info(`[api] rsm2-api listening on http://127.0.0.1:${info.port} (auth mode: ${config.auth.mode})`);
 });
 
