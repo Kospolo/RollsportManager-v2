@@ -42,8 +42,12 @@ eine Mitglieder-Gruppe. Die v1-App konnte das schon; v2 hatte es verloren.
 - **Verein-Selbstanlage: ✅ gebaut** (POST /clubs, clubs.ts; Name+Ort+30-Tage-Test+CSPRNG-Code; läuft im Dev).
 - **Mitglied per Vereinscode: ✅ fertig** (POST /clubs/join → pending → Vorstand /approve; Drossel, Rotation,
   Ablehn-Gedächtnis, Enumerationsschutz, Art. 8; registration.ts).
-- **Mitglied per Einladungs-E-Mail: 🔨 im Bau** (`w2bu0mr3j`) — war nur Stub; Token-Tabelle + echte Invite-/Annahme-
-  Route + Empfänger-Drossel + Anschluss an vorhandenen Mailer.
+- **Mitglied per Einladungs-E-Mail: ✅ fertig** (`228e8f7`, Angreifer BESTANDEN) — Migr. 0065 app.invitations
+  (nur token_hash SHA-256, 14-Tage-Ablauf, ein offener pending je club+email); POST .../members/invite
+  (enumerationssicher 202, Empfänger-Drossel), GET /public/invitations/{token}, POST /invitations/{token}/accept
+  (legt AKTIVE Mitgliedschaft an — Token IST die Freigabe; Kenntnisnahme terms+privacy). Annahme-Seite
+  apps/web/app/(auth)/einladung/[token]. Kinder weiter über Familienpfad. 1573 SQL-Tests, Contract grün.
+  ⚠️ Verschickt real erst, wenn SMTP im Admin hinterlegt (Dev loggt den Link); APP_BASE_URL in Prod setzen.
 - **Echtes Login (GoTrue): auf Branch b44883d, NICHT gemergt** (Timing-Enumerations-Mangel). Für Prod-Scharfschaltung.
 - Blocker zum Prod-Scharfschalten: (1) GoTrue mergen+fixen (kann ich), (2) **SMTP-Zugang im Betreiber-Admin** (Marcel
   trägt Creds/Absender ein), (3) **Rechtstexte AGB/Datenschutz** (Inhalt von Marcel/Anwalt → append-only legal_documents).
