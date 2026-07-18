@@ -59,9 +59,41 @@ struct RoutinePlayerCard: View {
                     )
                 }
             }
-            Text("routines.player.demoHint")
+            statusLine
+        }
+    }
+
+    /// EHRLICHE Statuszeile statt des früheren „Demo ohne Audiodatei“:
+    /// zeigt Laden / Fehler / Titel+Interpret der wirklich geladenen Datei.
+    @ViewBuilder private var statusLine: some View {
+        switch playback.loadState {
+        case .loading:
+            HStack(spacing: Theme.Spacing.s2) {
+                ProgressView().controlSize(.mini)
+                Text("routines.player.loading")
+            }
+            .font(Theme.Fonts.caption)
+            .foregroundStyle(Theme.Colors.inkSoft)
+        case .failed(let message):
+            HStack(spacing: Theme.Spacing.s2) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                Text(verbatim: message)
+            }
+            .font(Theme.Fonts.caption)
+            .foregroundStyle(Theme.Colors.danger)
+        case .idle:
+            Text("routines.player.noAudio")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
+        case .ready:
+            if let title = routine.musicTitle, !title.isEmpty {
+                Text(verbatim: [title, routine.musicArtist]
+                    .compactMap { $0 }
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · "))
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+            }
         }
     }
 
@@ -124,7 +156,11 @@ struct RoutinePlayerCard: View {
                 .foregroundStyle(Theme.Colors.brandContrast)
                 .offset(x: playback.isActive ? 0 : 2)
                 .frame(width: Theme.Size.playButton, height: Theme.Size.playButton)
-                .background(Circle().fill(Theme.Colors.brand))
+                // Ohne spielbare Datei bleibt die Beere sichtbar, aber matt —
+                // sie verspricht nichts, was sie nicht halten kann.
+                .background(Circle().fill(playback.canPlay
+                    ? Theme.Colors.brand
+                    : Theme.Colors.brand.opacity(0.35)))
                 .shadow(
                     color: Theme.Shadows.pop.color,
                     radius: Theme.Shadows.pop.radius,
@@ -133,6 +169,7 @@ struct RoutinePlayerCard: View {
                 )
         }
         .buttonStyle(RSMPressableButtonStyle())
+        .disabled(!playback.canPlay)
         .accessibilityLabel(
             playback.isActive
                 ? Text("routines.player.a11y.pause")
@@ -154,6 +191,7 @@ struct RoutinePlayerCard: View {
                 .overlay(Circle().stroke(Theme.Colors.lineStrong, lineWidth: 1))
         }
         .buttonStyle(RSMPressableButtonStyle())
+        .disabled(!playback.canPlay)
         .accessibilityLabel(Text(a11y))
     }
 

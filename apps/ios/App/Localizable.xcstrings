@@ -22917,18 +22917,50 @@
         }
       }
     },
-    "routines.player.demoHint": {
+    "routines.player.error.notPlayable": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Demo ohne Audiodatei — Wiedergabe wird simuliert"
+            "value": "Die Musikdatei lässt sich nicht abspielen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Demo without audio file — playback is simulated"
+            "value": "This music file cannot be played."
+          }
+        }
+      }
+    },
+    "routines.player.error.offline": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik nicht erreichbar — keine Verbindung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music unavailable — no connection."
+          }
+        }
+      }
+    },
+    "routines.player.error.unavailable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Musik konnte nicht geladen werden."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music could not be loaded."
           }
         }
       }
@@ -22945,6 +22977,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Training player"
+          }
+        }
+      }
+    },
+    "routines.player.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik wird geladen …"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading music…"
           }
         }
       }
@@ -23009,6 +23057,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Loop %1$@–%2$@"
+          }
+        }
+      }
+    },
+    "routines.player.noAudio": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Für diese Kür ist keine Musik hinterlegt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No music attached to this routine."
           }
         }
       }

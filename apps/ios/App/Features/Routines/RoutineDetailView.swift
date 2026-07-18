@@ -19,8 +19,12 @@ struct RoutineDetailView: View {
 
     private var routine: Routine { item.routine }
 
-    private var hasPlayableMusic: Bool {
-        playback.durationMs > 0 && !(routine.waveformPeaks ?? []).isEmpty
+    /// Ist überhaupt Musik HINTERLEGT? (Nicht: ist sie schon geladen.)
+    /// Ohne `audio_url` gibt es keine Datei — dann bleibt der leere Zustand.
+    /// Die Waveform ist nur Deko und darf den Player nicht mehr blockieren:
+    /// eine hochgeladene Kür ohne vorberechnete Peaks ist trotzdem spielbar.
+    private var hasMusicAttached: Bool {
+        RoutinePlaybackEngine.mediaKey(from: routine.audioUrl) != nil
     }
 
     var body: some View {
@@ -30,7 +34,7 @@ struct RoutineDetailView: View {
                 header
                 metaLines
 
-                if hasPlayableMusic {
+                if hasMusicAttached {
                     RoutinePlayerCard(routine: routine, playback: playback)
                     addMarkerButton
                 } else {
@@ -60,12 +64,22 @@ struct RoutineDetailView: View {
             }
         }
         .task {
+            // Kür-Musik wirklich holen (GET /media/{key} mit Bearer) und in den
+            // AVAudioPlayer geben. Schlägt das fehl, zeigt die Player-Karte den
+            // Fehler — es gibt keinen vorgetäuschten Fortschritt mehr.
+            playback.load(audioUrl: routine.audioUrl, api: session.api)
             await viewModel.loadIfNeeded(
                 api: session.api,
                 routineId: routine.id,
                 clubId: session.clubId
             )
 #if DEBUG
+            // NUR DEBUG/Beweis: `-devAudioProbe YES` belegt, dass WIRKLICH Ton
+            // läuft — echte Decoder-Dauer, isPlaying und eine Position, die mit
+            // der Wanduhr mitläuft. Kein Screenshot kann das zeigen.
+            if UserDefaults.standard.bool(forKey: "devAudioProbe") {
+                await playback.devProbe(title: routine.title)
+            }
             // NUR DEBUG/Smoke-Test: `-devAutoAddMarker YES` setzt eine
             // Zeitmarke über denselben echten Pfad wie der Button
             // (POST /routines/{id}/markers) an einer festen Demo-Position.
