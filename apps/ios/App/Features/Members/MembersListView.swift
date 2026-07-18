@@ -1,11 +1,20 @@
 import SwiftUI
 
-/// Root-View des Features „Mitglieder“ — durchsuchbare Vereinsliste mit
-/// Rollen-Filter-Chips. Von der Integration in den NavigationStack des
-/// Tabs „Mitglieder“ hängen (ersetzt `MembersPlaceholderView`).
+/// Root-View des Features „Mitglieder" — das VERZEICHNIS des Vereins.
+///
+/// Web-Referenz: `apps/web/app/(portal)/mitglieder` (Karten statt Tabelle,
+/// Rollen- + Sparten-Chips, Gruppierung nach Team). MOBIL GEDACHT, nicht 1:1
+/// kopiert: eine Karte pro Reihe statt eines Rasters, die Gruppierung wandert
+/// ins Toolbar-Menue (eine dritte Chip-Reihe kostet vertikalen Platz, den es
+/// auf dem Telefon nicht gibt), und die Karte traegt ihre Angaben untereinander
+/// statt nebeneinander.
 struct MembersListView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = MembersViewModel()
+
+    /// Haptik zur Chip-Auswahl. Die App hatte bisher NULL Haptik — ein Filter,
+    /// der die Liste umbaut, darf sich im Daumen bemerkbar machen.
+    @State private var selectionTick = 0
 
     var body: some View {
         Group {
@@ -20,21 +29,23 @@ struct MembersListView: View {
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("tab.members"))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { groupMenu }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
     }
 
     // MARK: - Zustände
 
+    /// Skelett-KARTEN statt Vollbild-Spinner: der Bildschirm zeigt sofort die
+    /// Form des Ergebnisses; beim Eintreffen springt das Layout nicht.
     private var loadingView: some View {
-        VStack(spacing: Theme.Spacing.s4) {
-            ProgressView()
-                .tint(Theme.Colors.brand)
-            Text("members.loading")
-                .font(Theme.Fonts.body)
-                .foregroundStyle(Theme.Colors.inkSoft)
+        ScrollView {
+            VStack(spacing: Theme.Spacing.s3) {
+                ForEach(0..<6, id: \.self) { _ in MembersSkeletonCard() }
+            }
+            .padding(Theme.Spacing.s4)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityLabel(Text("members.loading"))
     }
 
     /// Fehlerkarte mit Klartext (APIError.errorDescription) + Retry.
@@ -76,23 +87,28 @@ struct MembersListView: View {
 
     private var memberList: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
-                roleFilterChips
-                if viewModel.filteredMembers.isEmpty {
-                    RSMCard { emptyState }
+            // s3 zwischen den Karten: die Karte selbst traegt schon Rand und
+            // Schatten — mit s4 stand mehr Papier als Verein auf dem Schirm.
+            LazyVStack(alignment: .leading, spacing: Theme.Spacing.s3, pinnedViews: []) {
+                filterBar
+                if viewModel.members.isEmpty {
+                    emptyClubState
+                } else if viewModel.filteredMembers.isEmpty {
+                    emptyFilterState
                 } else {
-                    RSMCard {
-                        VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
-                            RSMSectionHeader(
-                                eyebrow: "members.list.eyebrow",
-                                title: "members.list.count \(viewModel.filteredMembers.count)"
-                            )
-                            memberRows
+                    ForEach(viewModel.memberGroups) { group in
+                        if let title = groupTitle(group) {
+                            groupHeader(title, count: group.members.count)
+                        }
+                        ForEach(group.members, id: \.id) { member in
+                            memberLink(member)
                         }
                     }
+                    listFooter
                 }
             }
-            .padding(Theme.Spacing.s5)
+            .padding(.horizontal, Theme.Spacing.s4)
+            .padding(.vertical, Theme.Spacing.s3)
         }
         .searchable(
             text: $viewModel.searchText,
@@ -102,63 +118,187 @@ struct MembersListView: View {
         .refreshable {
             await viewModel.load(api: session.api, clubId: session.clubId)
         }
+        .sensoryFeedback(.selection, trigger: selectionTick)
     }
 
-    private var memberRows: some View {
-        VStack(spacing: 0) {
-            ForEach(viewModel.filteredMembers, id: \.id) { member in
-                NavigationLink {
-                    MemberDetailView(memberId: member.id, viewModel: viewModel)
-                } label: {
-                    // Ohne Beitragsampel — siehe MemberRowView (Würde-Befund).
-                    MemberRowView(
-                        member: member,
-                        teamNames: viewModel.teamNames(for: member)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("members.row.a11y \(member.membersFullName)"))
-                if member.id != viewModel.filteredMembers.last?.id {
-                    Divider().overlay(Theme.Colors.line)
-                }
-            }
+    private func memberLink(_ member: ClubMember) -> some View {
+        NavigationLink {
+            MemberDetailView(memberId: member.id, viewModel: viewModel)
+        } label: {
+            MemberCardView(
+                member: member,
+                teamNames: viewModel.teamNameList(for: member),
+                isSelf: member.id == session.session?.profile.memberId
+            )
+        }
+        // RSMPressableButtonStyle: leichtes Skalieren beim Druck (Token
+        // `motion.press`), respektiert Reduce Motion. Vorher gab die Zeile
+        // ueberhaupt kein Feedback.
+        .buttonStyle(RSMPressableButtonStyle())
+        .accessibilityLabel(Text("members.row.a11y \(member.membersFullName)"))
+    }
+
+    /// Trefferzahl am Ende — beantwortet „habe ich alle?" ohne Kopfzeile.
+    private var listFooter: some View {
+        Text("members.list.count \(viewModel.filteredMembers.count)")
+            .font(Theme.Fonts.caption)
+            .monospacedDigit()
+            .foregroundStyle(Theme.Colors.inkFaint)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, Theme.Spacing.s2)
+            .accessibilityAddTraits(.isSummaryElement)
+    }
+
+    private func groupTitle(_ group: MembersViewModel.MemberGroup) -> String? {
+        if group.isTeamless { return String(localized: "members.group.teamless") }
+        return group.title
+    }
+
+    private func groupHeader(_ title: String, count: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
+            Text(verbatim: title)
+                .font(Theme.Fonts.h3)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+            Text(verbatim: "\(count)")
+                .font(Theme.Fonts.caption)
+                .monospacedDigit()
+                .foregroundStyle(Theme.Colors.inkFaint)
+        }
+        .padding(.top, Theme.Spacing.s2)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    // MARK: - Leer-Zustände
+    //
+    // ZWEI verschiedene Saetze, weil es zwei verschiedene Lagen sind: „dieser
+    // Verein hat noch niemanden" ist eine Tatsache; „deine Filter treffen
+    // niemanden" ist ein Bedienzustand mit Ausweg.
+
+    private var emptyClubState: some View {
+        RSMCard {
+            RSMEmptyState(
+                systemImage: "person.2",
+                title: "members.emptyClub.title",
+                message: "members.emptyClub.message"
+            )
         }
     }
 
-    /// Kein Treffer für Suche/Filter — nie ein leerer Screen ohne Weg.
-    private var emptyState: some View {
-        RSMEmptyState(
-            systemImage: "magnifyingglass",
-            title: "members.empty.title",
-            message: "members.empty.message",
-            actionTitle: viewModel.hasActiveFilter ? "members.empty.reset" : nil,
-            action: viewModel.hasActiveFilter ? { viewModel.resetFilters() } : nil
-        )
+    private var emptyFilterState: some View {
+        RSMCard {
+            RSMEmptyState(
+                systemImage: "line.3.horizontal.decrease.circle",
+                title: "members.empty.title",
+                message: "members.empty.message",
+                actionTitle: viewModel.hasActiveFilter ? "members.empty.reset" : nil,
+                action: viewModel.hasActiveFilter ? { viewModel.resetFilters() } : nil
+            )
+        }
     }
 
-    // MARK: - Rollen-Filter
+    // MARK: - Filter
+
+    private var filterBar: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+            roleFilterChips
+            // Sparten-Reihe NUR, wenn der Verein Sparten hat. Sonst faellt sie
+            // ersatzlos weg — ein Filter ohne Auswahl ist verschenkte Hoehe.
+            if !viewModel.sparteFilterOptions.isEmpty {
+                sparteFilterChips
+            }
+        }
+    }
 
     private var roleFilterChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Theme.Spacing.s2) {
-                MembersFilterChip(
-                    title: "members.filter.all",
-                    isSelected: viewModel.roleFilter == nil
-                ) {
-                    viewModel.roleFilter = nil
-                }
-                ForEach(ClubRole.allCases, id: \.rawValue) { role in
-                    MembersFilterChip(
-                        title: MembersL10n.roleKey(role),
-                        isSelected: viewModel.roleFilter == role
+                ForEach(viewModel.roleFilterOptions, id: \.filter.id) { option in
+                    MembersCountChip(
+                        title: option.filter.labelKey,
+                        count: option.count,
+                        isSelected: viewModel.roleFilter == option.filter
                     ) {
-                        // Zweiter Tap auf den aktiven Chip hebt den Filter auf.
-                        viewModel.roleFilter = viewModel.roleFilter == role ? nil : role
+                        viewModel.roleFilter =
+                            viewModel.roleFilter == option.filter ? .all : option.filter
+                        selectionTick += 1
                     }
                 }
             }
-            .padding(.horizontal, Theme.Spacing.s5)
+            .padding(.horizontal, Theme.Spacing.s4)
         }
-        .padding(.horizontal, -Theme.Spacing.s5) // Chips laufen bis an den Rand
+        .padding(.horizontal, -Theme.Spacing.s4) // Chips laufen bis an den Rand
+        .accessibilityLabel(Text("members.filter.role.a11y"))
+    }
+
+    private var sparteFilterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Theme.Spacing.s2) {
+                ForEach(viewModel.sparteFilterOptions, id: \.filter) { option in
+                    sparteChip(option)
+                }
+            }
+            .padding(.horizontal, Theme.Spacing.s4)
+        }
+        .padding(.horizontal, -Theme.Spacing.s4)
+        .accessibilityLabel(Text("members.filter.sparte.a11y"))
+    }
+
+    @ViewBuilder
+    private func sparteChip(
+        _ option: (filter: MembersViewModel.SparteFilter, name: String?, count: Int)
+    ) -> some View {
+        let isSelected = viewModel.sparteFilter == option.filter
+        let select = {
+            viewModel.sparteFilter = isSelected ? .all : option.filter
+            selectionTick += 1
+        }
+        switch option.filter {
+        case .all:
+            MembersCountChip(
+                title: "members.filter.sparte.all",
+                count: option.count,
+                isSelected: isSelected,
+                action: select
+            )
+        case .none:
+            MembersCountChip(
+                title: "members.filter.sparte.none",
+                count: option.count,
+                isSelected: isSelected,
+                action: select
+            )
+        case .sparte:
+            // Sparten-Namen kommen aus der API — bewusst kein Katalog-Key.
+            MembersCountChip(
+                title: LocalizedStringKey(option.name ?? ""),
+                count: option.count,
+                isSelected: isSelected,
+                action: select
+            )
+        }
+    }
+
+    // MARK: - Gruppierung (Toolbar-Menü)
+
+    private var groupMenu: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Menu {
+                Picker(selection: $viewModel.groupMode) {
+                    Text("members.group.none").tag(MembersViewModel.GroupMode.none)
+                    Text("members.group.team").tag(MembersViewModel.GroupMode.team)
+                } label: {
+                    Text("members.group.label")
+                }
+            } label: {
+                Image(systemName: viewModel.groupMode == .team
+                    ? "rectangle.3.group.fill"
+                    : "rectangle.3.group")
+            }
+            // Ohne Teams gibt es nichts zu gruppieren — der Schalter waere
+            // eine Luege ueber die Datenlage.
+            .disabled(viewModel.teams.isEmpty)
+            .accessibilityLabel(Text("members.group.label"))
+        }
     }
 }

@@ -9,7 +9,42 @@ struct DashboardView: View {
     @StateObject private var viewModel = DashboardViewModel()
 
     var body: some View {
+        VStack(spacing: 0) {
+            clubBar
+            scrollBody
+        }
+        .background(Theme.Colors.bgCanvas.ignoresSafeArea())
+        // Die System-Navigationsleiste ist hier ERSATZLOS weg: sie trug nur das
+        // Wort „Uebersicht" und kostete eine volle Leistenhoehe. Der Vereinskopf
+        // darueber ist die Leiste — und er sagt, WESSEN Verein das ist.
+        // Gilt nur fuer diese Wurzelansicht; jede geschobene Detailseite bringt
+        // ihre eigene Leiste samt Zurueck-Pfeil mit.
+        .toolbar(.hidden, for: .navigationBar)
+        .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
+    }
+
+    /// Schlanke Kopfzeile: links der VEREIN (Logo + Name), rechts das
+    /// Profil-Menue. Steht AUSSERHALB des ScrollView — sie scrollt nicht weg.
+    ///
+    /// Warum nicht als Toolbar-Item: `.principal` blieb im Simulator komplett
+    /// leer, `.topBarLeading` renderte eine leere Glas-Kapsel. Beides gemessen,
+    /// nicht vermutet. Eine eigene Zeile ist hier auch ehrlicher — wir
+    /// kontrollieren Hoehe und Abstand selbst, und genau darum ging es.
+    private var clubBar: some View {
+        HStack(spacing: Theme.Spacing.s3) {
+            RSMClubHeader(clubId: session.clubId)
+            Spacer(minLength: Theme.Spacing.s2)
+            profileMenuButton
+        }
+        .padding(.horizontal, Theme.Spacing.s4)
+        .padding(.vertical, Theme.Spacing.s2)
+    }
+
+    private var scrollBody: some View {
         ScrollView {
+            // s4 statt s5 rundum und cardGap nur ZWISCHEN den Karten: der
+            // Gruss klebt jetzt am Kopf, statt in der Mitte einer Leerzone zu
+            // schweben.
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                 greeting
                 if let refreshError = viewModel.refreshError {
@@ -17,13 +52,13 @@ struct DashboardView: View {
                 }
                 content
             }
-            .padding(Theme.Spacing.s5)
+            .padding(.horizontal, Theme.Spacing.s4)
+            .padding(.bottom, Theme.Spacing.s5)
+            // OBEN GAR KEIN Abstand mehr: den bringt die Vereins-Kopfzeile mit
+            // (ihr `.padding(.vertical, s2)`). Vorher standen hier s5 rundum
+            // PLUS s2 am Gruss — zwei Abstaende fuer eine Kante, unter einer
+            // Leiste, die selbst schon Luft mitbrachte.
         }
-        .background(Theme.Colors.bgCanvas.ignoresSafeArea())
-        .navigationTitle(Text("tab.dashboard"))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { profileMenu }
-        .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
         .refreshable { await viewModel.refresh(api: session.api, clubId: session.clubId) }
     }
 
@@ -58,6 +93,10 @@ struct DashboardView: View {
 
     // MARK: - Begrüßung
 
+    /// Gruss KOMPAKT: Datum und Anrede stehen ruhig nebeneinander statt in der
+    /// groessten Schrift der App untereinander. Der Gruss ist eine Hoeflichkeit,
+    /// kein Inhalt — er darf nicht ein Fuenftel des Bildschirms kosten. Die
+    /// Display-Schrift bleibt den KPI-Zahlen und Kartentiteln vorbehalten.
     private var greeting: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
             Text(DashboardFormat.eyebrowDateText(Date()))
@@ -66,11 +105,9 @@ struct DashboardView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.Colors.inkFaint)
             greetingTitle
-                .font(Theme.Fonts.display)
-                .tracking(Theme.Fonts.displayTracking)
+                .font(Theme.Fonts.h2)
                 .foregroundStyle(Theme.Colors.inkPrimary)
         }
-        .padding(.top, Theme.Spacing.s2)
         .accessibilityElement(children: .combine)
     }
 
@@ -89,30 +126,32 @@ struct DashboardView: View {
         return displayName.split(separator: " ").first.map(String.init) ?? displayName
     }
 
-    // MARK: - Toolbar (Profil/Abmelden)
+    // MARK: - Profil/Abmelden (rechts in der Vereins-Kopfzeile)
 
-    private var profileMenu: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                NavigationLink {
-                    ProfileRootView()
-                } label: {
-                    Label("module.profile.title", systemImage: "person.crop.circle")
-                }
-                Button(role: .destructive) {
-                    session.logout()
-                } label: {
-                    Label("common.logout", systemImage: "rectangle.portrait.and.arrow.right")
-                }
+    private var profileMenuButton: some View {
+        Menu {
+            NavigationLink {
+                ProfileRootView()
             } label: {
-                RSMAvatarView(
-                    name: session.session?.profile.displayName ?? "?",
-                    personId: session.session?.profile.memberId,
-                    size: 30
-                )
+                Label("module.profile.title", systemImage: "person.crop.circle")
             }
-            .accessibilityLabel(Text("dashboard.a11y.profileMenu"))
+            Button(role: .destructive) {
+                session.logout()
+            } label: {
+                Label("common.logout", systemImage: "rectangle.portrait.and.arrow.right")
+            }
+        } label: {
+            RSMAvatarView(
+                name: session.session?.profile.displayName ?? "?",
+                personId: session.session?.profile.memberId,
+                size: 32
+            )
+            // Der Avatar ist 32 pt gross, die TREFFERFLAECHE bleibt 44 pt —
+            // ausserhalb der Systemleiste muessen wir das selbst sicherstellen.
+            .frame(width: Theme.Size.touchTarget, height: Theme.Size.touchTarget)
+            .contentShape(Rectangle())
         }
+        .accessibilityLabel(Text("dashboard.a11y.profileMenu"))
     }
 
     // MARK: - Lade-/Fehlerzustände

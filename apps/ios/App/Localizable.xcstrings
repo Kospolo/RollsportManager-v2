@@ -4712,13 +4712,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "im Verein"
+            "value": "aktiv im Verein"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "in the club"
+            "value": "active in the club"
           }
         }
       }
@@ -4728,13 +4728,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aktive Mitglieder"
+            "value": "Mitglieder"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Active members"
+            "value": "Members"
           }
         }
       }
@@ -12803,6 +12803,38 @@
         }
       }
     },
+    "members.card.bornYear %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jg. %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "b. %@"
+          }
+        }
+      }
+    },
+    "members.card.you": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You"
+          }
+        }
+      }
+    },
     "members.detail.birthDate": {
       "localizations": {
         "de": {
@@ -13027,6 +13059,38 @@
         }
       }
     },
+    "members.emptyClub.message": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sobald Mitglieder aufgenommen sind, stehen sie hier."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As soon as members join, they will show up here."
+          }
+        }
+      }
+    },
+    "members.emptyClub.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch niemand im Verein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nobody in the club yet"
+          }
+        }
+      }
+    },
     "members.error.retry": {
       "localizations": {
         "de": {
@@ -13183,6 +13247,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "All"
+          }
+        }
+      }
+    },
+    "members.filter.role.a11y": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Rolle filtern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter by role"
+          }
+        }
+      }
+    },
+    "members.filter.sparte.a11y": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Sparte filtern"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter by division"
+          }
+        }
+      }
+    },
+    "members.filter.sparte.all": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Sparten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All divisions"
+          }
+        }
+      }
+    },
+    "members.filter.sparte.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Sparte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No division"
+          }
+        }
+      }
+    },
+    "members.group.label": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group"
+          }
+        }
+      }
+    },
+    "members.group.none": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Gruppierung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No grouping"
+          }
+        }
+      }
+    },
+    "members.group.team": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nach Team"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By team"
+          }
+        }
+      }
+    },
+    "members.group.teamless": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Team"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No team"
           }
         }
       }

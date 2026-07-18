@@ -138,85 +138,14 @@ struct MembersFilterChip: View {
 }
 
 // MARK: - Listenzeile
-
-/// Zeile der Mitgliederliste: Avatar · Name + Team · Rollen-Pill.
-///
-/// WAS HIER BEWUSST NICHT MEHR STEHT: die BEITRAGSAMPEL (Mahnstufe/„bezahlt“).
-/// Das Web hat sie im Verzeichnis schon gestrichen (MembersClient.tsx) — iOS
-/// zieht nach. Eine Mahnstufe neben einem Kindernamen ist ein Würde-Problem:
-/// das Verzeichnis ist der Ort, an dem sich der Verein begegnet, nicht die
-/// Debitorenliste. Der Zahlungsstand war NIE ein Leck (RLS zeigt jedem nur die
-/// eigene Familie) — er gehört nur nicht hierher. Beiträge leben im
-/// Kassenbereich; die Logik (MembersViewModel.feeStatus) bleibt unangetastet.
-struct MemberRowView: View {
-    let member: ClubMember
-    let teamNames: String?
-
-    /// Ab den Accessibility-Stufen ist nebeneinander kein Platz mehr: Name,
-    /// Team UND Rollen-Pill in einer Zeile zwingen den Namen ins Abschneiden
-    /// („Jo-han…“). Dann werden die Pills unter den Namen gelegt.
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        Group {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
-                    HStack(spacing: Theme.Spacing.s3) {
-                        RSMAvatarView(name: member.membersFullName, personId: member.id, size: 40)
-                        nameBlock
-                        Spacer(minLength: Theme.Spacing.s2)
-                        chevron
-                    }
-                    HStack(spacing: Theme.Spacing.s2) { pills }
-                }
-            } else {
-                HStack(spacing: Theme.Spacing.s3) {
-                    RSMAvatarView(name: member.membersFullName, personId: member.id, size: 40)
-                    nameBlock
-                    Spacer(minLength: Theme.Spacing.s2)
-                    VStack(alignment: .trailing, spacing: Theme.Spacing.s1) { pills }
-                    chevron
-                }
-            }
-        }
-        .frame(minHeight: Theme.Size.listRow)
-        .contentShape(Rectangle())
-    }
-
-    private var nameBlock: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: member.membersFullName)
-                .font(Theme.Fonts.listTitle)
-                .foregroundStyle(Theme.Colors.inkPrimary)
-                .lineLimit(2)
-            if let teamNames {
-                Text(verbatim: teamNames)
-                    .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkSoft)
-                    .lineLimit(2)
-            } else {
-                Text("members.row.noTeam")
-                    .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkSoft)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var pills: some View {
-        RSMStatusPill(
-            text: MembersL10n.roleKey(member.role),
-            kind: MembersL10n.roleKind(member.role)
-        )
-    }
-
-    private var chevron: some View {
-        Image(systemName: "chevron.right")
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(Theme.Colors.inkFaint)
-            .accessibilityHidden(true)
-    }
-}
+//
+// `MemberRowView` (Avatar-Kreis · Name · Team · Rollen-Pill · Chevron, getrennt
+// durch Haarlinien) ist ERSETZT durch `MemberCardView` in MembersDirectory.swift
+// — eine Karte pro Mensch statt einer Tabellenzeile. Der Grund steht dort im
+// Dateikopf. Was aus der alten Zeile GILT UND MITGEWANDERT IST: die
+// Beitragsampel bleibt aus dem Verzeichnis RAUS (Wuerde-Befund; das Verzeichnis
+// ist der Ort, an dem sich der Verein begegnet, nicht die Debitorenliste). Die
+// Logik `MembersViewModel.feeStatus` bleibt unangetastet und lebt im Detail.
 
 // MARK: - Detail-Zeile
 
