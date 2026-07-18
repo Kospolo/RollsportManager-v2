@@ -61,9 +61,29 @@ Küren im Profil anklickbar/abspielbar · **Finanzen pro Verein abschaltbar** ·
 - **iOS** (`apps/ios`, SwiftUI, 1052 Swift-Dateien): auf heutigen Contract-Stand, **baut grün, läuft im Simulator**
   (`82fe557`) **UND auf Marcels iPhone 16 Pro** (2026-07-18 erstmals installiert+gestartet, Dev-Build gegen Mac-IP).
   Geräte-Signing-Prozedur siehe Memory `reference_rsm_ios_device_install` (ASC-Key + `API_HOST=0.0.0.0` + DevConfig→
-  192.168.1.168; Commit `1c3de97`). Lücken-Roadmap (priorisiert): **Sparten (komplett)** · Betreiber/Super-Admin ·
-  member-facing Team-Detail · Galerie-Markierung · öffentliches Selbst-Profil · Vereinslogo · Modul-Toggle. Die
-  generierten Swift-**Typen** sind da; es fehlt UI + Endpoints-Verdrahtung.
+  192.168.1.168; Commit `1c3de97`).
+  **iOS-Aufholjagd 2026-07-18 (alle angreifer-/prüfer-geprüft):** **Sparten komplett** (`9847304`: Endpoints +
+  Verwaltung + Team→Sparte + Mitglied→Sparten, Gate owner/admin/treasurer+platform, NICHT moderator) ·
+  **Team-Detail für Mitglieder + Selbst-Profil + Vereinslogo** (`c80e8b9`). RESTLICHE Lücken: Betreiber/Super-Admin ·
+  Galerie-Markierung · Modul-Toggle.
+  ⚠️ **iOS-TEST-FALLE:** `-devPersona` wird IGNORIERT, wenn schon eine Session gespeichert ist
+  (SessionStore.swift:86 `guard !isAuthenticated`) → vor jedem Persona-Beweis `simctl uninstall`, sonst zeigt die App
+  die Daten der VORIGEN Rolle (sah einmal wie ein Datenleck aus, war keins).
+
+**🎨 DESIGN-RICHTUNG iOS (2026-07-18, vom Design-Team erarbeitet — Marcel: „iOS zu langweilig, jung UND alt nutzen es,
+Jungen ist Optik wichtig"):** Leitidee **„Mensch statt Tabelle"** — Fläche, Farbe, lauter Name; Monogramm-Kachel 68pt
+statt 40pt-Kreis (KEINE Kinderfotos, s.u.). Kernsatz: *der Konflikt ist nicht jung-gegen-alt, sondern ordentlich-gebaut
+gegen schnell-hübsch* — größere Typo/Karten/Farbe/Haptik helfen BEIDEN. Verwaltung raus aus dem Startbild (heute
+startet JEDE Rolle in der Buchhaltung), dafür Musik/Motto/Medaille/Countdown nach vorn.
+Reihenfolge: (1) **Typo-Fundament** (8 feste Größen → Dynamic Type, body 14,5→17, minimumScaleFactor<0,9 raus) +
+(1b) **Kür-Musik** — *im Bau* · (2) Mitgliederansicht (Karte pro Mensch, Beitrags-Ampel RAUS = Würde) ·
+(3) zentraler Reduce-Motion-Modifier, dann Haptik (App hat 0) · (4) Kontrast-Fixes · (5) Filter/Gruppierung.
+⚠️ **KORREKTUR:** Die Kür-Musik ist NICHT am Backend blockiert — iOS dekodiert `audio_url` nicht und
+RoutinePlaybackEngine.swift:7-8 **täuscht das Abspielen vor** (Simulation). Wird gerade behoben.
+⚠️ **GESPERRT:** keine Kinderfotos über den Member-Pfad, solange members.ts keine Einwilligungs-Wache trägt (0
+consent-Treffer, während photo-tags.ts sauber gated ist) → Identität über Farbe/Monogramm/Medaillen/Küren.
+⚠️ **Verboten:** Punkte-/Streak-Gamification (Kinder unter Druck), Gesten-only-Navigation, Kacheln ohne Text.
+**Offen: App-ICON fehlt komplett** (kein Assets.xcassets!) — 4 Entwürfe liegen Marcel vor, Entscheidung ausstehend.
 - **macOS / Windows:** noch keine eigene App. macOS aus der iOS-SwiftUI-Basis holen; Windows braucht eine
   Grundsatz-Entscheidung (kein gemeinsamer Unterbau) — wird vorgelegt, wenn dran.
 - **Android** (`apps/android`, ~64 Kotlin-Dateien): existiert dünn, volle Parität nachzubauen.
