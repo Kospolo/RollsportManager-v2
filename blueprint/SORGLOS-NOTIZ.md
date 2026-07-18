@@ -83,7 +83,34 @@ RoutinePlaybackEngine.swift:7-8 **täuscht das Abspielen vor** (Simulation). Wir
 ⚠️ **GESPERRT:** keine Kinderfotos über den Member-Pfad, solange members.ts keine Einwilligungs-Wache trägt (0
 consent-Treffer, während photo-tags.ts sauber gated ist) → Identität über Farbe/Monogramm/Medaillen/Küren.
 ⚠️ **Verboten:** Punkte-/Streak-Gamification (Kinder unter Druck), Gesten-only-Navigation, Kacheln ohne Text.
-**Offen: App-ICON fehlt komplett** (kein Assets.xcassets!) — 4 Entwürfe liegen Marcel vor, Entscheidung ausstehend.
+**App-ICON: ✅ erledigt** (`83d239b`) — aus v1 übernommen (Figuren über Rollschuh-Rad), Single-Size hell/dunkel/getönt.
+
+**🟢 KÜR-MUSIK spielt wirklich (2026-07-18):** Ursache war schlimmer als beide Theorien — Seed-Pfade verschachtelt
+(Route kann nur flache Keys), Traversal-Schutz hätte sie ohnehin abgelehnt, UND **die Seed-MP3s waren 10–23-Byte-
+Attrappen** (es gab nie Audio; die Route-Kommentare dokumentierten das Problem statt es zu lösen). Behoben: echte
+Seed-MP3s + flache Keys + serverseitige Auslieferung. ⚠️ **Dabei ein Kinderdaten-Leck geschlossen:** die Audio-Route
+hing nur an `is_club_member` → ein Mitglied konnte die Musik ALLER Küren ziehen, auch fremder Kinder; jetzt an
+`can_read_routine` gebunden. Bewiesen per Decoder-Dauer/Tempo/Loop, Fehlerfall ohne Fake-Fortschritt.
+**🟢 TYPO-FUNDAMENT:** Beweis dass es tot war = Screenshots Standard vs. AX3 pixelgleich. ⚠️ `Theme.swift` ist
+GENERIERT aus design/tokens.json — Handedit wäre beim nächsten `gen:swift` weg; Fix sitzt im Token + Generator, und
+der Generator **bricht ab**, wenn der `ios.textStyle`-Anker fehlt (Regression kann nicht still zurückkommen).
+919 Verwendungen skalieren, 132 Zeilen Kontrast-Fix, 5 AX3-Brüche gefunden+gefixt.
+**Offene iOS-Mängel (Prüfer MAENGEL):** Play-Knopf auf der Küren-KACHEL fehlt (Bau-Agent deutete das als „erfüllt" um —
+Prüfer hat's erwischt) · AX3 schneidet auf Teams/Sparten noch ab · 5 eingefrorene Textgrößen (Chat/Galerie/Rollen-
+Matrix) · **Kür-BILDER haben denselben Pfad-Bug wie die Musik hatte** · RLS-Suite lief nicht (Harness hardcodet
+Port 55432, dort sitzt der FREMDE Container rapportmanager-postgres-1 → `HARNESS_HOST_PORT`-Override nötig).
+
+**🟢 FAHRGEMEINSCHAFTEN fertig (2026-07-18, Angreifer BESTANDEN):** Migr. **0066** (app.event_rides ·
+app.event_ride_contacts = NUR die Rufnummer, eigene Policy · app.event_ride_riders) + **0067** (Härtung).
+Fahrt anbieten (Abfahrtsort/Zeit/Plätze/Rufnummer/Notiz), Mitfahren für sich ODER das eigene Kind, beidseitig
+absagen, Überbuchung blockiert. Web-UI im Termin-Detail (RidesPanel/RideCard/OfferRideSheet).
+**Der Kniff bei der Rufnummer:** RLS schützt ZEILEN, nicht Spalten — die Fahrt muss weit sichtbar sein, die Nummer
+eng. Deshalb eigene Tabelle mit eigener Policy (`may_see_ride_contact`): Fahrer + AKTIV Zugesagte + deren Vormünder +
+Verwaltung. Wer absagt, verliert die Nummer wieder. Redaktion in der DB, nicht in einer vergessbaren `redact()`.
+⚠️ Erste Runde war DURCHGEFALLEN: Fahrer:in konnte eine vom Vormund ABGESAGTE Zusage eines FREMDEN Kindes
+reaktivieren (201), und Rufnummer-Löschen meldete Erfolg ohne Wirkung. 0067 schließt beides (BEFORE-Trigger, weil nur
+er OLD sieht → eine Wiederbelebung IST fachlich eine neue Zusage; + DELETE-Policy). 1623/1623 Tests grün.
+Offen: `supabase/scripts/db-test.sh` schlägt seit ~60 Migrationen fehl (Assertion „23 Tabellen" nie nachgezogen).
 - **macOS / Windows:** noch keine eigene App. macOS aus der iOS-SwiftUI-Basis holen; Windows braucht eine
   Grundsatz-Entscheidung (kein gemeinsamer Unterbau) — wird vorgelegt, wenn dran.
 - **Android** (`apps/android`, ~64 Kotlin-Dateien): existiert dünn, volle Parität nachzubauen.
