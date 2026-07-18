@@ -6,6 +6,23 @@
 // never trusts a caller-supplied owner - it is always claims.sub. PATCH/DELETE
 // on a foreign (or absent) note match 0 rows under RLS -> 404, so a stranger
 // cannot even probe existence.
+//
+// ### ZUBUCHBARES MODUL (0068) ###############################################
+// 'notes' ist seit 0068 zubuchbar: fuer einen NEUEN Verein voreingestellt AUS.
+// Durchgesetzt wird das von der restriktiven RLS-Policy notes_module_gate
+// (0044) — eine Notiz MIT club_id verschwindet aus GET /notes, sobald der Verein
+// das Modul nicht (mehr) gebucht hat. Deshalb braucht GET hier keinen eigenen
+// Check: die Liste ist bereits richtig, nicht nur huebsch.
+//
+// POST bekommt den Check trotzdem: eine Notiz, die man anlegen kann und die
+// danach unsichtbar waere, ist die schlechteste aller Antworten. Der Check macht
+// daraus ein klares 403 mit MODULE_DISABLED_CODE.
+//
+// EHRLICHE GRENZE: club_id ist NULLABLE (0008:70). Eine Notiz OHNE Verein ist
+// ein rein persoenlicher Zettel und gehoert zu keinem Verein — sie bleibt vom
+// Vereins-Schalter unberuehrt (app.module_enabled(null, ...) = true, begruendet
+// in 0068). Wer "Notizen" fuer den Verein abschaltet, entzieht die
+// VEREINS-Notizen, nicht die privaten Zettel einer Person.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
@@ -13,6 +30,7 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import { deletedSchema, noteCreateSchema, noteSchema, noteUpdateSchema, uuid } from '../lib/validation.js';
 import { withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
+import { assertModuleEnabled } from '../lib/module-gate.js';
 
 export const notesRouter = createRouter();
 
@@ -59,11 +77,16 @@ notesRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    const created = await withUser(claims, (tx) =>
-      tx`insert into app.notes (owner_profile_id, club_id, title, body)
-         values (${claims.sub}, ${body.club_id ?? null}, ${body.title}, ${body.body})
-         returning *`,
-    );
+    const created = await withUser(claims, async (tx) => {
+      // Nur wenn die Notiz einem VEREIN zugeordnet wird: ein persoenlicher
+      // Zettel ohne club_id haengt an keinem Vereins-Schalter (siehe Kopf).
+      if (body.club_id) await assertModuleEnabled(tx, body.club_id, 'notes');
+      const rows = await tx`
+        insert into app.notes (owner_profile_id, club_id, title, body)
+        values (${claims.sub}, ${body.club_id ?? null}, ${body.title}, ${body.body})
+        returning *`;
+      return rows;
+    });
     return c.json(noteSchema.parse(created[0]), 201);
   },
 );

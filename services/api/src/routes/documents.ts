@@ -24,6 +24,7 @@ import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { COACH_ROLES, requireClubMember, requireClubRole } from '../lib/guards.js';
 import { assertClubPro } from '../lib/pro-gate.js';
+import { assertModuleEnabled } from '../lib/module-gate.js';
 import type { AuthClaims } from '../middleware/auth.js';
 
 export const documentsRouter = createRouter();
@@ -76,7 +77,12 @@ documentsRouter.openapi(
     const claims = c.get('claims');
     requireClubMember(claims, club_id);
     const rows = await withUser(claims, async (tx) => {
+      // Reihenfolge: erst LIZENZ (402), dann BUCHUNG (403) — zwei Ursachen,
+      // zwei Auswege. Siehe lib/module-gate.ts. Seit 0068 ist dieses Modul
+      // fuer einen neuen Verein voreingestellt AUS; die RLS liefert dann eine
+      // leere Liste, dieser Check macht daraus ein ehrliches "nicht gebucht".
       await assertClubPro(tx, club_id);
+      await assertModuleEnabled(tx, club_id, 'document');
       return tx`select * from app.documents
          where club_id = ${club_id} and deleted_at is null
          order by created_at desc`;
@@ -108,6 +114,7 @@ documentsRouter.openapi(
 
     const created = await withUser(claims, async (tx) => {
       await assertClubPro(tx, body.club_id);
+      await assertModuleEnabled(tx, body.club_id, 'document');
       const uploader = await uploaderMemberId(tx, claims, body.club_id);
       const rows = await tx`
         insert into app.documents

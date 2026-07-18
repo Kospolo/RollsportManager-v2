@@ -3091,6 +3091,13 @@ export const clubModuleStateSchema = z
     requires_pro: z.boolean(),
     /** null <=> core: bei einem Kernmodul stellt sich die Frage nicht. */
     enforcement: moduleEnforcementSchema.nullable(),
+    /**
+     * Voreinstellung fuer einen Verein OHNE eigene Schalter-Zeile (0068).
+     * false = ZUBUCHBAR (Galerie, Dokumente, Notizen): ein neuer Verein hat das
+     * Modul aus, bis er es bucht. Die Clients unterscheiden damit "aus, weil
+     * abgeschaltet" von "nie gebucht" und texten entsprechend.
+     */
+    default_enabled: z.boolean(),
     enabled: z.boolean(),
     /** Entitlement erfuellt? Bei requires_pro=false immer true. */
     pro_ok: z.boolean(),

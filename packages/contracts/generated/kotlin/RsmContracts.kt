@@ -1325,6 +1325,7 @@ data class ClubModuleState(
     val core: Boolean,
     @SerialName("requires_pro") val requiresPro: Boolean,
     val enforcement: ClubModuleStateEnforcement?,
+    @SerialName("default_enabled") val defaultEnabled: Boolean,
     val enabled: Boolean,
     @SerialName("pro_ok") val proOk: Boolean,
     val available: Boolean

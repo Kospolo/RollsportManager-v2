@@ -3596,6 +3596,9 @@
               "menu_only"
             ]
           },
+          "default_enabled": {
+            "type": "boolean"
+          },
           "enabled": {
             "type": "boolean"
           },
@@ -3616,6 +3619,7 @@
           "core",
           "requires_pro",
           "enforcement",
+          "default_enabled",
           "enabled",
           "pro_ok",
           "available"

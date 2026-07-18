@@ -792,6 +792,7 @@ export interface ClubModuleState {
   "core": boolean;
   "requires_pro": boolean;
   "enforcement": "enforced" | "partial" | "menu_only" | null;
+  "default_enabled": boolean;
   "enabled": boolean;
   "pro_ok": boolean;
   "available": boolean;

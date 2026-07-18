@@ -3355,6 +3355,7 @@ public struct ClubModuleState: Codable, Equatable, Sendable {
     public var core: Bool
     public var requiresPro: Bool
     public var enforcement: ClubModuleStateEnforcement?
+    public var defaultEnabled: Bool
     public var enabled: Bool
     public var proOk: Bool
     public var available: Bool
@@ -3369,6 +3370,7 @@ public struct ClubModuleState: Codable, Equatable, Sendable {
         case core
         case requiresPro = "requires_pro"
         case enforcement
+        case defaultEnabled = "default_enabled"
         case enabled
         case proOk = "pro_ok"
         case available
@@ -3384,6 +3386,7 @@ public struct ClubModuleState: Codable, Equatable, Sendable {
         core: Bool,
         requiresPro: Bool,
         enforcement: ClubModuleStateEnforcement? = nil,
+        defaultEnabled: Bool,
         enabled: Bool,
         proOk: Bool,
         available: Bool
@@ -3397,6 +3400,7 @@ public struct ClubModuleState: Codable, Equatable, Sendable {
         self.core = core
         self.requiresPro = requiresPro
         self.enforcement = enforcement
+        self.defaultEnabled = defaultEnabled
         self.enabled = enabled
         self.proOk = proOk
         self.available = available
