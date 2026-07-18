@@ -116,7 +116,7 @@ struct ExerciseDetailSheet: View {
                 .monospacedDigit()
             Text("uebungen.duration.unit")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
     }
 
@@ -158,7 +158,7 @@ struct ExerciseDetailSheet: View {
     private var authorLine: some View {
         Text(verbatim: authorLineText)
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 

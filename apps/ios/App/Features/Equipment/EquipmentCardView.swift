@@ -58,7 +58,7 @@ struct EquipmentCardView: View {
         if equipment.availableQuantity == nil && equipment.totalQuantity == nil {
             Text("ausruestung.avail.unknown")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         } else {
             let available = equipment.availableQuantity ?? equipment.totalQuantity ?? 0
             let total = equipment.totalQuantity ?? equipment.availableQuantity ?? 0

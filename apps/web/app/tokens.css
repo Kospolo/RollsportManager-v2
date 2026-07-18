@@ -1,7 +1,7 @@
 /* ============================================================
    GENERIERT aus design/tokens.json — NICHT von Hand editieren.
    Neu bauen:  npm run tokens  (in apps/web)
-   Design-System „Heimspiel“ · 1.0.0 · Stand 2026-07-10
+   Design-System „Heimspiel“ · 1.0.0 · Stand 2026-07-18
    ============================================================ */
 
 /* ---------- Light („Vormittag in der Halle“) + statische Tokens ---------- */
@@ -57,6 +57,9 @@
   --fs-h3: 17px;
   --lh-h3: 23px;
   --fw-h3: 800;
+  --fs-list-title: 17px;
+  --lh-list-title: 23px;
+  --fw-list-title: 800;
   --fs-body-strong: 14.5px;
   --lh-body-strong: 21px;
   --fw-body-strong: 700;
@@ -73,6 +76,12 @@
   --fs-mono-table: 13px;
   --lh-mono-table: 18px;
   --fw-mono-table: 600;
+  --fs-mono-caption: 12px;
+  --lh-mono-caption: 16px;
+  --fw-mono-caption: 500;
+  --fs-mono-hero: 22px;
+  --lh-mono-hero: 28px;
+  --fw-mono-hero: 700;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;

@@ -53,7 +53,7 @@ struct MemberTeamCardView: View {
                     } else {
                         Text("teamsMember.card.noAgeGroup")
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                     if isMine {
                         RSMStatusPill(text: "teamsMember.badge.mine", kind: .brand)
@@ -117,7 +117,7 @@ struct MemberTeamCardView: View {
             }
         }
         .font(Theme.Fonts.caption)
-        .foregroundStyle(Theme.Colors.inkFaint)
+        .foregroundStyle(Theme.Colors.inkSoft)
     }
 }
 

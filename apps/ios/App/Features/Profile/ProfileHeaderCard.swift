@@ -22,7 +22,6 @@ struct ProfileHeaderCard: View {
                         .font(Theme.Fonts.h2)
                         .foregroundStyle(Theme.Colors.inkPrimary)
                         .lineLimit(2)
-                        .minimumScaleFactor(0.8)
 
                     if let membership {
                         pills(for: membership)
@@ -64,8 +63,10 @@ struct ProfileHeaderCard: View {
             RSMClubLogoView(clubId: m.clubId, size: 24, hidesWhenMissing: true)
             Text(clubText(clubName: m.clubName, joined: joined))
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
-                .lineLimit(2)
+                .foregroundStyle(Theme.Colors.inkSoft)
+                // Vereinsname + Eintrittsdatum brauchen bei grosser Schrift
+                // mehr als zwei Zeilen — sonst endet die Zeile in „dabei s…“.
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

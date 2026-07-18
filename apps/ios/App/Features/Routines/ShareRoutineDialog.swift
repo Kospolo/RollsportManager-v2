@@ -146,13 +146,13 @@ private struct ShareLinkRow: View {
 
                     VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                         Text(verbatim: url)
-                            .font(Theme.Fonts.mono(size: 12))
+                            .font(Theme.Fonts.monoCaption)
                             .foregroundStyle(Theme.Colors.inkPrimary)
                             .lineLimit(3)
                             .textSelection(.enabled)
                         Text(expiresLabel)
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                     Spacer(minLength: 0)
                 }

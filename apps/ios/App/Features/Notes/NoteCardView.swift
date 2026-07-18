@@ -49,7 +49,7 @@ struct NoteCardView: View {
                 Text("notizen.card.updated \(NotesFormat.relativeUpdated(note.updatedAt))")
             }
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
 
             Spacer(minLength: Theme.Spacing.s2)
 

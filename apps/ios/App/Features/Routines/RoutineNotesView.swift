@@ -30,7 +30,7 @@ struct RoutineNotesView: View {
 
                 Text("routines.notes.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
 
                 RSMSecondaryButton(title: "routines.notes.save") { save() }
                     .disabled(!isDirty)
@@ -39,7 +39,7 @@ struct RoutineNotesView: View {
                 if let savedAt {
                     Text("routines.notes.saved \(RoutineFormat.savedAt(savedAt))")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }

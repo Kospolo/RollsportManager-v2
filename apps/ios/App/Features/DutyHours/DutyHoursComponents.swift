@@ -108,6 +108,11 @@ struct DutyKpiTile: View {
     var caption: String? = nil
     var valueColor: Color = Theme.Colors.inkPrimary
 
+    /// Die KPI-Zahl haengt an der Schrift, nicht am Layout: @ScaledMetric laesst
+    /// die 21 pt mit den Systemeinstellungen mitwachsen (Font.system(size:) allein
+    /// wuerde sie einfrieren).
+    @ScaledMetric(relativeTo: .title3) private var valueSize: CGFloat = 21
+
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
             Text(eyebrow)
@@ -116,9 +121,9 @@ struct DutyKpiTile: View {
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.Colors.inkFaint)
             Text(verbatim: value)
-                .font(Theme.Fonts.display(size: 21))
+                .font(Theme.Fonts.display(size: valueSize))
                 .monospacedDigit()
-                .minimumScaleFactor(0.7)
+                .minimumScaleFactor(0.9)
                 .lineLimit(1)
                 .foregroundStyle(valueColor)
             if let caption {
@@ -128,7 +133,7 @@ struct DutyKpiTile: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Theme.Spacing.s3)
         .background(Theme.Colors.bgCanvas)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
@@ -167,7 +172,7 @@ struct DutyEntryRow: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
             HStack(spacing: Theme.Spacing.s2) {
                 Text(verbatim: DutyHoursFormat.hours(entry.hours ?? 0))
-                    .font(Theme.Fonts.mono(size: 15, weight: .bold))
+                    .font(Theme.Fonts.monoTable.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 RSMStatusPill(

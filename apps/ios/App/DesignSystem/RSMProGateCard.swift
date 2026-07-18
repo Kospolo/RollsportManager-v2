@@ -50,7 +50,7 @@ struct RSMProGateCard: View {
 
                 Label("pro.gate.hint", systemImage: "info.circle")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .accessibilityElement(children: .combine)

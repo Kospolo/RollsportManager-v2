@@ -117,7 +117,7 @@ struct BookingFormSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
                     Text("belegungsplan.book.member.selfHint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }

@@ -23,7 +23,7 @@ struct AdminMembersFilterChip: View {
                     .font(Theme.Fonts.caption.weight(.semibold))
                 if let count {
                     Text(verbatim: "\(count)")
-                        .font(Theme.Fonts.mono(size: 11.5))
+                        .font(Theme.Fonts.monoCaption)
                         .monospacedDigit()
                         .foregroundStyle(isSelected ? Theme.Colors.brandInk : Theme.Colors.inkFaint)
                 }
@@ -87,7 +87,7 @@ struct AdminMembersRow: View {
                 } else {
                     Text("mitglieder.row.noTeam")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
             Spacer(minLength: Theme.Spacing.s2)
@@ -153,7 +153,7 @@ struct AdminMembersFieldGroup<Content: View>: View {
             } else if let hint {
                 Text(hint)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

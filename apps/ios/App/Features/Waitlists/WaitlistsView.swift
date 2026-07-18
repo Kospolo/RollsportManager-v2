@@ -153,7 +153,7 @@ struct WaitlistsView: View {
                 if !viewModel.myEntries.isEmpty {
                     Text("wartelisten.mine.count \(viewModel.myEntries.count)")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
 

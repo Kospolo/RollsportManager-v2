@@ -53,7 +53,7 @@ struct CashbookReverseSheet: View {
                             )
                         Text("kassenbuch.reverse.descHint")
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
 
                     if let errorText {

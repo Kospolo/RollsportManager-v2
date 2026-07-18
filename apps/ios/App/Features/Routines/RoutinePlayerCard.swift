@@ -103,7 +103,7 @@ struct RoutinePlayerCard: View {
         let total = RoutineFormat.mmss(playback.durationMs)
         return HStack(alignment: .firstTextBaseline) {
             Text(verbatim: "0:00")
-                .font(Theme.Fonts.mono(size: 12, weight: .regular))
+                .font(Theme.Fonts.monoCaption.weight(.regular))
                 .foregroundStyle(Theme.Colors.inkFaint)
             Spacer()
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s1) {
@@ -114,16 +114,16 @@ struct RoutinePlayerCard: View {
                         Text(verbatim: RoutineFormat.mmss(playback.posMs))
                     }
                 }
-                .font(Theme.Fonts.mono(size: 17, weight: .bold))
+                .font(Theme.Fonts.monoTable.weight(.bold))
                 .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(verbatim: "/ \(total)")
-                    .font(Theme.Fonts.mono(size: 12, weight: .regular))
+                    .font(Theme.Fonts.monoCaption.weight(.regular))
                     .foregroundStyle(Theme.Colors.inkFaint)
             }
             .monospacedDigit()
             Spacer()
             Text(verbatim: total)
-                .font(Theme.Fonts.mono(size: 12, weight: .regular))
+                .font(Theme.Fonts.monoCaption.weight(.regular))
                 .foregroundStyle(Theme.Colors.inkFaint)
         }
         .monospacedDigit()
@@ -221,7 +221,7 @@ struct RoutinePlayerCard: View {
                     Text("routines.player.countdown.seconds \(seconds)")
                 }
             }
-            .font(Theme.Fonts.body(size: 13, weight: .bold))
+            .font(Theme.Fonts.caption.weight(.bold))
             .monospacedDigit()
             .foregroundStyle(active ? Theme.Colors.inkPrimary : Theme.Colors.inkSoft)
             .frame(minWidth: 40, minHeight: 38)
@@ -267,7 +267,7 @@ struct RoutinePlayerCard: View {
         let time = RoutineFormat.mmssTenths(valueMs)
         return Button(action: action) {
             Text(verbatim: "\(letter) \(time)")
-                .font(Theme.Fonts.mono(size: 12.5, weight: .bold))
+                .font(Theme.Fonts.monoCaption.weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.inkSoft)
                 .frame(minHeight: 44)
@@ -295,7 +295,7 @@ struct RoutinePlayerCard: View {
                 Image(systemName: "repeat")
                     .font(.system(size: 13, weight: .bold))
                 Text(playback.loopOn ? "routines.player.loop.on" : "routines.player.loop.off")
-                    .font(Theme.Fonts.body(size: 13, weight: .heavy))
+                    .font(Theme.Fonts.caption.weight(.heavy))
             }
             .foregroundStyle(playback.loopOn ? Theme.Colors.honeyDeep : Theme.Colors.inkFaint)
             .frame(minHeight: 44)

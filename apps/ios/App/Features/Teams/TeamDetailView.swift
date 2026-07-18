@@ -96,7 +96,7 @@ struct TeamDetailView: View {
                             } else {
                                 Text("teamsMember.card.noAgeGroup")
                                     .font(Theme.Fonts.caption)
-                                    .foregroundStyle(Theme.Colors.inkFaint)
+                                    .foregroundStyle(Theme.Colors.inkSoft)
                             }
                             if model.isMine(team) {
                                 RSMStatusPill(text: "teamsMember.badge.mine", kind: .brand)
@@ -194,7 +194,7 @@ struct TeamDetailView: View {
                 if !roster.skaters.isEmpty {
                     Text("teamsMember.card.skaters \(roster.skaters.count)")
                         .font(Theme.Fonts.caption.weight(.semibold))
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
             .padding(.horizontal, Theme.Spacing.s1)

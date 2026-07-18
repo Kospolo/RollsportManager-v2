@@ -19,7 +19,7 @@ struct AchievementCardView: View {
                 VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                     badges
                     Text(verbatim: achievement.title)
-                        .font(Theme.Fonts.body(size: 15.5, weight: .bold))
+                        .font(Theme.Fonts.bodyStrong.weight(.bold))
                         .foregroundStyle(Theme.Colors.inkPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     if let competition = achievement.competitionName, !competition.isEmpty {

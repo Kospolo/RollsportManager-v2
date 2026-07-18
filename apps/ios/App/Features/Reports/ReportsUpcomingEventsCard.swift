@@ -28,7 +28,7 @@ struct ReportsUpcomingEventsCard: View {
                             HStack {
                                 Text("auswertung.events.more \(rest)")
                                     .font(Theme.Fonts.caption)
-                                    .foregroundStyle(Theme.Colors.inkFaint)
+                                    .foregroundStyle(Theme.Colors.inkSoft)
                                 Spacer(minLength: 0)
                             }
                             .padding(.top, 2)
@@ -49,7 +49,7 @@ struct ReportsUpcomingEventsCard: View {
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(verbatim: ReportsFormat.dateTimeText(event.startsAt))
-                .font(Theme.Fonts.mono(size: 12, weight: .medium))
+                .font(Theme.Fonts.monoCaption.weight(.medium))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.inkFaint)
                 .lineLimit(1)

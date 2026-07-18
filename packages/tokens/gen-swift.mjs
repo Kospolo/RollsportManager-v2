@@ -106,7 +106,15 @@ function cgFloatLines(group, { numericPrefix = "" } = {}) {
 
 const WEIGHTS = { 400: ".regular", 500: ".medium", 600: ".semibold", 700: ".bold", 800: ".heavy" };
 // Display-Rollen laufen in SF Rounded, monoTable in SF Mono, Rest im System-Font.
-const FONT_DESIGN = { display: "rounded", h2: "rounded", h3: "rounded", monoTable: "monospaced" };
+const FONT_DESIGN = {
+  display: "rounded",
+  h2: "rounded",
+  h3: "rounded",
+  listTitle: "rounded",
+  monoTable: "monospaced",
+  monoCaption: "monospaced",
+  monoHero: "monospaced",
+};
 
 function fontLines() {
   const lines = [];
@@ -114,15 +122,21 @@ function fontLines() {
     const design = FONT_DESIGN[name] ?? "default";
     const weight = WEIGHTS[def.weight];
     if (!weight) throw new Error(`Unbekanntes Gewicht ${def.weight} für font.size.${name}`);
-    const meta = [`${def.value}/${def.lineHeight}`, `Gewicht ${def.weight}`];
+    if (!def.ios || !def.ios.textStyle) {
+      throw new Error(
+        `font.size.${name} hat keinen iOS-Anker (ios.textStyle) — ohne ihn skaliert die Rolle nicht mit Dynamic Type.`,
+      );
+    }
+    const { textStyle, ptDefault } = def.ios;
+    const meta = [`${ptDefault} pt bei Standardgröße (.${textStyle})`, `Gewicht ${def.weight}`];
     if (def.transform === "uppercase") meta.push("VERSALIEN (im View per .textCase(.uppercase))");
     lines.push(`        /// ${meta.join(" · ")}${def.comment ? ` — ${def.comment}` : ""}`);
     lines.push(
-      `        public static let ${name} = Font.system(size: ${def.value}, weight: ${weight}, design: .${design})`,
+      `        public static let ${name} = Font.system(.${textStyle}, design: .${design}, weight: ${weight})`,
     );
     if (def.letterSpacing) {
       const em = Number(def.letterSpacing.replace(/em$/, "").replace(/^\+/, ""));
-      const pt = (em * def.value).toFixed(2);
+      const pt = (em * ptDefault).toFixed(2);
       lines.push(
         `        /// Laufweite für \`${name}\` in pt (${def.letterSpacing}) — per .tracking() anwenden.`,
       );
@@ -226,9 +240,28 @@ ${cgFloatLines(tokens.size)}
     // Body    = System (SF Pro Text) — alles andere.
     // Mono    = SF Mono (design: .monospaced) — Kürzeiten, ALLE Beträge + Rechnungsnummern.
     // Beträge/Zeiten immer zusätzlich .monospacedDigit() (tabular-nums).
+    //
+    // DYNAMIC TYPE — die wichtigste Regel dieser Datei:
+    // Alle benannten Rollen hängen an einem TextStyle-Anker (Font.system(.body) usw.)
+    // und wachsen deshalb mit den Systemeinstellungen mit. \`Font.system(size:)\` tut das
+    // NICHT — es friert die Größe ein. Darum wird \`size:\` hier nur noch in den Helfern
+    // benutzt, und deren Aufrufer müssen die Größe selbst über @ScaledMetric skalieren.
 
     public enum Fonts {
 ${fontLines()}
+
+        // -- Helfer für Sonderfälle (Hero-Zahlen, Avatare) ------------------
+        //
+        // ACHTUNG: Diese drei Helfer liefern eine FESTE Größe — sie skalieren
+        // nicht von allein mit Dynamic Type. Wer sie mit einem festen pt-Wert
+        // aufruft, muss die Größe über @ScaledMetric hereinreichen:
+        //
+        //     @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 44
+        //     Text(zahl).font(Theme.Fonts.display(size: heroSize))
+        //
+        // Ohne @ScaledMetric bleibt der Text bei jeder Systemgröße gleich groß.
+        // Das ist NUR dort richtig, wo die Größe aus einer Geometrie stammt
+        // (z. B. Initialen in einem Avatar-Kreis fester Größe).
 
         /// Display-Helfer: SF Rounded, standardmäßig extrabold (Token-Gewicht 800).
         public static func display(size: CGFloat, weight: Font.Weight = .heavy) -> Font {

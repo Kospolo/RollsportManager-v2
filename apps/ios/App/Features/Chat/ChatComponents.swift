@@ -30,7 +30,7 @@ struct ChatChannelRow: View {
                     if let stamp = timestamp {
                         Text(verbatim: stamp)
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                 }
                 preview

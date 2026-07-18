@@ -139,7 +139,7 @@ struct BudgetView: View {
             )
             Text("budget.varianceHint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }

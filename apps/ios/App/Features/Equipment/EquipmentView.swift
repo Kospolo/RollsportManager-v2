@@ -261,7 +261,7 @@ private struct MyReservationRow: View {
                         .foregroundStyle(Theme.Colors.inkPrimary)
                     Text(verbatim: "·")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 Text(verbatim: EquipmentDisplay.periodText(from: reservation.fromAt, to: reservation.toAt))
                     .font(Theme.Fonts.caption)

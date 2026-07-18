@@ -35,7 +35,7 @@ struct LockerCardView: View {
     private var header: some View {
         HStack(alignment: .top, spacing: Theme.Spacing.s2) {
             Text(verbatim: locker.label)
-                .font(Theme.Fonts.mono(size: 17, weight: .bold))
+                .font(Theme.Fonts.monoTable.weight(.bold))
                 .foregroundStyle(Theme.Colors.inkPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             RSMStatusPill(
@@ -60,7 +60,7 @@ struct LockerCardView: View {
             } else {
                 Text("schliessfaecher.card.noLocation")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }
@@ -74,7 +74,7 @@ struct LockerCardView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("schliessfaecher.card.assignedTo")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     Text(verbatim: name)
                         .font(Theme.Fonts.caption.weight(.semibold))
                         .foregroundStyle(Theme.Colors.inkPrimary)

@@ -110,7 +110,7 @@ struct RoutineWaveformView: View {
 
     private func handleLabel(_ letter: String) -> some View {
         Text(verbatim: letter)
-            .font(Theme.Fonts.mono(size: 10.5, weight: .heavy))
+            .font(Theme.Fonts.monoCaption.weight(.heavy))
             .foregroundStyle(Theme.Colors.bgSurface)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
@@ -140,6 +140,9 @@ struct RoutineWaveformView: View {
 
     private func countdownBadge(_ seconds: Int, size: CGSize) -> some View {
         Text(verbatim: "\(seconds)")
+            // BEWUSST feste Groesse: die Zahl sitzt in einem 64-pt-Kreis ueber der
+            // Waveform. Sie haengt an dieser Geometrie, nicht an der Textgroesse —
+            // mitwachsen liesse sie aus dem Kreis laufen (wie Avatar-Initialen).
             .font(Theme.Fonts.display(size: 34))
             .monospacedDigit()
             .foregroundStyle(Theme.Colors.honeyDeep)

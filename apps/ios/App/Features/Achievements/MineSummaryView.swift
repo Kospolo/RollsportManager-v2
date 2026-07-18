@@ -26,7 +26,7 @@ struct MineSummaryView: View {
             MedalIconView(medal: medal, size: .md)
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(count(medal))")
-                    .font(Theme.Fonts.display(size: 22))
+                    .font(Theme.Fonts.h2)
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(MedaillenL10n.medalLabelKey(medal))

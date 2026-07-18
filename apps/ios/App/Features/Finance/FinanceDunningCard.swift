@@ -99,7 +99,7 @@ struct FinanceDunningCard: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(stage.day)
-                    .font(Theme.Fonts.mono(size: 12, weight: .semibold))
+                    .font(Theme.Fonts.monoCaption.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkFaint)
                 Text(stage.title)
@@ -132,7 +132,7 @@ struct FinanceDunningCard: View {
                     .foregroundStyle(Theme.Colors.inkSoft)
                 Text("finance.dunning.note2")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .accessibilityElement(children: .combine)

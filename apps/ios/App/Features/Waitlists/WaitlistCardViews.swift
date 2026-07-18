@@ -157,7 +157,7 @@ struct WaitlistMineCard: View {
                 HStack(spacing: Theme.Spacing.s2) {
                     Text("wartelisten.joinedOn \(WaitlistDateFormat.short(entry.createdAt))")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     Spacer(minLength: Theme.Spacing.s2)
                     WaitlistActionButton(
                         titleKey: "wartelisten.leave.cta",

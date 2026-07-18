@@ -26,7 +26,7 @@ struct AdminClubSettingsForm: View {
                 actions
                 Text("verein.note")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(Theme.Spacing.s5)

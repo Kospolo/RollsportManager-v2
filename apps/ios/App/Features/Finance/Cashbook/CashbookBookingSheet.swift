@@ -50,7 +50,7 @@ struct CashbookBookingSheet: View {
                     }
                     Text("kassenbuch.sheet.gobd")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 .padding(Theme.Spacing.s5)
             }
@@ -275,7 +275,7 @@ private struct LabeledField<Content: View>: View {
             } else if let hint {
                 Text(hint)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

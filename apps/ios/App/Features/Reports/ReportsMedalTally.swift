@@ -77,7 +77,7 @@ struct ReportsMedalTally: View {
                 .overlay(Circle().strokeBorder(metal.ring, lineWidth: 1.5))
                 .accessibilityHidden(true)
             Text(verbatim: "\(metal.count)")
-                .font(Theme.Fonts.mono(size: 22, weight: .heavy))
+                .font(Theme.Fonts.monoHero.weight(.heavy))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.inkPrimary)
             Text(metal.label)

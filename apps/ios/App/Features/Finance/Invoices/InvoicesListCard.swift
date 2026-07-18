@@ -125,7 +125,7 @@ struct InvoicesListCard: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text("rechnungen.footer.sumLabel")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     Text(verbatim: FinanceFormat.amount(
                         cents: viewModel.shownSumCents,
                         currency: viewModel.currencyCode

@@ -109,8 +109,9 @@ struct NewEventSheet: View {
         } label: {
             Text(EventsDisplay.typeLabelKey(option))
                 .font(Theme.Fonts.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.9)
                 .foregroundStyle(isSelected ? Theme.Colors.inkPrimary : Theme.Colors.inkSoft)
                 .frame(maxWidth: .infinity, minHeight: 36)
                 .background(isSelected ? Theme.Colors.bgSurface : .clear)
@@ -187,7 +188,7 @@ struct NewEventSheet: View {
                     if model.fieldErrors.teams == nil {
                         Text("newEvent.field.teams.hint")
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                 }
                 .accessibilityElement(children: .contain)
@@ -202,8 +203,9 @@ struct NewEventSheet: View {
         } label: {
             Text(verbatim: team.name)
                 .font(Theme.Fonts.caption.weight(.bold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.9)
                 .foregroundStyle(active ? Theme.Colors.brandInk : Theme.Colors.inkSoft)
                 .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
                 .padding(.horizontal, Theme.Spacing.s3)

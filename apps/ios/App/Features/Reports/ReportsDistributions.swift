@@ -82,7 +82,7 @@ struct ReportsBarList: View {
                     .truncationMode(.tail)
                 Spacer(minLength: 0)
                 Text(verbatim: "\(item.value)")
-                    .font(Theme.Fonts.mono(size: 13, weight: .semibold))
+                    .font(Theme.Fonts.monoCaption.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkPrimary)
             }

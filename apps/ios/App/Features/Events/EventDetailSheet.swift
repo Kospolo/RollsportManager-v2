@@ -131,7 +131,7 @@ struct EventDetailSheet: View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
             Text("events.detail.note.title")
                 .font(Theme.Fonts.caption.weight(.semibold))
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
             Text(verbatim: note)
                 .font(Theme.Fonts.body)
                 .foregroundStyle(Theme.Colors.inkSoft)
@@ -171,8 +171,9 @@ struct EventDetailSheet: View {
                     .font(.system(size: 12, weight: .semibold))
                 Text(choiceLabelKey(status))
                     .font(Theme.Fonts.bodyStrong)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.9)
             }
             .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
             .foregroundStyle(isSelected ? choiceForeground(status) : Theme.Colors.inkSoft)

@@ -69,7 +69,7 @@ struct DunningStageGroupCard: View {
     private var emptyRow: some View {
         Text("mahnungen.stage.empty")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Theme.Spacing.s4)
             .background(
@@ -124,7 +124,7 @@ private struct DunningItemRow: View {
                         if let year = item.memberJoinYear {
                             Text("mahnungen.member.since \(year)")
                                 .font(Theme.Fonts.caption)
-                                .foregroundStyle(Theme.Colors.inkFaint)
+                                .foregroundStyle(Theme.Colors.inkSoft)
                                 .lineLimit(1)
                         }
                     }
@@ -164,7 +164,7 @@ private struct DunningItemRow: View {
         } else if let due = FinanceFormat.date(item.invoice.dueOn) {
             Text("mahnungen.due.upcoming \(due)")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .lineLimit(1)
         }
     }

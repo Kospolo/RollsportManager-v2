@@ -188,7 +188,7 @@ struct AwardAchievementSheet: View {
             Spacer(minLength: 0)
             Image(systemName: "chevron.up.chevron.down")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .modifier(FieldChrome())
     }
@@ -211,7 +211,7 @@ struct AwardAchievementSheet: View {
             } else if let hint {
                 Text(hint)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

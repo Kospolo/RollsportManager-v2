@@ -129,7 +129,7 @@ struct RoutineDetailView: View {
                             .font(.system(size: 13, weight: .bold))
                     }
                     Text("marker.add \(RoutineFormat.mmss(playback.posMs))")
-                        .font(Theme.Fonts.body(size: 13, weight: .heavy))
+                        .font(Theme.Fonts.caption.weight(.heavy))
                         .monospacedDigit()
                 }
                 .foregroundStyle(Theme.Colors.honeyDeep)

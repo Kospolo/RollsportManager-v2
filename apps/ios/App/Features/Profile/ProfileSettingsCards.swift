@@ -14,7 +14,7 @@ struct ProfileAccountCard: View {
                 row(icon: "envelope") {
                     Text("profil.account.emailLabel")
                         .font(Theme.Fonts.caption.weight(.semibold))
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 } value: {
                     if let email {
                         Text(verbatim: email)
@@ -38,7 +38,7 @@ struct ProfileAccountCard: View {
                             .accessibilityHidden(true)
                         Text("profil.account.passwordLabel")
                             .font(Theme.Fonts.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                         Spacer(minLength: Theme.Spacing.s3)
                         Text("profil.account.passwordNote")
                             .font(Theme.Fonts.bodyStrong)
@@ -46,7 +46,7 @@ struct ProfileAccountCard: View {
                     }
                     Text("profil.account.passwordHint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }
@@ -98,7 +98,7 @@ struct ProfileAppearanceCard: View {
                 }
                 Text("profil.language.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
 
                 Divider().overlay(Theme.Colors.line)
 
@@ -130,7 +130,7 @@ struct ProfileAppearanceCard: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(desc)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             control()
         }
@@ -159,7 +159,7 @@ struct ProfileNotificationsCard: View {
 
                 Text("profil.notify.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .padding(.top, Theme.Spacing.s2)
             }
         }
@@ -177,7 +177,7 @@ struct ProfileNotificationsCard: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(desc)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .tint(Theme.Colors.brand)

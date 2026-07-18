@@ -134,7 +134,7 @@ struct AnniversariesView: View {
     private var filterEmptyNote: some View {
         Text("jubilaeen.filterEmpty")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Theme.Spacing.s4)
             .background(Theme.Colors.bgSunken)

@@ -54,7 +54,7 @@ struct DunningMailPreviewSheet: View {
                         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
                     Text("mahnungen.mail.note")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 .padding(Theme.Spacing.s5)
             }
@@ -121,7 +121,7 @@ struct DunningMailPreviewSheet: View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s3) {
             Text(label)
                 .font(Theme.Fonts.caption.weight(.bold))
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .frame(width: 56, alignment: .leading)
             Text(verbatim: value)
                 .font(Theme.Fonts.caption)

@@ -188,11 +188,11 @@ struct DunningRunSheet: View {
             }
             Text(hint)
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
             if actions.isEmpty {
                 Text(emptyKey)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Theme.Spacing.s3)
                     .background(
@@ -288,7 +288,7 @@ struct DunningRunSheet: View {
                 .accessibilityHidden(true)
             Text("mahnungen.run.micro")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .accessibilityElement(children: .combine)
     }

@@ -106,7 +106,7 @@ struct CreateInvoiceSheet: View {
                     Spacer(minLength: Theme.Spacing.s2)
                     Image(systemName: "chevron.up.chevron.down")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 .padding(Theme.Spacing.s3)
                 .frame(minHeight: Theme.Size.touchTarget)
@@ -144,7 +144,7 @@ struct CreateInvoiceSheet: View {
                     .accessibilityLabel(Text("rechnungen.create.amount"))
                 Text("rechnungen.create.amount.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }
@@ -170,7 +170,7 @@ struct CreateInvoiceSheet: View {
                 } else {
                     Text("rechnungen.create.due.hint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }
@@ -187,7 +187,7 @@ struct CreateInvoiceSheet: View {
                 .tint(Theme.Colors.brand)
                 Text("rechnungen.create.issue.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

@@ -52,7 +52,7 @@ struct CheckinQrCard: View {
             HStack(spacing: Theme.Spacing.s1) {
                 Text("checkin.qr.idLabel")
                 Text(verbatim: memberId)
-                    .font(Theme.Fonts.mono(size: 12))
+                    .font(Theme.Fonts.monoCaption)
             }
             .font(Theme.Fonts.caption)
             .foregroundStyle(Theme.Colors.inkSoft)
@@ -62,7 +62,7 @@ struct CheckinQrCard: View {
     private var hint: some View {
         Text("checkin.qr.hint")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .multilineTextAlignment(.center)
             .frame(maxWidth: 280)
     }
@@ -143,10 +143,10 @@ private struct CheckinQrFullscreen: View {
                 }
                 VStack(spacing: Theme.Spacing.s1) {
                     Text(verbatim: displayName)
-                        .font(Theme.Fonts.display(size: 20))
+                        .font(Theme.Fonts.h2)
                         .foregroundStyle(Color.black)
                     Text(verbatim: memberId)
-                        .font(Theme.Fonts.mono(size: 13))
+                        .font(Theme.Fonts.monoCaption)
                         .foregroundStyle(Color.black.opacity(0.55))
                 }
             }

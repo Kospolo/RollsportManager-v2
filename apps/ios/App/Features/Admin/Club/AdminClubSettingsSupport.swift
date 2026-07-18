@@ -95,7 +95,7 @@ struct ClubFieldGroup<Content: View>: View {
             } else if let hint {
                 Text(hint)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,7 +116,7 @@ struct ClubNotifyRow: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(desc)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -178,7 +178,7 @@ struct AdminClubReadOnlyView: View {
                                 HStack(alignment: .firstTextBaseline) {
                                     Text(row.label)
                                         .font(Theme.Fonts.caption.weight(.semibold))
-                                        .foregroundStyle(Theme.Colors.inkFaint)
+                                        .foregroundStyle(Theme.Colors.inkSoft)
                                     Spacer(minLength: Theme.Spacing.s4)
                                     Text(verbatim: row.value)
                                         .font(Theme.Fonts.body)

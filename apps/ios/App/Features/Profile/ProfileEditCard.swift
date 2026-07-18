@@ -70,7 +70,7 @@ struct ProfileEditCard: View {
                 if viewModel.emailError == nil {
                     Text("profil.field.email.hint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }
@@ -93,7 +93,7 @@ struct ProfileEditCard: View {
                     .accessibilityLabel(Text("profil.field.birth"))
                     Text(birthHint)
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 } else {
                     Button {
                         withAnimation(.easeOut(duration: Theme.Motion.fast)) {
@@ -110,7 +110,7 @@ struct ProfileEditCard: View {
                     .buttonStyle(RSMPressableButtonStyle())
                     Text("profil.field.birth.hint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }

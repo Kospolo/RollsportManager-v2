@@ -62,7 +62,7 @@ struct ExerciseCardView: View {
             Spacer(minLength: Theme.Spacing.s2)
             Text("uebungen.card.byAuthor \(authorDisplay)")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .lineLimit(1)
                 .truncationMode(.tail)
         }

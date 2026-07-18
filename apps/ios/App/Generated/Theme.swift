@@ -1,7 +1,7 @@
 // ============================================================
 // GENERIERT aus design/tokens.json — NICHT von Hand editieren.
 // Neu bauen:  npm run gen:swift   (in packages/tokens)
-// Design-System „Heimspiel“ · 1.0.0 · Stand 2026-07-10
+// Design-System „Heimspiel“ · 1.0.0 · Stand 2026-07-18
 // ============================================================
 
 import SwiftUI
@@ -127,28 +127,53 @@ public enum Theme {
     // Body    = System (SF Pro Text) — alles andere.
     // Mono    = SF Mono (design: .monospaced) — Kürzeiten, ALLE Beträge + Rechnungsnummern.
     // Beträge/Zeiten immer zusätzlich .monospacedDigit() (tabular-nums).
+    //
+    // DYNAMIC TYPE — die wichtigste Regel dieser Datei:
+    // Alle benannten Rollen hängen an einem TextStyle-Anker (Font.system(.body) usw.)
+    // und wachsen deshalb mit den Systemeinstellungen mit. `Font.system(size:)` tut das
+    // NICHT — es friert die Größe ein. Darum wird `size:` hier nur noch in den Helfern
+    // benutzt, und deren Aufrufer müssen die Größe selbst über @ScaledMetric skalieren.
 
     public enum Fonts {
-        /// 27/32 · Gewicht 800
-        public static let display = Font.system(size: 27, weight: .heavy, design: .rounded)
+        /// 28 pt bei Standardgröße (.title) · Gewicht 800
+        public static let display = Font.system(.title, design: .rounded, weight: .heavy)
         /// Laufweite für `display` in pt (-0.02em) — per .tracking() anwenden.
-        public static let displayTracking: CGFloat = -0.54
-        /// 20/26 · Gewicht 800
-        public static let h2 = Font.system(size: 20, weight: .heavy, design: .rounded)
-        /// 17/23 · Gewicht 800
-        public static let h3 = Font.system(size: 17, weight: .heavy, design: .rounded)
-        /// 14.5/21 · Gewicht 700
-        public static let bodyStrong = Font.system(size: 14.5, weight: .bold, design: .default)
-        /// 14.5/22 · Gewicht 400
-        public static let body = Font.system(size: 14.5, weight: .regular, design: .default)
-        /// 12.5/17 · Gewicht 400
-        public static let caption = Font.system(size: 12.5, weight: .regular, design: .default)
-        /// 11/14 · Gewicht 800 · VERSALIEN (im View per .textCase(.uppercase))
-        public static let eyebrow = Font.system(size: 11, weight: .heavy, design: .default)
+        public static let displayTracking: CGFloat = -0.56
+        /// 20 pt bei Standardgröße (.title3) · Gewicht 800
+        public static let h2 = Font.system(.title3, design: .rounded, weight: .heavy)
+        /// 17 pt bei Standardgröße (.headline) · Gewicht 800
+        public static let h3 = Font.system(.headline, design: .rounded, weight: .heavy)
+        /// 17 pt bei Standardgröße (.headline) · Gewicht 800 — Zeilentitel in Listen (Mitglieder, Küren, Termine) — optisch wie h3, eigene Rolle für spätere Feinsteuerung
+        public static let listTitle = Font.system(.headline, design: .rounded, weight: .heavy)
+        /// 17 pt bei Standardgröße (.body) · Gewicht 700
+        public static let bodyStrong = Font.system(.body, design: .default, weight: .bold)
+        /// 17 pt bei Standardgröße (.body) · Gewicht 400
+        public static let body = Font.system(.body, design: .default, weight: .regular)
+        /// 13 pt bei Standardgröße (.footnote) · Gewicht 400
+        public static let caption = Font.system(.footnote, design: .default, weight: .regular)
+        /// 11 pt bei Standardgröße (.caption2) · Gewicht 800 · VERSALIEN (im View per .textCase(.uppercase))
+        public static let eyebrow = Font.system(.caption2, design: .default, weight: .heavy)
         /// Laufweite für `eyebrow` in pt (+0.09em) — per .tracking() anwenden.
         public static let eyebrowTracking: CGFloat = 0.99
-        /// 13/18 · Gewicht 600 — Beträge/Rechnungsnummern in Tabellen (JetBrains Mono, tabular)
-        public static let monoTable = Font.system(size: 13, weight: .semibold, design: .monospaced)
+        /// 17 pt bei Standardgröße (.body) · Gewicht 600 — Beträge/Rechnungsnummern in Tabellen (JetBrains Mono, tabular)
+        public static let monoTable = Font.system(.body, design: .monospaced, weight: .semibold)
+        /// 13 pt bei Standardgröße (.footnote) · Gewicht 500 — Kleine Mono-Angaben: Zeitmarken, Kürzeiten im Chip, Codes, Restlaufzeiten
+        public static let monoCaption = Font.system(.footnote, design: .monospaced, weight: .medium)
+        /// 22 pt bei Standardgröße (.title2) · Gewicht 700 — Große Mono-Zahl: Rechnungssumme im Detail, Medaillenspiegel, Score-Pad
+        public static let monoHero = Font.system(.title2, design: .monospaced, weight: .bold)
+
+        // -- Helfer für Sonderfälle (Hero-Zahlen, Avatare) ------------------
+        //
+        // ACHTUNG: Diese drei Helfer liefern eine FESTE Größe — sie skalieren
+        // nicht von allein mit Dynamic Type. Wer sie mit einem festen pt-Wert
+        // aufruft, muss die Größe über @ScaledMetric hereinreichen:
+        //
+        //     @ScaledMetric(relativeTo: .largeTitle) private var heroSize: CGFloat = 44
+        //     Text(zahl).font(Theme.Fonts.display(size: heroSize))
+        //
+        // Ohne @ScaledMetric bleibt der Text bei jeder Systemgröße gleich groß.
+        // Das ist NUR dort richtig, wo die Größe aus einer Geometrie stammt
+        // (z. B. Initialen in einem Avatar-Kreis fester Größe).
 
         /// Display-Helfer: SF Rounded, standardmäßig extrabold (Token-Gewicht 800).
         public static func display(size: CGFloat, weight: Font.Weight = .heavy) -> Font {

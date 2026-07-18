@@ -56,7 +56,7 @@ struct CompetitionScorePadSheet: View {
                                 ? "wettkampf.scorepad.hint.prefilled"
                                 : "wettkampf.scorepad.hint.new")
                                 .font(Theme.Fonts.caption)
-                                .foregroundStyle(Theme.Colors.inkFaint)
+                                .foregroundStyle(Theme.Colors.inkSoft)
                         }
                     }
                     RSMPrimaryButton(title: "wettkampf.scorepad.submit", isLoading: isSaving) {
@@ -94,7 +94,7 @@ struct CompetitionScorePadSheet: View {
                 .foregroundStyle(Theme.Colors.inkPrimary)
             Text(verbatim: routineSubtitle)
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -115,7 +115,7 @@ struct CompetitionScorePadSheet: View {
                 .foregroundStyle(Theme.Colors.inkFaint)
             Spacer()
             Text(verbatim: WettkampfScore.format(total))
-                .font(Theme.Fonts.mono(size: 22, weight: .bold))
+                .font(Theme.Fonts.monoHero.weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.inkPrimary)
         }
@@ -179,7 +179,7 @@ private struct WettkampfScoreStepper: View {
                 stepButton(-0.1)
                 Spacer(minLength: 0)
                 Text(verbatim: WettkampfScore.format(value))
-                    .font(Theme.Fonts.mono(size: 17, weight: .bold))
+                    .font(Theme.Fonts.monoTable.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkPrimary)
                     .frame(minWidth: 70)
@@ -198,7 +198,7 @@ private struct WettkampfScoreStepper: View {
             value = WettkampfScore.round2(min(150, max(0, value + step)))
         } label: {
             Text(verbatim: stepLabel(step))
-                .font(Theme.Fonts.mono(size: 12, weight: .bold))
+                .font(Theme.Fonts.monoCaption.weight(.bold))
                 .frame(width: Theme.Size.touchTarget, height: Theme.Size.touchTarget)
                 .background(Theme.Colors.bgSurface)
                 .foregroundStyle(Theme.Colors.inkPrimary)

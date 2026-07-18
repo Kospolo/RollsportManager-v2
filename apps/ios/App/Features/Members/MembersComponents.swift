@@ -146,42 +146,72 @@ struct MemberRowView: View {
     let teamNames: String?
     let feeStatus: MembersViewModel.FeeStatus?
 
+    /// Ab den Accessibility-Stufen ist nebeneinander kein Platz mehr: Name,
+    /// Team UND Rollen-Pill in einer Zeile zwingen den Namen ins Abschneiden
+    /// („Jo-han…“). Dann werden die Pills unter den Namen gelegt.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
-        HStack(spacing: Theme.Spacing.s3) {
-            RSMAvatarView(name: member.membersFullName, personId: member.id, size: 40)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: member.membersFullName)
-                    .font(Theme.Fonts.bodyStrong)
-                    .foregroundStyle(Theme.Colors.inkPrimary)
-                    .lineLimit(1)
-                if let teamNames {
-                    Text(verbatim: teamNames)
-                        .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkSoft)
-                        .lineLimit(1)
-                } else {
-                    Text("members.row.noTeam")
-                        .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+                    HStack(spacing: Theme.Spacing.s3) {
+                        RSMAvatarView(name: member.membersFullName, personId: member.id, size: 40)
+                        nameBlock
+                        Spacer(minLength: Theme.Spacing.s2)
+                        chevron
+                    }
+                    HStack(spacing: Theme.Spacing.s2) { pills }
+                }
+            } else {
+                HStack(spacing: Theme.Spacing.s3) {
+                    RSMAvatarView(name: member.membersFullName, personId: member.id, size: 40)
+                    nameBlock
+                    Spacer(minLength: Theme.Spacing.s2)
+                    VStack(alignment: .trailing, spacing: Theme.Spacing.s1) { pills }
+                    chevron
                 }
             }
-            Spacer(minLength: Theme.Spacing.s2)
-            VStack(alignment: .trailing, spacing: Theme.Spacing.s1) {
-                RSMStatusPill(
-                    text: MembersL10n.roleKey(member.role),
-                    kind: MembersL10n.roleKind(member.role)
-                )
-                if let feeStatus {
-                    MembersFeePill(status: feeStatus)
-                }
-            }
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Theme.Colors.inkFaint)
-                .accessibilityHidden(true)
         }
         .frame(minHeight: Theme.Size.listRow)
         .contentShape(Rectangle())
+    }
+
+    private var nameBlock: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: member.membersFullName)
+                .font(Theme.Fonts.listTitle)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .lineLimit(2)
+            if let teamNames {
+                Text(verbatim: teamNames)
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+                    .lineLimit(2)
+            } else {
+                Text("members.row.noTeam")
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var pills: some View {
+        RSMStatusPill(
+            text: MembersL10n.roleKey(member.role),
+            kind: MembersL10n.roleKind(member.role)
+        )
+        if let feeStatus {
+            MembersFeePill(status: feeStatus)
+        }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Theme.Colors.inkFaint)
+            .accessibilityHidden(true)
     }
 }
 
@@ -196,7 +226,7 @@ struct MembersDetailRow: View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s3) {
             Text(label)
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .frame(width: 116, alignment: .leading)
             value
                 .font(Theme.Fonts.body)

@@ -99,7 +99,7 @@ struct FamilyView: View {
                     }
                     Text("familie.selfserviceHint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
             .padding(Theme.Spacing.s5)

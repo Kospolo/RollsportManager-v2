@@ -130,22 +130,36 @@ private struct RoutineCardView: View {
 
     private var routine: Routine { item.routine }
 
+    /// Ab den Accessibility-Stufen passen Name und Status-Pill nicht mehr
+    /// nebeneinander — der Name wuerde abgeschnitten („Maja…“) und die Pill
+    /// zur Blase. Dann steht die Pill unter dem Namen.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var statusPill: some View {
+        RSMStatusPill(text: routine.status.labelKey, kind: routine.status.pillKind)
+    }
+
+    private var skaterLine: some View {
+        HStack(spacing: Theme.Spacing.s2) {
+            avatarStack
+            Text(verbatim: item.skaterNames)
+                .font(Theme.Fonts.bodyStrong)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .lineLimit(2)
+            Spacer(minLength: Theme.Spacing.s2)
+            if !dynamicTypeSize.isAccessibilitySize { statusPill }
+        }
+    }
+
     var body: some View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
-                HStack(spacing: Theme.Spacing.s2) {
-                    avatarStack
-                    Text(verbatim: item.skaterNames)
-                        .font(Theme.Fonts.bodyStrong)
-                        .foregroundStyle(Theme.Colors.inkPrimary)
-                        .lineLimit(1)
-                    Spacer(minLength: Theme.Spacing.s2)
-                    RSMStatusPill(text: routine.status.labelKey, kind: routine.status.pillKind)
-                }
+                skaterLine
+                if dynamicTypeSize.isAccessibilitySize { statusPill }
 
                 VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
                     Text(verbatim: routine.title)
-                        .font(Theme.Fonts.h3)
+                        .font(Theme.Fonts.listTitle)
                         .foregroundStyle(Theme.Colors.inkPrimary)
                     categoryLine
                 }
@@ -159,7 +173,7 @@ private struct RoutineCardView: View {
                         Text(verbatim: [musicTitle, routine.musicArtist].compactMap { $0 }.joined(separator: " · "))
                             .font(Theme.Fonts.caption)
                             .foregroundStyle(Theme.Colors.inkSoft)
-                            .lineLimit(1)
+                            .lineLimit(2)
                     }
                 }
 
@@ -198,7 +212,13 @@ private struct RoutineCardView: View {
     }
 
     private var bottomRow: some View {
-        HStack(spacing: Theme.Spacing.s2) {
+        // Dauer links, letzte Wertung rechts — das passt nur bei den
+        // Standardstufen nebeneinander. Bei Accessibility-Schrift bricht sonst
+        // „Letzte RollArt-Wertung“ Silbe fuer Silbe um.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s2))
+        return layout {
             if let durationMs = routine.musicDurationMs {
                 Image(systemName: "clock")
                     .font(.system(size: 12, weight: .semibold))
@@ -213,7 +233,7 @@ private struct RoutineCardView: View {
             if let lastTotal = item.lastTotal {
                 Text("routines.list.lastScore")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                 Text(verbatim: RoutineFormat.points(lastTotal))
                     .font(Theme.Fonts.monoTable)
                     .monospacedDigit()
@@ -224,7 +244,7 @@ private struct RoutineCardView: View {
             } else {
                 Text("routines.list.noScore")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

@@ -104,7 +104,7 @@ struct AdminMemberEditSheet: View {
                 if model.showPendingHint {
                     Text("mitglieder.field.status.pendingHint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
 
                 if model.showValidUntil {
@@ -125,7 +125,7 @@ struct AdminMemberEditSheet: View {
     private var birthHint: some View {
         Text("mitglieder.field.birth.hint")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
     }
 
     private var statusMenu: some View {
@@ -157,7 +157,7 @@ struct AdminMemberEditSheet: View {
                 HStack(spacing: Theme.Spacing.s2) {
                     Text("mitglieder.edit.role.current")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     RSMStatusPill(
                         text: AdminMembersL10n.roleKey(model.role),
                         kind: AdminMembersL10n.roleKind(model.role)
@@ -170,7 +170,7 @@ struct AdminMemberEditSheet: View {
                 roleMenu
                 Text(model.roleHintKey)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

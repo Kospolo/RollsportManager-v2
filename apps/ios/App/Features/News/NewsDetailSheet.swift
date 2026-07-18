@@ -73,7 +73,7 @@ struct NewsDetailSheet: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(verbatim: "\(NewsDate.absolute(displayIso)) · \(NewsDate.relativeText(displayIso))")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             Spacer(minLength: 0)
         }

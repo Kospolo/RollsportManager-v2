@@ -56,7 +56,7 @@ struct RoutinePlayerTempoControl: View {
                     .accessibilityLabel(Text("routines.player.a11y.tempoSlider"))
                     .accessibilityValue(Text("routines.player.a11y.tempoPreset \(tempoInt)"))
                 Text(verbatim: factorText)
-                    .font(Theme.Fonts.mono(size: 12.5, weight: .bold))
+                    .font(Theme.Fonts.monoCaption.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkSoft)
             }
@@ -71,7 +71,7 @@ struct RoutinePlayerTempoControl: View {
         let active = tempoInt == preset
         return Button { playback.setTempo(Double(preset)) } label: {
             Text(verbatim: "\(preset)\u{202F}%")
-                .font(Theme.Fonts.body(size: 13.5, weight: .bold))
+                .font(Theme.Fonts.caption.weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(active ? Theme.Colors.brandContrast : Theme.Colors.inkSoft)
                 .frame(minHeight: 44)

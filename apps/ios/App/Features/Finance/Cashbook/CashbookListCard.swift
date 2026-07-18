@@ -75,7 +75,7 @@ struct CashbookListCard: View {
             .accessibilityElement(children: .combine)
             Text("kassenbuch.foot.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
     }
 }
@@ -176,12 +176,12 @@ private struct CashbookRowView: View {
         if row.isReversal {
             Text("kassenbuch.reversalOf")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .lineLimit(1)
         } else if entry.counterpartyKind == .person || entry.counterpartyName != nil {
             Text(verbatim: displayName)
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .lineLimit(1)
         }
     }

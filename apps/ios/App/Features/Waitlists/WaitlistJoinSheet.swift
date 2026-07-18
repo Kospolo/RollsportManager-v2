@@ -96,7 +96,7 @@ struct WaitlistJoinSheet: View {
             if options.isEmpty {
                 Text("wartelisten.field.target.unavailable")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
                 Menu {

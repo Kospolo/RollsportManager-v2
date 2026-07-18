@@ -75,7 +75,7 @@ struct TeamCardView: View {
                 } else {
                     Text("teams.card.noAgeGroup")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
             Spacer(minLength: 0)
@@ -143,7 +143,7 @@ struct TeamCardView: View {
             }
         }
         .font(Theme.Fonts.caption)
-        .foregroundStyle(Theme.Colors.inkFaint)
+        .foregroundStyle(Theme.Colors.inkSoft)
     }
 
     // MARK: - Aktionen

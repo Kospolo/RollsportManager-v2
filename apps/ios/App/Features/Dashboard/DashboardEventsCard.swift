@@ -35,7 +35,7 @@ struct DashboardEventsCard: View {
                     if data.upcomingEvents.count > maxRows {
                         Text("dashboard.events.more \(data.upcomingEvents.count - maxRows)")
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                 }
             }
@@ -95,7 +95,7 @@ struct DashboardEventsCard: View {
                 } else {
                     Text(DashboardFormat.weekdayShortText(start))
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 Text(DashboardFormat.dayMonthText(start))
                     .font(Theme.Fonts.bodyStrong)

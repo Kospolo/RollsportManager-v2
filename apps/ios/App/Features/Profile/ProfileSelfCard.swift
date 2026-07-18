@@ -30,7 +30,7 @@ struct ProfileSelfCard: View {
                 case .unavailable:
                     Text("profil.self.unavailable")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 case .failed(let message):
                     failure(message)
                 case .loaded:
@@ -102,7 +102,7 @@ struct ProfileSelfCard: View {
                 HStack {
                     Text("profil.self.field.motto.hint")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     Spacer(minLength: Theme.Spacing.s2)
                     Text("profil.self.remaining \(viewModel.mottoRemaining)")
                         .font(Theme.Fonts.caption.weight(.semibold))
@@ -138,7 +138,7 @@ struct ProfileSelfCard: View {
                     .accessibilityLabel(Text("profil.self.field.year"))
                 Text("profil.self.field.year.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

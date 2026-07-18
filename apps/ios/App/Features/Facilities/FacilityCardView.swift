@@ -38,7 +38,7 @@ struct FacilityCardView: View {
                     Label {
                         Text(upcomingLabel)
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     } icon: {
                         Image(systemName: "clock")
                             .font(.system(size: 13))

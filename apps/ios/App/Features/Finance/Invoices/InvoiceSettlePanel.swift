@@ -113,7 +113,7 @@ struct InvoiceSettlePanel: View {
             Spacer(minLength: Theme.Spacing.s2)
             Image(systemName: "chevron.up.chevron.down")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .padding(Theme.Spacing.s3)
         .frame(minHeight: Theme.Size.touchTarget)

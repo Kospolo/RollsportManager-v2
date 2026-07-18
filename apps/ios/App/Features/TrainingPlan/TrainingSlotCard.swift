@@ -29,7 +29,7 @@ struct TrainingSlotCard: View {
                 if let note = slot.note, !note.isEmpty {
                     Text(verbatim: note)
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

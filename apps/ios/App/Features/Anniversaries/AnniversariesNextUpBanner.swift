@@ -45,8 +45,7 @@ struct AnniversariesNextUpBanner: View {
                                 Text(JubilaeenFormat.milestone(item.kind, years: years))
                                     .font(Theme.Fonts.bodyStrong)
                                     .foregroundStyle(Theme.Colors.inkSoft)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.85)
+                                    .lineLimit(2)
                             }
                         }
                     }
@@ -56,7 +55,7 @@ struct AnniversariesNextUpBanner: View {
                 HStack(spacing: Theme.Spacing.s2) {
                     RSMStatusPill(text: count.label, kind: count.kind)
                     Text(verbatim: JubilaeenFormat.dayText(item.date))
-                        .font(Theme.Fonts.mono(size: 12, weight: .medium))
+                        .font(Theme.Fonts.monoCaption.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(Theme.Colors.inkFaint)
                     Spacer(minLength: 0)

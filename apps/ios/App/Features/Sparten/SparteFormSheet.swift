@@ -96,7 +96,7 @@ struct SparteFormSheet: View {
                 .foregroundStyle(Theme.Colors.inkPrimary)
             Text("sparten.form.icon.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
             let columns = [GridItem(.adaptive(minimum: 48), spacing: Theme.Spacing.s2)]
             LazyVGrid(columns: columns, spacing: Theme.Spacing.s2) {
                 ForEach(SparteIconCatalog.options, id: \.key) { option in
@@ -134,7 +134,7 @@ struct SparteFormSheet: View {
                 .foregroundStyle(Theme.Colors.inkPrimary)
             Text("sparten.form.color.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
             let columns = [GridItem(.adaptive(minimum: 44), spacing: Theme.Spacing.s3)]
             LazyVGrid(columns: columns, spacing: Theme.Spacing.s3) {
                 ForEach(SparteColorCatalog.hexColors, id: \.self) { hex in
@@ -189,7 +189,7 @@ struct SparteFormSheet: View {
             } else {
                 Text("sparten.form.sort.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,7 +205,7 @@ struct SparteFormSheet: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text("sparten.form.active.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .tint(Theme.Colors.brand)
@@ -219,7 +219,7 @@ struct SparteFormSheet: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text("sparten.form.ownFinances.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .tint(Theme.Colors.brand)

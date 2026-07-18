@@ -153,8 +153,9 @@ struct ProfileSegmented<Value: Hashable>: View {
                 }
                 Text(option.label)
                     .font(Theme.Fonts.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.9)
             }
             .foregroundStyle(isSelected ? Theme.Colors.inkPrimary : Theme.Colors.inkSoft)
             .frame(maxWidth: .infinity, minHeight: 36)

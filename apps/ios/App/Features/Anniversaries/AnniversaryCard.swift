@@ -17,7 +17,7 @@ struct AnniversaryCard: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(verbatim: item.memberName)
-                    .font(Theme.Fonts.display(size: 15))
+                    .font(Theme.Fonts.h3)
                     .foregroundStyle(Theme.Colors.inkPrimary)
                     .lineLimit(1)
                 HStack(spacing: Theme.Spacing.s2) {
@@ -28,8 +28,7 @@ struct AnniversaryCard: View {
                         Text(JubilaeenFormat.milestone(item.kind, years: years))
                             .font(Theme.Fonts.caption.weight(.semibold))
                             .foregroundStyle(Theme.Colors.inkSoft)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+                            .lineLimit(2)
                     }
                 }
             }
@@ -37,7 +36,7 @@ struct AnniversaryCard: View {
 
             VStack(alignment: .trailing, spacing: Theme.Spacing.s1) {
                 Text(verbatim: JubilaeenFormat.dayText(item.date))
-                    .font(Theme.Fonts.mono(size: 12, weight: .medium))
+                    .font(Theme.Fonts.monoCaption.weight(.medium))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkFaint)
                     .lineLimit(1)

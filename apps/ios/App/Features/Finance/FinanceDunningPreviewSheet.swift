@@ -75,7 +75,7 @@ struct FinanceDunningPreviewSheet: View {
                 if let asOf = FinanceFormat.date(result.asOf) {
                     Text("finance.preview.asOf \(asOf)")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
             }
         }

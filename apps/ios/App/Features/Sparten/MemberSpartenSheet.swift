@@ -81,7 +81,7 @@ struct MemberSpartenSheet: View {
                 .foregroundStyle(Theme.Colors.inkSoft)
             Text("member.sparten.sheet.summary \(model.selectedCount)")
                 .font(Theme.Fonts.caption.weight(.semibold))
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .accessibilityAddTraits(.updatesFrequently)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

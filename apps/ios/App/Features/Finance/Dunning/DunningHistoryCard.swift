@@ -53,7 +53,7 @@ struct DunningHistoryCard: View {
                 .foregroundStyle(Theme.Colors.inkPrimary)
             Text("mahnungen.history.empty.message")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Spacing.s5)
@@ -72,7 +72,7 @@ struct DunningHistoryCard: View {
                 .accessibilityHidden(true)
             Text("mahnungen.history.immutable")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .accessibilityElement(children: .combine)
     }
@@ -108,7 +108,7 @@ private struct DunningLogRow: View {
             HStack(spacing: Theme.Spacing.s2) {
                 RSMStatusPill(text: entry.action.labelKey, kind: entry.action.pillKind)
                 Text(verbatim: stageText)
-                    .font(Theme.Fonts.mono(size: 12, weight: .semibold))
+                    .font(Theme.Fonts.monoCaption.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkSoft)
                 Spacer(minLength: Theme.Spacing.s2)
@@ -130,7 +130,7 @@ private struct DunningLogRow: View {
                 }
                 Text("mahnungen.history.by \(actorName ?? String(localized: "mahnungen.history.system"))")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             if let note = entry.note, !note.isEmpty {
                 Text(verbatim: note)

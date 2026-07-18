@@ -115,7 +115,7 @@ struct FamilySectionCard: View {
                         .foregroundStyle(Theme.Colors.inkPrimary)
                     Text("familie.count \(entries.count)")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 VStack(spacing: 0) {
                     ForEach(entries) { entry in

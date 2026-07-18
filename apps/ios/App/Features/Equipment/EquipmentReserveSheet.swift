@@ -105,7 +105,7 @@ struct EquipmentReserveSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Text("ausruestung.reserve.member.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         } else {
             Text("ausruestung.reserve.forSelf \(currentMemberName)")
@@ -140,11 +140,11 @@ struct EquipmentReserveSheet: View {
             if let cap = model.cap {
                 Text("ausruestung.reserve.quantity.hint \(cap)")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             } else {
                 Text("ausruestung.reserve.quantity.hintUnknown")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             if let error = model.fieldErrors.quantity {
                 Text(error)

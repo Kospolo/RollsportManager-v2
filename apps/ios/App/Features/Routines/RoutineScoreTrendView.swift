@@ -96,7 +96,7 @@ struct RoutineScoreTrendView: View {
                         .lineLimit(1)
                     Text(verbatim: RoutineFormat.monthYear(point.date))
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                     Spacer(minLength: Theme.Spacing.s2)
                     Text(verbatim: RoutineFormat.points(point.total))
                         .font(Theme.Fonts.monoTable)
@@ -160,7 +160,7 @@ struct RoutineScoreTrendView: View {
                     if let date = value.as(Date.self) {
                         Text(verbatim: RoutineFormat.monthYear(date))
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                 }
             }
@@ -170,7 +170,7 @@ struct RoutineScoreTrendView: View {
                 AxisGridLine().foregroundStyle(Theme.Colors.line)
                 AxisValueLabel()
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

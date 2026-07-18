@@ -122,7 +122,7 @@ struct InvoiceDetailSheet: View {
                 }
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
                     Text(verbatim: amountText)
-                        .font(Theme.Fonts.mono(size: 24, weight: .bold))
+                        .font(Theme.Fonts.monoHero.weight(.bold))
                         .monospacedDigit()
                         .foregroundStyle(Theme.Colors.inkPrimary)
                     Spacer(minLength: Theme.Spacing.s2)
@@ -158,7 +158,7 @@ struct InvoiceDetailSheet: View {
                         if let email = member?.email, !email.isEmpty {
                             Text(verbatim: email)
                                 .font(Theme.Fonts.caption)
-                                .foregroundStyle(Theme.Colors.inkFaint)
+                                .foregroundStyle(Theme.Colors.inkSoft)
                         }
                     }
                 }
@@ -291,11 +291,11 @@ struct InvoiceDetailSheet: View {
         if invoice.status == .paid {
             Text("rechnungen.terminal.paid")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         } else if invoice.status == .cancelled {
             Text("rechnungen.terminal.cancelled")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
     }
 

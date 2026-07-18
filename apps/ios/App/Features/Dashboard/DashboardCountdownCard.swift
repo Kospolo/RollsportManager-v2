@@ -3,6 +3,10 @@ import SwiftUI
 /// Wettkampf-Countdown-Hero (Design-System §3.9): brand-soft-Tint,
 /// Display-Zahl, Klartext-Meta — KEIN Gradient, KEINE Animation.
 struct DashboardCountdownCard: View {
+    /// Hero-Zahl des Countdowns: haengt an der Schrift, also mit @ScaledMetric
+    /// mitwachsen lassen — Font.system(size:) allein wuerde sie einfrieren.
+    @ScaledMetric(relativeTo: .largeTitle) private var countdownSize: CGFloat = 44
+
     let competition: Competition
     /// Kalendertage bis zum Start (0 = heute).
     let days: Int
@@ -60,7 +64,7 @@ struct DashboardCountdownCard: View {
         } else {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
                 Text("\(days)")
-                    .font(Theme.Fonts.display(size: 44))
+                    .font(Theme.Fonts.display(size: countdownSize))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.brandInk)
                 Text(days == 1

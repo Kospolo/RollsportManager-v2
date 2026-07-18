@@ -29,7 +29,10 @@ struct RSMKpiTile: View {
                     .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // maxHeight: .infinity — in einer HStack ziehen sich beide Kacheln damit
+        // auf die Hoehe der hoeheren. Ohne das stehen sie bei grosser Schrift
+        // unterschiedlich hoch nebeneinander.
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Theme.Spacing.s4)
         .background(Theme.Colors.bgCanvas)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))

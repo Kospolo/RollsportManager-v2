@@ -103,7 +103,7 @@ struct TeamRosterSheet: View {
                 Text("teams.card.skaters \(model.skaterCount)")
             }
             .font(Theme.Fonts.caption.weight(.semibold))
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .accessibilityElement(children: .combine)
         }
         .padding(.horizontal, Theme.Spacing.s5)
@@ -168,7 +168,7 @@ private struct MemberRosterRow: View {
                 if let subtitle {
                     Text(verbatim: subtitle)
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                         .lineLimit(1)
                 }
             }

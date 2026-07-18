@@ -96,7 +96,7 @@ struct TeamFormSheet: View {
                 .accessibilityLabel(Text("teams.form.ageGroup.label"))
             Text("teams.form.ageGroup.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -153,7 +153,7 @@ struct TeamFormSheet: View {
             .accessibilityLabel(Text("teams.form.sparte.label"))
             Text("teams.form.sparte.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

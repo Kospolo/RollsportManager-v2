@@ -43,7 +43,7 @@ struct AdminClubLogoCard: View {
                                 ProgressView().tint(Theme.Colors.brand)
                                 Text("verein.logo.working")
                                     .font(Theme.Fonts.caption)
-                                    .foregroundStyle(Theme.Colors.inkFaint)
+                                    .foregroundStyle(Theme.Colors.inkSoft)
                             }
                         }
                     }
@@ -118,7 +118,7 @@ struct AdminClubLogoCard: View {
     private var readOnlyNote: some View {
         Text("verein.logo.readonly")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .fixedSize(horizontal: false, vertical: true)
     }
 

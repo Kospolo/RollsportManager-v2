@@ -180,7 +180,7 @@ struct CheckinEventMenu: View {
             }
             Text("checkin.event.hint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
     }
 

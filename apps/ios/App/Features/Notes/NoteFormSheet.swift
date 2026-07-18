@@ -86,7 +86,7 @@ struct NoteFormSheet: View {
                     .accessibilityLabel(Text("notizen.form.field.body"))
                 Text("notizen.form.field.body.hint")
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
     }

@@ -97,7 +97,7 @@ struct FacilityDetailSheet: View {
             Label {
                 Text(label)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             } icon: {
                 Image(systemName: icon)
                     .font(.system(size: 13))
@@ -144,7 +144,7 @@ struct FacilityDetailSheet: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(verbatim: BelegungDisplay.relativeDate(day.iso))
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             .padding(.leading, Theme.Spacing.s1)
 

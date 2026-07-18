@@ -89,7 +89,7 @@ struct NewNewsSheet: View {
             .tint(Theme.Colors.brand)
             Text("news.form.pinHint")
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
         }
     }
 

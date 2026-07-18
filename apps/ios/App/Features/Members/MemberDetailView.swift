@@ -221,13 +221,13 @@ struct MemberDetailView: View {
                 if isSelf(member) {
                     Text("members.roleChange.self")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 } else {
                     roleMenu(member)
                     if member.role == .owner {
                         Text("members.roleChange.ownerHint")
                             .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkFaint)
+                            .foregroundStyle(Theme.Colors.inkSoft)
                     }
                 }
             }

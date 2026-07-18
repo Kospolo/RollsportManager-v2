@@ -61,7 +61,7 @@ struct FinanceInvoiceDetailSheet: View {
                         cents: invoice.amountCents,
                         currency: invoice.currency
                     ))
-                    .font(Theme.Fonts.mono(size: 24, weight: .bold))
+                    .font(Theme.Fonts.monoHero.weight(.bold))
                     .monospacedDigit()
                     .foregroundStyle(Theme.Colors.inkPrimary)
                     Spacer(minLength: Theme.Spacing.s2)

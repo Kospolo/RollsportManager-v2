@@ -156,12 +156,12 @@ struct DocumentRow: View {
                     .lineLimit(1)
                 Text(verbatim: subtitle)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .lineLimit(1)
                 if let meta = metaLine {
                     Text(verbatim: meta)
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                         .lineLimit(1)
                 }
             }

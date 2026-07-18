@@ -152,7 +152,7 @@ struct TrainingPlanView: View {
     private var emptyDayRow: some View {
         Text("trainingsplan.emptyDay")
             .font(Theme.Fonts.caption)
-            .foregroundStyle(Theme.Colors.inkFaint)
+            .foregroundStyle(Theme.Colors.inkSoft)
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.vertical, Theme.Spacing.s4)
             .overlay(

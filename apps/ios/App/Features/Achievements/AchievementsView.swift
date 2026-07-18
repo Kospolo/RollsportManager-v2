@@ -243,8 +243,9 @@ struct MedaillenFilterBar: View {
         } label: {
             Text(filter.labelKey)
                 .font(Theme.Fonts.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.9)
                 .foregroundStyle(isSelected ? Theme.Colors.inkPrimary : Theme.Colors.inkSoft)
                 .frame(maxWidth: .infinity, minHeight: 36)
                 .background(isSelected ? Theme.Colors.bgSurface : .clear)

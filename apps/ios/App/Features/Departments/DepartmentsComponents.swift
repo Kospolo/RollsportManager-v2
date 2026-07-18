@@ -39,7 +39,7 @@ struct DepartmentLeadRow: View {
                     Circle().fill(Theme.Colors.bgSunken)
                     Text(verbatim: "—")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Colors.inkFaint)
+                        .foregroundStyle(Theme.Colors.inkSoft)
                 }
                 .frame(width: 28, height: 28)
                 .accessibilityHidden(true)
@@ -110,6 +110,33 @@ struct DepartmentCardView: View {
 
     private var memberCount: Int { department.memberIds.count }
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    @ViewBuilder
+    private var memberCountLabel: some View {
+        if memberCount == 0 {
+            Text("abteilungen.members.none")
+                .font(Theme.Fonts.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.inkSoft)
+        } else {
+            Text("abteilungen.members.count \(memberCount)")
+                .font(Theme.Fonts.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.inkSoft)
+        }
+    }
+
+    private var openLabel: some View {
+        HStack(spacing: Theme.Spacing.s1) {
+            Text("abteilungen.open")
+                .font(Theme.Fonts.caption.weight(.semibold))
+                .foregroundStyle(Theme.Colors.brandInk)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.Colors.inkFaint)
+        }
+        .accessibilityHidden(true)
+    }
+
     var body: some View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
@@ -121,7 +148,9 @@ struct DepartmentCardView: View {
                         Text(verbatim: description)
                             .font(Theme.Fonts.caption)
                             .foregroundStyle(Theme.Colors.inkSoft)
-                            .lineLimit(2)
+                            // Bei grosser Schrift passt die Beschreibung nicht
+                            // in zwei Zeilen — lieber umbrechen als abschneiden.
+                            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     }
                 }
 
@@ -129,29 +158,27 @@ struct DepartmentCardView: View {
 
                 Divider().overlay(Theme.Colors.line)
 
-                HStack(spacing: Theme.Spacing.s3) {
-                    if !roster.isEmpty {
-                        DepartmentAvatarStack(members: roster)
+                // Bei den Accessibility-Stufen ist fuer Avatare, Anzahl UND
+                // „Mitglieder ansehen“ nebeneinander kein Platz — dann wuerde
+                // jedes Wort einzeln umbrechen („Mit-glie-der anse-hen“).
+                // Darum untereinander statt nebeneinander.
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+                        if !roster.isEmpty {
+                            DepartmentAvatarStack(members: roster)
+                        }
+                        memberCountLabel
+                        openLabel
                     }
-                    if memberCount == 0 {
-                        Text("abteilungen.members.none")
-                            .font(Theme.Fonts.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.inkSoft)
-                    } else {
-                        Text("abteilungen.members.count \(memberCount)")
-                            .font(Theme.Fonts.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.inkSoft)
+                } else {
+                    HStack(spacing: Theme.Spacing.s3) {
+                        if !roster.isEmpty {
+                            DepartmentAvatarStack(members: roster)
+                        }
+                        memberCountLabel
+                        Spacer(minLength: Theme.Spacing.s2)
+                        openLabel
                     }
-                    Spacer(minLength: Theme.Spacing.s2)
-                    HStack(spacing: Theme.Spacing.s1) {
-                        Text("abteilungen.open")
-                            .font(Theme.Fonts.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.brandInk)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(Theme.Colors.inkFaint)
-                    }
-                    .accessibilityHidden(true)
                 }
             }
         }
@@ -175,7 +202,7 @@ struct DepartmentMemberRow: View {
                     .lineLimit(1)
                 Text(verbatim: DepartmentsFormat.memberSubtitle(member))
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .lineLimit(1)
             }
             Spacer(minLength: Theme.Spacing.s2)

@@ -29,7 +29,7 @@ struct CompetitionStandingRowView: View {
                     .multilineTextAlignment(.leading)
                 Text(verbatim: row.routineTitle)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .lineLimit(1)
                 scoresLine
             }
@@ -45,7 +45,7 @@ struct CompetitionStandingRowView: View {
 
     private var rankBadge: some View {
         Text(verbatim: row.rank.map { "\($0)." } ?? "—")
-            .font(Theme.Fonts.mono(size: 15, weight: .bold))
+            .font(Theme.Fonts.monoTable.weight(.bold))
             .monospacedDigit()
             .foregroundStyle(rankColor)
             .frame(minWidth: 30, alignment: .leading)
@@ -82,7 +82,7 @@ struct CompetitionStandingRowView: View {
     private var trailingColumn: some View {
         VStack(alignment: .trailing, spacing: Theme.Spacing.s1) {
             Text(verbatim: WettkampfScore.formatOptional(row.totalScore))
-                .font(Theme.Fonts.mono(size: 17, weight: .bold))
+                .font(Theme.Fonts.monoTable.weight(.bold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.Colors.inkPrimary)
                 .accessibilityLabel(totalA11y)

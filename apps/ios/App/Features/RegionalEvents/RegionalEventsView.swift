@@ -146,7 +146,7 @@ struct RegionalEventsView: View {
                     .foregroundStyle(Theme.Colors.inkPrimary)
                 Text(subKey)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
             }
             .padding(.leading, Theme.Spacing.s1)
             content()

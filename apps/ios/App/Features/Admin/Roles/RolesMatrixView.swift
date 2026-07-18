@@ -84,7 +84,7 @@ struct RolesMatrixView: View {
             )
             Text(RolesL10n.roleDescKey(role))
                 .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkFaint)
+                .foregroundStyle(Theme.Colors.inkSoft)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, Theme.Spacing.s1)

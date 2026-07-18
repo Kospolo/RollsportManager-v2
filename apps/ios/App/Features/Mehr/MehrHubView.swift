@@ -109,11 +109,10 @@ struct MehrTileCard: View {
                 Text(tile.titleKey)
                     .font(Theme.Fonts.h3)
                     .foregroundStyle(isSoon ? Theme.Colors.inkSoft : Theme.Colors.inkPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .lineLimit(2)
                 Text(tile.descKey)
                     .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .foregroundStyle(Theme.Colors.inkSoft)
                     .lineLimit(2, reservesSpace: true)
                     .multilineTextAlignment(.leading)
             }
