@@ -18,6 +18,8 @@ struct RSMKpiTile: View {
                 .tracking(Theme.Fonts.eyebrowTracking)
                 .textCase(.uppercase)
                 .foregroundStyle(Theme.Colors.inkFaint)
+                // Lieber umbrechen als kürzen — der Eyebrow benennt die Zahl.
+                .fixedSize(horizontal: false, vertical: true)
             Text(value)
                 .font(Theme.Fonts.display)
                 .tracking(Theme.Fonts.displayTracking)

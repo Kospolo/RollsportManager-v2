@@ -9,11 +9,19 @@ struct GalleryRootView: View {
     @StateObject private var viewModel = GalleryViewModel()
     @State private var lightboxItem: GalleryLightboxItem?
 
-    private let columns = [
-        GridItem(.flexible(), spacing: Theme.Spacing.s2),
-        GridItem(.flexible(), spacing: Theme.Spacing.s2),
-        GridItem(.flexible(), spacing: Theme.Spacing.s2),
-    ]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// Drei Spalten ergeben Kacheln von rund 115 pt — bei Accessibility-Schrift
+    /// passt darin keine Bildunterschrift mehr (Album und Titel wurden zu
+    /// „WETTK…“ / „Kür-Mit-schnitt…“). Dann lieber ZWEI grosse Kacheln: mehr
+    /// Bild, lesbare Beschriftung, größere Trefferfläche.
+    private var columns: [GridItem] {
+        let count = dynamicTypeSize.isAccessibilitySize ? 2 : 3
+        return Array(
+            repeating: GridItem(.flexible(), spacing: Theme.Spacing.s2),
+            count: count
+        )
+    }
 
     var body: some View {
         ScrollView {

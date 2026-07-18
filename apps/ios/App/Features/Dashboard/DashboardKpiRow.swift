@@ -9,6 +9,12 @@ import SwiftUI
 struct DashboardKpiRow: View {
     let data: DashboardData
 
+    /// Zwei Kacheln nebeneinander lassen bei Accessibility-Schrift so wenig
+    /// Breite, dass SwiftUI den Eyebrow silbenweise trennt
+    /// („AKTIVE MIT-GLIE-DER“). Ab da stehen sie untereinander;
+    /// bei den Standardgrößen bleibt die Zweispaltigkeit unverändert.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
@@ -17,21 +23,28 @@ struct DashboardKpiRow: View {
                     title: "dashboard.kpi.title"
                 )
                 VStack(spacing: Theme.Spacing.s3) {
-                    HStack(alignment: .top, spacing: Theme.Spacing.s3) {
-                        RSMKpiTile(
-                            eyebrow: "dashboard.kpi.members.eyebrow",
-                            value: "\(data.activeMemberCount)",
-                            caption: "dashboard.kpi.members.caption"
-                        )
-                        RSMKpiTile(
-                            eyebrow: "dashboard.kpi.dues.eyebrow",
-                            value: DashboardFormat.euroText(cents: data.openInvoiceSumCents),
-                            caption: duesCaption
-                        )
-                    }
+                    tilePair
                     nextEventTile
                 }
             }
+        }
+    }
+
+    private var tilePair: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: Theme.Spacing.s3))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Spacing.s3))
+        return layout {
+            RSMKpiTile(
+                eyebrow: "dashboard.kpi.members.eyebrow",
+                value: "\(data.activeMemberCount)",
+                caption: "dashboard.kpi.members.caption"
+            )
+            RSMKpiTile(
+                eyebrow: "dashboard.kpi.dues.eyebrow",
+                value: DashboardFormat.euroText(cents: data.openInvoiceSumCents),
+                caption: duesCaption
+            )
         }
     }
 

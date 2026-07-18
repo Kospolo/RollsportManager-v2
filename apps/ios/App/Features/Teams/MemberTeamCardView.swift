@@ -11,6 +11,14 @@ struct MemberTeamCardView: View {
     /// Die angemeldete Person steht auf diesem Kader.
     var isMine: Bool = false
 
+    /// Ab den Accessibility-Stufen wird gestapelt statt nebeneinander gestellt:
+    /// sonst schneidet der Teamname ab („Kürgrupp…“), die Trainernamen enden in
+    /// „Sandra Vog…“ und die Pille „Mein Team“ wird zur Blase. Bei den
+    /// Standardgrößen bleibt das Layout unverändert.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var isAX: Bool { dynamicTypeSize.isAccessibilitySize }
+
     var body: some View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
@@ -25,7 +33,10 @@ struct MemberTeamCardView: View {
     // MARK: - Kopf
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.s3) {
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s3))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Spacing.s3))
+        return layout {
             RoundedRectangle(cornerRadius: Theme.Radius.org, style: .continuous)
                 .fill(Theme.Colors.brandSoft)
                 .frame(width: 40, height: 40)
@@ -40,38 +51,53 @@ struct MemberTeamCardView: View {
                 Text(verbatim: team.name)
                     .font(Theme.Fonts.h3)
                     .foregroundStyle(Theme.Colors.inkPrimary)
-                    .lineLimit(1)
-                HStack(spacing: Theme.Spacing.s2) {
-                    if let age = team.ageGroup, !age.trimmingCharacters(in: .whitespaces).isEmpty {
-                        Text(verbatim: age)
-                            .font(Theme.Fonts.caption.weight(.semibold))
-                            .foregroundStyle(Theme.Colors.inkSoft)
-                            .padding(.horizontal, Theme.Spacing.s3)
-                            .padding(.vertical, Theme.Spacing.s1)
-                            .background(Theme.Colors.bgSunken)
-                            .clipShape(Capsule())
-                    } else {
-                        Text("teamsMember.card.noAgeGroup")
-                            .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkSoft)
-                    }
-                    if isMine {
-                        RSMStatusPill(text: "teamsMember.badge.mine", kind: .brand)
-                    }
-                }
+                    .lineLimit(isAX ? 3 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                badgeRow
             }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(Theme.Colors.inkFaint)
-                .accessibilityHidden(true)
+            if !isAX {
+                Spacer(minLength: 0)
+                // Rein dekorativ — bei großer Schrift zählt die Breite mehr.
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    /// Altersband-Chip und „Mein Team“ — nebeneinander nur bei Standardgrößen.
+    private var badgeRow: some View {
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s2))
+        return layout {
+            if let age = team.ageGroup, !age.trimmingCharacters(in: .whitespaces).isEmpty {
+                Text(verbatim: age)
+                    .font(Theme.Fonts.caption.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.inkSoft)
+                    .padding(.horizontal, Theme.Spacing.s3)
+                    .padding(.vertical, Theme.Spacing.s1)
+                    .background(Theme.Colors.bgSunken)
+                    .clipShape(Capsule())
+            } else {
+                Text("teamsMember.card.noAgeGroup")
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+            }
+            if isMine {
+                RSMStatusPill(text: "teamsMember.badge.mine", kind: .brand)
+            }
         }
     }
 
     // MARK: - Trainerstab
 
     private var coachRow: some View {
-        HStack(spacing: Theme.Spacing.s3) {
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s3))
+        return layout {
             if roster.coaches.isEmpty {
                 Circle()
                     .fill(Theme.Colors.bgSunken)
@@ -85,7 +111,8 @@ struct MemberTeamCardView: View {
                 Text("teamsMember.card.noCoaches")
                     .font(Theme.Fonts.bodyStrong)
                     .foregroundStyle(Theme.Colors.inkSoft)
-                    .lineLimit(1)
+                    .lineLimit(isAX ? 2 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
             } else {
                 HStack(spacing: -8) {
                     ForEach(roster.coaches.prefix(3), id: \.id) { coach in
@@ -101,8 +128,10 @@ struct MemberTeamCardView: View {
                 Text(verbatim: roster.coaches.map(TeamsViewModel.fullName).joined(separator: " · "))
                     .font(Theme.Fonts.bodyStrong)
                     .foregroundStyle(Theme.Colors.inkSoft)
-                    .lineLimit(1)
+                    // Bei großer Schrift lieber umbrechen als Namen abschneiden.
+                    .lineLimit(isAX ? 4 : 1)
                     .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
@@ -126,25 +155,37 @@ struct MemberTeamCardView: View {
 struct SparteBadgeRow: View {
     let sparte: Sparte
 
+    /// Bei Accessibility-Schrift stapeln — nebeneinander bliebe vom
+    /// Sparten-Namen nur „Rollkunstla…“ übrig.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         let accent = SparteColorCatalog.color(for: sparte.farbe)
-        return HStack(spacing: Theme.Spacing.s2) {
-            Image(systemName: SparteIconCatalog.symbol(for: sparte.icon))
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(accent)
-                .frame(width: 24, height: 24)
-                .background(accent.opacity(0.16))
-                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.s, style: .continuous))
-                .accessibilityHidden(true)
-            Text(verbatim: sparte.name)
-                .font(Theme.Fonts.caption.weight(.semibold))
-                .foregroundStyle(Theme.Colors.inkSoft)
-                .lineLimit(1)
+        let isAX = dynamicTypeSize.isAccessibilitySize
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s2))
+        return layout {
+            HStack(spacing: Theme.Spacing.s2) {
+                Image(systemName: SparteIconCatalog.symbol(for: sparte.icon))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(accent)
+                    .frame(width: 24, height: 24)
+                    .background(accent.opacity(0.16))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.s, style: .continuous))
+                    .accessibilityHidden(true)
+                Text(verbatim: sparte.name)
+                    .font(Theme.Fonts.caption.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.inkSoft)
+                    .lineLimit(isAX ? 3 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if !sparte.aktiv {
                 RSMStatusPill(text: "teamsMember.sparte.inactive", kind: .neutral)
             }
-            Spacer(minLength: 0)
+            if !isAX { Spacer(minLength: 0) }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text("teamsMember.sparte.a11y \(sparte.name)"))
     }

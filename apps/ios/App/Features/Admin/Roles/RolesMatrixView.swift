@@ -140,15 +140,17 @@ struct RolesCapCell: View {
         switch state {
         case .yes:
             Image(systemName: "checkmark")
-                .font(.system(size: 13, weight: .bold))
+                .font(Theme.Fonts.caption.weight(.bold))
                 .foregroundStyle(Theme.Colors.success)
         case .partial:
             HStack(alignment: .top, spacing: 1) {
                 Image(systemName: "checkmark")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(Theme.Fonts.caption.weight(.bold))
                 if let mark {
+                    // War auf 10 pt eingefroren; die Fußnoten-Marke muss mit
+                    // dem Haken daneben mitwachsen, sonst rutscht sie weg.
                     Text(verbatim: mark)
-                        .font(.system(size: 10, weight: .bold))
+                        .font(Theme.Fonts.eyebrow)
                 }
             }
             .foregroundStyle(Theme.Colors.warn)

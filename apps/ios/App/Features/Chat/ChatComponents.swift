@@ -152,7 +152,11 @@ struct ChatMessageBubble: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Text(verbatim: ChatFormat.time(message.createdAt))
-                .font(.system(size: 10.5))
+                // War eingefroren auf 10,5 pt und wuchs mit Dynamic Type nicht
+                // mit. Der Eyebrow-Anker (.caption2) ist die kleinste Rolle des
+                // Systems; das Gewicht wird auf normal zurückgenommen, weil eine
+                // Uhrzeit keine Auszeichnung ist.
+                .font(Theme.Fonts.eyebrow.weight(.regular))
                 .foregroundStyle(isOwn ? Theme.Colors.brandInk.opacity(0.7) : Theme.Colors.inkFaint)
         }
         .padding(.horizontal, Theme.Spacing.s3)

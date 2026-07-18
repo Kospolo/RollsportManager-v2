@@ -10,9 +10,16 @@ struct GalleryThumbnail: View {
     private var album: String? { GalleryViewModel.normalizedAlbum(item) }
 
     var body: some View {
-        MediaImage(key: item.thumbnailKey ?? item.storageKey, contentMode: .fill)
-            .aspectRatio(1, contentMode: .fill)
-            .frame(maxWidth: .infinity)
+        // Das Quadrat wird von einer leeren Fläche AUFGESPANNT, das Bild liegt
+        // als Overlay darin und wird beschnitten. Vorher spannte das Bild das
+        // Quadrat selbst auf — ein breites Foto machte die Kachel mit
+        // `contentMode: .fill` dann breiter als ihre Rasterzelle und lief
+        // sichtbar links aus dem Raster heraus (belegt im Screenshot: die
+        // erste Kachel überlappte den Bildschirmrand).
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay { MediaImage(key: item.thumbnailKey ?? item.storageKey, contentMode: .fill) }
+            .clipped()
             .overlay(alignment: .bottomLeading) { caption }
             .overlay { if isVideo { videoOverlay } }
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
@@ -27,14 +34,16 @@ struct GalleryThumbnail: View {
         VStack(alignment: .leading, spacing: 1) {
             if let album {
                 Text(verbatim: album)
-                    .font(.system(size: 9, weight: .heavy))
-                    .tracking(0.4)
+                    // Vorher 9 pt fest — jetzt die Eyebrow-Rolle, die mitwächst.
+                    .font(Theme.Fonts.eyebrow)
+                    .tracking(Theme.Fonts.eyebrowTracking)
                     .textCase(.uppercase)
                     .foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1)
             }
             Text(verbatim: item.title)
-                .font(.system(size: 12, weight: .bold))
+                // Vorher 12 pt fest — jetzt die Caption-Rolle in fett.
+                .font(Theme.Fonts.caption.weight(.bold))
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .shadow(radius: 2)
@@ -50,6 +59,11 @@ struct GalleryThumbnail: View {
                 endPoint: .top
             )
         )
+        // Die Kachel ist ein QUADRAT fester Seitenlänge: ab AX2 würde die
+        // Bildunterschrift das Foto zudecken. Sie wächst deshalb mit, aber
+        // gedeckelt. Kein Informationsverlust — die Zeile ist dekorativ, den
+        // vollen Titel liest VoiceOver am Kachel-Knopf (GalleryRootView).
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .accessibilityHidden(true)
     }
 
@@ -65,7 +79,8 @@ struct GalleryThumbnail: View {
                 .overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 1))
 
             Text("gallery.kind.video")
-                .font(.system(size: 10, weight: .heavy))
+                // Vorher 10 pt fest — jetzt die Eyebrow-Rolle.
+                .font(Theme.Fonts.eyebrow)
                 .foregroundStyle(.white)
                 .padding(.horizontal, Theme.Spacing.s2)
                 .padding(.vertical, 2)
@@ -74,6 +89,9 @@ struct GalleryThumbnail: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(Theme.Spacing.s2)
         }
+        // Gleiche Deckelung wie bei der Bildunterschrift — das Badge sitzt in
+        // derselben festen Quadrat-Geometrie.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .accessibilityHidden(true)
     }
 }

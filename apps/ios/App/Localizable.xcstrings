@@ -22373,6 +22373,70 @@
         }
       }
     },
+    "routines.list.a11y.loadingMusic %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik wird geladen: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading music: %@"
+          }
+        }
+      }
+    },
+    "routines.list.a11y.musicUnavailable %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik nicht verfügbar: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Music unavailable: %@"
+          }
+        }
+      }
+    },
+    "routines.list.a11y.pauseMusic %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik pausieren: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause music: %@"
+          }
+        }
+      }
+    },
+    "routines.list.a11y.playMusic %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Musik abspielen: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play music: %@"
+          }
+        }
+      }
+    },
     "routines.list.empty.message": {
       "localizations": {
         "de": {

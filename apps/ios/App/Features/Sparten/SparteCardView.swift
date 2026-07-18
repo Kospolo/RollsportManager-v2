@@ -18,6 +18,13 @@ struct SparteCardView: View {
 
     private var accent: Color { SparteColorCatalog.color(for: sparte.farbe) }
 
+    /// Ab den Accessibility-Stufen stapeln statt nebeneinander stellen: sonst
+    /// bricht der Sparten-Name ab („Rollkunstla…“) und die Zahlenzeile trennt
+    /// mitten im Wort („0 Mit-glieder“). Standardgrößen bleiben unverändert.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var isAX: Bool { dynamicTypeSize.isAccessibilitySize }
+
     var body: some View {
         RSMCard {
             VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
@@ -34,7 +41,10 @@ struct SparteCardView: View {
     // MARK: - Kopf (Icon-Chip · Name · Badges)
 
     private var header: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.s3) {
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s3))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Spacing.s3))
+        return layout {
             RoundedRectangle(cornerRadius: Theme.Radius.org, style: .continuous)
                 .fill(accent.opacity(0.16))
                 .frame(width: 44, height: 44)
@@ -49,31 +59,47 @@ struct SparteCardView: View {
                 Text(verbatim: sparte.name)
                     .font(Theme.Fonts.h3)
                     .foregroundStyle(Theme.Colors.inkPrimary)
-                    .lineLimit(1)
-                HStack(spacing: Theme.Spacing.s2) {
-                    RSMStatusPill(
-                        text: sparte.aktiv ? "sparten.badge.active" : "sparten.badge.inactive",
-                        kind: sparte.aktiv ? .success : .neutral
-                    )
-                    if sparte.eigeneFinanzen {
-                        RSMStatusPill(text: "sparten.badge.ownFinances", kind: .warn)
-                    }
-                }
+                    .lineLimit(isAX ? 3 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
+                badges
             }
-            Spacer(minLength: 0)
+            if !isAX { Spacer(minLength: 0) }
+        }
+    }
+
+    /// Aktiv-/Finanz-Badges — gestapelt, sobald sie sonst zu Blasen würden.
+    private var badges: some View {
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s2))
+        return layout {
+            RSMStatusPill(
+                text: sparte.aktiv ? "sparten.badge.active" : "sparten.badge.inactive",
+                kind: sparte.aktiv ? .success : .neutral
+            )
+            if sparte.eigeneFinanzen {
+                RSMStatusPill(text: "sparten.badge.ownFinances", kind: .warn)
+            }
         }
     }
 
     // MARK: - Zahlen (Mitglieder · Teams)
 
     private var counts: some View {
-        HStack(spacing: Theme.Spacing.s4) {
+        // Nebeneinander bleibt für „0 Mitglieder“ bei AX-Schrift so wenig
+        // Breite, dass SwiftUI mitten im Wort trennt („0 Mit-glieder“).
+        // Untereinander hat jede Zahl die volle Kartenbreite.
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s4))
+        return layout {
             countItem(systemImage: "person.2.fill", text: Text("sparten.count.members \(memberCount)"))
             countItem(systemImage: "person.3.fill", text: Text("sparten.count.teams \(teamCount)"))
-            Spacer(minLength: 0)
+            if !isAX { Spacer(minLength: 0) }
         }
         .font(Theme.Fonts.caption.weight(.semibold))
         .foregroundStyle(Theme.Colors.inkSoft)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func countItem(systemImage: String, text: Text) -> some View {
@@ -83,20 +109,26 @@ struct SparteCardView: View {
                 .foregroundStyle(Theme.Colors.inkFaint)
                 .accessibilityHidden(true)
             text
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     // MARK: - Aktionen (nur canManage)
 
     private var actions: some View {
-        HStack(spacing: Theme.Spacing.s2) {
+        // Drei Knöpfe nebeneinander passen bei AX-Schrift nicht mehr in eine
+        // Zeile — dann untereinander, jeder mit voller Beschriftung.
+        let layout = isAX
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s2))
+            : AnyLayout(HStackLayout(spacing: Theme.Spacing.s2))
+        return layout {
             actionButton(titleKey: "sparten.action.edit", systemImage: "pencil", action: onEdit)
             actionButton(
                 titleKey: sparte.aktiv ? "sparten.action.deactivate" : "sparten.action.activate",
                 systemImage: sparte.aktiv ? "pause.circle" : "play.circle",
                 action: onToggleActive
             )
-            Spacer(minLength: 0)
+            if !isAX { Spacer(minLength: 0) }
             Button(action: onDelete) {
                 Text("sparten.action.delete")
                     .font(Theme.Fonts.caption.weight(.bold))
@@ -128,6 +160,7 @@ struct SparteCardView: View {
                     .font(.system(size: 12, weight: .semibold))
                 Text(titleKey)
                     .font(Theme.Fonts.caption.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             .foregroundStyle(Theme.Colors.brandInk)
             .padding(.horizontal, Theme.Spacing.s3)
