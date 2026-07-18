@@ -5110,6 +5110,287 @@
           "status"
         ]
       },
+      "EventRideStatus": {
+        "type": "string",
+        "enum": [
+          "offen",
+          "voll",
+          "abgesagt"
+        ]
+      },
+      "EventRideRiderStatus": {
+        "type": "string",
+        "enum": [
+          "zugesagt",
+          "abgesagt"
+        ]
+      },
+      "EventRideRider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "ride_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_first_name": {
+            "type": "string"
+          },
+          "member_last_name": {
+            "type": "string"
+          },
+          "angemeldet_von_profile_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventRideRiderStatus"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "ride_id",
+          "member_id",
+          "member_first_name",
+          "member_last_name",
+          "angemeldet_von_profile_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "EventRide": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driver_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "driver_first_name": {
+            "type": "string"
+          },
+          "driver_last_name": {
+            "type": "string"
+          },
+          "abfahrtsort": {
+            "type": "string"
+          },
+          "abfahrtszeit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "plaetze_gesamt": {
+            "type": "integer"
+          },
+          "plaetze_frei": {
+            "type": "integer"
+          },
+          "notiz": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventRideStatus"
+          },
+          "rueckrufnummer": {
+            "type": "string",
+            "nullable": true
+          },
+          "kontakt_sichtbar": {
+            "type": "boolean"
+          },
+          "riders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRideRider"
+            }
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "event_id",
+          "driver_member_id",
+          "driver_first_name",
+          "driver_last_name",
+          "abfahrtsort",
+          "abfahrtszeit",
+          "plaetze_gesamt",
+          "plaetze_frei",
+          "notiz",
+          "status",
+          "rueckrufnummer",
+          "kontakt_sichtbar",
+          "riders",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "EventRideCreate": {
+        "type": "object",
+        "properties": {
+          "driver_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "abfahrtsort": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "abfahrtszeit": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "plaetze_gesamt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "notiz": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "rueckrufnummer": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "abfahrtsort",
+          "abfahrtszeit",
+          "plaetze_gesamt"
+        ]
+      },
+      "EventRideUpdate": {
+        "type": "object",
+        "properties": {
+          "abfahrtsort": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "abfahrtszeit": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "plaetze_gesamt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "notiz": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "rueckrufnummer": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "offen",
+              "abgesagt"
+            ]
+          }
+        }
+      },
+      "EventRideRiderCreate": {
+        "type": "object",
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "member_id"
+        ]
+      },
+      "EventRideRiderUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/EventRideRiderStatus"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "RoutineCreate": {
         "type": "object",
         "properties": {
@@ -16861,6 +17142,436 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Attendance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/events/{eventId}/rides": {
+      "get": {
+        "tags": [
+          "event-rides"
+        ],
+        "summary": "Fahrgemeinschaften eines Termins (Sichtbarkeit = Termin-Sichtbarkeit)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "eventId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fahrten, die der/die Aufrufende sehen darf",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventRide"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "event-rides"
+        ],
+        "summary": "Fahrt anbieten (aktives Mitglied, nicht minderjaehrig)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "eventId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRideCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Angebotene Fahrt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRide"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rides/{rideId}": {
+      "patch": {
+        "tags": [
+          "event-rides"
+        ],
+        "summary": "Fahrt bearbeiten oder absagen (Fahrer:in oder Vorstand)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "rideId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRideUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Aktualisierte Fahrt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRide"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rides/{rideId}/riders": {
+      "post": {
+        "tags": [
+          "event-rides"
+        ],
+        "summary": "Als Mitfahrer:in zusagen (fuer sich selbst oder das eigene Kind)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "rideId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRideRiderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Fahrt inkl. der neuen Zusage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRide"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rides/{rideId}/riders/{riderId}": {
+      "patch": {
+        "tags": [
+          "event-rides"
+        ],
+        "summary": "Zusage zurueckziehen oder erneuern",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "rideId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "riderId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRideRiderUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fahrt inkl. aktualisierter Zusagen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRide"
                 }
               }
             }

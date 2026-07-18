@@ -1640,6 +1640,114 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
     (await call('PUT', `/clubs/${CLUB}/modules/manage`, { as: owner, body: { enabled: false } })).status, 409);
 }
 
+// ===========================================================================
+// Fahrgemeinschaften (0066) — ueber HTTP, nicht ueber SQL.
+//
+// Die SQL-Suite (99n) beweist die Policies. Hier geht es um die Frage, ob die
+// ROUTE dieselbe Antwort gibt: liefert sie die Rueckrufnummer wirklich nur an
+// Beteiligte, weist sie Minderjaehrige und Fremde ab, und scheitert eine
+// Ueberbuchung mit einer verstaendlichen Meldung statt mit einem 500er?
+// ===========================================================================
+{
+  console.log('\n[smoke] Fahrgemeinschaften (0066)');
+  const parent = await token(SUB.parent, 'member');      // Katrin, Fahrerin von fa-01
+  const coach = await token(SUB.coach, 'coach');         // Sandra, unbeteiligt
+  const moderator = await token(SUB.moderator, 'moderator');
+
+  const EVENT_WETTKAMPF = 'e0000000-0000-4000-8000-000000000012';
+  const RIDE_KATRIN = 'fa000000-0000-4000-8000-000000000001';
+  const RIDE_VOLL = 'fa000000-0000-4000-8000-000000000002';
+
+  const list = await call('GET', `/events/${EVENT_WETTKAMPF}/rides`, { as: parent });
+  assertEq('rides: die Mutter sieht beide Fahrten zum Wettkampf', list.json?.length, 2);
+
+  const katrinRide = list.json?.find((r) => r.id === RIDE_KATRIN);
+  assertEq('rides: die eigene Fahrt zeigt die Rueckrufnummer', typeof katrinRide?.rueckrufnummer, 'string');
+  assertEq('rides: ...und meldet kontakt_sichtbar=true', katrinRide?.kontakt_sichtbar, true);
+  assertEq('rides: die Mitfahrer stehen dran (2 Zusagen)', katrinRide?.riders?.length, 2);
+  assertEq('rides: plaetze_frei ist ausgerechnet (3 - 2)', katrinRide?.plaetze_frei, 1);
+
+  // DER KERN: der unbeteiligte Trainer sieht die Fahrten, aber KEINE Nummer.
+  const coachList = await call('GET', `/events/${EVENT_WETTKAMPF}/rides`, { as: coach });
+  assertEq('rides: der unbeteiligte coach sieht die Fahrten', coachList.json?.length, 2);
+  assertEq('rides: ...aber KEINE Rueckrufnummer (null, serverseitig)',
+    coachList.json?.every((r) => r.rueckrufnummer === null), true);
+  assertEq('rides: ...und kontakt_sichtbar=false sagt ihm ehrlich warum',
+    coachList.json?.every((r) => r.kontakt_sichtbar === false), true);
+
+  // Die Verwaltung darf mitlesen (Aufsichtspflicht, ausdrueckliche Vorgabe).
+  const modList = await call('GET', `/events/${EVENT_WETTKAMPF}/rides`, { as: moderator });
+  assertEq('rides: die Verwaltung sieht alle Nummern (Aufsichtspflicht)',
+    modList.json?.every((r) => typeof r.rueckrufnummer === 'string'), true);
+
+  // Fahrt anbieten — Erwachsene.
+  const offer = await call('POST', `/events/${EVENT_WETTKAMPF}/rides`, {
+    as: parent,
+    body: {
+      abfahrtsort: 'Netto-Parkplatz Neckarsulm',
+      abfahrtszeit: new Date(Date.now() + 9 * 864e5).toISOString(),
+      plaetze_gesamt: 2,
+      rueckrufnummer: '+49 151 00000001',
+    },
+  });
+  assertEq('rides: Erwachsene darf eine Fahrt anbieten -> 201', offer.status, 201);
+  assertEq('rides: ...die neue Fahrt ist offen', offer.json?.status, 'offen');
+  assertEq('rides: ...mit 2 freien Plaetzen', offer.json?.plaetze_frei, 2);
+
+  // Ein fremdes Kind eintragen -> 403 (RLS, nicht UI).
+  const fremd = await call('POST', `/rides/${offer.json?.id}/riders`, {
+    as: parent,
+    body: { member_id: MEMBER.sofiaNotHerChild },
+  });
+  assertEq('rides: fremdes Kind eintragen -> 403', fremd.status, 403);
+
+  // Das EIGENE Kind eintragen -> 201.
+  const eigenes = await call('POST', `/rides/${offer.json?.id}/riders`, {
+    as: parent,
+    body: { member_id: MEMBER.linaChildOfParent },
+  });
+  assertEq('rides: das eigene Kind eintragen -> 201', eigenes.status, 201);
+  assertEq('rides: ...ein Platz weniger frei', eigenes.json?.plaetze_frei, 1);
+
+  // Ueberbuchung: die volle Fahrt fa-02 nimmt niemanden mehr auf -> 422 Klartext.
+  // Bewusst mit EMMA (a-08, Katrins zweitem Kind): Lina sitzt in fa-02 bereits
+  // drin, ihre erneute Zusage waere eine gueltige Bestaetigung (201) und kaeme
+  // nie beim Platz-Zaehler an — der Test bewiese dann nichts.
+  const EMMA_CHILD_OF_PARENT = 'a0000000-0000-4000-8000-000000000008';
+  const voll = await call('POST', `/rides/${RIDE_VOLL}/riders`, {
+    as: parent,
+    body: { member_id: EMMA_CHILD_OF_PARENT },
+  });
+  assertEq('rides: Zusage zur VOLLEN Fahrt -> 422 (kein 500)', voll.status, 422);
+  if (typeof voll.json?.detail === 'string' && voll.json.detail.includes('voll'))
+    ok('rides: ...mit verstaendlichem Klartext ("... ist voll ...")');
+  else fail('rides: ...mit verstaendlichem Klartext', JSON.stringify(voll.json?.detail));
+
+  // Zusage zurueckziehen -> der Platz wird frei.
+  const riderId = eigenes.json?.riders?.find((r) => r.member_id === MEMBER.linaChildOfParent)?.id;
+  const zurueck = await call('PATCH', `/rides/${offer.json?.id}/riders/${riderId}`, {
+    as: parent,
+    body: { status: 'abgesagt' },
+  });
+  assertEq('rides: Zusage zurueckziehen -> 200', zurueck.status, 200);
+  assertEq('rides: ...der Platz ist wieder frei', zurueck.json?.plaetze_frei, 2);
+
+  // Fahrt absagen.
+  const absage = await call('PATCH', `/rides/${offer.json?.id}`, {
+    as: parent,
+    body: { status: 'abgesagt' },
+  });
+  assertEq('rides: eigene Fahrt absagen -> 200', absage.status, 200);
+  assertEq('rides: ...status=abgesagt', absage.json?.status, 'abgesagt');
+
+  // Eine FREMDE Fahrt bearbeiten darf sie nicht (RLS filtert -> 403).
+  const fremdeFahrt = await call('PATCH', `/rides/${RIDE_VOLL}`, {
+    as: parent,
+    body: { abfahrtsort: 'Woanders' },
+  });
+  assertEq('rides: fremde Fahrt bearbeiten -> 403', fremdeFahrt.status, 403);
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

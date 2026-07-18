@@ -858,6 +858,51 @@ export class ApiClient {
   }
 
   /**
+   * Fahrgemeinschaften eines Termins (Sichtbarkeit = Termin-Sichtbarkeit)
+   * 
+   * `GET /events/{eventId}/rides`
+   */
+  async getEventsByEventIdRides(eventId: string, options?: RequestOptions): Promise<M.EventRide[]> {
+    return this.request<M.EventRide[]>("GET", `/events/${encodeURIComponent(eventId)}/rides`, { auth: true, options });
+  }
+
+  /**
+   * Fahrt anbieten (aktives Mitglied, nicht minderjaehrig)
+   * 
+   * `POST /events/{eventId}/rides`
+   */
+  async postEventsByEventIdRides(eventId: string, body: M.EventRideCreate, options?: RequestOptions): Promise<M.EventRide> {
+    return this.request<M.EventRide>("POST", `/events/${encodeURIComponent(eventId)}/rides`, { body, auth: true, options });
+  }
+
+  /**
+   * Fahrt bearbeiten oder absagen (Fahrer:in oder Vorstand)
+   * 
+   * `PATCH /rides/{rideId}`
+   */
+  async patchRidesByRideId(rideId: string, body: M.EventRideUpdate, options?: RequestOptions): Promise<M.EventRide> {
+    return this.request<M.EventRide>("PATCH", `/rides/${encodeURIComponent(rideId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Als Mitfahrer:in zusagen (fuer sich selbst oder das eigene Kind)
+   * 
+   * `POST /rides/{rideId}/riders`
+   */
+  async postRidesByRideIdRiders(rideId: string, body: M.EventRideRiderCreate, options?: RequestOptions): Promise<M.EventRide> {
+    return this.request<M.EventRide>("POST", `/rides/${encodeURIComponent(rideId)}/riders`, { body, auth: true, options });
+  }
+
+  /**
+   * Zusage zurueckziehen oder erneuern
+   * 
+   * `PATCH /rides/{rideId}/riders/{riderId}`
+   */
+  async patchRidesByRideIdRidersByRiderId(rideId: string, riderId: string, body: M.EventRideRiderUpdate, options?: RequestOptions): Promise<M.EventRide> {
+    return this.request<M.EventRide>("PATCH", `/rides/${encodeURIComponent(rideId)}/riders/${encodeURIComponent(riderId)}`, { body, auth: true, options });
+  }
+
+  /**
    * List routines of a club
    * 
    * `GET /routines`

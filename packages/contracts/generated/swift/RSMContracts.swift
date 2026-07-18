@@ -239,6 +239,17 @@ public enum EventAudience: String, Codable, CaseIterable, Sendable, Equatable {
     case club = "club"
 }
 
+public enum EventRideStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case offen = "offen"
+    case voll = "voll"
+    case abgesagt = "abgesagt"
+}
+
+public enum EventRideRiderStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case zugesagt = "zugesagt"
+    case abgesagt = "abgesagt"
+}
+
 public enum CompetitionStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case upcoming = "upcoming"
     case running = "running"
@@ -418,6 +429,12 @@ public enum PlatformSystemHealthStatus: String, Codable, CaseIterable, Sendable,
 public enum PlatformSystemAuthMode: String, Codable, CaseIterable, Sendable, Equatable {
     case dev = "dev"
     case prod = "prod"
+}
+
+/// Inline enum of EventRideUpdate.status (hoisted by codegen).
+public enum EventRideUpdateStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case offen = "offen"
+    case abgesagt = "abgesagt"
 }
 
 /// Inline enum of InvoiceUpdate.status (hoisted by codegen).
@@ -4686,6 +4703,238 @@ public struct AttendanceUpsert: Codable, Equatable, Sendable {
         self.memberId = memberId
         self.status = status
         self.checkedInAt = checkedInAt
+    }
+}
+
+public struct EventRideRider: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var rideId: String
+    /// Format: uuid
+    public var memberId: String
+    public var memberFirstName: String
+    public var memberLastName: String
+    /// Format: uuid
+    public var angemeldetVonProfileId: String?
+    public var status: EventRideRiderStatus
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case rideId = "ride_id"
+        case memberId = "member_id"
+        case memberFirstName = "member_first_name"
+        case memberLastName = "member_last_name"
+        case angemeldetVonProfileId = "angemeldet_von_profile_id"
+        case status
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        rideId: String,
+        memberId: String,
+        memberFirstName: String,
+        memberLastName: String,
+        angemeldetVonProfileId: String? = nil,
+        status: EventRideRiderStatus,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.rideId = rideId
+        self.memberId = memberId
+        self.memberFirstName = memberFirstName
+        self.memberLastName = memberLastName
+        self.angemeldetVonProfileId = angemeldetVonProfileId
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct EventRide: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var eventId: String
+    /// Format: uuid
+    public var driverMemberId: String
+    public var driverFirstName: String
+    public var driverLastName: String
+    public var abfahrtsort: String
+    public var abfahrtszeit: String
+    public var plaetzeGesamt: Int
+    public var plaetzeFrei: Int
+    public var notiz: String?
+    public var status: EventRideStatus
+    public var rueckrufnummer: String?
+    public var kontaktSichtbar: Bool
+    public var riders: [EventRideRider]
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case eventId = "event_id"
+        case driverMemberId = "driver_member_id"
+        case driverFirstName = "driver_first_name"
+        case driverLastName = "driver_last_name"
+        case abfahrtsort
+        case abfahrtszeit
+        case plaetzeGesamt = "plaetze_gesamt"
+        case plaetzeFrei = "plaetze_frei"
+        case notiz
+        case status
+        case rueckrufnummer
+        case kontaktSichtbar = "kontakt_sichtbar"
+        case riders
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        eventId: String,
+        driverMemberId: String,
+        driverFirstName: String,
+        driverLastName: String,
+        abfahrtsort: String,
+        abfahrtszeit: String,
+        plaetzeGesamt: Int,
+        plaetzeFrei: Int,
+        notiz: String? = nil,
+        status: EventRideStatus,
+        rueckrufnummer: String? = nil,
+        kontaktSichtbar: Bool,
+        riders: [EventRideRider],
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.eventId = eventId
+        self.driverMemberId = driverMemberId
+        self.driverFirstName = driverFirstName
+        self.driverLastName = driverLastName
+        self.abfahrtsort = abfahrtsort
+        self.abfahrtszeit = abfahrtszeit
+        self.plaetzeGesamt = plaetzeGesamt
+        self.plaetzeFrei = plaetzeFrei
+        self.notiz = notiz
+        self.status = status
+        self.rueckrufnummer = rueckrufnummer
+        self.kontaktSichtbar = kontaktSichtbar
+        self.riders = riders
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct EventRideCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var driverMemberId: String?
+    public var abfahrtsort: String
+    /// Format: date-time
+    public var abfahrtszeit: String
+    public var plaetzeGesamt: Int
+    public var notiz: String?
+    public var rueckrufnummer: String?
+
+    enum CodingKeys: String, CodingKey {
+        case driverMemberId = "driver_member_id"
+        case abfahrtsort
+        case abfahrtszeit
+        case plaetzeGesamt = "plaetze_gesamt"
+        case notiz
+        case rueckrufnummer
+    }
+
+    public init(
+        driverMemberId: String? = nil,
+        abfahrtsort: String,
+        abfahrtszeit: String,
+        plaetzeGesamt: Int,
+        notiz: String? = nil,
+        rueckrufnummer: String? = nil
+    ) {
+        self.driverMemberId = driverMemberId
+        self.abfahrtsort = abfahrtsort
+        self.abfahrtszeit = abfahrtszeit
+        self.plaetzeGesamt = plaetzeGesamt
+        self.notiz = notiz
+        self.rueckrufnummer = rueckrufnummer
+    }
+}
+
+public struct EventRideUpdate: Codable, Equatable, Sendable {
+    public var abfahrtsort: String?
+    /// Format: date-time
+    public var abfahrtszeit: String?
+    public var plaetzeGesamt: Int?
+    public var notiz: String?
+    public var rueckrufnummer: String?
+    public var status: EventRideUpdateStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case abfahrtsort
+        case abfahrtszeit
+        case plaetzeGesamt = "plaetze_gesamt"
+        case notiz
+        case rueckrufnummer
+        case status
+    }
+
+    public init(
+        abfahrtsort: String? = nil,
+        abfahrtszeit: String? = nil,
+        plaetzeGesamt: Int? = nil,
+        notiz: String? = nil,
+        rueckrufnummer: String? = nil,
+        status: EventRideUpdateStatus? = nil
+    ) {
+        self.abfahrtsort = abfahrtsort
+        self.abfahrtszeit = abfahrtszeit
+        self.plaetzeGesamt = plaetzeGesamt
+        self.notiz = notiz
+        self.rueckrufnummer = rueckrufnummer
+        self.status = status
+    }
+}
+
+public struct EventRideRiderCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var memberId: String
+
+    enum CodingKeys: String, CodingKey {
+        case memberId = "member_id"
+    }
+
+    public init(
+        memberId: String
+    ) {
+        self.memberId = memberId
+    }
+}
+
+public struct EventRideRiderUpdate: Codable, Equatable, Sendable {
+    public var status: EventRideRiderStatus
+
+    enum CodingKeys: String, CodingKey {
+        case status
+    }
+
+    public init(
+        status: EventRideRiderStatus
+    ) {
+        self.status = status
     }
 }
 

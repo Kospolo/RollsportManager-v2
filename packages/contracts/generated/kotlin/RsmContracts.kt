@@ -232,6 +232,19 @@ enum class EventAudience {
 }
 
 @Serializable
+enum class EventRideStatus {
+    @SerialName("offen") OFFEN,
+    @SerialName("voll") VOLL,
+    @SerialName("abgesagt") ABGESAGT;
+}
+
+@Serializable
+enum class EventRideRiderStatus {
+    @SerialName("zugesagt") ZUGESAGT,
+    @SerialName("abgesagt") ABGESAGT;
+}
+
+@Serializable
 enum class CompetitionStatus {
     @SerialName("upcoming") UPCOMING,
     @SerialName("running") RUNNING,
@@ -439,6 +452,13 @@ enum class PlatformSystemHealthStatus {
 enum class PlatformSystemAuthMode {
     @SerialName("dev") DEV,
     @SerialName("prod") PROD;
+}
+
+/** Inline enum of EventRideUpdate.status (hoisted by codegen). */
+@Serializable
+enum class EventRideUpdateStatus {
+    @SerialName("offen") OFFEN,
+    @SerialName("abgesagt") ABGESAGT;
 }
 
 /** Inline enum of InvoiceUpdate.status (hoisted by codegen). */
@@ -1685,6 +1705,70 @@ data class AttendanceUpsert(
     @SerialName("member_id") val memberId: String,
     val status: AttendanceStatus,
     @SerialName("checked_in_at") val checkedInAt: String? = null
+)
+
+@Serializable
+data class EventRideRider(
+    val id: String,
+    @SerialName("ride_id") val rideId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("member_first_name") val memberFirstName: String,
+    @SerialName("member_last_name") val memberLastName: String,
+    @SerialName("angemeldet_von_profile_id") val angemeldetVonProfileId: String?,
+    val status: EventRideRiderStatus,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class EventRide(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("event_id") val eventId: String,
+    @SerialName("driver_member_id") val driverMemberId: String,
+    @SerialName("driver_first_name") val driverFirstName: String,
+    @SerialName("driver_last_name") val driverLastName: String,
+    val abfahrtsort: String,
+    val abfahrtszeit: String,
+    @SerialName("plaetze_gesamt") val plaetzeGesamt: Long,
+    @SerialName("plaetze_frei") val plaetzeFrei: Long,
+    val notiz: String?,
+    val status: EventRideStatus,
+    val rueckrufnummer: String?,
+    @SerialName("kontakt_sichtbar") val kontaktSichtbar: Boolean,
+    val riders: List<EventRideRider>,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class EventRideCreate(
+    @SerialName("driver_member_id") val driverMemberId: String? = null,
+    val abfahrtsort: String,
+    val abfahrtszeit: String,
+    @SerialName("plaetze_gesamt") val plaetzeGesamt: Long,
+    val notiz: String? = null,
+    val rueckrufnummer: String? = null
+)
+
+@Serializable
+data class EventRideUpdate(
+    val abfahrtsort: String? = null,
+    val abfahrtszeit: String? = null,
+    @SerialName("plaetze_gesamt") val plaetzeGesamt: Long? = null,
+    val notiz: String? = null,
+    val rueckrufnummer: String? = null,
+    val status: EventRideUpdateStatus? = null
+)
+
+@Serializable
+data class EventRideRiderCreate(
+    @SerialName("member_id") val memberId: String
+)
+
+@Serializable
+data class EventRideRiderUpdate(
+    val status: EventRideRiderStatus
 )
 
 @Serializable

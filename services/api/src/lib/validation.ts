@@ -3410,3 +3410,104 @@ export const memberProfileSchema = z
     consents: z.array(effectiveConsentSchema).nullable(),
   })
   .openapi('MemberProfile');
+
+// ---------------------------------------------------------------------------
+// Fahrgemeinschaften (migration 0066): Fahrt-Angebote zu einem Termin.
+//
+// ### rueckrufnummer ist NULLABLE — und das ist eine Aussage, kein Zufall ###
+// Die Nummer steht in einer eigenen Tabelle (app.event_ride_contacts) mit einer
+// engeren SELECT-Policy als die Fahrt selbst. Die Route liest sie per LEFT JOIN
+// unter der Identitaet der/des Aufrufenden — wer sie nicht sehen darf, bekommt
+// vom LEFT JOIN null. Die Redaktion passiert also in der DATENBANK, nicht in
+// einer TypeScript-Projektion, die man vergessen koennte. `null` heisst hier
+// deshalb immer "nicht fuer dich", nie "nicht erfasst" (die Spalte ist not null).
+//
+// Begleitend sagt kontakt_sichtbar ausdruecklich, WARUM null dasteht, damit die
+// UI "—" von "gesperrt" unterscheiden kann (dasselbe Muster wie
+// memberProfileSchema.contact_visible).
+// ---------------------------------------------------------------------------
+export const eventRideStatusSchema = z
+  .enum(['offen', 'voll', 'abgesagt'])
+  .openapi('EventRideStatus');
+export const eventRideRiderStatusSchema = z
+  .enum(['zugesagt', 'abgesagt'])
+  .openapi('EventRideRiderStatus');
+
+export const eventRideRiderSchema = z
+  .object({
+    id: uuid,
+    ride_id: uuid,
+    /** Die MITFAHRENDE Person — bei einem Kind das Kind, nicht das Elternteil. */
+    member_id: uuid,
+    member_first_name: z.string(),
+    member_last_name: z.string(),
+    /** Konto, das die Zusage erklaert hat (bei Kindern: das Elternteil). */
+    angemeldet_von_profile_id: uuid.nullable(),
+    status: eventRideRiderStatusSchema,
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('EventRideRider');
+
+export const eventRideSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    event_id: uuid,
+    driver_member_id: uuid,
+    driver_first_name: z.string(),
+    driver_last_name: z.string(),
+    abfahrtsort: z.string(),
+    abfahrtszeit: timestamp,
+    plaetze_gesamt: z.number().int(),
+    /** Noch freie Plaetze (plaetze_gesamt minus aktive Zusagen), nie negativ. */
+    plaetze_frei: z.number().int(),
+    notiz: z.string().nullable(),
+    status: eventRideStatusSchema,
+    /** null = nicht fuer dich (siehe kontakt_sichtbar), nicht "nicht erfasst". */
+    rueckrufnummer: z.string().nullable(),
+    /** true, wenn die Rueckrufnummer ausgeliefert wurde (Beteiligte/Verwaltung). */
+    kontakt_sichtbar: z.boolean(),
+    /** Nur die AKTIVEN Zusagen (status='zugesagt'). */
+    riders: z.array(eventRideRiderSchema),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('EventRide');
+
+export const eventRideCreateSchema = z
+  .object({
+    /** Der Fahrer. Fehlt er, ist es die eigene Mitgliedschaft (der Normalfall). */
+    driver_member_id: uuid.optional(),
+    abfahrtsort: z.string().trim().min(1).max(200),
+    abfahrtszeit: z.string().datetime({ offset: true }),
+    plaetze_gesamt: z.number().int().min(1).max(8),
+    notiz: z.string().trim().max(500).nullable().optional(),
+    /** Fehlt sie, wird die hinterlegte Telefonnummer des Fahrers genommen. */
+    rueckrufnummer: z.string().trim().min(1).max(40).nullable().optional(),
+  })
+  .openapi('EventRideCreate');
+
+export const eventRideUpdateSchema = z
+  .object({
+    abfahrtsort: z.string().trim().min(1).max(200).optional(),
+    abfahrtszeit: z.string().datetime({ offset: true }).optional(),
+    plaetze_gesamt: z.number().int().min(1).max(8).optional(),
+    notiz: z.string().trim().max(500).nullable().optional(),
+    rueckrufnummer: z.string().trim().min(1).max(40).nullable().optional(),
+    /** Nur 'abgesagt' oder 'offen' — 'voll' ist abgeleitet und wird vom Trigger gepflegt. */
+    status: z.enum(['offen', 'abgesagt']).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('EventRideUpdate');
+
+export const eventRideRiderCreateSchema = z
+  .object({
+    /** Wer mitfaehrt: man selbst oder das eigene Kind (app.can_act_for_member). */
+    member_id: uuid,
+  })
+  .openapi('EventRideRiderCreate');
+
+export const eventRideRiderUpdateSchema = z
+  .object({ status: eventRideRiderStatusSchema })
+  .openapi('EventRideRiderUpdate');

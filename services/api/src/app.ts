@@ -33,6 +33,7 @@ import { platformBillingRouter } from './routes/platform-billing.js';
 import { platformRoutinesRouter } from './routes/platform-routines.js';
 import { platformSystemRouter } from './routes/platform-system.js';
 import { eventsRouter } from './routes/events.js';
+import { eventRidesRouter } from './routes/event-rides.js';
 import { routinesRouter } from './routes/routines.js';
 import { competitionsRouter } from './routes/competitions.js';
 import { publicRoutinesRouter } from './routes/public-routines.js';
@@ -160,6 +161,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', platformRoutinesRouter);
   app.route('/', platformSystemRouter);
   app.route('/', eventsRouter);
+  app.route('/', eventRidesRouter);
   app.route('/', routinesRouter);
   app.route('/', competitionsRouter);
   app.route('/', publicRoutinesRouter);

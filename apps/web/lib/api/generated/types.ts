@@ -1146,6 +1146,70 @@ export interface AttendanceUpsert {
   "checked_in_at"?: string;
 }
 
+export type EventRideStatus = "offen" | "voll" | "abgesagt";
+export const EventRideStatusValues: readonly EventRideStatus[] = ["offen", "voll", "abgesagt"] as const;
+
+export type EventRideRiderStatus = "zugesagt" | "abgesagt";
+export const EventRideRiderStatusValues: readonly EventRideRiderStatus[] = ["zugesagt", "abgesagt"] as const;
+
+export interface EventRideRider {
+  "id": string;
+  "ride_id": string;
+  "member_id": string;
+  "member_first_name": string;
+  "member_last_name": string;
+  "angemeldet_von_profile_id": string | null;
+  "status": EventRideRiderStatus;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface EventRide {
+  "id": string;
+  "club_id": string;
+  "event_id": string;
+  "driver_member_id": string;
+  "driver_first_name": string;
+  "driver_last_name": string;
+  "abfahrtsort": string;
+  "abfahrtszeit": string;
+  "plaetze_gesamt": number;
+  "plaetze_frei": number;
+  "notiz": string | null;
+  "status": EventRideStatus;
+  "rueckrufnummer": string | null;
+  "kontakt_sichtbar": boolean;
+  "riders": EventRideRider[];
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface EventRideCreate {
+  "driver_member_id"?: string;
+  "abfahrtsort": string;
+  "abfahrtszeit": string;
+  "plaetze_gesamt": number;
+  "notiz"?: string | null;
+  "rueckrufnummer"?: string | null;
+}
+
+export interface EventRideUpdate {
+  "abfahrtsort"?: string;
+  "abfahrtszeit"?: string;
+  "plaetze_gesamt"?: number;
+  "notiz"?: string | null;
+  "rueckrufnummer"?: string | null;
+  "status"?: "offen" | "abgesagt";
+}
+
+export interface EventRideRiderCreate {
+  "member_id": string;
+}
+
+export interface EventRideRiderUpdate {
+  "status": EventRideRiderStatus;
+}
+
 export interface RoutineCreate {
   "club_id": string;
   "title": string;
