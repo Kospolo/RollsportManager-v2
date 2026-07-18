@@ -442,19 +442,33 @@ from (values
 ) as v(event_id, member_id, status, checked_in_at);
 
 -- ----------------------------------------------------------------------------
--- Media assets: one audio file per routine (metadata only — Blueprint §4)
+-- Media assets: one audio file per routine — MIT ECHTEN BYTES (Blueprint §4)
+--
+-- WICHTIG (teuer gelernt): storage_path muss ein FLACHER Key sein.
+--   * GET /media/:key ist ein EIN-Segment-Pfad — 'clubs/a/b.mp3' erreicht die
+--     Route nie ("No route for GET /media/clubs/...").
+--   * assertValidKey() (modules/media/storage.ts) verbietet '/' als
+--     Traversal-Schutz — ein verschachtelter Key wird auch dort abgewiesen.
+--   * generateStorageKey() erzeugt beim Upload ebenfalls flache Keys.
+-- Der frühere Seed nutzte verschachtelte Pfade UND es lagen gar keine Dateien
+-- dazu; die Kür-Musik war damit serverseitig nicht abrufbar. Die Dateien unten
+-- liegen real in supabase/seed/media/ (readBytes() fällt dorthin zurück).
+--
+-- Die MP3s sind SYNTHETISCH erzeugte Demo-Arpeggien (scripts/dev/gen-seed-audio.sh),
+-- ausdrücklich KEINE Aufnahmen der oben genannten Werke — Urheberrecht.
+-- size_bytes/duration_ms entsprechen exakt den echten Dateien.
 -- ----------------------------------------------------------------------------
 insert into app.media_assets (id, club_id, bucket, storage_path, mime_type, size_bytes, sha256, duration_ms, waveform_peaks, created_by)
 select v.id::uuid, 'c1ab0000-0000-4000-8000-000000000001', 'routine-audio', v.path, 'audio/mpeg',
        v.size_bytes, encode(sha256(('rsm2-demo-' || v.path)::bytea), 'hex'), v.duration_ms,
        pg_temp.waveform_peaks(v.seed), '90000000-0000-4000-8000-000000000001'
 from (values
-  ('aa000000-0000-4000-8000-000000000001', 'clubs/rsv-neckarsulm/routines/feuervogel.mp3',      3612000::bigint, 150000::bigint, 101),
-  ('aa000000-0000-4000-8000-000000000002', 'clubs/rsv-neckarsulm/routines/mondlicht.mp3',       3958000::bigint, 165000::bigint, 202),
-  ('aa000000-0000-4000-8000-000000000003', 'clubs/rsv-neckarsulm/routines/sommerregen.mp3',     3324000::bigint, 138000::bigint, 303),
-  ('aa000000-0000-4000-8000-000000000004', 'clubs/rsv-neckarsulm/routines/tanz-der-funken.mp3', 4130000::bigint, 172000::bigint, 404),
-  ('aa000000-0000-4000-8000-000000000005', 'clubs/rsv-neckarsulm/routines/kleine-welle.mp3',    2890000::bigint, 120000::bigint, 505),
-  ('aa000000-0000-4000-8000-000000000006', 'clubs/rsv-neckarsulm/routines/nordwind.mp3',        3801000::bigint, 158000::bigint, 606)
+  ('aa000000-0000-4000-8000-000000000001', 'seed-routine-feuervogel.mp3',      600521::bigint, 150000::bigint, 101),
+  ('aa000000-0000-4000-8000-000000000002', 'seed-routine-mondlicht.mp3',       660498::bigint, 165000::bigint, 202),
+  ('aa000000-0000-4000-8000-000000000003', 'seed-routine-sommerregen.mp3',     552456::bigint, 138000::bigint, 303),
+  ('aa000000-0000-4000-8000-000000000004', 'seed-routine-tanz-der-funken.mp3', 688501::bigint, 172000::bigint, 404),
+  ('aa000000-0000-4000-8000-000000000005', 'seed-routine-kleine-welle.mp3',    480462::bigint, 120000::bigint, 505),
+  ('aa000000-0000-4000-8000-000000000006', 'seed-routine-nordwind.mp3',        632495::bigint, 158000::bigint, 606)
 ) as v(id, path, size_bytes, duration_ms, seed);
 
 -- ----------------------------------------------------------------------------
@@ -1369,5 +1383,63 @@ update app.routines set image_asset_id = 'ab000000-0000-4000-8000-000000000001'
   where id = 'd0000000-0000-4000-8000-000000000001';
 update app.routines set image_asset_id = 'ab000000-0000-4000-8000-000000000002'
   where id = 'd0000000-0000-4000-8000-000000000003';
+
+-- ----------------------------------------------------------------------------
+-- Fahrgemeinschaften (migration 0066) — 2 Fahrten zur Bezirksmeisterschaft.
+--
+-- Der Termin e-12 (Ludwigsburg, +9 Tage) traegt schon die Notiz
+-- "Fahrgemeinschaften bitte eintragen" — der Seed loest sie jetzt ein.
+--
+-- Beide Fahrerinnen sind ERWACHSEN (Katrin a-09, Stefanie a-12: birth_date
+-- null, also unbekannt -> der Volljaehrigkeits-Trigger laesst sie durch, wie
+-- fuer alle Erwachsenen im Bestand).
+--
+-- Die Mitfahrer sind KINDER, und jede Zusage traegt das Konto des
+-- ERZIEHUNGSBERECHTIGTEN in angemeldet_von_profile_id — nicht das des Kindes
+-- (Kinder haben hier ohnehin kein Konto). Genau der Fall, den der Auftrag
+-- verlangt.
+--
+-- Fahrt 2 ist mit EINEM Platz und EINER Zusage absichtlich ausgebucht: der
+-- Trigger app.sync_ride_status dreht sie dadurch selbsttaetig auf 'voll', und
+-- am Bildschirm ist beides zu sehen (eine offene und eine volle Fahrt).
+--
+-- Als Superuser geseedet (auth.uid() null) -> RLS greift nicht, die
+-- Integritaets-Trigger (Kapazitaet, Volljaehrigkeit) sehr wohl.
+-- ----------------------------------------------------------------------------
+insert into app.event_rides
+  (id, club_id, event_id, driver_member_id, abfahrtsort, abfahrtszeit, plaetze_gesamt, notiz)
+values
+  -- Katrin Gruenewald faehrt, 3 Plaetze, 2 davon vergeben -> bleibt 'offen'.
+  ('fa000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0000000-0000-4000-8000-000000000012', 'a0000000-0000-4000-8000-000000000009',
+   'Parkplatz Vereinsheim RSV Neckarsulm', (current_date + 9 + time '06:45')::timestamptz, 3,
+   'Kombi mit grossem Kofferraum — Rollschuhtaschen passen. Rueckfahrt direkt nach der Siegerehrung.'),
+  -- Stefanie Mueller faehrt, 1 Platz, 1 vergeben -> Trigger dreht auf 'voll'.
+  ('fa000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0000000-0000-4000-8000-000000000012', 'a0000000-0000-4000-8000-000000000012',
+   'Bahnhof Neckarsulm, Kiss-and-ride', (current_date + 9 + time '07:00')::timestamptz, 1,
+   'Nur ein Platz frei, der Rest ist mit Ausruestung belegt.');
+
+-- Die Rueckrufnummern — EIGENE Tabelle mit eigener, engerer Policy (0066):
+-- sichtbar nur fuer Fahrerin, zugesagte Mitfahrer samt Eltern und die
+-- Verwaltung. Ein normales Vereinsmitglied sieht die Fahrten, aber KEINE Nummer.
+insert into app.event_ride_contacts (ride_id, club_id, rueckrufnummer) values
+  ('fa000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001', '+49 151 23456789'),
+  ('fa000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001', '+49 176 22118844');
+
+-- Die Zusagen. member_id = das KIND, angemeldet_von_profile_id = das ELTERNTEIL.
+insert into app.event_ride_riders
+  (club_id, ride_id, member_id, angemeldet_von_profile_id)
+values
+  -- Sofia Mueller (a-10), zugesagt von ihrer Mutter Stefanie (90-12).
+  ('c1ab0000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000010', '90000000-0000-4000-8000-000000000012'),
+  -- Finn Koehler (a-13), zugesagt von seiner Mutter Petra (90-14).
+  ('c1ab0000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000013', '90000000-0000-4000-8000-000000000014'),
+  -- Lina Gruenewald (a-07), zugesagt von ihrer Mutter Katrin (90-09) — in
+  -- Stefanies Auto (Fahrt 2), das damit voll ist.
+  ('c1ab0000-0000-4000-8000-000000000001', 'fa000000-0000-4000-8000-000000000002',
+   'a0000000-0000-4000-8000-000000000007', '90000000-0000-4000-8000-000000000009');
 
 commit;

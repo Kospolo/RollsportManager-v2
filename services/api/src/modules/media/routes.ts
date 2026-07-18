@@ -241,12 +241,23 @@ export function createMediaRouter(): Hono<AuthEnv> {
         where image_url like ${'%/media/' + key} and deleted_at is null
       union all
       -- Kueren-Medien (Musik/Bild): der SERVERSEITIG erzeugte, flache storage_key
-      -- ist als media_assets.storage_path abgelegt. media_assets_select
-      -- (is_club_member) begrenzt die Sichtbarkeit auf Mitglieder DES Vereins,
-      -- in dem die Zeile angelegt wurde (club_id = routine.club_id). Die
-      -- Seed-Zeilen haben Pfade mit '/' und matchen einen flachen key nie.
-      select mime_type as content_type from app.media_assets
-        where storage_path = ${key} and deleted_at is null
+      -- ist als media_assets.storage_path abgelegt.
+      --
+      -- ⚠️ RECHTE (Kinderdaten!): media_assets_select allein haengt nur an
+      -- is_club_member — das ist BREITER als die Kuer selbst, die unter
+      -- can_read_routine steht (ein einfaches Mitglied sieht in /routines nur
+      -- die EIGENE Kuer). Ohne den Join unten koennte jedes Vereinsmitglied die
+      -- Musik JEDER Kuer ziehen, auch der fremder Kinder. Der Join auf
+      -- app.routines erzwingt daher dieselbe Sichtbarkeit wie die Kuer selbst:
+      -- WER DIE KUER LESEN DARF, DARF IHRE MUSIK HOEREN — sonst 404.
+      -- (Das Vereinslogo laeuft NICHT hier durch, sondern ueber
+      -- GET /public/clubs/:clubId/logo in club-logo.ts.)
+      select ma.mime_type as content_type
+        from app.media_assets ma
+        join app.routines r
+          on (r.audio_asset_id = ma.id or r.image_asset_id = ma.id)
+         and r.deleted_at is null
+       where ma.storage_path = ${key} and ma.deleted_at is null
       limit 1`);
     if (rows.length === 0) {
       throw problem(404, 'Not Found', 'No accessible media for this key');
