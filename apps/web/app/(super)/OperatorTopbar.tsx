@@ -1,6 +1,8 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
+import { readOperatorClub, subscribeOperatorClub } from "@/lib/data/operator-club";
 import { useLocale, useT, type Dict } from "@/lib/i18n";
 import { THEME_MODES, useTheme, type ThemeMode } from "@/lib/theme";
 import { Icon, type IconName } from "@/components/shell/icons";
@@ -10,6 +12,16 @@ import { Icon, type IconName } from "@/components/shell/icons";
  * (keine Sidebar/BottomNav). Kennzeichnet klar die Betreiber-Ebene und bietet
  * Sprache, Theme und einen Rückweg ins Vereinsportal. Nur Token-Utilities +
  * components/shell/icons (wie components/ui es ebenfalls nutzt).
+ *
+ * ### Der Portal-Knopf ist kein starrer Link auf /dashboard ###
+ * Der Betreiber hat KEINEN eigenen Verein — /dashboard braucht aber einen.
+ * Deshalb folgt der Knopf dem angesehenen Verein (lib/data/operator-club):
+ *   * steht bereits ein Verein in Einsicht → „Zum Vereinsportal" führt in DESSEN
+ *     Portal (/dashboard mit gesetztem Kontext, lädt korrekt);
+ *   * ist keiner gewählt → „Verein ansehen" führt zur Auswahl (/vereine), wo der
+ *     „Ansehen"-Umschalter den protokollierten Einsicht-Kontext setzt.
+ * So landet der Betreiber nie im leeren „Nicht angemeldet"-Fehler, und der
+ * Auswahl-Weg (Audit, Migration 0051) bleibt der einzige Einstieg ins Portal.
  */
 
 const chromeDict = {
@@ -17,6 +29,7 @@ const chromeDict = {
     wordmark: "RollsportManager",
     plane: "Betreiber-Ebene",
     back: "Zum Vereinsportal",
+    choose: "Verein ansehen",
     langLabel: "Sprache umschalten",
     themeLight: "Hell",
     themeAuto: "Automatisch",
@@ -27,6 +40,7 @@ const chromeDict = {
     wordmark: "RollsportManager",
     plane: "Operator plane",
     back: "To club portal",
+    choose: "View a club",
     langLabel: "Switch language",
     themeLight: "Light",
     themeAuto: "Auto",
@@ -52,6 +66,14 @@ export function OperatorTopbar() {
   const { locale, toggleLocale } = useLocale();
   const { mode, setMode } = useTheme();
 
+  // Folgt dem angesehenen Verein: ist einer aktiv → dessen Portal (/dashboard),
+  // sonst → Auswahl (/vereine). SSR/erster Render: null → Auswahl (sicherer
+  // Default, /dashboard ohne Verein liefe in den Anmeldefehler).
+  const viewing = useSyncExternalStore(subscribeOperatorClub, readOperatorClub, () => null);
+  const portalHref = viewing ? "/dashboard" : "/vereine";
+  const portalLabel = viewing ? t("back") : t("choose");
+  const portalIcon: IconName = viewing ? "chevronRight" : "teams";
+
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-surface/85 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 lg:px-8">
@@ -70,11 +92,14 @@ export function OperatorTopbar() {
 
         <div className="ml-auto flex flex-none items-center gap-2">
           <Link
-            href="/dashboard"
+            href={portalHref}
             className="hidden min-h-9 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-3.5 text-[13px] font-bold text-ink no-underline transition-colors duration-150 hover:bg-sunken sm:inline-flex"
           >
-            <Icon name="chevronRight" className="ic h-4 w-4 rotate-180" />
-            {t("back")}
+            <Icon
+              name={portalIcon}
+              className={`ic h-4 w-4${viewing ? " rotate-180" : ""}`}
+            />
+            {portalLabel}
           </Link>
 
           <button

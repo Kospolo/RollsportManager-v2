@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 import { BottomNav } from "@/components/shell/BottomNav";
 import { AuthGate } from "@/components/shell/AuthGate";
+import { OperatorPortalGate } from "@/components/shell/OperatorPortalGate";
 import { ToastProvider } from "@/components/ui/Toast";
 import { CapabilitiesProvider } from "@/lib/capabilities";
 import { ModulesProvider } from "@/lib/modules";
@@ -11,6 +12,9 @@ import { ModulesProvider } from "@/lib/modules";
  * Canvas-Hintergrund, Surface-Flächen — Look gemäß mockup-final.html.
  * ToastProvider hängt hier, damit jeder Screen useToast() nutzen kann.
  * AuthGate: nur im api-Modus aktiv — ohne Dev-Login-Token → /login.
+ * OperatorPortalGate: fängt den Plattform-Admin OHNE gewählten Verein ab und
+ * zeigt eine Auswahl statt des „Nicht angemeldet"-Fehlers (normale Nutzer:innen
+ * mit Heimatverein laufen unverändert durch).
  *
  * CapabilitiesProvider (GET /me/capabilities, einmal je Ansicht) wrappt die
  * GANZE Shell und nicht nur `children`: Sidebar und BottomNav entscheiden über
@@ -35,7 +39,9 @@ export default function PortalLayout({
           <div className="flex min-h-dvh min-w-0 flex-col">
             <Topbar />
             <main className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:pb-10 lg:pt-7">
-              <AuthGate>{children}</AuthGate>
+              <AuthGate>
+                <OperatorPortalGate>{children}</OperatorPortalGate>
+              </AuthGate>
             </main>
           </div>
           <BottomNav />
