@@ -312,10 +312,46 @@ eventRidesRouter.openapi(
       }
 
       if (rueckrufnummer !== undefined) {
+        // Wer die Nummer anfassen darf, wird EINMAL und ausdruecklich gefragt —
+        // nicht aus dem Ausgang einer Schreiboperation erraten. Grund (0067):
+        // ein DELETE, das die RLS nicht durchlaesst, wirft keinen Fehler,
+        // sondern trifft NULL Zeilen. Ohne diese Frage haette die Route den
+        // Widerruf einer Kontaktnummer weiterhin mit 200 quittiert, ohne dass
+        // die Nummer verschwunden waere — vorgetaeuschter Widerruf ist bei
+        // Kontaktdaten schlimmer als eine ehrliche 403.
+        const [gate] = (await tx`
+          select exists (
+            select 1 from app.event_rides r
+            where r.id = ${rideId}
+              and r.deleted_at is null
+              and (
+                exists (select 1 from app.club_members m
+                        where m.id = r.driver_member_id
+                          and m.profile_id = ${c.get('claims').sub}
+                          and m.deleted_at is null)
+                or app.has_club_role(r.club_id, array['owner', 'admin', 'moderator'])
+              )
+          ) as darf`) as unknown as [{ darf: boolean }];
+        if (!gate?.darf) {
+          throw problem(403, 'Forbidden', 'Die Rueckrufnummer dieser Fahrt darfst du nicht aendern');
+        }
+
         if (rueckrufnummer === null) {
           // Nummer entfernen. Kein Soft-Delete: eine zurueckgezogene
-          // Kontaktnummer soll wirklich weg sein (Art. 5 Abs. 1 lit. c/e).
+          // Kontaktnummer soll wirklich weg sein (Art. 5 Abs. 1 lit. c/e,
+          // Art. 17 DSGVO) — getragen von der DELETE-Policy aus 0067.
           await tx`delete from app.event_ride_contacts where ride_id = ${rideId}`;
+          // Gegenprobe statt Vertrauen: die Zeile MUSS weg sein. Steht sie noch
+          // da, ist das ein Bruch der Zusicherung und keine 200 wert.
+          const rest = await tx`
+            select 1 from app.event_ride_contacts where ride_id = ${rideId}`;
+          if (rest.length > 0) {
+            throw problem(
+              500,
+              'Internal Server Error',
+              'Die Rueckrufnummer konnte nicht entfernt werden',
+            );
+          }
         } else {
           await tx`
             insert into app.event_ride_contacts (ride_id, club_id, rueckrufnummer)
@@ -374,16 +410,46 @@ eventRidesRouter.openapi(
       // (Fahrt, Mitfahrer) ist eindeutig (event_ride_riders_uq). Ohne diesen
       // Zweig endete jede zweite Zusage in einer 23505/409, obwohl sie voellig
       // in Ordnung ist ("doch wieder mitfahren").
+      //
+      // ### DIESER ZWEIG IST KEINE ABKUERZUNG (0067) ###
+      // Er lief frueher gegen die UPDATE-Policy statt gegen die enge
+      // INSERT-Policy — und die UPDATE-Policy liess die FAHRER:IN alles. Damit
+      // konnte eine fremde Erwachsene eine vom Vormund abgesagte Zusage eines
+      // KINDES eigenmaechtig reaktivieren, sobald die Zeile einmal existierte.
+      // Eine Absage war so kein Schutz, sondern ein Tueroeffner.
+      //
+      // Fachlich ist eine Wiederbelebung eine NEUE Zusage. Sie wird deshalb hier
+      // wie eine geprueft — dieselbe Frage, die die INSERT-Policy stellt — und
+      // in der DB noch einmal (Policy nach Zielzustand + Trigger
+      // app.protect_ride_rider_change). Der ehrliche 403 entsteht damit an der
+      // Route UND haelt in der Datenbank; die Route ist die Erklaerung, nicht
+      // die Verteidigung.
       const existing = await tx`
         select id from app.event_ride_riders
         where ride_id = ${rideId} and member_id = ${member_id}`;
 
       if (existing.length > 0) {
+        const [gate] = (await tx`
+          select (
+            app.can_act_for_member(${member_id}::uuid)
+            or app.has_club_role(${ref.club_id}::uuid, array['owner', 'admin', 'moderator'])
+          ) as darf`) as unknown as [{ darf: boolean }];
+        if (!gate?.darf) {
+          throw problem(
+            403,
+            'Forbidden',
+            'Fuer diese Person darfst du nicht zusagen — das kann nur sie selbst oder ihr:e Erziehungsberechtigte:r',
+          );
+        }
+
+        // angemeldet_von_profile_id wird NICHT ueberschrieben: es ist der
+        // Nachweis, wer die Zusage urspruenglich erklaert hat, und seit 0067
+        // unveraenderlich. Ein Nachweis, den der Nachgewiesene selbst
+        // umschreiben kann, ist keiner.
         const updated = await tx`
           update app.event_ride_riders
              set status = 'zugesagt',
-                 deleted_at = null,
-                 angemeldet_von_profile_id = ${claims.sub}
+                 deleted_at = null
            where id = ${existing[0]?.['id'] as string}
            returning id`;
         if (updated.length === 0) {
@@ -413,6 +479,14 @@ eventRidesRouter.openapi(
 // dieser Fahrt (sie muss jemanden austragen koennen, wenn das Auto ausfaellt)
 // und der Vorstand. Alles davon steht in der Policy event_ride_riders_update —
 // hier steht kein zweites Regelwerk.
+//
+// ABER (0067): das Recht der Fahrerin endet beim AUSTRAGEN. Auf 'zugesagt'
+// zuruecksetzen darf nur, wer app.can_act_for_member(member_id) erfuellt (oder
+// die Verwaltung) — sonst koennte sie eine vom Vormund abgesagte Zusage eines
+// fremden Kindes ueber diesen Endpunkt genauso reaktivieren wie ueber POST
+// /riders. Die Policy trennt das nach ZIELZUSTAND, der Trigger
+// app.protect_ride_rider_change erkennt den Uebergang; beides endet als
+// 42501 -> 403.
 //
 // Kein DELETE: eine zurueckgezogene Zusage ist 'abgesagt', nicht verschwunden.
 // Die Fahrerin soll sehen, dass jemand abgesprungen ist.
