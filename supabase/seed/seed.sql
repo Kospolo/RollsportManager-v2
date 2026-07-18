@@ -116,6 +116,27 @@ insert into app.clubs (id, name, short_name, city, discipline, founded_year, joi
   ('c1ab0000-0000-4000-8000-000000000001', 'RSV Neckarsulm', 'RSV', 'Neckarsulm', 'Rollkunstlauf', 1968, 'RSV-DEMO-2026');
 
 -- ----------------------------------------------------------------------------
+-- Zubuchbare Module (0068) — der DEMO-Verein HAT Galerie, Dokumente und Notizen
+-- gebucht.
+--
+-- Seit 0068 sind diese drei fuer einen NEUEN Verein voreingestellt AUS: sie sind
+-- Zusatzleistungen, die ein Verein bucht, nicht Beigaben. Der Demo-Verein soll
+-- sie aber zeigen (Galerie-Bilder, Dokumente und Notizen stehen weiter unten im
+-- Seed) — also bucht er sie hier ausdruecklich.
+--
+-- DAS SCHWAECHT DAS GATE NICHT AB, es benutzt es: dieselbe Zeile, die ein
+-- Vereins-Admin ueber PUT /clubs/{id}/modules/{key} schreiben wuerde. Wer sie auf
+-- false setzt, bekommt die Daten wirklich nicht mehr — auch per direktem
+-- API-Aufruf (nachgemessen in tests/sql/99oA_zubuchbare_module.sql).
+-- Galerie und Dokumente brauchen ZUSAETZLICH die PRO-Lizenz (0012); der
+-- Demo-Verein hat sie (siehe app.entitlements weiter unten).
+-- ----------------------------------------------------------------------------
+insert into app.club_modules (club_id, module_key, enabled) values
+  ('c1ab0000-0000-4000-8000-000000000001', 'gallery',  true),
+  ('c1ab0000-0000-4000-8000-000000000001', 'document', true),
+  ('c1ab0000-0000-4000-8000-000000000001', 'notes',    true);
+
+-- ----------------------------------------------------------------------------
 -- Sparte (migration 0062) — RSV Neckarsulm ist ein Einsparten-Verein
 -- (Rollkunstlauf). Die eine Sparte entspricht dem club.discipline-Freitext,
 -- genau wie der Produktions-Backfill sie anlegen wuerde. Teams und Mitglieder

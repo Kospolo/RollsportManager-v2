@@ -139,8 +139,13 @@ select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000004","role":"authenticated","club_roles":{"c1ab0000-0000-4000-8000-000000000001":"admin"}}',
   true);
 set local role authenticated;
+-- upsert statt insert: seit 0068 ist 'gallery' ein ZUBUCHBARES Modul und der
+-- Demo-Verein bringt seine Buchungs-Zeile schon aus dem Seed mit. Ein blankes
+-- insert liefe in club_modules_club_module_uq. Die Absicht dieses Blocks ist
+-- unveraendert: der Admin schaltet die Galerie AUS.
 insert into app.club_modules (club_id, module_key, enabled)
-values ('c1ab0000-0000-4000-8000-000000000001', 'gallery', false);
+values ('c1ab0000-0000-4000-8000-000000000001', 'gallery', false)
+on conflict (club_id, module_key) do update set enabled = excluded.enabled;
 
 -- ... und das Mitglied sieht nichts mehr.
 reset role;
@@ -186,8 +191,13 @@ select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000004","role":"authenticated","club_roles":{"c1ab0000-0000-4000-8000-000000000001":"admin"}}',
   true);
 set local role authenticated;
+-- upsert statt insert: seit 0068 ist 'gallery' ein ZUBUCHBARES Modul und der
+-- Demo-Verein bringt seine Buchungs-Zeile schon aus dem Seed mit. Ein blankes
+-- insert liefe in club_modules_club_module_uq. Die Absicht dieses Blocks ist
+-- unveraendert: der Admin schaltet die Galerie AUS.
 insert into app.club_modules (club_id, module_key, enabled)
-values ('c1ab0000-0000-4000-8000-000000000001', 'gallery', false);
+values ('c1ab0000-0000-4000-8000-000000000001', 'gallery', false)
+on conflict (club_id, module_key) do update set enabled = excluded.enabled;
 update app.club_modules set enabled = true
  where club_id = 'c1ab0000-0000-4000-8000-000000000001' and module_key = 'gallery';
 

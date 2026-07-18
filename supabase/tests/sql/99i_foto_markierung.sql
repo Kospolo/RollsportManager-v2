@@ -49,6 +49,16 @@ insert into app.clubs (id, name, city, join_code) values
   ('c1fa0000-0000-4000-8000-000000000001', 'RSC Fotoverein',   'Bildstadt',  'TEST-F001'),
   ('c1fa0000-0000-4000-8000-000000000002', 'RSC Fremdverein2', 'Fremdstadt', 'TEST-F002');
 
+-- Seit 0068 ist 'gallery' ein ZUBUCHBARES Modul: ein Verein, der nach den
+-- Migrationen entsteht (wie diese beiden Fixture-Vereine), hat es voreingestellt
+-- AUS. Diese Datei misst die FOTO-MARKIERUNG, nicht das Modul-Gate — also bucht
+-- das Fixture die Galerie ausdruecklich, damit es hier ueberhaupt Fotos gibt.
+-- Der Beweis, dass das Gate ohne diese Zeile wirklich zubeisst, steht in
+-- 99oA_zubuchbare_module.sql; hier waere er nur ein Seiteneffekt.
+insert into app.club_modules (club_id, module_key, enabled) values
+  ('c1fa0000-0000-4000-8000-000000000001', 'gallery', true),
+  ('c1fa0000-0000-4000-8000-000000000002', 'gallery', true);
+
 insert into app.profiles (id, display_name) values
   ('9f000000-0000-4000-8000-000000000001', 'Sonja Staff'),
   ('9f000000-0000-4000-8000-000000000002', 'Anke Adult'),
