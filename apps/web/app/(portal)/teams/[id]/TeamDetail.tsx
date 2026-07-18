@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDate, formatTime } from "@/lib/format";
-import { errorMessage, fullName } from "@/lib/data";
+import { errorMessage, fullName, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
-import type { Event, Member, Routine, Team } from "@/lib/types";
+import type { Event, Member, Routine, Sparte, Team } from "@/lib/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
@@ -18,6 +18,8 @@ import { Icon } from "@/components/shell/icons";
 import { teamsViewDict } from "../i18n";
 import { isMyTeam, rosterOf } from "../derive";
 import { TeamRosterCard } from "../TeamRosterCard";
+import { SparteBadge } from "../../sparten/_components/SparteBadge";
+import { TeamSparteSheet } from "./TeamSparteSheet";
 
 /**
  * Team-Detailseite (REIN LESEND): Kopf mit Name/Altersband/Trainerstab, dann
@@ -34,6 +36,7 @@ import { TeamRosterCard } from "../TeamRosterCard";
 const NO_MEMBERS: Member[] = [];
 const NO_ROUTINES: Routine[] = [];
 const NO_EVENTS: Event[] = [];
+const NO_SPARTEN: Sparte[] = [];
 
 function CardGrid({ children }: { children: React.ReactNode }) {
   return <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">{children}</div>;
@@ -42,6 +45,7 @@ function CardGrid({ children }: { children: React.ReactNode }) {
 export function TeamDetail({ id }: { id: string }) {
   const t = useT(teamsViewDict);
   const { locale } = useLocale();
+  const [sparteOpen, setSparteOpen] = useState(false);
 
   const state = useData(
     async (repo) => {
@@ -54,7 +58,10 @@ export function TeamDetail({ id }: { id: string }) {
       // fallen sie still weg (die Seite lebt vom Kader, nicht von diesen).
       const routines = await repo.getRoutines().catch(() => NO_ROUTINES);
       const events = await repo.getUpcomingEvents().catch(() => NO_EVENTS);
-      return { teams, members, currentUser, routines, events };
+      // Sparten (Team->Sparte) sind ebenfalls Anreicherung — Contract-Lücke
+      // fällt still weg. Der Kopf zeigt dann keine Sparte, kein Fehler.
+      const sparten = await repo.getSparten().catch(() => NO_SPARTEN);
+      return { teams, members, currentUser, routines, events, sparten };
     },
     [id],
   );
@@ -66,6 +73,8 @@ export function TeamDetail({ id }: { id: string }) {
 
   const members = state.data?.members ?? NO_MEMBERS;
   const currentUser = state.data?.currentUser ?? null;
+  const sparten = state.data?.sparten ?? NO_SPARTEN;
+  const canManageSparten = permissions(currentUser).canManageSparten;
 
   const { coaches, skaters } = useMemo(
     () => (team ? rosterOf(team, members) : { coaches: NO_MEMBERS, skaters: NO_MEMBERS }),
@@ -138,6 +147,9 @@ export function TeamDetail({ id }: { id: string }) {
   const rosterCount =
     skaters.length === 1 ? t("membersCountOne") : t("membersCountMany", { n: skaters.length });
 
+  // Team -> Sparte (Migration 0064): genau eine Sparte oder keine.
+  const teamSparte = sparten.find((s) => s.id === team.sparteId) ?? null;
+
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6">
       <Breadcrumb backLabel={t("backCrumb")} current={team.name} />
@@ -162,6 +174,29 @@ export function TeamDetail({ id }: { id: string }) {
                 {rosterCount}
               </span>
             </div>
+
+            {/* Sparte des Teams — Anzeige (Badge) + für Berechtigte Zuordnen/Ändern.
+                Für Unberechtigte NUR das Badge (bzw. gar nichts, wenn keine Sparte). */}
+            {(teamSparte || canManageSparten) && (
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <span className="eyebrow">{t("sparteEyebrow")}</span>
+                {teamSparte ? (
+                  <SparteBadge sparte={teamSparte} inactiveLabel={t("sparteInactive")} />
+                ) : (
+                  <span className="text-caption text-ink-faint">{t("sparteNone")}</span>
+                )}
+                {canManageSparten && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon="edit"
+                    onClick={() => setSparteOpen(true)}
+                  >
+                    {teamSparte ? t("sparteChangeCta") : t("sparteAssignCta")}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -302,6 +337,18 @@ export function TeamDetail({ id }: { id: string }) {
             ))}
           </Card>
         </section>
+      )}
+
+      {sparteOpen && canManageSparten && (
+        <TeamSparteSheet
+          key={team.id}
+          teamId={team.id}
+          teamName={team.name}
+          currentSparteId={team.sparteId}
+          sparten={sparten}
+          onClose={() => setSparteOpen(false)}
+          onSaved={state.reload}
+        />
       )}
     </div>
   );

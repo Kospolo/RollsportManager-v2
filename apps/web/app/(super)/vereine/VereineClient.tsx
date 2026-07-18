@@ -10,6 +10,7 @@ import type {
   PlatformClubSummary,
   PlatformEntitlement,
   PlatformUserSummary,
+  Sparte,
 } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -22,6 +23,7 @@ import { SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { OperatorGate } from "../OperatorGate";
 import { ViewClubButton } from "../ViewClubButton";
+import { SparteBadge } from "@/app/(portal)/sparten/_components/SparteBadge";
 import { STATUS_LABEL_KEY, STATUS_TONE, TIER_LABEL_KEY, TIER_TONE } from "../lizenzen/derive";
 import { lizenzenDict } from "../lizenzen/i18n";
 import { vereineDict } from "./i18n";
@@ -61,6 +63,10 @@ function Vereine() {
       repo.platformListClubs(),
       repo.platformListUsers(),
       repo.platformListEntitlements(),
+      // Sparten + Verein des GERADE ANGESEHENEN Vereins (Read-only-Überblick).
+      // Contract-Lücke/Fehler → null, dann zeigt die Karte einen ehrlichen Hinweis.
+      repo.getSparten().catch(() => null),
+      repo.getClub().catch(() => null),
     ] as const),
   );
 
@@ -85,7 +91,7 @@ function Vereine() {
     );
   }
 
-  const [clubs, users, entitlements] = state.data;
+  const [clubs, users, entitlements, sparten, club] = state.data;
 
   return (
     <div className="grid gap-6">
@@ -97,9 +103,75 @@ function Vereine() {
       />
       <HowItWorksCard />
       <ClubsCard clubs={clubs} entitlements={entitlements} />
+      <SpartenCard sparten={sparten} clubName={club?.name ?? null} />
       <RightsCard />
       <UsersCard users={users} />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * Sparten des GERADE ANGESEHENEN Vereins — reine Lesesicht auf der Betreiber-
+ * Ebene. Die Facade getSparten() scopet serverseitig auf den aktiven Verein
+ * (activeClubId); über den „Ansehen"-Umschalter wechselt der Betreiber den
+ * Verein und sieht dann dessen Sparten. Verwaltet werden Sparten NICHT hier,
+ * sondern im Verein (Menü → Sparten) — genau wie Rollen (RightsCard).
+ */
+function SpartenCard({ sparten, clubName }: { sparten: Sparte[] | null; clubName: string | null }) {
+  const t = useT(vereineDict);
+
+  const sorted = useMemo(
+    () =>
+      (sparten ?? [])
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "de")),
+    [sparten],
+  );
+  const activeCount = sorted.filter((s) => s.active).length;
+
+  return (
+    <Card>
+      <CardHeader
+        eyebrow={t("spartenEyebrow")}
+        title={t("spartenTitle")}
+        action={
+          sparten !== null && sorted.length > 0 ? (
+            <Badge tone="success">{t("spartenActiveCount", { n: activeCount })}</Badge>
+          ) : undefined
+        }
+      />
+      <p className="-mt-1 mb-4 max-w-prose text-body text-ink-soft">
+        {clubName ? t("spartenBody", { club: clubName }) : t("spartenBodyNoClub")}
+      </p>
+
+      {sparten === null ? (
+        <p className="rounded-lg bg-sunken px-4 py-3 text-caption text-ink-soft">
+          {t("spartenNotConnected")}
+        </p>
+      ) : sorted.length === 0 ? (
+        <p className="rounded-lg bg-sunken px-4 py-3 text-caption text-ink-soft">
+          {t("spartenEmpty")}
+        </p>
+      ) : (
+        <ul className="grid gap-2.5 sm:grid-cols-2">
+          {sorted.map((sparte) => (
+            <li
+              key={sparte.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-line bg-canvas px-3 py-2"
+            >
+              <SparteBadge sparte={sparte} inactiveLabel={t("spartenInactive")} />
+              <span className="flex-none text-caption font-semibold text-ink-faint tabular-nums">
+                {sparte.memberIds.length === 1
+                  ? t("spartenMembersOne")
+                  : t("spartenMembers", { n: sparte.memberIds.length })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }
 

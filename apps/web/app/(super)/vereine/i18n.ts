@@ -58,6 +58,20 @@ export const vereineDict = {
       "Ehrlich dazu: von den 32 Fähigkeiten wirken derzeit erst 14 wirklich (3 durchgesetzt, 2 teilweise, 9 nur schreibseitig). Die Rollen-Oberfläche des Vereins beschriftet die übrigen 18 ausdrücklich mit „wirkt noch nicht“ statt sie als Sperre auszugeben. Plattform-weite Modul-Schalter sind etwas anderes und liegen unter Einstellungen → Feature-Flags.",
     toFlags: "Zu den Feature-Flags",
 
+    // Sparten (Fachbereiche des angesehenen Vereins) — reine Lesesicht
+    spartenEyebrow: "Fachbereiche",
+    spartenTitle: "Sparten des angesehenen Vereins",
+    spartenBody:
+      "Die Sparten stammen aus dem gerade aktiven Verein ({club}). Über „Ansehen“ wechselst du den Verein — dann erscheinen dessen Sparten. Reine Lesesicht; angelegt und geändert werden Sparten im Verein selbst (Menü → Sparten).",
+    spartenBodyNoClub:
+      "Die Sparten stammen aus dem gerade aktiven Verein. Über „Ansehen“ wechselst du den Verein — dann erscheinen dessen Sparten. Reine Lesesicht.",
+    spartenActiveCount: "{n} aktiv",
+    spartenInactive: "Inaktiv",
+    spartenMembers: "{n} Mitglieder",
+    spartenMembersOne: "1 Mitglied",
+    spartenEmpty: "Dieser Verein hat noch keine Sparten angelegt.",
+    spartenNotConnected: "Sparten sind in dieser Datenquelle nicht angebunden.",
+
     loadErrorTitle: "Vereins-Daten konnten nicht geladen werden",
     retry: "Erneut versuchen",
   },
@@ -109,6 +123,20 @@ export const vereineDict = {
     rightsHonest:
       "To be honest about it: of the 32 capabilities only 14 currently have real effect (3 enforced, 2 partial, 9 write-only). The club’s role UI explicitly labels the other 18 as “no effect yet” rather than presenting them as a lock. Platform-wide module switches are a different thing and live under Settings → feature flags.",
     toFlags: "To the feature flags",
+
+    // Divisions of the viewed club — read-only
+    spartenEyebrow: "Disciplines",
+    spartenTitle: "Divisions of the viewed club",
+    spartenBody:
+      "These divisions come from the currently active club ({club}). Use “View” to switch clubs — its divisions then appear. Read-only; divisions are created and changed inside the club itself (menu → Divisions).",
+    spartenBodyNoClub:
+      "These divisions come from the currently active club. Use “View” to switch clubs — its divisions then appear. Read-only.",
+    spartenActiveCount: "{n} active",
+    spartenInactive: "Inactive",
+    spartenMembers: "{n} members",
+    spartenMembersOne: "1 member",
+    spartenEmpty: "This club has no divisions yet.",
+    spartenNotConnected: "Divisions are not connected in this data source.",
 
     loadErrorTitle: "Club data could not be loaded",
     retry: "Try again",

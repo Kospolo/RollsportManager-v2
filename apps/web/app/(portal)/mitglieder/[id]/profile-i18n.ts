@@ -131,10 +131,10 @@ export const profileDict = {
     contactEdit: "Bearbeiten",
     contactStaffNote: "Kontaktdaten sehen nur Verwaltung, Trainer:in des Teams und die Familie.",
 
-    deptEyebrow: "Abteilungen",
-    deptTitle: "Abteilungen",
+    deptEyebrow: "Gruppen",
+    deptTitle: "Gruppen",
     deptLead: "Leitung",
-    deptNone: "Keine Abteilung.",
+    deptNone: "Keine Gruppe.",
 
     rolesEyebrow: "Rollen",
     rolesTitle: "Rollen im Verein",
@@ -318,10 +318,10 @@ export const profileDict = {
     contactEdit: "Edit",
     contactStaffNote: "Contact details are visible only to admins, the team coach and the family.",
 
-    deptEyebrow: "Departments",
-    deptTitle: "Departments",
+    deptEyebrow: "Groups",
+    deptTitle: "Groups",
     deptLead: "Lead",
-    deptNone: "No department.",
+    deptNone: "No group.",
 
     rolesEyebrow: "Roles",
     rolesTitle: "Roles in the club",

@@ -87,6 +87,28 @@ export const teamsViewDict = {
     eventsTitle: "Nächste Termine",
     eventsAllLink: "Alle Termine",
     openEventAria: "Termin „{title}“ öffnen",
+
+    // Sparten-Filter (Übersicht)
+    spartenFilterLabel: "Nach Sparte filtern",
+    filterAllSparten: "Alle Sparten",
+    filterNoSparte: "Ohne Sparte",
+
+    // Detailseite — Sparte (Zuordnung, can_manage_sparten)
+    sparteEyebrow: "Sparte",
+    sparteNone: "Keiner Sparte zugeordnet",
+    sparteInactive: "Inaktiv",
+    sparteAssignCta: "Sparte zuordnen",
+    sparteChangeCta: "Sparte ändern",
+    sparteSheetEyebrow: "Team-Sparte",
+    sparteSheetTitle: "Sparte — {team}",
+    sparteSheetHint:
+      "Wähle die Sparte, zu der dieses Team gehört. Ein Team gehört zu genau einer Sparte.",
+    sparteOptionNone: "Keiner Sparte",
+    sparteNoOptions: "Es gibt noch keine Sparten im Verein.",
+    sparteCancel: "Abbrechen",
+    sparteSave: "Zuordnung speichern",
+    sparteSavedToast: "Sparte von „{team}“ gespeichert.",
+    sparteForbidden: "Dafür fehlt dir die Berechtigung.",
   },
   en: {
     eyebrow: "Club",
@@ -161,6 +183,28 @@ export const teamsViewDict = {
     eventsTitle: "Upcoming dates",
     eventsAllLink: "All dates",
     openEventAria: "Open event “{title}”",
+
+    // Division filter (overview)
+    spartenFilterLabel: "Filter by division",
+    filterAllSparten: "All divisions",
+    filterNoSparte: "No division",
+
+    // Detail page — division (assignment, can_manage_sparten)
+    sparteEyebrow: "Division",
+    sparteNone: "Not assigned to a division",
+    sparteInactive: "Inactive",
+    sparteAssignCta: "Assign division",
+    sparteChangeCta: "Change division",
+    sparteSheetEyebrow: "Team division",
+    sparteSheetTitle: "Division — {team}",
+    sparteSheetHint:
+      "Pick the division this team belongs to. A team belongs to exactly one division.",
+    sparteOptionNone: "No division",
+    sparteNoOptions: "There are no divisions in the club yet.",
+    sparteCancel: "Cancel",
+    sparteSave: "Save assignment",
+    sparteSavedToast: "Division of “{team}” saved.",
+    sparteForbidden: "You don't have permission to do that.",
   },
 } satisfies Dict;
 

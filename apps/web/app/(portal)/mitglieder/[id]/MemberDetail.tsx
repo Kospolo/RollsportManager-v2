@@ -16,7 +16,7 @@ import {
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { MemberProfile } from "@/lib/api/generated";
-import type { Member, MemberRole, MemberStatus } from "@/lib/types";
+import type { Member, MemberRole, MemberStatus, Sparte } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge, StatusPill, type BadgeTone } from "@/components/ui/Badge";
@@ -29,6 +29,8 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { AboutMeSheet } from "../AboutMeSheet";
 import { AssessmentSheet } from "./AssessmentSheet";
+import { MemberSpartenCard } from "./MemberSpartenCard";
+import { MemberSpartenSheet } from "./MemberSpartenSheet";
 import { FamilyCard } from "./DetailCards";
 import { mitgliederDict, roleKey, type MitgliederKey } from "../i18n";
 import { profileDict } from "./profile-i18n";
@@ -131,6 +133,7 @@ export function MemberDetail({ id }: { id: string }) {
         softNotImplemented(repo.getTeams()),
         repo.getCurrentUser(),
         softNotImplemented(repo.getMembers()),
+        softNotImplemented(repo.getSparten()),
       ] as const),
     [id],
   );
@@ -139,6 +142,7 @@ export function MemberDetail({ id }: { id: string }) {
   const [savingRole, setSavingRole] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [assessOpen, setAssessOpen] = useState(false);
+  const [spartenOpen, setSpartenOpen] = useState(false);
   const roleOverride = override !== null && override.id === id ? override.role : null;
 
   if (state.status === "loading") return <DetailSkeleton />;
@@ -166,7 +170,7 @@ export function MemberDetail({ id }: { id: string }) {
     );
   }
 
-  const [profile, teams, currentUser, roster] = state.data;
+  const [profile, teams, currentUser, roster, sparten] = state.data;
   const member = profile.member;
   const viewMember: Member = {
     id: member.id,
@@ -273,8 +277,26 @@ export function MemberDetail({ id }: { id: string }) {
   const hasRoles = P.roles.length > 0;
   const hasDepts = P.departments.length > 0;
   const hasConsents = P.consents !== null && P.consents.length > 0;
+
+  // Sparten-Zugehörigkeit (n:m) — aus der Vereins-Spartenliste abgeleitet (welche
+  // Sparte führt dieses Mitglied im Roster?). getSparten ist eine Contract-Lücke-
+  // weiche Nebenquelle (softNotImplemented → null); dann fällt der Bereich still weg.
+  const canManageSparten = perms.canManageSparten;
+  const memberSparten: Sparte[] = (sparten ?? [])
+    .filter((s) => s.memberIds.includes(member.id))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "de"));
+  // Karte nur, wenn Daten angebunden sind UND es etwas zu zeigen/verwalten gibt.
+  const showSparten = sparten !== null && (memberSparten.length > 0 || canManageSparten);
+
   const orgAny =
-    contactFields.length > 0 || hasRoles || hasDepts || hasFinance || hasConsents || canEditRole || !!FamilyCardVisible(perms);
+    contactFields.length > 0 ||
+    hasRoles ||
+    hasDepts ||
+    showSparten ||
+    hasFinance ||
+    hasConsents ||
+    canEditRole ||
+    !!FamilyCardVisible(perms);
 
   const hasPhotos = (P.photos?.length ?? 0) > 0;
 
@@ -489,6 +511,13 @@ export function MemberDetail({ id }: { id: string }) {
 
             {hasRoles && <RolesCard roles={P.roles} />}
             {hasDepts && <DepartmentsCard departments={P.departments} />}
+            {showSparten && (
+              <MemberSpartenCard
+                sparten={memberSparten}
+                canManage={canManageSparten}
+                onManage={() => setSpartenOpen(true)}
+              />
+            )}
             {hasConsents && <ConsentCard consents={P.consents!} />}
 
             {canEditRole && (
@@ -533,6 +562,16 @@ export function MemberDetail({ id }: { id: string }) {
           open={assessOpen}
           memberId={member.id}
           onClose={() => setAssessOpen(false)}
+          onSaved={state.reload}
+        />
+      )}
+      {spartenOpen && canManageSparten && sparten !== null && (
+        <MemberSpartenSheet
+          key={member.id}
+          memberId={member.id}
+          memberName={name}
+          sparten={sparten}
+          onClose={() => setSpartenOpen(false)}
           onSaved={state.reload}
         />
       )}

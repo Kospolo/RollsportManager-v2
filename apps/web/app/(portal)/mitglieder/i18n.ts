@@ -21,6 +21,9 @@ export const mitgliederDict = {
     fCoach: "Trainer",
     fMember: "Mitglieder",
     fGuest: "Gasttrainer",
+    spartenFilterLabel: "Mitglieder nach Sparte filtern",
+    sfAllSparten: "Alle Sparten",
+    sfNoSparte: "Ohne Sparte",
 
     listEyebrow: "Übersicht",
     listTitle: "Alle im Verein",
@@ -199,6 +202,9 @@ export const mitgliederDict = {
     fCoach: "Coaches",
     fMember: "Members",
     fGuest: "Guest coaches",
+    spartenFilterLabel: "Filter members by division",
+    sfAllSparten: "All divisions",
+    sfNoSparte: "No division",
 
     listEyebrow: "Overview",
     listTitle: "Everyone in the club",
