@@ -77,6 +77,7 @@ import type { RbacRepository } from "./inputs-rbac";
 import type { RegistrierungRepository } from "./inputs-registrierung";
 import type { OrgRepository } from "./inputs-org";
 import type { SpartenRepository } from "./inputs-sparten";
+import type { FahrgemeinschaftenRepository } from "./inputs-fahrgemeinschaften";
 import type { PlatformConsoleRepository } from "./inputs-platform";
 import type { WettkampfRepository } from "./inputs-wettkampf";
 
@@ -208,6 +209,7 @@ export interface DataRepository
     MemberProfileRepository,
     OrgRepository,
     SpartenRepository,
+    FahrgemeinschaftenRepository,
     PlatformConsoleRepository,
     RbacRepository,
     RegistrierungRepository,

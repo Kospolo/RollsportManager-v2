@@ -30,6 +30,7 @@ import {
 } from "../helpers";
 import { AttendancePanel, ResponsesPanel } from "./ParticipantPanels";
 import { QrCheckinModal } from "./QrCheckinModal";
+import { RidesPanel } from "./RidesPanel";
 
 type SectionTab = "responses" | "attendance";
 
@@ -196,6 +197,12 @@ export function EventDetailSheet({
             )}
           </section>
         )}
+
+        {/* Fahrgemeinschaften — nur für kommende Termine: eine Mitfahrt zu
+            einem vergangenen Termin gibt es nicht mehr zu verabreden. Der
+            Bereich lädt seine Fahrten selbst (Facade), damit ein Termin ohne
+            geöffnetes Detail keine Fahrten-Abfrage auslöst. */}
+        {!past && <RidesPanel event={event} currentUser={currentUser} members={members} />}
 
         {/* Teilnehmer: Antworten / Anwesenheit */}
         <section className="grid gap-3">

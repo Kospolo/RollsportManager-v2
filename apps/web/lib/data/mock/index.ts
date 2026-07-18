@@ -30,6 +30,7 @@ import { moduleRepositoryRegistrierung } from "./modules-registrierung";
 import { moduleRepositorySupport } from "./modules-support";
 import { moduleRepositoryOrg } from "./modules-org";
 import { moduleRepositorySparten } from "./modules-sparten";
+import { moduleRepositoryFahrgemeinschaften } from "./modules-fahrgemeinschaften";
 import { moduleRepositoryPlatform } from "./modules-platform";
 import { moduleRepositoryWettkampf } from "./modules-wettkampf";
 
@@ -340,6 +341,9 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Module: Sparten (fachliche Großbereiche, n:m Mitglieder) ---------- */
   ...moduleRepositorySparten,
+
+  /* ---------- Module: Fahrgemeinschaften zu Terminen (0066) ---------- */
+  ...moduleRepositoryFahrgemeinschaften,
   async setTeamSparte(teamId, sparteId): Promise<Team> {
     // Team->Sparte in mock/index.ts, weil hier der teamStore lebt.
     const team = teamStore.find((t) => t.id === teamId);

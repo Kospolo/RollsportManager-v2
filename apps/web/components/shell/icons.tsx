@@ -41,7 +41,9 @@ export type IconName =
   | "share"
   | "link"
   | "copy"
-  | "trash";
+  | "trash"
+  | "car"
+  | "phone";
 
 const PATHS: Record<IconName, React.ReactNode> = {
   dashboard: (
@@ -239,6 +241,16 @@ const PATHS: Record<IconName, React.ReactNode> = {
       <path d="M6.5 7l.8 11.2A1.8 1.8 0 0 0 9.1 20h5.8a1.8 1.8 0 0 0 1.8-1.8L17.5 7" />
       <path d="M10 11v5M14 11v5" />
     </>
+  ),
+  car: (
+    <>
+      <path d="M4 16.5v2a1 1 0 0 0 1 1h1.5a1 1 0 0 0 1-1v-1.2M20 16.5v2a1 1 0 0 1-1 1h-1.5a1 1 0 0 1-1-1v-1.2" />
+      <path d="M3.5 16.5v-4l2-5.3A2 2 0 0 1 7.4 6h9.2a2 2 0 0 1 1.9 1.2l2 5.3v4z" />
+      <path d="M5.5 12.5h13M7 15h1.5M15.5 15H17" />
+    </>
+  ),
+  phone: (
+    <path d="M7.2 3.8h3l1.2 3.4-1.9 1.5a11.5 11.5 0 0 0 5.3 5.3l1.5-1.9 3.4 1.2v3a2 2 0 0 1-2.2 2C10.9 17.6 6.4 13.1 5.2 6A2 2 0 0 1 7.2 3.8Z" />
   ),
 };
 

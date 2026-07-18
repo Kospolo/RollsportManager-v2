@@ -159,6 +159,16 @@ export type {
   SpartenRepository,
   UpdateSparteInput,
 } from "./inputs-sparten";
+/** Fahrgemeinschaften zu Terminen (0066) — Rückrufnummer redigiert der SERVER. */
+export type {
+  FahrgemeinschaftenRepository,
+  OfferRideInput,
+  Ride,
+  RideRider,
+  RideRiderStatus,
+  RideStatus,
+  UpdateRideInput,
+} from "./inputs-fahrgemeinschaften";
 export type {
   PlatformConsoleRepository,
   PlatformPaymentsQuery,

@@ -21,6 +21,7 @@ import { moduleApiRepositoryRegistrierung } from "./modules-registrierung";
 import { moduleApiRepositorySupport } from "./modules-support";
 import { moduleApiRepositoryOrg } from "./modules-org";
 import { moduleApiRepositorySparten } from "./modules-sparten";
+import { moduleApiRepositoryFahrgemeinschaften } from "./modules-fahrgemeinschaften";
 import { moduleApiRepositoryPlatform } from "./modules-platform";
 import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
 import {
@@ -446,6 +447,9 @@ export const apiRepository: DataRepository = {
 
   /* ---------- Module: Sparten (fachliche Großbereiche, n:m Mitglieder) ---------- */
   ...moduleApiRepositorySparten,
+
+  /* ---------- Module: Fahrgemeinschaften zu Terminen (0066) ---------- */
+  ...moduleApiRepositoryFahrgemeinschaften,
 
   /* ---------- Module: Rangliste, Live-Wertung, Verbandsmeldung, Kür-Teilen (Wettkampf) ---------- */
   ...moduleApiRepositoryWettkampf,

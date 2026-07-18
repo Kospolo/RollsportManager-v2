@@ -161,3 +161,20 @@ export function groupByDay(list: Event[]): DayGroup[] {
   }
   return [...groups.values()];
 }
+
+/**
+ * Volljährig? Grundlage der Anzeige-Regel „Minderjährige bieten keine Fahrt an"
+ * (Fahrgemeinschaften, Migration 0066).
+ *
+ * OHNE Geburtsdatum wird ERLAUBT — dieselbe Richtung wie der DB-Trigger. Das
+ * ist bewusst und nicht bequem: im Bestand fehlt das Geburtsdatum ausgerechnet
+ * bei den Erwachsenen, fail-closed würde also die Fahrer aussperren. Der Riegel
+ * greift, sobald das Datum gepflegt ist — und die Datenbank entscheidet ohnehin
+ * noch einmal selbst.
+ */
+export function isAdultMember(member: Member): boolean {
+  if (!member.birthDate) return true;
+  const birth = new Date(member.birthDate);
+  const eighteenth = new Date(birth.getFullYear() + 18, birth.getMonth(), birth.getDate());
+  return eighteenth.getTime() <= Date.now();
+}
