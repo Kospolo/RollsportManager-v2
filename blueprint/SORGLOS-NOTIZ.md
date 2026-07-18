@@ -58,10 +58,12 @@ Motto-Phantom-Fix — „Über mich" schrieb ins Leere (`11ff5cb`) · Team-Detai
 Küren im Profil anklickbar/abspielbar · **Finanzen pro Verein abschaltbar** · **Vereinslogo**.
 
 **🟡 NATIVE (Marcel 2026-07-18: „iOS/macOS/Android/Windows fehlen alle"):**
-- **iOS** (`apps/ios`, SwiftUI, 1052 Swift-Dateien): auf heutigen Contract-Stand gebracht, **baut grün + läuft im
-  Simulator** (`82fe557`, Dashboard mit echten Seed-Daten). Lücken-Roadmap (priorisiert): **Sparten (komplett)** ·
-  Betreiber/Super-Admin · member-facing Team-Detail · Galerie-Markierung · öffentliches Selbst-Profil · Vereinslogo ·
-  Modul-Toggle. Die generierten Swift-**Typen** sind da; es fehlt UI + Endpoints-Verdrahtung.
+- **iOS** (`apps/ios`, SwiftUI, 1052 Swift-Dateien): auf heutigen Contract-Stand, **baut grün, läuft im Simulator**
+  (`82fe557`) **UND auf Marcels iPhone 16 Pro** (2026-07-18 erstmals installiert+gestartet, Dev-Build gegen Mac-IP).
+  Geräte-Signing-Prozedur siehe Memory `reference_rsm_ios_device_install` (ASC-Key + `API_HOST=0.0.0.0` + DevConfig→
+  192.168.1.168; Commit `1c3de97`). Lücken-Roadmap (priorisiert): **Sparten (komplett)** · Betreiber/Super-Admin ·
+  member-facing Team-Detail · Galerie-Markierung · öffentliches Selbst-Profil · Vereinslogo · Modul-Toggle. Die
+  generierten Swift-**Typen** sind da; es fehlt UI + Endpoints-Verdrahtung.
 - **macOS / Windows:** noch keine eigene App. macOS aus der iOS-SwiftUI-Basis holen; Windows braucht eine
   Grundsatz-Entscheidung (kein gemeinsamer Unterbau) — wird vorgelegt, wenn dran.
 - **Android** (`apps/android`, ~64 Kotlin-Dateien): existiert dünn, volle Parität nachzubauen.
