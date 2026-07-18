@@ -68,8 +68,24 @@ Küren im Profil anklickbar/abspielbar · **Finanzen pro Verein abschaltbar** ·
 
 **➡️ Reihenfolge jetzt:** Web-Sparten fertig → **iOS-Sparten** → macOS → Android → Windows-Weg.
 
+**🟢 Betreiber-Konsole gefixt (2026-07-18):** (a) „Zum Vereinsportal" führte als Plattform-Admin (kein eigener
+Verein) stur auf `/dashboard` → „Daten konnten nicht geladen werden". Jetzt: Knopf → **Vereins-Auswahl** (/vereine)
+wenn kein Verein aktiv, sonst ins Portal; neuer `OperatorPortalGate` fängt „Admin ohne Verein" ab (`ec5ba7b`,
+Angreifer BESTANDEN, Audit-Weg via ViewClubButton bleibt). (b) In **Verwaltung → Rollen** ist die geschützte
+**Inhaber:in-Rolle aus Rechte-Matrix + Rollen-Liste ausgeblendet** (`d7e5836`, nur Anzeige; im Personen-Reiter bleibt
+sie). Rest-Kosmetik: Sidebar zeigt im Gate-Zustand noch „RSV Neckarsulm" (DEV_CLUB_ID-Fallback) — kein Leck.
+
+**⚠️ RESUME-FALLE Dev-DB-Migrations-Drift (2026-07-18):** Die Dev-DB (`rsm2-pg-dev`) hing auf Migrations-Stand **0019**
+(System-Seite zeigt „zuletzt angewandt: 0019_platform"), obwohl das Schema real bis 0065 reicht → Spalte
+`clubs.logo_asset_id` (0060) fehlte → `/platform/clubs` warf **500** und riss die GANZE Betreiber-Konsole mit
+(Küren/Tickets/… „konnten nicht geladen werden" = Kaskade). `dev-stack.sh up` merkt das NICHT (skippt bei
+vorhandenem Schema). Non-destruktiver Fix: fehlende Migration per `docker exec -i rsm2-pg-dev psql … < 00XX.sql`
+nachziehen (0060 war's). Sauberer Fix `dev-stack.sh reset` (wischt DB) — vom Sandbox-Classifier geblockt, muss Marcel
+selbst laufen lassen. Bei „Daten konnten nicht geladen"/500 im Betreiber ZUERST Drift prüfen (Drift-Sweep-SQL).
+
 **Betrieb:** Rechner ist am 2026-07-18 abgestürzt — Live-Prod (Docker: keto_*/supabase/…) kam sauber hoch,
-nichts korrumpiert. Platte knapp (~54 GB frei, 95 %): vor Builds `df -h`, Build-Reste wegräumen.
+nichts korrumpiert. Platte knapp (~55 GB frei, 94 %): vor Builds `df -h`, Build-Reste wegräumen (per `mv`, `rm -rf`
+wird geblockt). Dev-Stack läuft: Web :3021 (eigener `next dev`, hängt an dieser Sitzung), API :3022 (`dev-stack.sh up`).
 
 ---
 
