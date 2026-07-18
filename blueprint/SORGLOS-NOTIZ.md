@@ -28,10 +28,25 @@ eine Mitglieder-Gruppe. Die v1-App konnte das schon; v2 hatte es verloren.
 - **Etappe 1 FERTIG, angreifer-geprüft:** Migr. **0062** (sparten + sparte_members + teams.sparte_id) ·
   **0063** (Team-Zuordnung) · **0064** (Härtung: gleicher-Verein-Trigger + teams.club_id immutabel).
   Guard `app.can_manage_sparten`. API `services/api/src/routes/sparten.ts` (6 Endpunkte). 1560/1560 SQL-Tests, Contract grün.
-- **Etappe 2 (Web-UI):** Teil 1 (Verwaltungsseite + Facade, `b127c4e`) — nach Rechner-Absturz **gerettet**;
-  Teil 2 (Mitglied/Team→Sparte, Filter, Betreiber-Konsole, Abteilung→Gruppen) + Prüfung **im Bau**.
+- **Etappe 2 (Web-UI) FERTIG** (`b127c4e` + `c003bbe` + `8fb9712`): Verwaltungsseite (CRUD, rollen-gegated) ·
+  Mitglied↔Sparten (n:m) auf mitglieder/[id] · Team→Sparte auf teams/[id] · Sparten-Filter in /mitglieder + /teams ·
+  Betreiber-Konsole-Sicht · „Abteilung → Gruppen" (nur Labels). Browser-geprüft owner+member. Dabei ein echter
+  Gate-Leck gefixt (Verwaltungs-Buttons zeigten sich im Mock JEDEM — `c003bbe`).
+- **Feinschliff offen (kein Blocker):** Speichern-Spinner/Label statt nur opacity · Farb-Swatch 36→44px Touch ·
+  aria-Labels der Farb/Icon-Auswahl (liest heute Hex/interne Namen) · Dark-Mode-Kontrast dunkler Swatches ·
+  Shell-Header nicht reaktiv auf Mock-Viewer-Wechsel (nur Anzeige, Gating korrekt).
 - OFFEN (DSGVO, kein Blocker): sparte_members-Roster vereinsweit sichtbar (Marcel: so lassen, später eng ziehbar);
   Lösch-Runbook Art. 17 muss sparte_members miträumen.
+
+**🟡 REGISTRIERUNG (Marcel 2026-07-18: „Verein + Mitglied per Vereinscode ODER Einladungs-E-Mail fehlt"):**
+- **Verein-Selbstanlage: ✅ gebaut** (POST /clubs, clubs.ts; Name+Ort+30-Tage-Test+CSPRNG-Code; läuft im Dev).
+- **Mitglied per Vereinscode: ✅ fertig** (POST /clubs/join → pending → Vorstand /approve; Drossel, Rotation,
+  Ablehn-Gedächtnis, Enumerationsschutz, Art. 8; registration.ts).
+- **Mitglied per Einladungs-E-Mail: 🔨 im Bau** (`w2bu0mr3j`) — war nur Stub; Token-Tabelle + echte Invite-/Annahme-
+  Route + Empfänger-Drossel + Anschluss an vorhandenen Mailer.
+- **Echtes Login (GoTrue): auf Branch b44883d, NICHT gemergt** (Timing-Enumerations-Mangel). Für Prod-Scharfschaltung.
+- Blocker zum Prod-Scharfschalten: (1) GoTrue mergen+fixen (kann ich), (2) **SMTP-Zugang im Betreiber-Admin** (Marcel
+  trägt Creds/Absender ein), (3) **Rechtstexte AGB/Datenschutz** (Inhalt von Marcel/Anwalt → append-only legal_documents).
 
 **🟢 Weitere Landungen 2026-07-17/18 (auf `main`):** 360-Profil-Teile (Kontaktdaten, Trainer-Beurteilung,
 Galerie-Foto-Markierung, Küren-Bild) · Selbst-Profil komplett editierbar **und in /profil** (`a77c941`) ·
