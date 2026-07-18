@@ -53,6 +53,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         SWIFT_EMIT_LOC_STRINGS: YES
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.sports
+        # App-Icon aus App/Assets.xcassets (aus v1 uebernommen: Figuren ueber
+        # Rollschuh-Rad). Single-Size-Format mit hell/dunkel/getoent (iOS 18).
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
 schemes:
   RollsportManager:
