@@ -108,7 +108,7 @@ export function RollenClient() {
 
   const tabs: TabItem<TabValue>[] = [
     { value: "matrix", label: t("tabMatrix") },
-    { value: "roles", label: t("tabRoles"), count: roles.length },
+    { value: "roles", label: t("tabRoles"), count: roles.filter((r) => !r.protected).length },
     { value: "people", label: t("tabPeople"), count: members.length },
     { value: "coaches", label: t("tabCoaches"), count: teams.length },
   ];

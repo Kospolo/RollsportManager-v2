@@ -88,7 +88,10 @@ export function PermissionMatrix({
     () => sortCapabilities(caps.resolution?.capabilities ?? []),
     [caps.resolution],
   );
-  const orderedRoles = useMemo(() => sortRoles(roles), [roles]);
+  // Die geschuetzte Inhaber-Rolle taucht in der Matrix gar nicht erst als Spalte
+  // auf (Marcel 2026-07-18): ihre Zellen waren ohnehin alle gesperrt. Der Inhaber
+  // behaelt serverseitig alle Rechte (has_club_role) — nur die tote Spalte faellt weg.
+  const orderedRoles = useMemo(() => sortRoles(roles).filter((r) => !r.protected), [roles]);
 
   const label = (cap: ResolvedCapability) => (locale === "en" ? cap.labelEn : cap.labelDe);
   const roleName = (role: ClubRoleDef) => (locale === "en" ? role.nameEn : role.nameDe);

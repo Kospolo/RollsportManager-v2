@@ -243,7 +243,9 @@ export function RolesList({
   const [formFor, setFormFor] = useState<{ role: ClubRoleDef | null } | null>(null);
   const [deleteFor, setDeleteFor] = useState<ClubRoleDef | null>(null);
 
-  const ordered = sortRoles(roles);
+  // Die geschuetzte Inhaber-Rolle wird nicht mehr gelistet (Marcel 2026-07-18) —
+  // sie ist ohnehin nicht umbenenn-/loeschbar. Backend-Rechte bleiben unveraendert.
+  const ordered = sortRoles(roles).filter((role) => !role.protected);
   const name = (role: ClubRoleDef) => (locale === "en" ? role.nameEn : role.nameDe);
 
   return (
