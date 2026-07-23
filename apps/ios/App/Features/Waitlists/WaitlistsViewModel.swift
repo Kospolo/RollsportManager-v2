@@ -158,8 +158,10 @@ final class WaitlistsViewModel: ObservableObject {
         api = session.api
         clubId = session.clubId
         if let profile = session.session?.profile {
-            myMemberId = profile.memberId
-            myRole = profile.clubRole
+            // Ohne Mitgliedschaft (Plattform-Admin) gibt es weder eigenes
+            // Mitglied noch Rolle — dann bleibt die Liste leer statt zu raten.
+            myMemberId = profile.memberId ?? ""
+            myRole = profile.clubRole ?? .member
         }
     }
 

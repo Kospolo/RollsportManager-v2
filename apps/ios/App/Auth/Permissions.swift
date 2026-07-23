@@ -97,13 +97,17 @@ func permissions(_ role: ClubRole?, isPlatformAdmin: Bool = false) -> Permission
 
 extension SessionStore {
     /// Rechte der aktuell angemeldeten Persona (für UI-Gating in den Views).
+    ///
+    /// `isPlatformAdmin` kommt jetzt WIRKLICH aus dem Token (Dev-Login-Profil
+    /// `is_platform_admin`) statt aus dem alten Default `false` — sonst wäre
+    /// die Betreiber-Konsole für niemanden sichtbar.
     var permissions: Permissions {
-        RollsportManager_permissions(session?.profile.clubRole)
+        RollsportManager_permissions(session?.profile.clubRole, isPlatformAdmin)
     }
 }
 
 // Interner Alias, damit die SessionStore-Property nicht mit der freien
 // Funktion gleichen Namens kollidiert (Swift-Namensauflösung).
-private func RollsportManager_permissions(_ role: ClubRole?) -> Permissions {
-    permissions(role)
+private func RollsportManager_permissions(_ role: ClubRole?, _ isPlatformAdmin: Bool) -> Permissions {
+    permissions(role, isPlatformAdmin: isPlatformAdmin)
 }

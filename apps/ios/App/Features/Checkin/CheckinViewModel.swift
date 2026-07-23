@@ -51,9 +51,9 @@ final class CheckinViewModel: ObservableObject {
         clubId = session.clubId
         myClubId = session.clubId
         if let profile = session.session?.profile {
-            myMemberId = profile.memberId
+            myMemberId = profile.memberId ?? ""
             myDisplayName = profile.displayName
-            isTrainer = Self.trainerRoles.contains(profile.clubRole)
+            isTrainer = profile.clubRole.map { Self.trainerRoles.contains($0) } ?? false
         }
         guard !hasLoadedOnce else { return }
         hasLoadedOnce = true

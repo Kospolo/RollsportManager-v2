@@ -19,13 +19,16 @@ enum DevPersona: String, Codable, CaseIterable, Identifiable {
     case moderator
     case member
     case guest
-    // MELDEN / bewusst NICHT enthalten: die Server-Persona `platform`
-    // (super_admin). Ihr Login-Profil liefert member_id/club_id/club_role = null
-    // und zusätzlich is_platform_admin=true. `DevLoginProfile` hat diese Felder
-    // non-optional und kennt is_platform_admin nicht — das Dekodieren würde
-    // fehlschlagen. Für echtes Plattform-Admin-Gating müssen zuerst
-    // DevLoginProfile.{memberId,clubId,clubRole} optional werden und ein
-    // `isPlatformAdmin`-Feld dazukommen (betrifft mehrere Feature-ViewModels).
+    // BETREIBER-EBENE — die Server-Persona `platform` (super_admin).
+    //
+    // Sie war hier bewusst ausgespart, solange `DevLoginProfile` seine Felder
+    // non-optional hielt: ihr Login-Profil liefert member_id/club_id/club_role
+    // = null (sie ist in KEINEM Verein Mitglied) und dazu is_platform_admin =
+    // true. Genau das ist jetzt abgebildet — die drei Vereins-Felder sind
+    // optional, `isPlatformAdmin` ist da. Ohne diese Persona wäre die
+    // Betreiber-Konsole nicht bedienbar: kein anderer Dev-Token trägt den
+    // Claim, den `/platform/*` serverseitig verlangt.
+    case platform
 
     var id: String { rawValue }
 }
@@ -35,13 +38,31 @@ struct DevLoginRequest: Encodable {
 }
 
 /// Profil-Teil der Dev-Login-Antwort.
+///
+/// ### WARUM DREI FELDER OPTIONAL SIND ###
+/// Nicht jede Person ist Mitglied eines Vereins. Der Plattform-Admin ist es
+/// definitiv nicht — er hat keine Zeile in `app.club_members`, keine Rolle und
+/// keinen Verein; sein Zugang hängt allein am Token-Claim
+/// `app_metadata.is_platform_admin`. Die API liefert für ihn seit jeher
+/// `member_id: null`, `club_id: null`, `club_role: null`. Solange diese Felder
+/// hier `String`/`ClubRole` waren, scheiterte das Dekodieren — die Persona war
+/// aus der App schlicht nicht erreichbar.
+///
+/// Die Optionalität ist damit keine Bequemlichkeit, sondern die Wahrheit über
+/// die Daten: „kein Verein“ ist ein gültiger Zustand, kein Fehler.
 struct DevLoginProfile: Codable, Equatable {
     let sub: String
-    let memberId: String
+    /// `app.club_members.id` — `nil` ohne Mitgliedschaft (Plattform-Admin).
+    let memberId: String?
     let displayName: String
     let email: String
-    let clubId: String
-    let clubRole: ClubRole
+    /// Verein der Persona — `nil` ohne Mitgliedschaft.
+    let clubId: String?
+    /// Rolle im Verein — `nil` ohne Mitgliedschaft.
+    let clubRole: ClubRole?
+    /// Spiegel von `app_metadata.is_platform_admin`. REINE SICHTBARKEIT:
+    /// der Schutz ist `requirePlatformAdmin` auf jedem `/platform/*`-Endpoint.
+    let isPlatformAdmin: Bool
 
     enum CodingKeys: String, CodingKey {
         case sub
@@ -50,6 +71,23 @@ struct DevLoginProfile: Codable, Equatable {
         case email
         case clubId = "club_id"
         case clubRole = "club_role"
+        case isPlatformAdmin = "is_platform_admin"
+    }
+
+    /// Eigener Decoder aus EINEM Grund: eine in UserDefaults liegende Session
+    /// aus einer älteren App-Version kennt `is_platform_admin` nicht. Ohne
+    /// `decodeIfPresent` würde sie beim Start verworfen — der Nutzer stünde
+    /// grundlos wieder vor dem Login. Fehlt der Schlüssel, ist die Antwort
+    /// „kein Betreiber“, und das ist die sichere Richtung.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sub = try container.decode(String.self, forKey: .sub)
+        memberId = try container.decodeIfPresent(String.self, forKey: .memberId)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        email = try container.decode(String.self, forKey: .email)
+        clubId = try container.decodeIfPresent(String.self, forKey: .clubId)
+        clubRole = try container.decodeIfPresent(ClubRole.self, forKey: .clubRole)
+        isPlatformAdmin = try container.decodeIfPresent(Bool.self, forKey: .isPlatformAdmin) ?? false
     }
 }
 

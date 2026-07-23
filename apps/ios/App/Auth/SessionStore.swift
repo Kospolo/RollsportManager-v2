@@ -55,6 +55,23 @@ final class SessionStore: ObservableObject {
         session?.profile.clubId ?? DevConfig.seedClubID
     }
 
+    /// Trägt das Token den Betreiber-Claim (`app_metadata.is_platform_admin`)?
+    ///
+    /// NUR SICHTBARKEIT. Die Betreiber-Konsole blendet damit ihren Zugang ein
+    /// und spart den sinnlosen Fetch; verbindlich entscheidet weiterhin der
+    /// Server (`requirePlatformAdmin` auf jedem `/platform/*`-Endpoint) — wer
+    /// das Flag lokal manipuliert, bekommt dort 403.
+    var isPlatformAdmin: Bool {
+        session?.profile.isPlatformAdmin ?? false
+    }
+
+    /// Ist die angemeldete Person in einem Verein Mitglied? Der Plattform-Admin
+    /// ist es NICHT — für ihn sind alle vereinsgebundenen Bereiche leer, und
+    /// das ist kein Defekt, sondern die Datenlage.
+    var hasClubMembership: Bool {
+        session?.profile.clubId != nil
+    }
+
     // MARK: - Aktionen
 
     func login(persona: DevPersona) async {

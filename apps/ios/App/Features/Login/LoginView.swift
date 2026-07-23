@@ -52,6 +52,23 @@ private let personaCards: [LoginPersonaCard] = [
     ),
 ]
 
+/// Die Betreiber-Persona steht BEWUSST getrennt unter den Vereins-Personas.
+///
+/// Sie gehört keinem Verein an (`member_id`/`club_id`/`club_role` = null) und
+/// sieht eine völlig andere App: die Konsole über ALLE Vereine. Sie mit in die
+/// Karten-Liste zu werfen, würde genau das verwischen — sie sähe aus wie „noch
+/// eine Rolle im RSV Neckarsulm“, und wer sie wählt, wundert sich über leere
+/// Vereinsbereiche. Die eigene Überschrift sagt vorher, was gleich passiert.
+private let operatorCard = LoginPersonaCard(
+    persona: .platform,
+    displayName: "RSM Plattform-Admin",
+    // Kein `member_id` vorhanden — für den Avatar-Ton nimmt die Karte die
+    // stabile Profil-ID aus dem Seed (…090). Der Ton bleibt damit derselbe.
+    memberId: "90000000-0000-4000-8000-000000000090",
+    roleKey: "persona.platform.role",
+    descriptionKey: "persona.platform.description"
+)
+
 /// Persona-Login gegen den lokalen Dev-Stack — wie die Web-Login-Karten.
 struct LoginView: View {
     @EnvironmentObject private var session: SessionStore
@@ -65,6 +82,7 @@ struct LoginView: View {
                 ForEach(personaCards) { card in
                     personaButton(card)
                 }
+                operatorSection
                 if let error = session.loginError {
                     errorCard(error)
                 }
@@ -160,6 +178,21 @@ struct LoginView: View {
         .accessibilityLabel(
             Text("login.a11y.persona \(card.displayName)")
         )
+    }
+
+    /// Abgesetzter Block „Betreiber“ — eigene Überschrift, eigener Satz,
+    /// damit niemand die Konsole für eine weitere Vereinsrolle hält.
+    private var operatorSection: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
+            Text("login.section.operator")
+                .font(Theme.Fonts.eyebrow)
+                .tracking(Theme.Fonts.eyebrowTracking)
+                .textCase(.uppercase)
+                .foregroundStyle(Theme.Colors.inkFaint)
+                .padding(.leading, Theme.Spacing.s1)
+            personaButton(operatorCard)
+        }
+        .padding(.top, Theme.Spacing.s3)
     }
 
     private func errorCard(_ message: String) -> some View {
