@@ -1340,6 +1340,43 @@ values
    4, null, current_date - 3);
 
 -- ----------------------------------------------------------------------------
+-- INTERNE Trainer-Notizen (migration 0069) — das DRITTE Ding, nicht zu
+-- verwechseln mit den Beurteilungen darüber: diese hier sieht die Familie NICHT.
+--
+-- Die zwei Beispiele sind bewusst so gewählt, dass die Demo den Unterschied
+-- ZEIGT statt ihn nur zu behaupten:
+--
+--   1. Lina Grünewald (a-07, t-02), Autorin Sandra (a-01, coach t-02).
+--      Über Lina steht oben AUCH eine Beurteilung. Ihre Mutter Katrin (a-09)
+--      öffnet Linas Profil und sieht die BEURTEILUNG — die Notiz hier nicht.
+--      Das ist der ganze Punkt, an einem einzigen Kind vorgeführt.
+--
+--   2. Finn Köhler (a-13, t-02), Autorin Sandra (a-01, coach t-02).
+--      Finns Mutter ist Petra Köhler (a-14) — und Petra ist MODERATORIN, also
+--      Vereinsleitung mit 'manage' auf coach_notes. Sie liest die internen
+--      Notizen des ganzen Vereins, die über ihren EIGENEN Sohn aber nicht:
+--      der Familien-Ausschluss ist stärker als die Leitungsrolle. Ohne diese
+--      Zeile wäre dieser Fall in der Demo unsichtbar (und in 99pA unbelegt).
+--
+-- Inhaltlich absichtlich harmlos-sachlich: genau das, was der Hinweis an der
+-- Eingabemaske verlangt ("schreib nichts, was du nicht auch vor der Familie
+-- vertreten könntest"). Ein Seed, der reißerische Beispiele vormacht, wäre eine
+-- Bedienungsanleitung zum Missbrauch.
+-- Seed läuft als Superuser -> RLS/Autoren-Trigger sind aus, die CHECKs greifen.
+-- ----------------------------------------------------------------------------
+insert into app.member_coach_notes (club_id, member_id, author_member_id, body)
+values
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001',
+   'Erklärung über den Absprung funktioniert bei Lina nicht — beim nächsten Mal '
+   || 'über das Bild mit der Uhrzeigerdrehung versuchen. Bitte nicht vor der '
+   || 'Gruppe korrigieren, das blockiert sie sichtbar.'),
+  ('c1ab0000-0000-4000-8000-000000000001',
+   'a0000000-0000-4000-8000-000000000013', 'a0000000-0000-4000-8000-000000000001',
+   'Finn fehlt in letzter Zeit häufiger und wirkt im Training abwesend. Beim '
+   || 'nächsten Elterngespräch ruhig ansprechen, ob etwas los ist.');
+
+-- ----------------------------------------------------------------------------
 -- Foto-Einwilligungen (migration 0039) — der KONTRAST, der die Anzeige-Wache
 -- sichtbar macht. Ohne echte Zeilen haelt der Nutzer die Markierung fuer kaputt.
 --

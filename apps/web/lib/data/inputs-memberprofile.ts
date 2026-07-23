@@ -1,4 +1,4 @@
-import type { MemberAssessment, MemberProfile } from "@/lib/api/generated";
+import type { MemberAssessment, MemberCoachNote, MemberProfile } from "@/lib/api/generated";
 import type { Id } from "@/lib/types";
 
 /**
@@ -38,4 +38,29 @@ export interface MemberProfileRepository {
    * Vorstand (serverseitig erzwungen; ein 403 bleibt möglich).
    */
   createMemberAssessment(input: CreateAssessmentInput): Promise<MemberAssessment>;
+
+  /**
+   * Die INTERNEN Trainer-Notizen über eine Person (0069).
+   *
+   * ⚠️ BEWUSST EIN EIGENER AUFRUF, NICHT TEIL VON getMemberProfile.
+   * Das Profil-Aggregat ist genau die Route, die ein Elternteil für sein Kind
+   * öffnet. Interne Notizen gehören nicht in eine Antwort, deren Publikum die
+   * Familie IST — auch dann nicht, wenn der Server sie herausfiltern würde.
+   * Wer sie hier hineinzieht, hebelt die Trennung aus, um die es geht.
+   *
+   * Für Unberechtigte liefert der Server 200 mit LEERER Liste (kein 403 — ein
+   * Fehlercode wäre schon die Auskunft „da ist etwas").
+   */
+  listMemberCoachNotes(memberId: Id): Promise<MemberCoachNote[]>;
+  /**
+   * Interne Notiz schreiben — nur Trainer:in DES MITGLIEDS oder Vereinsleitung,
+   * und niemals über sich selbst oder das eigene Kind (serverseitig erzwungen).
+   */
+  createMemberCoachNote(input: CreateCoachNoteInput): Promise<MemberCoachNote>;
+}
+
+export interface CreateCoachNoteInput {
+  memberId: Id;
+  /** Der Notiztext (Pflicht, max. 4000 Zeichen). */
+  body: string;
 }

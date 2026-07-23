@@ -33,8 +33,23 @@
 begin;
 do $$
 begin
-  perform testkit.is_eq('cap-enforcement: der Katalog hat 32 Faehigkeiten',
-    (select count(*) from app.capabilities), 32);
+  -- 0069: der Katalog ist um 'coach_notes' gewachsen (32 -> 33, enforced 4 -> 5).
+  -- Die interne Trainer-Notiz braucht eine KONFIGURIERBARE Faehigkeit, weil der
+  -- Chef zwei Dinge zugleich verlangt hat: der Kassenwart liest voreingestellt
+  -- NICHT, und der Verein soll es selbst umstellen koennen. Beides zusammen gibt
+  -- es nur in dieser Matrix.
+  --   0055 hatte auf eine neue Faehigkeit noch VERZICHTET und genau diese Zeile
+  --   als Grund genannt. Der Verzicht war kein Verbot: der Waechter am Ende von
+  --   0033 sagt woertlich "Neue Faehigkeit? Dann gehoert sie in 0033 (bzw. eine
+  --   Folge-Migration) eingestuft — und in 93j." Praezedenzfall ist 0045
+  --   (attendance), das dieselbe Buchhaltung schon einmal fortgeschrieben hat.
+  --   Die ZUSICHERUNGEN (B/C/D) sind unveraendert; hier steht nur die Zahl.
+  -- 'enforced' ist fuer coach_notes nachgerechnet, nicht behauptet:
+  -- member_coach_notes_select ruft app.can_read_coach_note, die has_cap
+  -- kapselt -> Block C findet die SELECT-Policy. 99pA misst zusaetzlich die
+  -- WIRKUNG an echten Zeilen (Stufe 'none' -> 0 Zeilen).
+  perform testkit.is_eq('cap-enforcement: der Katalog hat 33 Faehigkeiten',
+    (select count(*) from app.capabilities), 33);
 
   -- 0045: 'attendance' ist von write_only nach enforced gewandert (9->8, 3->4).
   -- Kein Rueckbau dieser Kontrolle, sondern ihr Zweck: attendance_select fragt
@@ -43,8 +58,8 @@ begin
   -- waere Block C rot geworden ("write_only, aber SELECT-Policy vorhanden") —
   -- die Nachrechnung hat den Wechsel also selbst gefunden. Die ZUSICHERUNGEN
   -- (B/C/D) sind unveraendert; hier steht nur die Buchhaltung.
-  perform testkit.is_eq('cap-enforcement: 4 x enforced (routines, lockers, anniversaries, attendance)',
-    (select count(*) from app.capabilities where enforcement = 'enforced'), 4);
+  perform testkit.is_eq('cap-enforcement: 5 x enforced (routines, lockers, anniversaries, attendance, coach_notes)',
+    (select count(*) from app.capabilities where enforcement = 'enforced'), 5);
   perform testkit.is_eq('cap-enforcement: 2 x partial (finance, member_contact)',
     (select count(*) from app.capabilities where enforcement = 'partial'), 2);
   perform testkit.is_eq('cap-enforcement: 8 x write_only',

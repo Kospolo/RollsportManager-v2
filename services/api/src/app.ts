@@ -41,6 +41,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { newsRouter } from './routes/news.js';
 import { notesRouter } from './routes/notes.js';
 import { assessmentsRouter } from './routes/assessments.js';
+import { coachNotesRouter } from './routes/coach-notes.js';
 import { supportRouter } from './routes/support.js';
 import { exercisesRouter } from './routes/exercises.js';
 import { facilitiesRouter } from './routes/facilities.js';
@@ -169,6 +170,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', newsRouter);
   app.route('/', notesRouter);
   app.route('/', assessmentsRouter);
+  app.route('/', coachNotesRouter);
   app.route('/', supportRouter);
   app.route('/', exercisesRouter);
   app.route('/', facilitiesRouter);

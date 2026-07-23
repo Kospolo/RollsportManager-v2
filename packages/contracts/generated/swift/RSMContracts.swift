@@ -5658,6 +5658,86 @@ public struct MemberAssessmentUpdate: Codable, Equatable, Sendable {
     }
 }
 
+public struct MemberCoachNote: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    /// Format: uuid
+    public var authorMemberId: String
+    public var body: String
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case authorMemberId = "author_member_id"
+        case body
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        memberId: String,
+        authorMemberId: String,
+        body: String,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.memberId = memberId
+        self.authorMemberId = authorMemberId
+        self.body = body
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct MemberCoachNoteCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var memberId: String
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case memberId = "member_id"
+        case body
+    }
+
+    public init(
+        clubId: String,
+        memberId: String,
+        body: String
+    ) {
+        self.clubId = clubId
+        self.memberId = memberId
+        self.body = body
+    }
+}
+
+public struct MemberCoachNoteUpdate: Codable, Equatable, Sendable {
+    public var body: String
+
+    enum CodingKeys: String, CodingKey {
+        case body
+    }
+
+    public init(
+        body: String
+    ) {
+        self.body = body
+    }
+}
+
 public struct SupportTicket: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String

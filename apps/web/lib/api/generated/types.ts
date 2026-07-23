@@ -1395,6 +1395,26 @@ export interface MemberAssessmentUpdate {
   "assessed_on"?: string;
 }
 
+export interface MemberCoachNote {
+  "id": string;
+  "club_id": string;
+  "member_id": string;
+  "author_member_id": string;
+  "body": string;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface MemberCoachNoteCreate {
+  "club_id": string;
+  "member_id": string;
+  "body": string;
+}
+
+export interface MemberCoachNoteUpdate {
+  "body": string;
+}
+
 export type SupportTicketStatus = "open" | "in_progress" | "waiting_on_club" | "closed";
 export const SupportTicketStatusValues: readonly SupportTicketStatus[] = ["open", "in_progress", "waiting_on_club", "closed"] as const;
 

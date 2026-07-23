@@ -1790,6 +1790,107 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
   assertEq('rides: fremde Fahrt bearbeiten -> 403', fremdeFahrt.status, 403);
 }
 
+// ===========================================================================
+// INTERNE Trainer-Notizen (0069) — ueber HTTP, nicht ueber SQL.
+//
+// 99pA beweist die Policies. Hier geht es um die Frage, ob die ROUTE dieselbe
+// Antwort gibt — denn eine Notiz, die die RLS verbirgt, die API aber ueber
+// einen anderen Weg herausgibt, waere genau der Bruch, den die Vorgabe
+// ausschliessen wollte.
+//
+// Der Pruefstein ist Petra: MODERATORIN (vereinsweit 'manage') UND Finns
+// Mutter. Sie muss die Notiz ueber ein fremdes Kind sehen und die ueber ihren
+// eigenen Sohn NICHT — ueber HTTP, mit echtem Token.
+// ===========================================================================
+{
+  console.log('\n[smoke] Interne Trainer-Notizen (0069)');
+  const coach = await token(SUB.coach, 'coach');           // Sandra, Trainerin t-02/t-03
+  const parent = await token(SUB.parent, 'member');        // Katrin, Mutter von Lina
+  const treasurer = await token(SUB.treasurer, 'treasurer'); // Beate
+  const guest = await token(SUB.guest, 'guest_coach');     // Milena
+  const moderator = await token(SUB.moderator, 'moderator'); // Petra, Finns Mutter
+  const owner = await token(SUB.owner, 'owner');
+
+  const LINA = MEMBER.linaChildOfParent;                   // a-07, Team t-02
+  const FINN = 'a0000000-0000-4000-8000-000000000013';     // a-13, Petras Sohn
+
+  const q = (m) => `/coach-notes?club_id=${CLUB}&member_id=${m}`;
+
+  // Die Trainerin des Kindes liest.
+  const coachSees = await call('GET', q(LINA), { as: coach });
+  assertEq('notiz: die Trainerin des Kindes liest die Notiz ueber Lina -> 200', coachSees.status, 200);
+  assertEq('notiz: ...und bekommt genau 1 Notiz', coachSees.json?.length, 1);
+
+  // DIE MUTTER: 200 mit LEERER Liste. Bewusst kein 403 — ein Fehlercode waere
+  // schon eine Auskunft ("da ist etwas, du darfst nur nicht").
+  const parentSees = await call('GET', q(LINA), { as: parent });
+  assertEq('notiz: die MUTTER bekommt 200 (kein 403 — das waere schon eine Auskunft)', parentSees.status, 200);
+  assertEq('notiz: ...aber eine LEERE Liste ueber ihre eigene Tochter', parentSees.json?.length, 0);
+
+  // Kassenwart und Gasttrainerin: Voreinstellung = nichts.
+  const treasurerSees = await call('GET', q(LINA), { as: treasurer });
+  assertEq('notiz: der KASSENWART sieht nichts (Voreinstellung)', treasurerSees.json?.length, 0);
+  const guestSees = await call('GET', q(LINA), { as: guest });
+  assertEq('notiz: die GASTTRAINERIN sieht nichts', guestSees.json?.length, 0);
+
+  // DER PRUEFSTEIN: Leitungsrolle vs. Elternschaft, in einer Person.
+  const modFremd = await call('GET', q(LINA), { as: moderator });
+  assertEq('notiz: die Moderatorin sieht die Notiz ueber ein FREMDES Kind', modFremd.json?.length, 1);
+  const modEigen = await call('GET', q(FINN), { as: moderator });
+  assertEq('notiz: dieselbe Moderatorin sieht die Notiz ueber IHREN EIGENEN SOHN NICHT', modEigen.json?.length, 0);
+
+  // Schreiben: die Trainerin des Kindes darf.
+  const write = await call('POST', '/coach-notes', {
+    as: coach,
+    body: { club_id: CLUB, member_id: LINA, body: 'Interne Notiz aus dem Smoke-Test.' },
+  });
+  assertEq('notiz: die Trainerin des Kindes schreibt -> 201', write.status, 201);
+
+  // Der Kassenwart nicht.
+  const treasurerWrite = await call('POST', '/coach-notes', {
+    as: treasurer,
+    body: { club_id: CLUB, member_id: LINA, body: 'Versuch.' },
+  });
+  assertEq('notiz: der Kassenwart schreibt NICHT -> 403', treasurerWrite.status, 403);
+
+  // Die Mutter auch nicht — auch nicht ueber ihr eigenes Kind.
+  const parentWrite = await call('POST', '/coach-notes', {
+    as: parent,
+    body: { club_id: CLUB, member_id: LINA, body: 'Versuch.' },
+  });
+  assertEq('notiz: die Mutter schreibt NICHT ueber ihr eigenes Kind -> 403', parentWrite.status, 403);
+
+  // Und die Moderatorin nicht ueber ihren eigenen Sohn (Elternschaft schlaegt Rolle).
+  const modWrite = await call('POST', '/coach-notes', {
+    as: moderator,
+    body: { club_id: CLUB, member_id: FINN, body: 'Versuch.' },
+  });
+  assertEq('notiz: die Moderatorin schreibt NICHT ueber ihren eigenen Sohn -> 403', modWrite.status, 403);
+
+  // Aendern/Loeschen: die Autorin darf, ein Unbeteiligter nicht.
+  const noteId = write.json?.id;
+  const patch = await call('PATCH', `/coach-notes/${noteId}`, {
+    as: coach,
+    body: { body: 'Ueberarbeitete interne Notiz.' },
+  });
+  assertEq('notiz: die Autorin aendert ihre Notiz -> 200', patch.status, 200);
+  assertEq('notiz: ...der Text ist uebernommen', patch.json?.body, 'Ueberarbeitete interne Notiz.');
+
+  // Die Mutter darf die Notiz nicht einmal ADRESSIEREN: 404, nicht 403 —
+  // sonst koennte sie aus dem Fehlercode die EXISTENZ erschliessen.
+  const parentPatch = await call('PATCH', `/coach-notes/${noteId}`, {
+    as: parent,
+    body: { body: 'Fremdzugriff.' },
+  });
+  assertEq('notiz: die Mutter kann die Notiz nicht einmal adressieren -> 404 (nicht 403)', parentPatch.status, 404);
+
+  // Der Vorstand darf loeschen (soft), danach ist sie aus der Liste weg.
+  const del = await call('DELETE', `/coach-notes/${noteId}`, { as: owner });
+  assertEq('notiz: der Vorstand loescht (soft) -> 200', del.status, 200);
+  const after = await call('GET', q(LINA), { as: coach });
+  assertEq('notiz: ...danach ist sie aus der Liste verschwunden', after.json?.length, 1);
+}
+
 console.log('');
 if (failures > 0) {
   console.error(`[smoke] ${failures} assertion(s) FAILED`);

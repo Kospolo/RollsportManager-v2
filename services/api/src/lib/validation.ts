@@ -1679,6 +1679,48 @@ export const assessmentUpdateSchema = z
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('MemberAssessmentUpdate');
 
+// interne Trainer-Notizen (migration 0069, app.member_coach_notes) ------------
+//
+// ⚠️ NICHT MIT ZWEI ANDEREN DINGEN VERWECHSELN:
+//   * noteSchema (app.notes, 0008)          = PERSÖNLICHER Zettel der Autorin.
+//   * assessmentSchema (0055)               = offizielle Beurteilung, die die
+//                                             FAMILIE ausdrücklich LESEN darf.
+//   * coachNoteSchema (hier)                = INTERNE Arbeitsnotiz. Mitglied und
+//                                             Eltern sehen sie NICHT.
+//
+// Die Sichtbarkeit trägt die RLS (app.can_read_coach_note), nicht dieses
+// Schema — hier steht nur die Form. Das Feld-Set ist bewusst schmal: kein
+// Titel, keine Noten, keine Kategorien. Eine interne Notiz ist ein Merkzettel;
+// jedes zusätzliche Feld wäre eine Einladung, ein Dossier anzulegen.
+export const coachNoteSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** club_members.id of the member the note is ABOUT. */
+    member_id: uuid,
+    /** club_members.id of the authoring coach / board member. Immutable. */
+    author_member_id: uuid,
+    body: z.string(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('MemberCoachNote');
+
+export const coachNoteCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** The member the note is about. */
+    member_id: uuid,
+    body: z.string().min(1).max(4000),
+  })
+  .openapi('MemberCoachNoteCreate');
+
+export const coachNoteUpdateSchema = z
+  .object({
+    body: z.string().min(1).max(4000),
+  })
+  .openapi('MemberCoachNoteUpdate');
+
 // exercises ------------------------------------------------------------------
 export const exerciseCategorySchema = z
   .enum(['warmup', 'stretching', 'strength', 'jump', 'spin', 'steps', 'combination'])

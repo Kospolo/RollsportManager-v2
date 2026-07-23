@@ -11,6 +11,7 @@ import type {
   EquipmentReservation,
   EventRsvp,
   MemberAssessment,
+  MemberCoachNote,
   MemberDepartmentRef,
   MemberProfile,
   MemberProfileCompetition,
@@ -358,6 +359,64 @@ export function AssessmentCard({
                 {a.rating_technik != null && <Stars label={tp("ratingTech")} value={a.rating_technik} />}
                 {a.rating_ausdruck != null && <Stars label={tp("ratingExpr")} value={a.rating_ausdruck} />}
               </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * INTERNE Trainer-Notizen (0069) — die dritte Sorte Text ueber eine Person,
+ * NICHT die Beurteilung darueber (AssessmentCard).
+ *
+ * Diese Karte wird nur gerendert, wenn die Betrachterin sie sehen darf; die
+ * Liste kommt aus einem EIGENEN Aufruf (GET /coach-notes), nicht aus dem
+ * Profil-Aggregat — siehe lib/data/inputs-memberprofile.ts.
+ *
+ * Der "Nur fuer Trainer:innen"-Eyebrow ist kein Schmuck: er sagt der
+ * Schreiberin beim Lesen ihrer eigenen alten Notizen, in welchem Vertraulich-
+ * keitsrahmen sie stehen. Der vollstaendige Hinweis (inkl. Art. 15 DSGVO)
+ * steht an der EINGABE, wo die Entscheidung faellt (CoachNoteSheet).
+ */
+export function CoachNotesCard({
+  notes,
+  authorName,
+  canWrite,
+  onWrite,
+}: {
+  notes: MemberCoachNote[];
+  authorName: (memberId: string) => string;
+  canWrite: boolean;
+  onWrite: () => void;
+}) {
+  const tp = useT(profileDict) as PT;
+  const { locale } = useLocale();
+  return (
+    <Card>
+      <CardHeader
+        eyebrow={tp("cnEyebrow")}
+        title={tp("cnTitle")}
+        action={
+          canWrite ? (
+            <Button size="sm" icon="edit" onClick={onWrite}>
+              {tp("cnAdd")}
+            </Button>
+          ) : undefined
+        }
+      />
+      {notes.length === 0 ? (
+        <p className="text-body text-ink-soft">{tp("cnNone")}</p>
+      ) : (
+        <ul className="grid list-none gap-3">
+          {notes.map((n) => (
+            <li key={n.id} className="rounded-xl bg-sunken p-4">
+              <p className="text-[14px] leading-[21px] text-ink">{n.body}</p>
+              <span className="mt-3 block text-caption font-semibold text-ink-soft">
+                {tp("assessBy", { name: authorName(n.author_member_id) })} ·{" "}
+                {formatDateShort(n.created_at, locale)}
+              </span>
             </li>
           ))}
         </ul>

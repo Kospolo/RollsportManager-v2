@@ -1,0 +1,120 @@
+"use client";
+
+import { useState } from "react";
+import { useT } from "@/lib/i18n";
+import { data, dataSource, errorMessage, isForbidden } from "@/lib/data";
+import { useToast } from "@/components/ui/Toast";
+import { Sheet } from "@/components/ui/Modal";
+import { Textarea } from "@/components/ui/Field";
+import { Button } from "@/components/ui/Button";
+import { mitgliederDict } from "../i18n";
+import { profileDict } from "./profile-i18n";
+
+/**
+ * INTERNE Trainer-Notiz schreiben (Migration 0069).
+ *
+ * ⚠️ NICHT die Beurteilung (AssessmentSheet). Der Unterschied ist der ganze
+ * Zweck: die Beurteilung liest die Familie, diese Notiz NICHT.
+ *
+ * ### DER HINWEIS IST PFLICHT, NICHT DEKORATION ###
+ * Der Kasten oben im Sheet ist ausdrueckliche Vorgabe des Chefs und steht
+ * BEWUSST ueber dem Eingabefeld, nicht als Fussnote darunter: er soll gelesen
+ * werden, BEVOR getippt wird. Er sagt beides — dass Mitglied und Eltern die
+ * Notiz nicht sehen, UND dass sie bei einem foermlichen Auskunftsersuchen nach
+ * Art. 15 DSGVO dennoch herausgegeben werden muss.
+ *
+ * Wer hier kuerzt ("das mit der DSGVO verunsichert nur"), nimmt der Trainerin
+ * genau die Information, auf der ihre Formulierungsentscheidung beruht. Der
+ * zweite Satz ist der Grund, warum der erste kein Freibrief ist. Der Text lebt
+ * in profile-i18n.ts (cnNoticeTitle/cnNoticeBody), DE und EN.
+ *
+ * Kein totes Formular: schreibt ueber die Facade (createMemberCoachNote ->
+ * POST /coach-notes) und bedient mock UND api. Der Server erzwingt die
+ * Berechtigung endgueltig; dieses Sheet wird nur fuer Berechtigte gerendert.
+ */
+export function CoachNoteSheet({
+  open,
+  memberId,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  memberId: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const t = useT(mitgliederDict);
+  const tp = useT(profileDict);
+  const { showToast } = useToast();
+
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const trimmed = body.trim();
+  const canSave = trimmed.length > 0 && !submitting;
+
+  const close = () => {
+    if (submitting) return;
+    onClose();
+  };
+
+  const save = async () => {
+    if (!canSave) return;
+    setSubmitting(true);
+    try {
+      await data.createMemberCoachNote({ memberId, body: trimmed });
+      showToast(tp(dataSource === "api" ? "cnSaved" : "cnSavedMock"), { tone: "success" });
+      setBody("");
+      onSaved();
+      onClose();
+    } catch (error) {
+      showToast(isForbidden(error) ? tp("cnForbidden") : errorMessage(error), {
+        tone: "danger",
+        actionLabel: t("retry"),
+        onAction: () => void save(),
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Sheet
+      open={open}
+      onClose={close}
+      eyebrow={tp("cnSheetEyebrow")}
+      title={tp("cnSheetTitle")}
+      footer={
+        <>
+          <Button variant="ghost" onClick={close} disabled={submitting}>
+            {tp("cnCancel")}
+          </Button>
+          <Button icon="check" onClick={() => void save()} disabled={!canSave}>
+            {tp("cnSave")}
+          </Button>
+        </>
+      }
+    >
+      {/* Der Pflicht-Hinweis. role="note" statt "alert": er ist dauerhafte
+          Rahmeninformation, keine Reaktion auf eine Eingabe — ein alert wuerde
+          Screenreader bei jedem Oeffnen unterbrechen. */}
+      <div
+        role="note"
+        className="mb-4 rounded-lg border border-amber-300/70 bg-amber-50 p-3 text-sm leading-relaxed text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-100"
+      >
+        <p className="font-semibold">{tp("cnNoticeTitle")}</p>
+        <p className="mt-1">{tp("cnNoticeBody")}</p>
+      </div>
+
+      <Textarea
+        label={tp("cnBodyLabel")}
+        placeholder={tp("cnBodyPh")}
+        error={trimmed.length === 0 && body.length > 0 ? tp("cnBodyRequired") : undefined}
+        value={body}
+        rows={5}
+        maxLength={4000}
+        onChange={(event) => setBody(event.target.value)}
+      />
+    </Sheet>
+  );
+}

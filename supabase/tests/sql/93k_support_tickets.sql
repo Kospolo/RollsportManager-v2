@@ -485,8 +485,14 @@ do $$
 declare
   v_bad text;
 begin
-  perform testkit.is_eq('support: der Faehigkeiten-Katalog ist unveraendert (32)',
-    (select count(*) from app.capabilities), 32);
+  -- 32 -> 33 (0069, 'coach_notes' fuer die interne Trainer-Notiz). Diese Zahl
+  -- ist BUCHHALTUNG, nicht die Aussage dieses Blocks: sie faellt auch dann,
+  -- wenn eine voellig unbeteiligte Migration den Katalog erweitert — so wie
+  -- hier. Die eigentliche Zusicherung ("0052 fuehrt keine Faehigkeit ein und
+  -- haengt keine Support-Policy an has_cap") tragen die beiden Pruefungen
+  -- darunter, und die sind unveraendert und weiterhin scharf.
+  perform testkit.is_eq('support: der Faehigkeiten-Katalog hat 33 Faehigkeiten',
+    (select count(*) from app.capabilities), 33);
   perform testkit.is_eq('support: es gibt KEINE Faehigkeit "support"',
     (select count(*) from app.capabilities where key like 'support%'), 0);
 

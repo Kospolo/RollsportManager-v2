@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
@@ -15,8 +15,8 @@ import {
   type AssignableRole,
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
-import type { MemberProfile } from "@/lib/api/generated";
-import type { Member, MemberRole, MemberStatus, Sparte } from "@/lib/types";
+import type { MemberCoachNote, MemberProfile } from "@/lib/api/generated";
+import type { Member, MemberRole, MemberStatus, Sparte, Team } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Badge, StatusPill, type BadgeTone } from "@/components/ui/Badge";
@@ -29,6 +29,7 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { AboutMeSheet } from "../AboutMeSheet";
 import { AssessmentSheet } from "./AssessmentSheet";
+import { CoachNoteSheet } from "./CoachNoteSheet";
 import { MemberSpartenCard } from "./MemberSpartenCard";
 import { MemberSpartenSheet } from "./MemberSpartenSheet";
 import { FamilyCard } from "./DetailCards";
@@ -39,6 +40,7 @@ import {
   AssessmentCard,
   AttendanceCard,
   CheckinCard,
+  CoachNotesCard,
   ConsentCard,
   DepartmentsCard,
   DutyCard,
@@ -120,6 +122,81 @@ function DetailSkeleton() {
   );
 }
 
+/**
+ * Darf die Betrachterin die INTERNEN Trainer-Notizen (0069) dieser Person
+ * ueberhaupt sehen/schreiben?
+ *
+ * ⚠️ Das ist KOSMETIK. Die Wahrheit steht in app.can_read_coach_note /
+ * app.can_write_coach_note (RLS) — hier wird bewusst KEIN zweites Regelwerk
+ * nachgebaut, das spaeter von der echten Regel auseinanderlaeuft. Abgebildet
+ * ist nur der grobe Schnitt "Leitung oder Trainer:in DIESER Person, und nicht
+ * ueber mich selbst", damit nicht jedem Mitglied ein leerer Kasten erscheint.
+ *
+ * Der ELTERN-Fall (auch: die Trainerin ist die Mutter des Kindes) wird hier
+ * NICHT geprueft — die Guardianships liegen auf dieser Seite nicht vor. Der
+ * Server liefert dann eine leere Liste bzw. ein 403. Das ist die richtige
+ * Reihenfolge: lieber ein Knopf zu viel als eine Regel zu viel.
+ *
+ * Nimmt den noch nicht ausgepackten useData-Zustand, weil der Aufruf oberhalb
+ * der early returns stehen muss (Rules of Hooks).
+ */
+function coachNotesAllowed(
+  profile: MemberProfile | null,
+  teams: Team[] | null,
+  currentUser: Member | null | undefined,
+): boolean {
+  if (!profile || !currentUser) return false;
+  if (profile.member.id === currentUser.id) return false;
+  if (permissions(currentUser).isClubAdmin) return true;
+  return (teams ?? []).some(
+    (tm) => tm.coachIds.includes(currentUser.id) && profile.member.team_ids.includes(tm.id),
+  );
+}
+
+/**
+ * Laedt die internen Notizen ueber EINEN eigenen Endpunkt — bewusst nicht ueber
+ * das Profil-Aggregat, das die Familie fuer ihr Kind oeffnet.
+ * null = nicht geladen bzw. nicht erlaubt (Sektion wird dann gar nicht gebaut).
+ */
+function useCoachNotes(memberId: string, enabled: boolean) {
+  const [fetched, setFetched] = useState<MemberCoachNote[] | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+    // Abbruchmarke: beim Wechsel auf ein anderes Mitglied darf die Antwort der
+    // ALTEN Anfrage nicht mehr in den Zustand der neuen Seite laufen — sonst
+    // stuenden die internen Notizen des vorigen Kindes am neuen Profil.
+    let cancelled = false;
+    void (async () => {
+      try {
+        const rows = await data.listMemberCoachNotes(memberId);
+        if (!cancelled) setFetched(rows);
+      } catch {
+        if (!cancelled) setFetched([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, memberId]);
+
+  // Abgeleitet statt im Effekt zurueckgesetzt: wer nicht darf, sieht null,
+  // ohne dass ein Effekt dafuer synchron Zustand schreiben muss.
+  const notes = enabled ? fetched : null;
+
+  // Nachladen nach dem Speichern. Ohne Abbruchmarke: dieser Aufruf haengt an
+  // einer Nutzeraktion, nicht am Lebenszyklus der Seite.
+  const reload = useCallback(async () => {
+    try {
+      setFetched(await data.listMemberCoachNotes(memberId));
+    } catch {
+      setFetched([]);
+    }
+  }, [memberId]);
+
+  return { notes, reload };
+}
+
 export function MemberDetail({ id }: { id: string }) {
   const t = useT(mitgliederDict);
   const tp = useT(profileDict);
@@ -143,6 +220,22 @@ export function MemberDetail({ id }: { id: string }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [assessOpen, setAssessOpen] = useState(false);
   const [spartenOpen, setSpartenOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+
+  // INTERNE Trainer-Notizen (0069). Der Hook steht hier OBEN und
+  // UNBEDINGT — unterhalb der early returns (loading/error) waere er ein
+  // Verstoss gegen die Rules of Hooks: die Aufrufreihenfolge muss in jedem
+  // Render dieselbe sein. Deshalb wird das Recht aus dem noch nicht
+  // ausgepackten state abgeleitet (coachNotesAllowed), nicht aus den weiter
+  // unten berechneten Variablen.
+  const ready = state.status === "ready" ? state.data : null;
+  const mayHandleCoachNotes = coachNotesAllowed(
+    ready ? ready[0] : null,
+    ready ? ready[1] : null,
+    ready ? ready[2] : null,
+  );
+  const { notes: coachNotes, reload: reloadCoachNotes } = useCoachNotes(id, mayHandleCoachNotes);
+
   const roleOverride = override !== null && override.id === id ? override.role : null;
 
   if (state.status === "loading") return <DetailSkeleton />;
@@ -244,7 +337,10 @@ export function MemberDetail({ id }: { id: string }) {
   const hasDuty =
     !!duty && (duty.requirements.reduce((s, r) => s + (r.required_hours ?? 0), 0) > 0 || duty.entries.length > 0);
   const hasCheckins = (P.checkins?.length ?? 0) > 0;
-  const devAny = hasAssess || hasAttendance || hasDuty || hasCheckins;
+  // coachNotes !== null heisst "die Betrachterin darf sie sehen" — dann traegt
+  // die Gruppe Inhalt, auch wenn sonst nichts in ihr steht (sonst haette eine
+  // Trainerin bei einem ansonsten leeren Profil keinen Weg zur Notiz).
+  const devAny = hasAssess || hasAttendance || hasDuty || hasCheckins || coachNotes !== null;
 
   const hasRsvp = (P.rsvps?.length ?? 0) > 0;
   const hasEquip = (P.equipment?.length ?? 0) > 0;
@@ -455,6 +551,16 @@ export function MemberDetail({ id }: { id: string }) {
                 />
               </div>
             )}
+            {coachNotes !== null && (
+              <div className="md:col-span-2">
+                <CoachNotesCard
+                  notes={coachNotes}
+                  authorName={authorName}
+                  canWrite={mayHandleCoachNotes}
+                  onWrite={() => setNoteOpen(true)}
+                />
+              </div>
+            )}
             {hasAttendance && <AttendanceCard attendance={P.attendance!} />}
             {hasDuty && <DutyCard duty={duty!} />}
             {hasCheckins && <CheckinCard checkins={P.checkins!} />}
@@ -563,6 +669,14 @@ export function MemberDetail({ id }: { id: string }) {
           memberId={member.id}
           onClose={() => setAssessOpen(false)}
           onSaved={state.reload}
+        />
+      )}
+      {noteOpen && mayHandleCoachNotes && (
+        <CoachNoteSheet
+          open={noteOpen}
+          memberId={member.id}
+          onClose={() => setNoteOpen(false)}
+          onSaved={() => void reloadCoachNotes()}
         />
       )}
       {spartenOpen && canManageSparten && sparten !== null && (

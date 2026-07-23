@@ -171,6 +171,18 @@ export const apiRepository: DataRepository = {
       ...(input.assessedOn ? { assessed_on: input.assessedOn } : {}),
     });
   },
+  async listMemberCoachNotes(memberId) {
+    // Eigener Endpunkt, NICHT das Profil-Aggregat — siehe die Begründung in
+    // inputs-memberprofile.ts. Unberechtigte bekommen 200 + [].
+    return apiClient.getCoachNotes({ club_id: activeClubId(), member_id: memberId });
+  },
+  async createMemberCoachNote(input) {
+    return apiClient.postCoachNotes({
+      club_id: activeClubId(),
+      member_id: input.memberId,
+      body: input.body,
+    });
+  },
   async getTeams() {
     const teams = await apiClient.getClubsByClubIdTeams(activeClubId());
     return teams.map(mapTeam);

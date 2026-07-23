@@ -12,6 +12,7 @@ import type {
   EventRsvp,
   Invoice,
   MemberAssessment,
+  MemberCoachNote,
   MemberDepartmentRef,
   MemberFee,
   MemberPhoto,
@@ -22,7 +23,11 @@ import type {
   SepaMandate,
 } from "@/lib/api/generated";
 import type { Member, MemberRole } from "@/lib/types";
-import type { CreateAssessmentInput, MemberProfileRepository } from "../inputs-memberprofile";
+import type {
+  CreateAssessmentInput,
+  CreateCoachNoteInput,
+  MemberProfileRepository,
+} from "../inputs-memberprofile";
 import { memberStore } from "./member-store";
 import { mockViewer } from "./viewer";
 
@@ -514,6 +519,10 @@ const SECTION_BUILDERS: Record<string, () => RawSections> = {
 
 /** In-Memory-Beurteilungen, die im Mock zur Laufzeit geschrieben wurden. */
 const writtenAssessments: MemberAssessment[] = [];
+// Laufzeit-Ablage der im Demo-Modus geschriebenen internen Notizen. Bewusst
+// LEER vorbelegt: eine erfundene Beispiel-Notiz ueber ein Demo-Kind waere
+// genau die Sorte Inhalt, vor der der Hinweis an der Eingabe warnt.
+const writtenCoachNotes: MemberCoachNote[] = [];
 
 function rawFor(memberId: string): RawSections {
   const base = (SECTION_BUILDERS[memberId] ?? emptySections)();
@@ -654,6 +663,47 @@ export const moduleRepositoryMemberProfile: MemberProfileRepository = {
       updated_at: new Date().toISOString(),
     };
     writtenAssessments.unshift(created);
+    return created;
+  },
+
+  // --- INTERNE Trainer-Notizen (0069) --------------------------------------
+  // Der Mock bildet die Server-Regel NACH, statt "im Demo-Modus sieht man
+  // halt alles" zu spielen. Sonst zeigte die Demo einem Elternteil genau das,
+  // was das ganze Feature verbergen soll — und niemand merkte es, bis es echt
+  // ist. Gespiegelt wird app.can_read_coach_note:
+  //   NICHT selbst/Elternteil  UND  (Leitung vereinsweit ODER Trainer:in des
+  //   Mitglieds). guest_coach und treasurer fallen durch, weil sie weder in
+  //   ADMIN_ROLES stehen noch coachesMember erfuellen.
+  async listMemberCoachNotes(memberId): Promise<MemberCoachNote[]> {
+    const viewer = mockViewer();
+    const target = memberStore.find((m) => m.id === memberId);
+    if (!target) return [];
+    if (selfOrGuardian(viewer, target)) return []; // die Familie: IMMER leer
+    const mayRead = ADMIN_ROLES.includes(viewer.role) || coachesMember(viewer, target);
+    if (!mayRead) return [];
+    return writtenCoachNotes.filter((n) => n.member_id === memberId);
+  },
+
+  async createMemberCoachNote(input: CreateCoachNoteInput): Promise<MemberCoachNote> {
+    const viewer = mockViewer();
+    const target = memberStore.find((m) => m.id === input.memberId);
+    // Dieselbe Regel wie beim Lesen — inklusive: nicht ueber das eigene Kind.
+    if (!target || selfOrGuardian(viewer, target)) {
+      throw new Error("Keine Berechtigung fuer eine interne Notiz (mock)");
+    }
+    if (!(ADMIN_ROLES.includes(viewer.role) || coachesMember(viewer, target))) {
+      throw new Error("Keine Berechtigung fuer eine interne Notiz (mock)");
+    }
+    const created: MemberCoachNote = {
+      id: `cn-local-${Date.now()}`,
+      club_id: CLUB,
+      member_id: input.memberId,
+      author_member_id: viewer.id,
+      body: input.body,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    writtenCoachNotes.unshift(created);
     return created;
   },
 };

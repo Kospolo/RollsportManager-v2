@@ -1138,6 +1138,42 @@ export class ApiClient {
   }
 
   /**
+   * List the internal coach notes about one member (never visible to the member or their guardians)
+   * 
+   * `GET /coach-notes`
+   */
+  async getCoachNotes(query: { "club_id": string; "member_id": string }, options?: RequestOptions): Promise<M.MemberCoachNote[]> {
+    return this.request<M.MemberCoachNote[]>("GET", "/coach-notes", { query, auth: true, options });
+  }
+
+  /**
+   * Write an internal coach note about a member (coach of that member, or the board)
+   * 
+   * `POST /coach-notes`
+   */
+  async postCoachNotes(body: M.MemberCoachNoteCreate, options?: RequestOptions): Promise<M.MemberCoachNote> {
+    return this.request<M.MemberCoachNote>("POST", "/coach-notes", { body, auth: true, options });
+  }
+
+  /**
+   * Edit an internal coach note (author or board)
+   * 
+   * `PATCH /coach-notes/{noteId}`
+   */
+  async patchCoachNotesByNoteId(noteId: string, body: M.MemberCoachNoteUpdate, options?: RequestOptions): Promise<M.MemberCoachNote> {
+    return this.request<M.MemberCoachNote>("PATCH", `/coach-notes/${encodeURIComponent(noteId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an internal coach note (author or board)
+   * 
+   * `DELETE /coach-notes/{noteId}`
+   */
+  async deleteCoachNotesByNoteId(noteId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/coach-notes/${encodeURIComponent(noteId)}`, { auth: true, options });
+  }
+
+  /**
    * Support tickets of one club (club board only)
    * 
    * `GET /support/tickets`

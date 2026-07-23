@@ -197,6 +197,39 @@ export const profileDict = {
     asSavedMock: "Beurteilung gespeichert — Demo.",
     asBodyRequired: "Bitte einen Text eingeben.",
     asForbidden: "Keine Berechtigung — die Beurteilung wurde nicht gespeichert.",
+
+    /* ---------------------------------------------------------------------
+     * INTERNE Trainer-Notiz (0069) — NICHT die Beurteilung darüber.
+     *
+     * cnNoticeTitle/cnNoticeBody sind der AUSDRÜCKLICHE Wunsch des Chefs und
+     * dürfen weder gekürzt noch abgeschwächt werden. Der Grund, warum der
+     * zweite Satz mit dem unbequemen Teil weitergeht statt bei „nicht
+     * sichtbar" aufzuhören: eine Notiz, von der die Trainerin glaubt, sie
+     * bleibe für immer geheim, wird anders geschrieben als eine, bei der sie
+     * weiß, dass die Familie sie im Ernstfall lesen kann. Genau diese
+     * Erwartung soll der Hinweis geraderücken — Art. 15 DSGVO kennt keine
+     * Ausnahme für „intern".
+     * ------------------------------------------------------------------- */
+    cnSection: "Interne Notizen",
+    cnEyebrow: "Nur für Trainer:innen",
+    cnTitle: "Interne Trainer-Notizen",
+    cnNone: "Noch keine interne Notiz.",
+    cnAdd: "Interne Notiz",
+    cnSheetEyebrow: "Neue interne Notiz",
+    cnSheetTitle: "Interne Notiz schreiben",
+    cnBodyLabel: "Notiz",
+    cnBodyPh: "Kurze Arbeitsnotiz, z. B. „Sprung sitzt nicht — anders erklären.“",
+    cnBodyRequired: "Bitte einen Text eingeben.",
+    cnCancel: "Abbrechen",
+    cnSave: "Speichern",
+    cnSaved: "Interne Notiz gespeichert.",
+    cnSavedMock: "Interne Notiz gespeichert — Demo.",
+    cnForbidden: "Keine Berechtigung — die Notiz wurde nicht gespeichert.",
+    cnNoticeTitle: "Interne Notiz — für Mitglied und Eltern nicht sichtbar.",
+    cnNoticeBody:
+      "Achtung: Bei einem förmlichen Auskunftsersuchen nach DSGVO kann sie dennoch " +
+      "herausgegeben werden müssen. Schreib nichts, was du nicht auch vor der Familie " +
+      "vertreten könntest.",
   },
   en: {
     passEyebrow: "Club pass",
@@ -382,6 +415,29 @@ export const profileDict = {
     asSavedMock: "Assessment saved — demo.",
     asBodyRequired: "Please enter some text.",
     asForbidden: "No permission — the assessment was not saved.",
+
+    /* Internal coach note (0069) — NOT the assessment above.
+     * cnNoticeTitle/cnNoticeBody are mandated wording: do not shorten, do not
+     * soften. See the German block for the reasoning. */
+    cnSection: "Internal notes",
+    cnEyebrow: "Coaches only",
+    cnTitle: "Internal coach notes",
+    cnNone: "No internal note yet.",
+    cnAdd: "Internal note",
+    cnSheetEyebrow: "New internal note",
+    cnSheetTitle: "Write internal note",
+    cnBodyLabel: "Note",
+    cnBodyPh: "Short working note, e.g. “jump isn't landing — explain it differently”.",
+    cnBodyRequired: "Please enter some text.",
+    cnCancel: "Cancel",
+    cnSave: "Save",
+    cnSaved: "Internal note saved.",
+    cnSavedMock: "Internal note saved — demo.",
+    cnForbidden: "No permission — the note was not saved.",
+    cnNoticeTitle: "Internal note — not visible to the member or their parents.",
+    cnNoticeBody:
+      "Careful: under a formal GDPR subject access request it may still have to be " +
+      "disclosed. Do not write anything you could not also defend in front of the family.",
   },
 } satisfies Dict;
 

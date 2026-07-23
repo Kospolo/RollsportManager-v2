@@ -1975,6 +1975,29 @@ data class MemberAssessmentUpdate(
 )
 
 @Serializable
+data class MemberCoachNote(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("author_member_id") val authorMemberId: String,
+    val body: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class MemberCoachNoteCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("member_id") val memberId: String,
+    val body: String
+)
+
+@Serializable
+data class MemberCoachNoteUpdate(
+    val body: String
+)
+
+@Serializable
 data class SupportTicket(
     val id: String,
     @SerialName("club_id") val clubId: String,
