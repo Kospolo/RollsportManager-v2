@@ -48,6 +48,18 @@ struct VerwaltungHubView: View {
                 destination: AnyView(TeamsAdminRootView())
             ))
         }
+        if perms.isClubAdmin {
+            // Module: das Gegenstück zur „nicht gebucht"-Karte. Ohne diesen
+            // Eingang wäre jener Hinweis ein Verweis auf einen Schalter, den
+            // es in der App nicht gibt.
+            result.append(MehrTile(
+                id: "verw-module",
+                titleKey: "verwaltung.tile.modules.title",
+                descKey: "verwaltung.tile.modules.desc",
+                systemImage: "square.grid.3x3.fill", tone: .warn,
+                destination: AnyView(ModuleAdminView())
+            ))
+        }
         if perms.canManageClubSettings {
             result.append(MehrTile(
                 id: "verw-verein",
