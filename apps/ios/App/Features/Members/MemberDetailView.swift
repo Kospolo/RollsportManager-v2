@@ -19,6 +19,12 @@ struct MemberDetailView: View {
                     masterDataCard(member)
                     MemberSpartenCard(memberId: member.id, memberName: member.membersFullName)
                     familyCard(member)
+                    // Interne Trainer-Notizen: nur Trainerstab/Leitung, und
+                    // NIE über die eigene Person. Der Server entscheidet
+                    // verbindlich (0069) — hier wird nur ehrlich eingeblendet.
+                    if showsCoachNotes(member) {
+                        CoachNotesSection(member: member)
+                    }
                     if viewerIsBoard { roleCard(member) }
                 }
                 .padding(Theme.Spacing.s5)
@@ -66,6 +72,15 @@ struct MemberDetailView: View {
     /// „Nie sich selbst“ (API-Regel) — für die eigene Person nur ein Hinweis.
     private func isSelf(_ member: ClubMember) -> Bool {
         session.session?.profile.memberId == member.id
+    }
+
+    /// Zeigt die Karte für interne Trainer-Notizen? Trainerstab oder Leitung —
+    /// und nie über die eigene Person. Die Familie ist damit hier gar nicht
+    /// erst adressiert; serverseitig schliesst `not app.can_act_for_member`
+    /// sie ohnehin aus, auch wenn sie zugleich Vorstand ist.
+    private func showsCoachNotes(_ member: ClubMember) -> Bool {
+        let perms = session.permissions
+        return (perms.isTrainer || perms.isClubAdmin) && !isSelf(member)
     }
 
     private var alertTitleKey: LocalizedStringKey {
