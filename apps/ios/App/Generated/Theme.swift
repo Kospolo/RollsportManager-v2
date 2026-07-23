@@ -155,8 +155,8 @@ public enum Theme {
         public static let eyebrow = Font.system(.caption2, design: .default, weight: .heavy)
         /// Laufweite für `eyebrow` in pt (+0.09em) — per .tracking() anwenden.
         public static let eyebrowTracking: CGFloat = 0.99
-        /// 17 pt bei Standardgröße (.body) · Gewicht 600 — Beträge/Rechnungsnummern in Tabellen (JetBrains Mono, tabular)
-        public static let monoTable = Font.system(.body, design: .monospaced, weight: .semibold)
+        /// 16 pt bei Standardgröße (.callout) · Gewicht 600 — Beträge/Rechnungsnummern in Tabellen (JetBrains Mono, tabular)
+        public static let monoTable = Font.system(.callout, design: .monospaced, weight: .semibold)
         /// 13 pt bei Standardgröße (.footnote) · Gewicht 500 — Kleine Mono-Angaben: Zeitmarken, Kürzeiten im Chip, Codes, Restlaufzeiten
         public static let monoCaption = Font.system(.footnote, design: .monospaced, weight: .medium)
         /// 22 pt bei Standardgröße (.title2) · Gewicht 700 — Große Mono-Zahl: Rechnungssumme im Detail, Medaillenspiegel, Score-Pad

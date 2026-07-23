@@ -11,13 +11,10 @@ import SwiftUI
 struct ReportsKpiSection: View {
     let summary: ReportSummary
 
-    private let columns = [
-        GridItem(.flexible(), spacing: Theme.Spacing.s3),
-        GridItem(.flexible(), spacing: Theme.Spacing.s3),
-    ]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: Theme.Spacing.s3) {
+        LazyVGrid(columns: RSMKpiTile.columns(for: dynamicTypeSize), spacing: Theme.Spacing.s3) {
             RSMKpiTile(
                 eyebrow: "auswertung.kpi.members.eyebrow",
                 value: "\(summary.membersTotal ?? 0)",

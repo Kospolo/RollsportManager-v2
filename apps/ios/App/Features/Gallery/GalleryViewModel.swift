@@ -19,6 +19,8 @@ final class GalleryViewModel: ObservableObject {
     enum State {
         case loading
         case proRequired
+        /// 403 `club_module_disabled` — zubuchbar, aber nicht gebucht.
+        case moduleNotBooked
         case error(String)
         case loaded([GalleryItem])
     }
@@ -41,8 +43,13 @@ final class GalleryViewModel: ObservableObject {
             let items = try await api.listGallery(clubId: clubId)
             state = .loaded(items)
         } catch {
+            // Reihenfolge wie in der API: erst Lizenz (402), dann Buchung (403).
+            // Sonst bekaeme ein Verein ohne Lizenz den Rat, einen Schalter
+            // umzulegen, der ihm gar nicht hilft.
             if error.isClubProRequiredError {
                 state = .proRequired
+            } else if error.isClubModuleDisabledError {
+                state = .moduleNotBooked
             } else {
                 state = .error(RoutinesViewModel.message(for: error))
             }

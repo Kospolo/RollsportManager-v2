@@ -17,32 +17,77 @@ struct ChatChannelRow: View {
     /// die Mitgliederliste nicht sichtbar war.
     let nameFor: (String?) -> String?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private var isAX: Bool { dynamicTypeSize.isAccessibilitySize }
+
     var body: some View {
         HStack(spacing: Theme.Spacing.s3) {
             ChatChannelGlyph(channel: channel)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
-                    Text(verbatim: title)
-                        .font(Theme.Fonts.bodyStrong)
-                        .foregroundStyle(Theme.Colors.inkPrimary)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if let stamp = timestamp {
-                        Text(verbatim: stamp)
-                            .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkSoft)
-                    }
-                }
+                titleAndStamp
                 preview
                     .font(Theme.Fonts.caption)
                     .foregroundStyle(Theme.Colors.inkSoft)
-                    .lineLimit(1)
+                    // Bei AX-Schrift blieb von der Vorschau nur „Du: Perfekt,
+                    // dann…" — drei Zeilen sagen tatsaechlich etwas aus.
+                    .lineLimit(isAX ? 3 : 1)
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.vertical, Theme.Spacing.s2)
         .frame(minHeight: Theme.Size.listRow)
         .contentShape(Rectangle())
+    }
+
+    /// Titel + Datum. Nebeneinander ist bei AX-Schrift nicht mehr drin: der
+    /// Kanalname wurde zu „Kuergr…"/„Katrin…" gekuerzt UND das Datum brach
+    /// trotzdem mitten in der Jahreszahl um („16.7.202" / „6"). Ab
+    /// Accessibility-Groesse stehen beide deshalb untereinander — der Name
+    /// bekommt die volle Breite, das Datum eine eigene Zeile.
+    @ViewBuilder
+    private var titleAndStamp: some View {
+        if isAX {
+            VStack(alignment: .leading, spacing: 2) {
+                titleText
+                stampText
+            }
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
+                titleText
+                stampText
+            }
+        }
+    }
+
+    private var titleText: some View {
+        Text(verbatim: title)
+            .font(Theme.Fonts.bodyStrong)
+            .foregroundStyle(Theme.Colors.inkPrimary)
+            .lineLimit(isAX ? 2 : 1)
+            // `lineLimit(2)` ALLEIN genuegt nicht: in einer horizontal
+            // gedraengten HStack kuerzt SwiftUI lieber, als eine zweite Zeile
+            // aufzumachen — „Kürgruppe Le…" blieb deshalb trotz Limit 2
+            // einzeilig. Erst `fixedSize` in der Vertikalen sagt dem Text,
+            // dass er sich die Hoehe nehmen darf, die er braucht.
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var stampText: some View {
+        if let stamp = timestamp {
+            Text(verbatim: stamp)
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkSoft)
+                // Ein Datum ist eine Einheit. `fixedSize` erzwingt die volle
+                // Breite, damit „16.7.2026" nie zu „16.7.202" + „6" wird —
+                // eine abgeschnittene Jahreszahl liest sich wie ein anderes
+                // Datum, das ist schlimmer als eine breitere Zeile.
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+        }
     }
 
     private var title: String {
@@ -158,6 +203,9 @@ struct ChatMessageBubble: View {
                 // Uhrzeit keine Auszeichnung ist.
                 .font(Theme.Fonts.eyebrow.weight(.regular))
                 .foregroundStyle(isOwn ? Theme.Colors.brandInk.opacity(0.7) : Theme.Colors.inkFaint)
+                // Wie in der Kanalzeile: eine Uhrzeit bricht nicht um.
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
         .padding(.horizontal, Theme.Spacing.s3)
         .padding(.vertical, Theme.Spacing.s2)

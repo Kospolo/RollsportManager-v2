@@ -12,6 +12,8 @@ final class NotesViewModel: ObservableObject {
 
     enum State: Equatable {
         case loading
+        /// 403 `club_module_disabled` — zubuchbar, aber nicht gebucht.
+        case moduleNotBooked
         case error(String)
         case loaded
     }
@@ -54,6 +56,14 @@ final class NotesViewModel: ObservableObject {
             notes = Self.sorted(loaded)
             state = .loaded
         } catch {
+            // Nicht gebucht ist kein Fehler, sondern ein Zustand — auch beim
+            // Pull-to-Refresh. Ein Alert „Zugriff verweigert" ueber einer
+            // leeren Liste waere hier genau die falsche Auskunft.
+            if error.isClubModuleDisabledError {
+                notes = []
+                state = .moduleNotBooked
+                return
+            }
             let message = Self.friendlyMessage(error)
             if state == .loaded, !showLoadingState {
                 actionErrorMessage = message

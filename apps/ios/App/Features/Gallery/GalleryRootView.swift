@@ -51,6 +51,8 @@ struct GalleryRootView: View {
                 message: "gallery.pro.message",
                 systemImage: "photo.on.rectangle.angled"
             )
+        case .moduleNotBooked:
+            RSMModuleNotBookedCard(moduleName: "gallery.title")
         case .error(let message):
             errorCard(message)
         case .loaded(let items):
@@ -86,20 +88,37 @@ struct GalleryRootView: View {
         }
     }
 
+    /// Album-Filter. Bei Standardschrift eine waagerechte Chip-Reihe.
+    ///
+    /// Ab Accessibility-Groesse steht jeder Chip in EINER eigenen Zeile ueber
+    /// die volle Breite. Vorher lagen die Chips in einem horizontalen
+    /// ScrollView, und bei AX3 war der zweite Chip nur noch als „Wettkäm"
+    /// am rechten Bildrand zu sehen — technisch erreichbar (man kann ja
+    /// scrollen), praktisch aber unsichtbar: nichts deutet an, dass da noch
+    /// Filter kommen. Ein Fliess-Layout (`FlowRow`) reicht hier NICHT, weil
+    /// ein einzelner Chip bei AX-Schrift breiter werden kann als die Zeile;
+    /// er wuerde dann wieder rauslaufen. Volle Breite kann das nicht.
+    @ViewBuilder
     private var albumChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.Spacing.s2) {
-                ForEach(viewModel.albumOptions, id: \.self) { option in
-                    GalleryFilterChip(
-                        label: label(for: option),
-                        count: viewModel.count(for: option),
-                        isActive: viewModel.selectedAlbum == option
-                    ) {
-                        viewModel.selectedAlbum = option
-                    }
-                }
+        let chips = ForEach(viewModel.albumOptions, id: \.self) { option in
+            GalleryFilterChip(
+                label: label(for: option),
+                count: viewModel.count(for: option),
+                isActive: viewModel.selectedAlbum == option,
+                fillsWidth: dynamicTypeSize.isAccessibilitySize
+            ) {
+                viewModel.selectedAlbum = option
             }
-            .padding(.horizontal, 2)
+        }
+
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s2) { chips }
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Theme.Spacing.s2) { chips }
+                    .padding(.horizontal, 2)
+            }
         }
     }
 
@@ -134,20 +153,31 @@ private struct GalleryFilterChip: View {
     let label: Text
     let count: Int
     let isActive: Bool
+    /// Volle Zeilenbreite statt Inhaltsbreite (gestapelte AX-Darstellung).
+    var fillsWidth: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: Theme.Spacing.s1) {
                 label
+                    // Der Albumname darf umbrechen, sobald der Chip die volle
+                    // Zeile hat — gekuerzte Albumnamen waeren ein Filter, den
+                    // man nicht mehr lesen kann.
+                    .lineLimit(fillsWidth ? 2 : 1)
                 Text(verbatim: "\(count)")
                     .monospacedDigit()
                     .opacity(0.7)
+                    // Die Trefferzahl gehoert zum Chip und bleibt ganz.
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                if fillsWidth { Spacer(minLength: 0) }
             }
             .font(Theme.Fonts.caption.weight(.bold))
             .foregroundStyle(isActive ? Theme.Colors.brandContrast : Theme.Colors.inkSoft)
             .padding(.horizontal, Theme.Spacing.s3)
             .padding(.vertical, Theme.Spacing.s2)
+            .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
             .background(isActive ? Theme.Colors.brand : Theme.Colors.bgSunken)
             .clipShape(Capsule())
         }

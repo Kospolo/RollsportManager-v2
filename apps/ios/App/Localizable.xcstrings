@@ -1134,13 +1134,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Anwesenheitsquote"
+            "value": "Anwesenheit"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Attendance rate"
+            "value": "Attendance"
           }
         }
       }
@@ -15617,6 +15617,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "News"
+          }
+        }
+      }
+    },
+    "module.notBooked.badge": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht gebucht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not booked"
+          }
+        }
+      }
+    },
+    "module.notBooked.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Modul ist zubuchbar und für diesen Verein derzeit nicht gebucht. Deshalb werden hier keine Inhalte geladen — es fehlt nichts, und es ist nichts kaputt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This module is available as an add-on and is currently not booked for this club. That is why no content is loaded here — nothing is missing and nothing is broken."
+          }
+        }
+      }
+    },
+    "module.notBooked.eyebrow": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusatzmodul"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add-on module"
+          }
+        }
+      }
+    },
+    "module.notBooked.hint": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Vereins-Admin kann das Modul unter Verwaltung › Module einschalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A club admin can switch the module on under Administration › Modules."
+          }
+        }
+      }
+    },
+    "module.notBooked.title %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht gebucht: %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not booked: %@"
           }
         }
       }

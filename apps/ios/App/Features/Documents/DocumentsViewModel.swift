@@ -10,6 +10,8 @@ final class DocumentsViewModel: ObservableObject {
     enum State {
         case loading
         case proRequired
+        /// 403 `club_module_disabled` — zubuchbar, aber nicht gebucht.
+        case moduleNotBooked
         case error(String)
         case loaded([Document])
     }
@@ -51,8 +53,11 @@ final class DocumentsViewModel: ObservableObject {
             )
             state = .loaded(docs)
         } catch {
+            // Reihenfolge wie in der API: erst Lizenz (402), dann Buchung (403).
             if error.isClubProRequiredError {
                 state = .proRequired
+            } else if error.isClubModuleDisabledError {
+                state = .moduleNotBooked
             } else {
                 state = .error(RoutinesViewModel.message(for: error))
             }

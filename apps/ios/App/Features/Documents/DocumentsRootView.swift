@@ -40,6 +40,8 @@ struct DocumentsRootView: View {
                 message: "documents.pro.message",
                 systemImage: "doc.fill"
             )
+        case .moduleNotBooked:
+            RSMModuleNotBookedCard(moduleName: "documents.title")
         case .error(let message):
             errorCard(message)
         case .loaded(let docs):

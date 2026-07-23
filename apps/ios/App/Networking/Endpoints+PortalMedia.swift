@@ -220,7 +220,25 @@ extension APIError {
     }
 }
 
+extension APIError {
+    /// `true` bei 403 mit `club_module_disabled` im Detail.
+    ///
+    /// ABGRENZUNG ZU `isClubProRequired` (402) — zwei Ursachen, zwei Auswege:
+    ///   402 `club_pro_required`    = nicht LIZENZIERT → der Betreiber schaltet frei.
+    ///   403 `club_module_disabled` = nicht GEBUCHT    → ein Vereins-Admin legt den
+    ///                                Schalter unter Verwaltung › Module um.
+    /// Deshalb zwei Karten (RSMProGateCard / RSMModuleNotBookedCard) und nicht
+    /// eine mit Fallunterscheidung. Gleiche Trennung wie im Web.
+    var isClubModuleDisabled: Bool {
+        guard case .problem(let problem) = self, problem.status == 403 else { return false }
+        return (problem.detail ?? "").hasPrefix("club_module_disabled")
+    }
+}
+
 extension Error {
     /// Bequemer 402-`club_pro_required`-Check auch auf `any Error`.
     var isClubProRequiredError: Bool { (self as? APIError)?.isClubProRequired ?? false }
+
+    /// Bequemer 403-`club_module_disabled`-Check auch auf `any Error`.
+    var isClubModuleDisabledError: Bool { (self as? APIError)?.isClubModuleDisabled ?? false }
 }

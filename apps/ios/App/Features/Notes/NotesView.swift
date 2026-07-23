@@ -27,6 +27,10 @@ struct NotesView: View {
             switch model.state {
             case .loading:
                 loadingView
+            case .moduleNotBooked:
+                RSMModuleNotBookedCard(moduleName: "notizen.title")
+                    .padding(Theme.Spacing.s5)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             case .error(let message):
                 errorView(message)
             case .loaded:
@@ -37,14 +41,19 @@ struct NotesView: View {
         .navigationTitle(Text("notizen.title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    formRequest = FormRequest(id: "create", mode: .create)
-                } label: {
-                    Image(systemName: "plus")
+            // Ohne gebuchtes Modul gibt es nichts anzulegen: der Server
+            // beantwortet auch das POST mit 403. Ein Plus, das nur in einen
+            // Fehler fuehrt, ist schlimmer als kein Plus.
+            if model.state != .moduleNotBooked {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        formRequest = FormRequest(id: "create", mode: .create)
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .tint(Theme.Colors.brand)
+                    .accessibilityLabel(Text("notizen.new.a11y"))
                 }
-                .tint(Theme.Colors.brand)
-                .accessibilityLabel(Text("notizen.new.a11y"))
             }
         }
         .task {
