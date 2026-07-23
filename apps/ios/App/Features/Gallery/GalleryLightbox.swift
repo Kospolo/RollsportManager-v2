@@ -17,11 +17,20 @@ struct GalleryLightbox: View {
         NavigationStack {
             ZStack {
                 Theme.Colors.bgCanvas.ignoresSafeArea()
-                VStack(spacing: Theme.Spacing.s4) {
-                    media
-                    metadata
+                // ScrollView statt starrer VStack, seit unter dem Bild die
+                // Markierungen stehen: sie können mehrere Zeilen lang werden,
+                // und bei Accessibility-Schrift passt sonst nichts mehr aufs
+                // Blatt. Das Medium bekommt dafür eine feste Höhe — in einem
+                // ScrollView würde `maxHeight: .infinity` auf null fallen.
+                ScrollView {
+                    VStack(spacing: Theme.Spacing.s4) {
+                        media
+                            .frame(height: 340)
+                        metadata
+                        PhotoTagSection(item: item)
+                    }
+                    .padding(Theme.Spacing.s5)
                 }
-                .padding(Theme.Spacing.s5)
             }
             .navigationTitle(Text(verbatim: item.title))
             .navigationBarTitleDisplayMode(.inline)
