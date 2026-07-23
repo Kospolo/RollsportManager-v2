@@ -32,6 +32,16 @@ struct MainTabView: View {
         case verwRollen = "verw-rollen"
         case verwTeams = "verw-teams"
         case verwVerein = "verw-verein"
+        case verwModule = "verw-module"
+        // Betreiber-Ebene (nur mit Token-Claim; als Vereinsrolle erwartet man
+        // hier den Sperr-Screen — genau das macht ihn beweisbar).
+        case platform
+        case platClubs = "plat-clubs"
+        case platUsers = "plat-users"
+        case platLicenses = "plat-licenses"
+        case platSupport = "plat-support"
+        case platRoutines = "plat-routines"
+        case platSystem = "plat-system"
     }
 
     @State private var selection: Tab
@@ -120,6 +130,14 @@ struct MainTabView: View {
                         case .verwRollen: RolesRootView()
                         case .verwTeams: TeamsAdminRootView()
                         case .verwVerein: ClubSettingsRootView()
+                        case .verwModule: ModuleAdminView()
+                        case .platform: PlatformConsoleView()
+                        case .platClubs: PlatformClubsView()
+                        case .platUsers: PlatformUsersView()
+                        case .platLicenses: PlatformLicensesView()
+                        case .platSupport: PlatformSupportView()
+                        case .platRoutines: PlatformRoutinesView()
+                        case .platSystem: PlatformSystemView()
                         }
                     }
             }

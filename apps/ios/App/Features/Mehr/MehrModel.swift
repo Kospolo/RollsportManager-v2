@@ -258,6 +258,20 @@ enum MehrCatalog {
         destination: AnyView(VerwaltungHubView())
     )
 
+    /// „Betreiber"-Kachel — die einzige Ebene der App, die NICHT einem Verein
+    /// gehört. Sie hängt am Token-Claim `is_platform_admin`, nicht an einer
+    /// Vereinsrolle, und wird deshalb (wie `verwaltung`) von `MehrHubView`
+    /// bedingt eingehängt statt im statischen Raster zu stehen.
+    ///
+    /// Sie steht bewusst GANZ OBEN, noch vor der Verwaltung: wer sie sehen
+    /// darf, ist zum Betrieb hier — nicht zum Vereinsleben.
+    static let platform = MehrTile(
+        id: "platform",
+        titleKey: "module.platform.title", descKey: "module.platform.desc",
+        systemImage: "server.rack", tone: .info,
+        destination: AnyView(PlatformConsoleView())
+    )
+
     private static func soonTile(
         _ id: String,
         _ title: LocalizedStringKey,

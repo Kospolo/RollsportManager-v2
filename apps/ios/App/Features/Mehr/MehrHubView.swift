@@ -23,9 +23,12 @@ struct MehrHubView: View {
     /// „Verfügbar“-Raster: die Verwaltungs-Kachel steht (rollen-gated) ganz oben,
     /// danach der statische Katalog. Nur `isClubAdmin` sieht die Verwaltung.
     private var availableTiles: [MehrTile] {
-        session.permissions.isClubAdmin
-            ? [MehrCatalog.verwaltung] + MehrCatalog.available
-            : MehrCatalog.available
+        var tiles: [MehrTile] = []
+        // Betreiber ganz oben (Token-Claim, keine Vereinsrolle), danach die
+        // Verwaltung (Vereinsleitung), dann der normale Katalog.
+        if session.permissions.isPlatformAdmin { tiles.append(MehrCatalog.platform) }
+        if session.permissions.isClubAdmin { tiles.append(MehrCatalog.verwaltung) }
+        return tiles + MehrCatalog.available
     }
 
     var body: some View {
