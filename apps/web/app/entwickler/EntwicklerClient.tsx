@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as mock from "@/lib/mock";
-import { VIEWER_STORAGE_KEY } from "@/components/shell/BetaViewerBoundary";
+import { MOCK_VIEWER_KEY } from "@/lib/data/mock/viewer";
 
 /**
  * Auswahl der Demo-Person für die Beta.
@@ -45,7 +45,7 @@ export function EntwicklerClient() {
   // vorgerendert, und localStorage gibt es dort nicht.
   useEffect(() => {
     try {
-      setAktiv(window.localStorage.getItem(VIEWER_STORAGE_KEY) ?? mock.currentUser.id);
+      setAktiv(window.localStorage.getItem(MOCK_VIEWER_KEY) ?? mock.currentUser.id);
     } catch {
       setAktiv(mock.currentUser.id);
     }
@@ -53,7 +53,7 @@ export function EntwicklerClient() {
 
   function waehle(id: string) {
     try {
-      window.localStorage.setItem(VIEWER_STORAGE_KEY, id);
+      window.localStorage.setItem(MOCK_VIEWER_KEY, id);
     } catch {
       // Ohne Speicher kein Wechsel — dann bleibt es bei der Vorgabe.
     }
@@ -63,7 +63,7 @@ export function EntwicklerClient() {
 
   function zuruecksetzen() {
     try {
-      window.localStorage.removeItem(VIEWER_STORAGE_KEY);
+      window.localStorage.removeItem(MOCK_VIEWER_KEY);
     } catch {
       /* egal */
     }

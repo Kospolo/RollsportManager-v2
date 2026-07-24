@@ -1,4 +1,4 @@
-import { invoices, ledger, members } from "@/lib/mock";
+import { currentUser, invoices, ledger, members, onViewerChange } from "@/lib/mock";
 import { ApiError } from "@/lib/api/generated";
 import type {
   DunningLevel,
@@ -27,7 +27,11 @@ import {
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 /** Aktuelle Person (Mock) — spiegelt mockRepository.getCurrentUser (m-01). */
-const currentMemberId = members[0].id;
+// let + Melderegister: /entwickler kann die eingeloggte Person wechseln.
+let currentMemberId = currentUser.id;
+onViewerChange(() => {
+  currentMemberId = currentUser.id;
+});
 
 const categoryStore: LedgerCategory[] = ledgerCategorySeed.map((cat) => ({ ...cat }));
 

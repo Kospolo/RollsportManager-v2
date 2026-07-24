@@ -1,4 +1,4 @@
-import { club, fullName, guardianships, members, teams } from "@/lib/mock";
+import { club, currentUser, fullName, guardianships, members, onViewerChange, teams } from "@/lib/mock";
 import type { ChatChannel, ChatMessage, Checkin, Member, RegionalEvent } from "@/lib/types";
 import type { DataRepository } from "../types";
 import { chatMessageSeed, checkinSeed, regionalEventSeed } from "./seed-batch4";
@@ -13,7 +13,11 @@ import { chatMessageSeed, checkinSeed, regionalEventSeed } from "./seed-batch4";
 const clubId = club.id;
 const nowIso = (): string => new Date().toISOString();
 /** Aktuelle Person (Mock) — spiegelt mockRepository.getCurrentUser. */
-const currentMemberId = members[0].id;
+// let + Melderegister: /entwickler kann die eingeloggte Person wechseln.
+let currentMemberId = currentUser.id;
+onViewerChange(() => {
+  currentMemberId = currentUser.id;
+});
 
 const messageStore: ChatMessage[] = chatMessageSeed.map((m) => ({ ...m }));
 const checkinStore: Checkin[] = checkinSeed.map((c) => ({ ...c }));

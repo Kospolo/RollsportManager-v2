@@ -1,4 +1,4 @@
-import { club, members } from "@/lib/mock";
+import { club, currentUser, members, onViewerChange } from "@/lib/mock";
 import type {
   ClubEntitlement,
   DocumentItem,
@@ -21,8 +21,15 @@ import { documentSeed, gallerySeed } from "./seed-batch5";
  */
 
 const clubId = club.id;
-/** Aktuelle Person (Mock) — spiegelt mockRepository.getCurrentUser (m-01). */
-const currentMemberId = members[0].id;
+/**
+ * Aktuelle Person (Mock) — spiegelt mockRepository.getCurrentUser.
+ * `let` + Melderegister, weil /entwickler die Person wechseln kann; eine
+ * Kopie beim Laden des Moduls zeigte sonst dauerhaft auf Sandra Vogel.
+ */
+let currentMemberId = currentUser.id;
+onViewerChange(() => {
+  currentMemberId = currentUser.id;
+});
 const nowIso = (): string => new Date().toISOString();
 
 const galleryStore: GalleryItem[] = gallerySeed.map((g) => ({ ...g }));

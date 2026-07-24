@@ -3,9 +3,22 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import * as mock from "@/lib/mock";
 import { DATA_SOURCE } from "@/lib/data/config";
+import { MOCK_VIEWER_KEY } from "@/lib/data/mock/viewer";
 
-/** Wo der Entwickler-Bereich seine Auswahl hinterlegt. */
-export const VIEWER_STORAGE_KEY = "rsm.beta.viewer";
+/**
+ * ES GIBT NUR EINEN SCHLÜSSEL: `rsm.mock.viewer` aus lib/data/mock/viewer.ts.
+ *
+ * Der Mock kannte den Betrachter-Wechsel schon — aber nur an EINER Stelle:
+ * `mockViewer()` liest den Schlüssel bei jedem Aufruf frisch und versorgt
+ * damit `repo.getCurrentUser()` und ein paar Module. Die rund 230 Stellen, die
+ * `mock.currentUser` direkt lesen (Hülle, Menü, Gating), wussten davon nichts.
+ * Deshalb konnte das Portal gleichzeitig „Katrin Grünewald" im Kürzel und
+ * „Hallo, Sandra!" in der Begrüßung zeigen.
+ *
+ * Diese Grenze schließt die Lücke: Sie liest DENSELBEN Schlüssel und zieht
+ * `mock.currentUser` nach. Wer einen zweiten Schlüssel einführt, baut den
+ * Widerspruch wieder ein.
+ */
 
 /**
  * Wendet die unter /entwickler gewählte Demo-Person auf das Portal an.
@@ -38,7 +51,7 @@ export function BetaViewerBoundary({ children }: { children: ReactNode }) {
     if (DATA_SOURCE !== "mock") return;
     let stored: string | null = null;
     try {
-      stored = window.localStorage.getItem(VIEWER_STORAGE_KEY);
+      stored = window.localStorage.getItem(MOCK_VIEWER_KEY);
     } catch {
       // Privater Modus o. Ä. — dann bleibt es bei der Vorgabe.
       return;

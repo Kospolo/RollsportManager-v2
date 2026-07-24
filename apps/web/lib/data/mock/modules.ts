@@ -13,7 +13,11 @@ import { MOCK_SELF_PROFILE, exerciseSeed, newsSeed, noteSeed } from "./seed";
  */
 
 const clubId = mock.club.id;
-const selfMemberId = mock.members[0].id; // Sandra Vogel — Trainerin
+// let + Melderegister: /entwickler kann die eingeloggte Person wechseln.
+let selfMemberId = mock.currentUser.id;
+mock.onViewerChange(() => {
+  selfMemberId = mock.currentUser.id;
+});
 
 const newsStore: News[] = newsSeed.map((n) => ({ ...n }));
 const noteStore: Note[] = noteSeed.map((n) => ({ ...n }));
