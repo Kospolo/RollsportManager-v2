@@ -356,6 +356,7 @@ public enum DunningLogAction: String, Codable, CaseIterable, Sendable, Equatable
     case handover = "handover"
 }
 
+/// Wochentag: 0 = Montag, 1 = Dienstag, … 6 = Sonntag (ISO-8601, Woche beginnt montags).
 public typealias Weekday = Int
 
 /// Inline enum of Health.status (hoisted by codegen).

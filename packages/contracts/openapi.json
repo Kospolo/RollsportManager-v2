@@ -7442,7 +7442,8 @@
       "Weekday": {
         "type": "integer",
         "minimum": 0,
-        "maximum": 6
+        "maximum": 6,
+        "description": "Wochentag: 0 = Montag, 1 = Dienstag, … 6 = Sonntag (ISO-8601, Woche beginnt montags)."
       },
       "TrainingSlot": {
         "type": "object",

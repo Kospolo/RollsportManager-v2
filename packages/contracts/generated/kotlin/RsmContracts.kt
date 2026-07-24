@@ -367,6 +367,7 @@ enum class DunningLogAction {
     @SerialName("handover") HANDOVER;
 }
 
+/** Wochentag: 0 = Montag, 1 = Dienstag, … 6 = Sonntag (ISO-8601, Woche beginnt montags). */
 typealias Weekday = Long
 
 /** Inline enum of Health.status (hoisted by codegen). */

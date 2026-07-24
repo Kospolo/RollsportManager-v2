@@ -2090,8 +2090,31 @@ export const achievementUpdateSchema = z
 // 0=Monday..6=Sunday; time columns come back as 'HH:MM:SS' strings.
 // ---------------------------------------------------------------------------
 
-/** 0 = Monday … 6 = Sunday (Referenz Trainingsplan-Wochenraster). */
-export const weekdaySchema = z.number().int().min(0).max(6).openapi('Weekday');
+/**
+ * Wochentag als Zahl: **0 = Montag … 6 = Sonntag** (ISO-8601-Reihenfolge).
+ *
+ * Festgelegt von Marcel am 2026-07-23: „In Deutschland fängt die Woche immer
+ * montags an." Das ist KEINE Konvention, die man je Plattform neu waehlen darf —
+ * ein Versatz um einen Tag verschiebt den ganzen Wochenplan.
+ *
+ * ACHTUNG bei der Umrechnung aus Datums-APIs, die anders zaehlen:
+ *   · JavaScript `Date.getDay()`  -> 0 = SONNTAG  => `(getDay() + 6) % 7`
+ *     (so gemacht in apps/web trainingsplan/helpers.ts und checkin/logic.ts)
+ *   · Swift `Calendar.component(.weekday)` -> 1 = Sonntag, 2 = Montag
+ *     => `(weekday + 5) % 7`
+ *   · Kotlin `DayOfWeek.getValue()` -> 1 = Montag  => `value - 1`
+ *
+ * Die Beschreibung steht bewusst im `.describe()`, damit sie in die OpenAPI-Spec
+ * und damit in die generierten Swift-/Kotlin-Clients wandert — dort fehlte sie,
+ * weshalb der Wertebereich fuer die nativen Apps bisher ungeklaert war.
+ */
+export const weekdaySchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(6)
+  .describe('Wochentag: 0 = Montag, 1 = Dienstag, … 6 = Sonntag (ISO-8601, Woche beginnt montags).')
+  .openapi('Weekday');
 /** 'HH:MM' or 'HH:MM:SS' — a plain wall-clock time (no offset). */
 const timeString = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, 'expected HH:MM[:SS]');
 export const dutyKindSchema = z.enum(['training', 'helper', 'competition', 'other']).openapi('DutyKind');
