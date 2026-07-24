@@ -49,6 +49,9 @@ enum InvoiceStatusDisplay {
         switch status {
         case .draft: "rechnungen.status.draft"
         case .open: "rechnungen.status.open"
+        // „Teilbezahlt" kam mit Migration 0072 in den Contract; ohne diesen
+        // Fall compilierte NICHTS mehr — auch das iOS-Ziel nicht.
+        case .partiallyPaid: "rechnungen.status.partiallyPaid"
         case .paid: "rechnungen.status.paid"
         case .cancelled: "rechnungen.status.cancelled"
         }
@@ -58,6 +61,9 @@ enum InvoiceStatusDisplay {
         switch status {
         case .draft: .neutral
         case .open: .info
+        // Teilbezahlt ist BEWUSST kein „success": es ist noch etwas offen.
+        // Gleiche Entscheidung wie im Web (finanzen/rechnungen/derive.ts).
+        case .partiallyPaid: .warn
         case .paid: .success
         case .cancelled: .neutral
         }

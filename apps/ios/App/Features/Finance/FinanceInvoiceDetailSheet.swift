@@ -81,6 +81,10 @@ struct FinanceInvoiceDetailSheet: View {
             RSMStatusPill.dunning(level: invoice.dunningLevel)
         case .draft:
             RSMStatusPill(text: "finance.status.draft", kind: .neutral)
+        case .partiallyPaid:
+            // Teilbezahlt (0072) ist bewusst kein „bezahlt": es ist noch etwas
+            // offen — gleiche Lesart wie im Web.
+            RSMStatusPill(text: "finance.status.partiallyPaid", kind: .warn)
         case .paid:
             RSMStatusPill(text: "finance.status.paid", kind: .success)
         case .cancelled:
