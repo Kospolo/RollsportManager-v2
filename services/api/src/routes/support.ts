@@ -103,7 +103,7 @@ supportRouter.openapi(
   async (c) => {
     const { club_id } = c.req.valid('query');
     // Ehrliches 403 statt einer leeren Liste. RLS wuerde ohnehin filtern.
-    await requireClubRoleDb(c, club_id, ADMIN_ROLES);
+    await requireClubRoleDb(c, club_id, ADMIN_ROLES, 'club_settings');
 
     const rows = await withUser(c.get('claims'), (tx) =>
       tx`select ${ticketColumns(tx)}
@@ -136,7 +136,7 @@ supportRouter.openapi(
   async (c) => {
     const body = c.req.valid('json');
     const claims = c.get('claims');
-    await requireClubRoleDb(c, body.club_id, ADMIN_ROLES);
+    await requireClubRoleDb(c, body.club_id, ADMIN_ROLES, 'club_settings');
 
     const created = await withUser(claims, async (tx) => {
       // Die EIGENE Mitgliedszeile - nie eine vom Client genannte. Der Vertrag

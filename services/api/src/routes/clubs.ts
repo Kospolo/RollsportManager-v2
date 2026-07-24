@@ -161,7 +161,7 @@ clubsRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    await requireClubRoleDb(c, clubId, ADMIN_ROLES);
+    await requireClubRoleDb(c, clubId, ADMIN_ROLES, 'club_settings');
 
     // withUser, NICHT withServiceRole: app.club_join_code ist security definer
     // und liest die Rolle aus der aufrufenden Sitzung. Im Service-Mode gaebe es
@@ -200,7 +200,7 @@ clubsRouter.openapi(
     // DB-aufgeloest statt aus dem Token: sonst koennte der frisch registrierte
     // Inhaber seinen EIGENEN Verein nicht bearbeiten (sein Token entstand vor
     // dem Verein und traegt club_roles={}).
-    await requireClubRoleDb(c, clubId, ADMIN_ROLES);
+    await requireClubRoleDb(c, clubId, ADMIN_ROLES, 'club_settings');
 
     const patch: Record<string, unknown> = { ...body };
     if (patch['settings'] !== undefined) patch['settings'] = JSON.stringify(patch['settings']);

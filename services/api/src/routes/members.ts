@@ -37,10 +37,12 @@ import {
   MANAGE_MEMBER_ROLES,
   canAssignRole,
   checkRoleChange,
+  clubRoleHeld,
   hasClubRole,
   isPlatformAdmin,
   requireClubRole,
 } from '../lib/guards.js';
+import { operatorMay } from '../lib/operator-capabilities.js';
 import { capsFor, requireClubMemberDb, requireClubRoleDb } from '../lib/capabilities.js';
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 
@@ -128,7 +130,11 @@ const JOINED_ON_ROLES: readonly ClubRole[] = [...MANAGE_MEMBER_ROLES, 'coach'];
  * Kindern). Genau die haben wir hier entfernt.
  */
 export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
-  return hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
+  // 0075: 'member_contact' — die Faehigkeit, die 0074 mit Begruendung GESPERRT
+  // hat („Adresse, Telefon, Geburtsdatum. Fuer den Support nicht noetig").
+  // Vorher lief der Betreiber hier ueber den pauschalen Override durch und las
+  // Geburtsdatum von 15 Minderjaehrigen sowie Telefon/Anschrift von 5.
+  return hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES, 'member_contact');
 }
 
 /**
@@ -147,7 +153,10 @@ export function maySeeFullRoster(claims: AuthClaims, clubId: string): boolean {
 export function maySeeJoinedOn(claims: AuthClaims, clubId: string): boolean {
   // Betreiber laeuft ueber hasClubRole -> hasOperatorOverride (ans Protokoll
   // gekoppelt); kein protokoll-freier isPlatformAdmin-Zweig, siehe maySeeFullRoster.
-  return hasClubRole(claims, clubId, JOINED_ON_ROLES);
+  // 'anniversaries' ist freigegeben (0074, mit Begruendung: rein abgeleitet aus
+  // members). joined_on und die Jubilaeumsliste sind damit DIESELBE Entscheidung
+  // — was der Kopf dieser Funktion ohnehin verlangt.
+  return hasClubRole(claims, clubId, JOINED_ON_ROLES, 'anniversaries');
 }
 
 /**
@@ -180,7 +189,10 @@ export function maySeeContactOf(
   row: Record<string, unknown>,
 ): boolean {
   if (maySeeFullRoster(claims, clubId)) return true;
-  if (!hasClubRole(claims, clubId, ['coach'])) return false;
+  // clubRoleHeld und nicht hasClubRole: „ist diese Person Trainerin" ist eine
+  // TATSACHE ueber die Vereinsrolle, keine Befugnis. Kein Betreiber-Zweig —
+  // derselbe Schnitt wie app.coaches_member in 0075.
+  if (!clubRoleHeld(claims, clubId, ['coach'])) return false;
   return row[COACH_OF_MEMBER_KEY] === true;
 }
 
@@ -471,15 +483,19 @@ membersRouter.openapi(
     // approve (registration.ts). Rollenbasiert und deckungsgleich mit der RLS
     // der Einladungstabelle (invitations_insert, 0065): 'members:manage' ist
     // write_only und darf die LESE-Policy nicht gaten (93j).
-    await requireClubRoleDb(c, clubId, MANAGE_MEMBER_ROLES);
+    await requireClubRoleDb(c, clubId, MANAGE_MEMBER_ROLES, 'members');
 
     // Rollen-Rang: darf DIESE Person die ZIELrolle vergeben? Mehrfachrollen
     // zaehlen — irgendeine der eigenen Rollen muss reichen. Ohne diese Pruefung
     // koennte ein Kassenwart (members:manage) eine admin-Einladung verschicken.
     const caps = await capsFor(c, clubId);
     const callerRoles = caps.roleKeys as ClubRole[];
+    // 0075: operatorMay('roles') statt isPlatformAdmin — 'roles' ist freigegeben
+    // (0074: „der haeufigste Support-Fall ueberhaupt"), also aendert sich fuer den
+    // eingeschalteten Betreiber nichts. Weg faellt der protokoll-FREIE Zweig: der
+    // blosse Claim vergibt keine Rollen mehr, wie in app.can_change_member_role.
     const mayAssign =
-      isPlatformAdmin(claims) || callerRoles.some((r) => canAssignRole(r, body.role));
+      operatorMay(claims, 'roles') || callerRoles.some((r) => canAssignRole(r, body.role));
     if (!mayAssign) {
       throw problem(403, 'Forbidden', `Deine Rolle darf die Rolle '${body.role}' nicht einladen.`);
     }

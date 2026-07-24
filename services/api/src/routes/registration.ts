@@ -547,7 +547,7 @@ registrationRouter.openapi(
     const days = body.expires_in_days ?? null;
     const overlap = body.overlap_hours ?? 0;
 
-    await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator']);
+    await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator'], 'club_settings');
 
     // withUser: clubs_update (is_club_admin) und club_join_codes_update
     // (owner/admin/moderator, 0037) sind die zweite Verteidigungslinie.
@@ -667,7 +667,7 @@ registrationRouter.openapi(
   }),
   async (c) => {
     const { clubId } = c.req.valid('param');
-    await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator']);
+    await requireClubRoleDb(c, clubId, ['owner', 'admin', 'moderator'], 'club_settings');
     const rows = await withUser(c.get('claims'), async (tx) => {
       // Erst die Kindtabelle (die Wahrheit): ein noch ueberlappender ALTER Code
       // haengt nicht mehr an der Spalte und wuerde vom UPDATE unten nicht

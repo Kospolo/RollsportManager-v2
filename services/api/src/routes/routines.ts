@@ -256,7 +256,7 @@ routinesRouter.openapi(
 
     const created = await withUser(claims, async (tx) => {
       const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
         throw problem(403, 'Forbidden', 'Markers require a coaching role');
       }
       const rows = await tx`
@@ -319,7 +319,7 @@ routinesRouter.openapi(
 
     const created = await withUser(claims, async (tx) => {
       const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
         throw problem(403, 'Forbidden', 'Scores require a coaching role');
       }
       const rows = await tx`
@@ -415,7 +415,10 @@ routinesRouter.openapi(
 
     await withUser(claims, async (tx) => {
       const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+      // Widerruf einer Freigabe IST Moderation ('routines_edit', 0074 freigegeben).
+      // Das ANLEGEN einer Freigabe oben ist es NICHT — Moderation nimmt Inhalte
+      // vom Netz, sie stellt keine hinein. Deshalb dort bewusst ohne Faehigkeit.
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
         throw problem(403, 'Forbidden', 'Revoking requires a coaching role');
       }
       // RLS (is_club_trainer) is the second line of defense on this UPDATE.

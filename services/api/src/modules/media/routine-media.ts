@@ -154,7 +154,7 @@ export function createRoutineMediaRouter(): Hono<AuthEnv> {
       // 1. RLS-Team-Grenze (can_read_routine). Fremdes Team -> 404.
       const routine = await loadRoutine(tx, routineId);
       // 2. Trainerrolle im Verein der Kuer.
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
         throw problem(403, 'Forbidden', 'Attaching music requires a coaching role');
       }
       const assetId = await ingestRoutineMedia(tx, claims, routine, 'routine-audio', file, durationMs);
@@ -196,7 +196,7 @@ export function createRoutineMediaRouter(): Hono<AuthEnv> {
 
     const updated = await withUser(claims, async (tx) => {
       const routine = await loadRoutine(tx, routineId);
-      if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+      if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
         throw problem(403, 'Forbidden', 'Attaching an image requires a coaching role');
       }
       const assetId = await ingestRoutineMedia(tx, claims, routine, 'routine-image', file, null);
@@ -237,7 +237,7 @@ async function detachRoutineMedia(
 
   const outcome = await withUser(claims, async (tx) => {
     const routine = await loadRoutine(tx, routineId);
-    if (!hasClubRole(claims, routine.club_id, COACH_ROLES)) {
+    if (!hasClubRole(claims, routine.club_id, COACH_ROLES, 'routines_edit')) {
       throw problem(403, 'Forbidden', 'Detaching media requires a coaching role');
     }
     const curRows =

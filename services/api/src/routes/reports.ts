@@ -53,6 +53,12 @@ reportsRouter.openapi(
     // Bewusst KEINE Faehigkeit: der Katalog kennt keine "Auswertung", und eine
     // fremde zu missbrauchen, die zufaellig dieselbe Menge trifft, waere eine
     // stille Bedeutungsverschiebung (siehe requireClubRoleDb).
+    //
+    // 0075: dieselbe fehlende Faehigkeit schliesst die Route jetzt auch fuer den
+    // BETREIBER — und das ist hier besonders wichtig, weil RLS im Service-Modus
+    // aus ist und dieser Guard allein steht. Bis 0075 liess der pauschale
+    // Override ihn durch: Mitgliederzahlen, Medaillen UND offene Rechnungen
+    // eines Vereins in einer Antwort. Kein Betriebs- oder Supportzweck.
     await requireClubRoleDb(c, club_id, COACH_ROLES);
 
     const summary = await withServiceRole(

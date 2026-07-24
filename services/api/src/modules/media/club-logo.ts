@@ -86,7 +86,7 @@ export function createClubLogoRouter(): Hono<AuthEnv> {
 
     // Ehrliches 403 fuer alle ausser owner/admin (DB-aufgeloest, nicht Token:
     // ein frisch registrierter Inhaber traegt club_roles={}).
-    await requireClubRoleDb(c, clubId, LOGO_ROLES);
+    await requireClubRoleDb(c, clubId, LOGO_ROLES, 'club_settings');
 
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (bytes.byteLength === 0) throw problem(400, 'Bad Request', 'file is empty');
@@ -147,7 +147,7 @@ export function createClubLogoRouter(): Hono<AuthEnv> {
     if (!UUID_RE.test(clubId)) throw problem(400, 'Bad Request', 'clubId (uuid) is required');
     const claims = c.get('claims');
 
-    await requireClubRoleDb(c, clubId, LOGO_ROLES);
+    await requireClubRoleDb(c, clubId, LOGO_ROLES, 'club_settings');
 
     const outcome = await withUser(claims, async (tx) => {
       const cur = await tx`

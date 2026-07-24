@@ -32,6 +32,7 @@ import { problem } from '../middleware/error.js';
 import { avatarUrlFor } from '../lib/avatar.js';
 import { capsFor } from '../lib/capabilities.js';
 import { isPlatformAdmin } from '../lib/guards.js';
+import { operatorMay } from '../lib/operator-capabilities.js';
 
 export const meRouter = createRouter();
 
@@ -240,7 +241,11 @@ meRouter.openapi(
     const platformAdmin = isPlatformAdmin(claims);
 
     // Autorisierung aus der DB, NICHT aus dem Claim.
-    if (caps.roleKeys.length === 0 && !platformAdmin) {
+    // 0075: der Durchlass fuer den Betreiber haengt an der EINGESCHALTETEN,
+    // protokollierten Einsicht plus der freigegebenen Faehigkeit 'members' —
+    // nicht mehr am blossen Claim. Die ausgelieferten Faehigkeiten selbst kommen
+    // ohnehin aus app.cap_rank und sind seit 0074 zweckgebunden.
+    if (caps.roleKeys.length === 0 && !operatorMay(claims, 'members')) {
       throw problem(
         403,
         'Forbidden',
