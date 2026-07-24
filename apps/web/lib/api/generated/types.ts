@@ -1370,6 +1370,18 @@ export interface PublicLegal {
   "agb": { "de": string; "en": string };
 }
 
+export interface LoginResponse {
+  "token_type": "Bearer";
+  "access_token": string;
+  "expires_in": number;
+  "profile": { "sub": string; "email": string; "is_platform_admin": boolean };
+}
+
+export interface LoginRequest {
+  "email": string;
+  "password": string;
+}
+
 export interface Task {
   "id": string;
   "club_id": string;

@@ -38,6 +38,7 @@ import { routinesRouter } from './routes/routines.js';
 import { competitionsRouter } from './routes/competitions.js';
 import { publicRoutinesRouter } from './routes/public-routines.js';
 import { publicLegalRouter } from './routes/public-legal.js';
+import { authLoginRouter } from './routes/auth-login.js';
 import { tasksRouter } from './routes/tasks.js';
 import { newsRouter } from './routes/news.js';
 import { notesRouter } from './routes/notes.js';
@@ -102,6 +103,7 @@ const PUBLIC_PATHS = new Set([
   '/webhooks/stripe',
   '/webhooks/revenuecat',
   '/dev/login',
+  '/auth/login',
 ]);
 
 /** Path prefixes that are public (auth skipped). Kept explicit and narrow. */
@@ -170,6 +172,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', competitionsRouter);
   app.route('/', publicRoutinesRouter);
   app.route('/', publicLegalRouter);
+  app.route('/', authLoginRouter);
   app.route('/', tasksRouter);
   app.route('/', newsRouter);
   app.route('/', notesRouter);

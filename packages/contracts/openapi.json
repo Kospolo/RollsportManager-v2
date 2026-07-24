@@ -6125,6 +6125,65 @@
           "agb"
         ]
       },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "token_type": {
+            "type": "string",
+            "enum": [
+              "Bearer"
+            ]
+          },
+          "access_token": {
+            "type": "string"
+          },
+          "expires_in": {
+            "type": "integer"
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "sub": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "is_platform_admin": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "sub",
+              "email",
+              "is_platform_admin"
+            ]
+          }
+        },
+        "required": [
+          "token_type",
+          "access_token",
+          "expires_in",
+          "profile"
+        ]
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
       "Task": {
         "type": "object",
         "properties": {
@@ -19602,6 +19661,57 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicLegal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Email/password login — issues an access token",
+        "description": "Unauthenticated. Verifies email + password and returns a signed access token with the same claims as the dev persona login. Unknown email and wrong password are indistinguishable.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Access token + minimal profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid email or password",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many attempts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

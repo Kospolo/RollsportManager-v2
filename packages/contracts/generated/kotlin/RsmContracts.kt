@@ -494,6 +494,12 @@ enum class EventRideUpdateStatus {
     @SerialName("abgesagt") ABGESAGT;
 }
 
+/** Inline enum of LoginResponse.token_type (hoisted by codegen). */
+@Serializable
+enum class LoginResponseTokenType {
+    @SerialName("Bearer") BEARER;
+}
+
 /** Inline enum of InvoiceUpdate.status (hoisted by codegen). */
 @Serializable
 enum class InvoiceUpdateStatus {
@@ -583,6 +589,14 @@ data class PublicLegalDatenschutz(
 data class PublicLegalAgb(
     val de: String,
     val en: String
+)
+
+/** Inline object of LoginResponse.profile (hoisted by codegen). */
+@Serializable
+data class LoginResponseProfile(
+    val sub: String,
+    val email: String,
+    @SerialName("is_platform_admin") val isPlatformAdmin: Boolean
 )
 
 /** Inline object of DunningRunResult.summary (hoisted by codegen). */
@@ -1993,6 +2007,20 @@ data class PublicLegal(
     val impressum: PublicLegalImpressum,
     val datenschutz: PublicLegalDatenschutz,
     val agb: PublicLegalAgb
+)
+
+@Serializable
+data class LoginResponse(
+    @SerialName("token_type") val tokenType: LoginResponseTokenType,
+    @SerialName("access_token") val accessToken: String,
+    @SerialName("expires_in") val expiresIn: Long,
+    val profile: LoginResponseProfile
+)
+
+@Serializable
+data class LoginRequest(
+    val email: String,
+    val password: String
 )
 
 @Serializable

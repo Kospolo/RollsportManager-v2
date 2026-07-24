@@ -72,6 +72,16 @@ select k.sub,
 from _konten k
 on conflict (id) do nothing;
 
+-- 1b. Passwort setzen (auch für schon vorhandene Zeilen — deshalb ein UPDATE
+--     statt es im INSERT zu führen, der bei Konflikt nichts tut).
+--     Alle Demo-Konten teilen das eine Passwort aus /Apps/Accounts.md, als
+--     scrypt-Hash (services/api/src/lib/password.ts). NUR Dev-Seed: echte
+--     Registrierungen bekommen je einen eigenen Salt. KLARTEXT steht hier nicht.
+update auth.users u
+   set password_hash = 'scrypt$2d47c3f126be677f43db6fc3cb04f53f$e409ff304ac2c4475b0d0bc67a2734d0835117b7f7a477275a2a2ff1cd3998d6'
+  from _konten k
+ where u.id = k.sub;
+
 -- 2. Profil (Bindeglied zwischen Anmeldung und Verein)
 insert into app.profiles (id, display_name, locale)
 select k.sub, k.anzeigename, 'de' from _konten k

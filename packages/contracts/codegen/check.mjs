@@ -77,6 +77,9 @@ const PUBLIC_ROUTES = new Set([
   // Service mode reads ONLY the legal column and returns only the legal texts
   // (routes/public-legal.ts). No SMTP, no other operator settings.
   "GET /public/legal",
+  // The real email/password login. Must be reachable without a token — it is
+  // what issues the token (routes/auth-login.ts).
+  "POST /auth/login",
 ]);
 
 let failures = 0;

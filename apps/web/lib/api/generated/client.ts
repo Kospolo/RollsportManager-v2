@@ -1051,6 +1051,16 @@ export class ApiClient {
   }
 
   /**
+   * Email/password login — issues an access token
+   * Unauthenticated. Verifies email + password and returns a signed access token with the same claims as the dev persona login. Unknown email and wrong password are indistinguishable.
+   * 
+   * `POST /auth/login`
+   */
+  async postAuthLogin(body: M.LoginRequest, options?: RequestOptions): Promise<M.LoginResponse> {
+    return this.request<M.LoginResponse>("POST", "/auth/login", { body, auth: false, options });
+  }
+
+  /**
    * List tasks of a club (open first, then by due date)
    * 
    * `GET /tasks`

@@ -466,6 +466,11 @@ public enum EventRideUpdateStatus: String, Codable, CaseIterable, Sendable, Equa
     case abgesagt = "abgesagt"
 }
 
+/// Inline enum of LoginResponse.token_type (hoisted by codegen).
+public enum LoginResponseTokenType: String, Codable, CaseIterable, Sendable, Equatable {
+    case bearer = "Bearer"
+}
+
 /// Inline enum of InvoiceUpdate.status (hoisted by codegen).
 public enum InvoiceUpdateStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case paid = "paid"
@@ -632,6 +637,29 @@ public struct PublicLegalAgb: Codable, Equatable, Sendable {
     ) {
         self.de = de
         self.en = en
+    }
+}
+
+/// Inline object of LoginResponse.profile (hoisted by codegen).
+public struct LoginResponseProfile: Codable, Equatable, Sendable {
+    public var sub: String
+    public var email: String
+    public var isPlatformAdmin: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case sub
+        case email
+        case isPlatformAdmin = "is_platform_admin"
+    }
+
+    public init(
+        sub: String,
+        email: String,
+        isPlatformAdmin: Bool
+    ) {
+        self.sub = sub
+        self.email = email
+        self.isPlatformAdmin = isPlatformAdmin
     }
 }
 
@@ -5625,6 +5653,51 @@ public struct PublicLegal: Codable, Equatable, Sendable {
         self.impressum = impressum
         self.datenschutz = datenschutz
         self.agb = agb
+    }
+}
+
+public struct LoginResponse: Codable, Equatable, Sendable {
+    public var tokenType: LoginResponseTokenType
+    public var accessToken: String
+    public var expiresIn: Int
+    public var profile: LoginResponseProfile
+
+    enum CodingKeys: String, CodingKey {
+        case tokenType = "token_type"
+        case accessToken = "access_token"
+        case expiresIn = "expires_in"
+        case profile
+    }
+
+    public init(
+        tokenType: LoginResponseTokenType,
+        accessToken: String,
+        expiresIn: Int,
+        profile: LoginResponseProfile
+    ) {
+        self.tokenType = tokenType
+        self.accessToken = accessToken
+        self.expiresIn = expiresIn
+        self.profile = profile
+    }
+}
+
+public struct LoginRequest: Codable, Equatable, Sendable {
+    /// Format: email
+    public var email: String
+    public var password: String
+
+    enum CodingKeys: String, CodingKey {
+        case email
+        case password
+    }
+
+    public init(
+        email: String,
+        password: String
+    ) {
+        self.email = email
+        self.password = password
     }
 }
 
