@@ -92,6 +92,21 @@ function renderEnum(name, values, doc) {
   return out;
 }
 
+/**
+ * Benannte NICHT-Objekt-, NICHT-Enum-Schemas (Skalar-Aliase wie
+ *   "Weekday": { "type": "integer", "minimum": 0, "maximum": 6 }
+ * oder benannte Arrays). Ohne diesen Zweig erzeugte der Generator den VERWEIS
+ * (`public var weekday: Weekday`), aber nie die DEFINITION — das ganze Target
+ * uebersetzte nicht ("cannot find type 'Weekday' in scope") und lebte von einem
+ * Hand-Shim. gen-ts.mjs hatte den Zweig laengst; Swift/Kotlin fehlte er.
+ */
+function renderAlias(name, ir, doc) {
+  const out = [];
+  if (doc) out.push(`/// ${doc.replace(/\n/g, " ")}`);
+  out.push(`public typealias ${name} = ${swiftType(ir)}${ir.nullable ? "?" : ""}`, "");
+  return out;
+}
+
 function renderStruct(name, ir, hoisted, description) {
   const ctxFor = (prop) => ({ parent: name, prop, hoisted });
   const out = [];
@@ -198,6 +213,13 @@ function renderSwift(spec) {
   const schemas = namedSchemas(spec);
   for (const { name, ir, description } of schemas) {
     if (ir.kind === "string" && ir.enumValues) out.push(...renderEnum(name, ir.enumValues, description));
+  }
+  // Skalar-/sonstige Aliase — JEDES benannte Schema bekommt eine Definition,
+  // damit nie wieder ein Verweis ohne Typ im Ausgabefile steht.
+  for (const { name, ir, description } of schemas) {
+    if (ir.kind === "object") continue;
+    if (ir.kind === "string" && ir.enumValues) continue;
+    out.push(...renderAlias(name, ir, description));
   }
   for (const [source, e] of hoisted.enums) {
     out.push(...renderEnum(e.name, e.values, `Inline enum of ${source} (hoisted by codegen).`));

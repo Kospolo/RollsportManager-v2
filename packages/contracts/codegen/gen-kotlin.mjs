@@ -76,7 +76,15 @@ function ktDefault(ir, defaultValue, ctx) {
   if (ir.kind === "array" && Array.isArray(defaultValue) && defaultValue.length === 0) return "emptyList()";
   if (ir.kind === "boolean") return defaultValue ? "true" : "false";
   if (ir.kind === "integer") return `${defaultValue}L`;
-  if (ir.kind === "number") return String(defaultValue);
+  if (ir.kind === "number") {
+    // Kotlin kennt KEINE implizite Weitung: `val vatRate: Double = 0` ist ein
+    // Uebersetzungsfehler ("expected Double?, actual Int"), und genau daran ist
+    // der Android-Build nach der Contract-Regeneration zu 0072 gescheitert.
+    // Ein Double-Default MUSS als Double-Literal herauskommen.
+    const n = Number(defaultValue);
+    if (!Number.isFinite(n)) return undefined;
+    return Number.isInteger(n) ? `${n}.0` : String(n);
+  }
   if (ir.kind === "ref") return `${ir.name}.${screamingSnakeCase(String(defaultValue))}`;
   if (ir.kind === "string") {
     if (ir.enumValues && ctx) {
@@ -96,6 +104,21 @@ function renderEnum(name, values, doc) {
     out.push(`    @SerialName(${JSON.stringify(v)}) ${screamingSnakeCase(v)}${i < values.length - 1 ? "," : ";"}`);
   });
   out.push("}", "");
+  return out;
+}
+
+/**
+ * Benannte NICHT-Objekt-, NICHT-Enum-Schemas (Skalar-Aliase wie
+ *   "Weekday": { "type": "integer", "minimum": 0, "maximum": 6 }
+ * oder benannte Arrays). Vorher liess der Generator sie stillschweigend fallen:
+ * die VERWEISE entstanden (`val weekday: Weekday`), die DEFINITION nie — die
+ * Android-App uebersetzte nicht mehr und lebte von einem Hand-Shim.
+ * gen-ts.mjs hatte diesen Zweig laengst; Swift/Kotlin fehlte er.
+ */
+function renderAlias(name, ir, doc) {
+  const out = [];
+  if (doc) out.push(`/** ${doc.replace(/\n/g, " ")} */`);
+  out.push(`typealias ${name} = ${ktType(ir)}${ir.nullable ? "?" : ""}`, "");
   return out;
 }
 
@@ -140,6 +163,13 @@ function renderKotlin(spec) {
   const schemas = namedSchemas(spec);
   for (const { name, ir, description } of schemas) {
     if (ir.kind === "string" && ir.enumValues) out.push(...renderEnum(name, ir.enumValues, description));
+  }
+  // Skalar-/sonstige Aliase — JEDES benannte Schema bekommt eine Definition,
+  // damit nie wieder ein Verweis ohne Typ im Ausgabefile steht.
+  for (const { name, ir, description } of schemas) {
+    if (ir.kind === "object") continue;
+    if (ir.kind === "string" && ir.enumValues) continue;
+    out.push(...renderAlias(name, ir, description));
   }
   for (const [source, e] of hoisted.enums) {
     out.push(...renderEnum(e.name, e.values, `Inline enum of ${source} (hoisted by codegen).`));

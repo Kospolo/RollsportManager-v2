@@ -367,6 +367,8 @@ enum class DunningLogAction {
     @SerialName("handover") HANDOVER;
 }
 
+typealias Weekday = Long
+
 /** Inline enum of Health.status (hoisted by codegen). */
 @Serializable
 enum class HealthStatus {
@@ -2764,7 +2766,7 @@ data class InvoiceItemCreate(
     val description: String,
     val quantity: Double,
     @SerialName("unit_price_cents") val unitPriceCents: Long,
-    @SerialName("vat_rate") val vatRate: Double? = 0
+    @SerialName("vat_rate") val vatRate: Double? = 0.0
 )
 
 @Serializable

@@ -356,6 +356,8 @@ public enum DunningLogAction: String, Codable, CaseIterable, Sendable, Equatable
     case handover = "handover"
 }
 
+public typealias Weekday = Int
+
 /// Inline enum of Health.status (hoisted by codegen).
 public enum HealthStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case ok = "ok"
