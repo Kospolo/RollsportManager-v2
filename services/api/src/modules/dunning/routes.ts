@@ -203,7 +203,9 @@ dunningRouter.openapi(
     description:
       'Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and ' +
       'appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the ' +
-      'deliberate human approval; stage 1 (reminder) is the routine step.',
+      'deliberate human approval; stage 1 (reminder) is the routine step. fee_cents/interest_cents ' +
+      'are charged PER invoice and are written onto the invoice by the database trigger - there is ' +
+      'no configured rate and no automatic interest calculation anywhere by design.',
     security: [{ bearerAuth: [] }],
     request: {
       params: z.object({ clubId: uuid.openapi({ param: { name: 'clubId', in: 'path' } }) }),
@@ -270,12 +272,18 @@ dunningRouter.openapi(
           skippedOut.push({ invoice_id: invoiceId, reason: 'concurrent change, not applied' });
           continue;
         }
+        // fee_cents/interest_cents (0071): der Trigger app.dunning_log_apply_costs
+        // schreibt sie auf die Rechnung fort. Das ist der EINZIGE Weg, auf dem
+        // invoices.dunning_fee_cents waechst — Geld fordern geht nur mit Beleg.
+        // Es gibt bewusst keinen hinterlegten Satz: die Betraege kommen aus dem
+        // Aufruf, nicht aus einer erfundenen Voreinstellung.
         const logged = await tx`
           insert into app.dunning_log
-            (club_id, invoice_id, from_stage, to_stage, action, actor_member_id, note)
+            (club_id, invoice_id, from_stage, to_stage, action, actor_member_id, note,
+             fee_cents, interest_cents)
           values
             (${clubId}, ${invoiceId}, ${fromStage}, ${body.to_stage}, ${action},
-             ${actorId}, ${body.note ?? null})
+             ${actorId}, ${body.note ?? null}, ${body.fee_cents}, ${body.interest_cents})
           returning *`;
         logOut.push(logged[0]);
         appliedCount += 1;

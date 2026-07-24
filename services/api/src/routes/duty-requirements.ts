@@ -3,12 +3,21 @@
 // v1 pflichtstunden.html). Read: every club member (is_club_member). Write:
 // coaching staff (is_club_trainer, Referenz 1.3 "Soll setzen"). Deletes are
 // SOFT; the RLS update policy backs the API role guard.
+//
+// ABLOESE (0073): cost_per_hour_cents am Soll = was eine NICHT geleistete
+// Pflichtstunde kostet. null heisst "keine Abloese vereinbart" und ist NICHT
+// dasselbe wie 0. Gerechnet wird in der Datenbank (app.duty_buyout) und nicht
+// hier: eine Abloese, die drei Clients je selbst ausrechnen, ergibt drei
+// Betraege, sobald einer ein Detail anders liest. Die Regeln (nur GENEHMIGTE
+// Stunden, nur im Zeitraum, keine Gutschrift bei Uebererfuellung) stehen
+// ausgeschrieben im Kopf von 0073.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
   deletedSchema,
+  dutyBuyoutSchema,
   dutyRequirementCreateSchema,
   dutyRequirementSchema,
   dutyRequirementUpdateSchema,
@@ -85,10 +94,12 @@ dutyRequirementsRouter.openapi(
     const created = await withUser(claims, async (tx) => {
       const rows = await tx`
         insert into app.duty_requirements
-          (club_id, team_id, member_id, season_label, required_hours, period_start, period_end)
+          (club_id, team_id, member_id, season_label, required_hours, period_start, period_end,
+           cost_per_hour_cents)
         values
           (${body.club_id}, ${body.team_id ?? null}, ${body.member_id ?? null}, ${body.season_label},
-           ${body.required_hours}, ${body.period_start}, ${body.period_end})
+           ${body.required_hours}, ${body.period_start}, ${body.period_end},
+           ${body.cost_per_hour_cents ?? null})
         returning *`;
       return rows[0];
     });
@@ -158,5 +169,55 @@ dutyRequirementsRouter.openapi(
       if (rows.length === 0) throw problem(403, 'Forbidden', 'Deleting a duty requirement requires a coaching role');
     });
     return c.json({ status: 'deleted' as const, id: requirementId }, 200);
+  },
+);
+
+// GET /duty-requirements/{requirementId}/buyout?member_id ---------------------
+// Die Abrechnung EINES Mitglieds an EINEM Soll. Die Zahlen kommen vollstaendig
+// aus app.duty_buyout (SECURITY DEFINER mit eigener Zugriffspruefung): das
+// Mitglied selbst, der Trainerstab und die Kassenfuehrung duerfen sie sehen.
+// Wer nicht darf, bekommt ein ehrliches 403 aus der Datenbank - KEINE stille 0.
+// Trifft das Soll auf das Mitglied gar nicht zu (anderes Team, anderes
+// Mitglied), gibt es 0 Zeilen -> 404 "gilt hier nicht" statt einer erfundenen
+// Null-Abrechnung.
+dutyRequirementsRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/duty-requirements/{requirementId}/buyout',
+    tags: ['duty'],
+    summary: 'Duty-hour settlement for one member: target, approved hours, missing hours, buyout',
+    description:
+      'Computed by the database (app.duty_buyout). Only APPROVED hours inside the requirement ' +
+      'period count; missing hours are floored at 0 (over-fulfilment never yields a credit); ' +
+      'without cost_per_hour_cents buyout_cents is null, not 0.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: requirementIdParam,
+      query: z.object({ member_id: uuid }),
+    },
+    responses: {
+      200: jsonContent(dutyBuyoutSchema, 'The settlement row'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { requirementId } = c.req.valid('param');
+    const { member_id } = c.req.valid('query');
+    const claims = c.get('claims');
+
+    const row = await withUser(claims, async (tx) => {
+      const requirement = await loadRequirement(tx, requirementId);
+      requireClubMember(claims, requirement.club_id);
+      const rows = await tx`select * from app.duty_buyout(${requirementId}, ${member_id})`;
+      return rows[0];
+    });
+    if (!row) {
+      throw problem(
+        404,
+        'Not Found',
+        'Dieses Pflichtstunden-Soll gilt fuer dieses Mitglied nicht. / This duty requirement does not apply to this member.',
+      );
+    }
+    return c.json(dutyBuyoutSchema.parse(row), 200);
   },
 );

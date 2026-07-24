@@ -10,6 +10,16 @@
 //
 // status enum: free / assigned / broken. assign -> status='assigned' + member,
 // release -> status='free' + null. Deletes are SOFT (deleted_at).
+//
+// GELD (0070): ein Fach traegt jetzt size + price_per_month_cents (LISTENPREIS).
+// null heisst "nicht festgelegt", 0 heisst "ausdruecklich kostenlos" - die API
+// verschmilzt die beiden NIE zu einer Zahl. Der tatsaechlich berechnete Preis
+// steht an der VERMIETUNG (routes/locker-rentals.ts) und darf abweichen.
+//
+// has_active_rental kommt aus app.locker_has_active_rental() und traegt die
+// ehrliche Warnung beim Statuswechsel ("eine aktive Vermietung endet NICHT
+// automatisch", v1 SchliessfachFormView.swift:106-114). Bewusst nur ein
+// boolean: die Warnung braucht keinen Mieternamen und keinen Preis.
 // ============================================================================
 
 import { createRoute, z } from '@hono/zod-openapi';
@@ -32,6 +42,20 @@ export const lockersRouter = createRouter();
 const lockerIdParam = z.object({
   lockerId: uuid.openapi({ param: { name: 'lockerId', in: 'path' } }),
 });
+
+/**
+ * Jede Antwort dieser Datei traegt has_active_rental. Deshalb liest jede Route,
+ * die etwas geaendert hat, die Zeile HIER neu, statt den Flag zu behaupten -
+ * eine Route, die es vergisst, faellt sofort an lockerSchema.parse() auf und
+ * nicht erst im Client.
+ */
+async function readLocker(tx: Tx, lockerId: string): Promise<unknown> {
+  const rows = await tx`
+    select l.*, app.locker_has_active_rental(l.id) as has_active_rental
+    from app.lockers l
+    where l.id = ${lockerId}`;
+  return rows[0];
+}
 
 /** Load a locker row or 404 when invisible/absent. */
 async function loadLocker(tx: Tx, lockerId: string): Promise<{ id: string; club_id: string }> {
@@ -68,9 +92,10 @@ lockersRouter.openapi(
     const { club_id } = c.req.valid('query');
     requireClubMember(c.get('claims'), club_id);
     const rows = await withUser(c.get('claims'), (tx) =>
-      tx`select * from app.lockers
-         where club_id = ${club_id} and deleted_at is null
-         order by label`,
+      tx`select l.*, app.locker_has_active_rental(l.id) as has_active_rental
+         from app.lockers l
+         where l.club_id = ${club_id} and l.deleted_at is null
+         order by l.label`,
     );
     return c.json(z.array(lockerSchema).parse(rows), 200);
   },
@@ -99,11 +124,15 @@ lockersRouter.openapi(
     const created = await withUser(claims, async (tx) => {
       if (body.assigned_member_id) await assertClubMemberId(tx, body.club_id, body.assigned_member_id);
       const rows = await tx`
-        insert into app.lockers (club_id, label, location, status, assigned_member_id, note)
+        insert into app.lockers (club_id, label, location, status, size, price_per_month_cents,
+                                 assigned_member_id, note)
         values (${body.club_id}, ${body.label}, ${body.location ?? null}, ${body.status},
+                ${body.size}, ${body.price_per_month_cents ?? null},
                 ${body.assigned_member_id ?? null}, ${body.note ?? null})
-        returning *`;
-      return rows[0];
+        returning id`;
+      // Ein frisch angelegtes Fach hat noch keine Vermietung - trotzdem wird
+      // hier neu gelesen statt has_active_rental zu behaupten.
+      return readLocker(tx, rows[0]!['id'] as string);
     });
     return c.json(lockerSchema.parse(created), 201);
   },
@@ -137,9 +166,9 @@ lockersRouter.openapi(
       const rows = await tx`
         update app.lockers set ${tx(body)}
         where id = ${lockerId} and deleted_at is null
-        returning *`;
+        returning id`;
       if (rows.length === 0) throw problem(403, 'Forbidden', 'Editing a locker requires a club admin');
-      return rows[0];
+      return readLocker(tx, lockerId);
     });
     return c.json(lockerSchema.parse(updated), 200);
   },
@@ -204,9 +233,9 @@ lockersRouter.openapi(
         update app.lockers
         set status = 'assigned', assigned_member_id = ${member_id}
         where id = ${lockerId} and deleted_at is null
-        returning *`;
+        returning id`;
       if (rows.length === 0) throw problem(403, 'Forbidden', 'Assigning a locker requires a coaching role');
-      return rows[0];
+      return readLocker(tx, lockerId);
     });
     return c.json(lockerSchema.parse(updated), 200);
   },
@@ -236,9 +265,12 @@ lockersRouter.openapi(
         update app.lockers
         set status = 'free', assigned_member_id = null
         where id = ${lockerId} and deleted_at is null
-        returning *`;
+        returning id`;
       if (rows.length === 0) throw problem(403, 'Forbidden', 'Releasing a locker requires a coaching role');
-      return rows[0];
+      // Achtung: 'freigeben' beendet KEINE Vermietung (v1-Regel, 0070). Wenn
+      // has_active_rental hier true bleibt, ist das die richtige Antwort und
+      // kein Fehler - die Oberflaeche soll genau darauf hinweisen.
+      return readLocker(tx, lockerId);
     });
     return c.json(lockerSchema.parse(updated), 200);
   },

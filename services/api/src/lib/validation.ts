@@ -35,7 +35,10 @@ export const eventTypeSchema = z.enum(['training', 'competition', 'other']).open
 export const rsvpStatusSchema = z.enum(['going', 'declined', 'maybe', 'sick']).openapi('RsvpStatus');
 export const attendanceStatusSchema = z.enum(['present', 'late', 'excused', 'absent']).openapi('AttendanceStatus');
 export const routineStatusSchema = z.enum(['draft', 'ready', 'competition', 'archived']).openapi('RoutineStatus');
-export const invoiceStatusSchema = z.enum(['draft', 'open', 'paid', 'cancelled']).openapi('InvoiceStatus');
+/** draft -> open -> partially_paid -> paid | cancelled ('partially_paid' seit 0072). */
+export const invoiceStatusSchema = z
+  .enum(['draft', 'open', 'partially_paid', 'paid', 'cancelled'])
+  .openapi('InvoiceStatus');
 export const competitionStatusSchema = z.enum(['upcoming', 'running', 'done', 'cancelled']).openapi('CompetitionStatus');
 export const entryStatusSchema = z.enum(['registered', 'confirmed', 'withdrawn']).openapi('CompetitionEntryStatus');
 export const counterpartyKindSchema = z.enum(['person', 'org']).openapi('CounterpartyKind');
@@ -661,6 +664,18 @@ export const invoiceSchema = z
     currency: z.string(),
     status: invoiceStatusSchema,
     dunning_level: z.number().int(),
+    /** Aufgelaufene Mahngebühren (0071). Wachsen NUR über einen protokollierten Mahnschritt. */
+    dunning_fee_cents: z.coerce.number().int(),
+    /** Aufgelaufene Verzugszinsen (0071). Herkunft wie dunning_fee_cents. */
+    dunning_interest_cents: z.coerce.number().int(),
+    /** GESAMTBETRAG = amount + Mahngebühr + Verzugszinsen (DB-generiert, 0071). */
+    total_cents: z.coerce.number().int(),
+    /** Summe der Umsatzsteuer aus den Positionen (0072); 0 ohne Positionen. */
+    vat_total_cents: z.coerce.number().int(),
+    /** Bereits gezahlt (Anzahlung/Teilzahlung, 0072). */
+    paid_cents: z.coerce.number().int(),
+    /** Offener Rest = total - paid (DB-generiert, 0072). */
+    open_cents: z.coerce.number().int(),
     issued_on: isoDate.nullable(),
     due_on: isoDate.nullable(),
     paid_at: timestamp.nullable(),
@@ -692,15 +707,74 @@ export const invoiceCreateSchema = z
  */
 export const invoiceUpdateSchema = z
   .object({
-    status: z.enum(['paid', 'cancelled']),
+    status: z.enum(['paid', 'partially_paid', 'cancelled']),
     /** How it was settled (only meaningful for status=paid). */
     paid_via: z.string().min(1).optional(),
     /** status=paid: also append a Kassenbuch income entry (default true). */
     post_to_ledger: z.boolean().default(true),
     /** Category for the auto-posted ledger income row (status=paid only). */
     ledger_category_id: uuid.optional(),
+    /**
+     * status=partially_paid: der bis jetzt EINGEGANGENE Gesamtbetrag in Cent
+     * (kumuliert, nicht die einzelne Rate — so kann eine wiederholte Meldung
+     * derselben Zahlung nicht doppelt zählen). Pflicht für partially_paid.
+     */
+    paid_cents: z.number().int().positive().optional(),
+  })
+  .refine((v) => v.status !== 'partially_paid' || v.paid_cents !== undefined, {
+    message: 'partially_paid requires paid_cents',
   })
   .openapi('InvoiceUpdate');
+
+// ---------------------------------------------------------------------------
+// Rechnungspositionen (migration 0072). Zeilensumme, Steuerbetrag und Brutto
+// sind DB-generiert — der Client schickt sie NIE und rechnet sie NIE nach.
+// ---------------------------------------------------------------------------
+
+export const invoiceItemSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    invoice_id: uuid,
+    sort_order: z.coerce.number().int(),
+    description: z.string(),
+    quantity: z.coerce.number(),
+    unit_price_cents: z.coerce.number().int(),
+    /** Umsatzsteuersatz in Prozent (0 / 7 / 19 …) — kein Katalog, kein Default. */
+    vat_rate: z.coerce.number(),
+    /** round(menge * einzelpreis) — DB-generiert. */
+    net_cents: z.coerce.number().int(),
+    /** round(netto * satz / 100) — DB-generiert, gerundet auf der ZEILE. */
+    vat_cents: z.coerce.number().int(),
+    /** netto + steuer — DB-generiert. */
+    gross_cents: z.coerce.number().int(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('InvoiceItem');
+
+export const invoiceItemCreateSchema = z
+  .object({
+    club_id: uuid,
+    invoice_id: uuid,
+    sort_order: z.number().int().default(0),
+    description: z.string().min(1).max(500),
+    quantity: z.number().positive(),
+    unit_price_cents: z.number().int().nonnegative(),
+    vat_rate: z.number().min(0).max(100).default(0),
+  })
+  .openapi('InvoiceItemCreate');
+
+export const invoiceItemUpdateSchema = z
+  .object({
+    sort_order: z.number().int().optional(),
+    description: z.string().min(1).max(500).optional(),
+    quantity: z.number().positive().optional(),
+    unit_price_cents: z.number().int().nonnegative().optional(),
+    vat_rate: z.number().min(0).max(100).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('InvoiceItemUpdate');
 
 export const teamSchema = z
   .object({
@@ -1076,6 +1150,10 @@ export const dunningLogSchema = z
     /** club_members.id of the treasurer/admin who applied the step, or null. */
     actor_member_id: uuid.nullable(),
     note: z.string().nullable(),
+    /** Mahngebühr DIESES Schritts in Cent (0071). 0 = keine erhoben. */
+    fee_cents: z.coerce.number().int(),
+    /** Verzugszinsen DIESES Schritts in Cent (0071). 0 = keine berechnet. */
+    interest_cents: z.coerce.number().int(),
     created_at: timestamp,
   })
   .openapi('DunningLogEntry');
@@ -1093,6 +1171,15 @@ export const dunningApplyRequestSchema = z
     /** Required true to apply any stage >= 2. */
     approve_escalation: z.boolean().default(false),
     note: z.string().max(500).optional(),
+    /**
+     * Mahngebühr je betroffener Rechnung in Cent (0071). Es gibt bewusst KEINEN
+     * hinterlegten Satz und keine Automatik — der Betrag wird eingegeben.
+     * Wird auf die Rechnung fortgeschrieben (invoices.dunning_fee_cents), und
+     * zwar ausschliesslich über diesen protokollierten Schritt.
+     */
+    fee_cents: z.number().int().nonnegative().default(0),
+    /** Verzugszinsen je betroffener Rechnung in Cent (0071). Wie fee_cents. */
+    interest_cents: z.number().int().nonnegative().default(0),
   })
   .openapi('DunningApplyRequest');
 
@@ -2067,6 +2154,11 @@ export const dutyRequirementSchema = z
     required_hours: z.coerce.number(),
     period_start: isoDate,
     period_end: isoDate,
+    /**
+     * Ablöse je FEHLENDER Pflichtstunde in ganzen Cent (0073).
+     * null = keine Ablöse vereinbart — das ist NICHT dasselbe wie 0.
+     */
+    cost_per_hour_cents: z.coerce.number().int().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -2081,6 +2173,8 @@ export const dutyRequirementCreateSchema = z
     period_end: z.string().date(),
     team_id: uuid.optional(),
     member_id: uuid.optional(),
+    /** Ablöse je fehlender Stunde in Cent; weglassen = keine Ablöse. */
+    cost_per_hour_cents: z.number().int().nonnegative().nullable().optional(),
   })
   .refine((v) => v.period_end >= v.period_start, { message: 'period_end must not be before period_start' })
   .openapi('DutyRequirementCreate');
@@ -2093,9 +2187,28 @@ export const dutyRequirementUpdateSchema = z
     period_end: z.string().date().optional(),
     team_id: uuid.nullable().optional(),
     member_id: uuid.nullable().optional(),
+    cost_per_hour_cents: z.number().int().nonnegative().nullable().optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('DutyRequirementUpdate');
+
+/**
+ * Pflichtstunden-Abrechnung EINES Mitglieds an EINEM Soll (app.duty_buyout,
+ * 0073). Die Zahlen kommen aus der Datenbank, nicht aus dem Client: es zählen
+ * nur GENEHMIGTE Stunden im Zeitraum, Fehlstunden werden bei 0 abgeschnitten,
+ * und ohne Kostensatz ist buyout_cents null (nicht 0).
+ */
+export const dutyBuyoutSchema = z
+  .object({
+    requirement_id: uuid,
+    member_id: uuid,
+    required_hours: z.coerce.number(),
+    done_hours: z.coerce.number(),
+    missing_hours: z.coerce.number(),
+    cost_per_hour_cents: z.coerce.number().int().nullable(),
+    buyout_cents: z.coerce.number().int().nullable(),
+  })
+  .openapi('DutyBuyout');
 
 // duty_entries ---------------------------------------------------------------
 export const dutyEntrySchema = z
@@ -2510,6 +2623,9 @@ export const departmentMembersSetSchema = z
 
 export const lockerStatusSchema = z.enum(['free', 'assigned', 'broken']).openapi('LockerStatus');
 
+/** Fachgröße (0070). Anzeige mit echten Umlauten in der i18n der Oberflächen. */
+export const lockerSizeSchema = z.enum(['klein', 'mittel', 'gross']).openapi('LockerSize');
+
 export const lockerSchema = z
   .object({
     id: uuid,
@@ -2517,6 +2633,18 @@ export const lockerSchema = z
     label: z.string(),
     location: z.string().nullable(),
     status: lockerStatusSchema,
+    size: lockerSizeSchema,
+    /**
+     * LISTENPREIS des Fachs je Monat in Cent (0070).
+     * null = nicht festgelegt · 0 = ausdrücklich kostenlos. Nicht dasselbe.
+     */
+    price_per_month_cents: z.coerce.number().int().nullable(),
+    /**
+     * Läuft an diesem Fach gerade eine Vermietung? Grundlage für die ehrliche
+     * Warnung beim Statuswechsel („eine aktive Vermietung endet NICHT
+     * automatisch"). Nur ein boolean — kein Mieter, kein Preis.
+     */
+    has_active_rental: z.boolean(),
     assigned_member_id: uuid.nullable(),
     note: z.string().nullable(),
     created_at: timestamp,
@@ -2530,6 +2658,9 @@ export const lockerCreateSchema = z
     label: z.string().min(1),
     location: z.string().nullable().optional(),
     status: lockerStatusSchema.default('free'),
+    size: lockerSizeSchema.default('mittel'),
+    /** null/weglassen = kein Preis festgelegt; 0 = kostenlos. */
+    price_per_month_cents: z.number().int().nonnegative().nullable().optional(),
     assigned_member_id: uuid.nullable().optional(),
     note: z.string().nullable().optional(),
   })
@@ -2540,6 +2671,8 @@ export const lockerUpdateSchema = z
     label: z.string().min(1).optional(),
     location: z.string().nullable().optional(),
     status: lockerStatusSchema.optional(),
+    size: lockerSizeSchema.optional(),
+    price_per_month_cents: z.number().int().nonnegative().nullable().optional(),
     assigned_member_id: uuid.nullable().optional(),
     note: z.string().nullable().optional(),
   })
@@ -2550,6 +2683,63 @@ export const lockerUpdateSchema = z
 export const lockerAssignSchema = z
   .object({ member_id: uuid })
   .openapi('LockerAssign');
+
+// ---------------------------------------------------------------------------
+// Schließfach-VERMIETUNG (migration 0070) — die zweite Preisebene.
+// Der vereinbarte Preis darf vom Listenpreis am Fach abweichen; NULL heisst
+// „Nicht festgelegt" und fällt NICHT still auf den Listenpreis zurück.
+// ---------------------------------------------------------------------------
+
+export const lockerRentalStatusSchema = z
+  .enum(['aktiv', 'beendet', 'gekuendigt'])
+  .openapi('LockerRentalStatus');
+
+export const lockerRentalSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    locker_id: uuid,
+    member_id: uuid,
+    /** Vereinbarter Monatspreis in Cent. null = nicht festgelegt, 0 = kostenlos. */
+    price_per_month_cents: z.coerce.number().int().nullable(),
+    start_on: isoDate,
+    /** null = unbefristet. */
+    end_on: isoDate.nullable(),
+    status: lockerRentalStatusSchema,
+    note: z.string().nullable(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('LockerRental');
+
+export const lockerRentalCreateSchema = z
+  .object({
+    club_id: uuid,
+    locker_id: uuid,
+    member_id: uuid,
+    price_per_month_cents: z.number().int().nonnegative().nullable().optional(),
+    start_on: z.string().date(),
+    end_on: z.string().date().nullable().optional(),
+    status: lockerRentalStatusSchema.default('aktiv'),
+    note: z.string().max(500).nullable().optional(),
+  })
+  .openapi('LockerRentalCreate');
+
+/**
+ * club_id, locker_id und member_id fehlen bewusst: sie sind in der Datenbank
+ * unveränderlich (app.protect_locker_rental). Ein anderes Fach = eine NEUE
+ * Vermietung, die alte wird beendet.
+ */
+export const lockerRentalUpdateSchema = z
+  .object({
+    price_per_month_cents: z.number().int().nonnegative().nullable().optional(),
+    start_on: z.string().date().optional(),
+    end_on: z.string().date().nullable().optional(),
+    status: lockerRentalStatusSchema.optional(),
+    note: z.string().max(500).nullable().optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('LockerRentalUpdate');
 
 // ---------------------------------------------------------------------------
 // Anniversaries (Jubiläen, v1 jubilaeen.html) — a read-only derived report.

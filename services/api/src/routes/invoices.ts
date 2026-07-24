@@ -220,11 +220,13 @@ invoicesRouter.openapi(
     method: 'patch',
     path: '/invoices/{invoiceId}',
     tags: ['invoices'],
-    summary: 'Settle an invoice: mark paid or cancelled (can_manage_finance)',
+    summary: 'Settle an invoice: paid, partially paid or cancelled (can_manage_finance)',
     description:
-      'open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) ' +
-      'or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). ' +
-      'The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.',
+      'open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), ' +
+      'open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so ' +
+      'reporting the same payment twice cannot double-count), or draft/open/partially_paid → ' +
+      'cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated ' +
+      'UPDATE keeps the invoices_update RLS policy as the second gate.',
     security: [{ bearerAuth: [] }],
     request: {
       params: invoiceIdParam,
@@ -243,46 +245,112 @@ invoicesRouter.openapi(
 
     const updated = await withUser(claims, async (tx) => {
       const rows = await tx`
-        select id, club_id, member_id, title, amount_cents, status
+        select id, club_id, member_id, title, amount_cents, status, paid_cents, total_cents
         from app.invoices where id = ${invoiceId}`;
       const invoice = rows[0] as
-        | { club_id: string; member_id: string; title: string; amount_cents: string; status: string }
+        | {
+            club_id: string;
+            member_id: string;
+            title: string;
+            amount_cents: string;
+            status: string;
+            paid_cents: string;
+            total_cents: string;
+          }
         | undefined;
       if (!invoice) throw problem(404, 'Not Found', 'Invoice not found');
       requireClubRole(claims, invoice.club_id, FINANCE_ROLES);
 
-      // GoBD-safe transitions: paid only from open; cancel only from draft/open.
-      if (body.status === 'paid' && invoice.status !== 'open') {
-        throw problem(409, 'Conflict', `Only open invoices can be marked paid (status: ${invoice.status})`);
+      // GoBD-safe transitions. 'paid' erreicht man auch aus 'partially_paid' —
+      // die Restzahlung ist der Normalfall, nicht die Ausnahme.
+      if (body.status === 'paid' && !['open', 'partially_paid'].includes(invoice.status)) {
+        throw problem(409, 'Conflict', `Only open/partially paid invoices can be marked paid (status: ${invoice.status})`);
       }
-      if (body.status === 'cancelled' && !['draft', 'open'].includes(invoice.status)) {
-        throw problem(409, 'Conflict', `Only draft/open invoices can be cancelled (status: ${invoice.status})`);
+      if (body.status === 'cancelled' && !['draft', 'open', 'partially_paid'].includes(invoice.status)) {
+        throw problem(409, 'Conflict', `Only draft/open/partially paid invoices can be cancelled (status: ${invoice.status})`);
+      }
+
+      // TEILZAHLUNG. paid_cents ist KUMULATIV: der Client meldet, wie viel
+      // insgesamt angekommen ist, nicht die einzelne Rate. Dieselbe Zahlung
+      // zweimal zu melden kann damit nicht doppelt zaehlen — der haeufigste
+      // Fehler bei Zahlungseingaengen.
+      const paidBefore = Number(invoice.paid_cents ?? 0);
+      const totalDue = Number(invoice.total_cents ?? invoice.amount_cents);
+      let partialDelta = 0;
+      if (body.status === 'partially_paid') {
+        if (!['open', 'partially_paid'].includes(invoice.status)) {
+          throw problem(
+            409,
+            'Conflict',
+            `Only open/partially paid invoices can take a partial payment (status: ${invoice.status})`,
+          );
+        }
+        const paidNow = body.paid_cents!;
+        if (paidNow <= paidBefore) {
+          throw problem(
+            409,
+            'Conflict',
+            `paid_cents is cumulative and must grow (already recorded: ${paidBefore})`,
+          );
+        }
+        if (paidNow >= totalDue) {
+          throw problem(
+            409,
+            'Conflict',
+            `paid_cents (${paidNow}) covers the full amount due (${totalDue}) — settle with status=paid instead`,
+          );
+        }
+        partialDelta = paidNow - paidBefore;
       }
 
       const result =
         body.status === 'paid'
           ? await tx`
               update app.invoices
-              set status = 'paid', paid_at = now(), paid_via = ${body.paid_via ?? null}
-              where id = ${invoiceId} and status = 'open'
+              set status = 'paid', paid_at = now(), paid_via = ${body.paid_via ?? null},
+                  paid_cents = ${invoice.total_cents}::bigint
+              where id = ${invoiceId} and status in ('open', 'partially_paid')
               returning *`
-          : await tx`
-              update app.invoices
-              set status = 'cancelled'
-              where id = ${invoiceId} and status in ('draft', 'open')
-              returning *`;
+          : body.status === 'partially_paid'
+            ? await tx`
+                update app.invoices
+                set status = 'partially_paid', paid_cents = ${body.paid_cents!}::bigint,
+                    paid_via = coalesce(${body.paid_via ?? null}, paid_via)
+                where id = ${invoiceId} and status in ('open', 'partially_paid')
+                returning *`
+            : await tx`
+                update app.invoices
+                set status = 'cancelled'
+                where id = ${invoiceId} and status in ('draft', 'open', 'partially_paid')
+                returning *`;
       if (result.length === 0) throw problem(403, 'Forbidden', 'Update rejected (role or concurrent change)');
 
-      // status=paid: optionally post the matching Kassenbuch income row. Skipped
-      // for a zero-amount invoice (nothing to book).
-      if (body.status === 'paid' && body.post_to_ledger && Number(invoice.amount_cents) > 0) {
+      // status=paid: optionally post the matching Kassenbuch income row. Gebucht
+      // wird der noch OFFENE Rest (total - bereits gezahlt) — bei einer Rechnung
+      // ohne Teilzahlung ist das wie bisher der volle Betrag, bei einer
+      // Restzahlung genau die Restzahlung und nicht ein zweites Mal alles.
+      const remainder = Number(invoice.total_cents ?? invoice.amount_cents) - paidBefore;
+      if (body.status === 'paid' && body.post_to_ledger && remainder > 0) {
         await tx`
           insert into app.ledger_entries
             (club_id, entry_on, description, counterparty_kind, counterparty_member_id,
              amount_cents, category_id, invoice_id, created_by)
           values
             (${invoice.club_id}, current_date, ${`Zahlungseingang: ${invoice.title}`},
-             'person', ${invoice.member_id}, ${invoice.amount_cents}::bigint,
+             'person', ${invoice.member_id}, ${remainder}::bigint,
+             ${body.ledger_category_id ?? null}, ${invoiceId}, ${claims.sub})`;
+      }
+
+      // Teilzahlung: nur die DIFFERENZ ins Kassenbuch. Der Kassenbucheintrag
+      // spiegelt Geld, das geflossen ist — nicht den Stand einer Forderung.
+      if (body.status === 'partially_paid' && body.post_to_ledger && partialDelta > 0) {
+        await tx`
+          insert into app.ledger_entries
+            (club_id, entry_on, description, counterparty_kind, counterparty_member_id,
+             amount_cents, category_id, invoice_id, created_by)
+          values
+            (${invoice.club_id}, current_date, ${`Teilzahlung: ${invoice.title}`},
+             'person', ${invoice.member_id}, ${partialDelta}::bigint,
              ${body.ledger_category_id ?? null}, ${invoiceId}, ${claims.sub})`;
       }
       return result[0];
