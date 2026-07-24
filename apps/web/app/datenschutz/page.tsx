@@ -4,10 +4,14 @@ import { LegalPage } from "../_landing/LegalPage";
 export const metadata: Metadata = {
   title: "Datenschutz",
   description:
-    "Datenschutzerklärung von RollsportManager (Platzhalter für die Entwicklungsphase).",
+    "Datenschutzerklärung von RollsportManager — welche Daten verarbeitet werden, wer sie sieht und welche Rechte du hast.",
 };
 
-/** Platzhalter-Route: rechtlich geprüfter Text folgt vor dem öffentlichen Start. */
+/**
+ * Beschreibt die Verarbeitung zutreffend — einschließlich der Gesundheitsdaten
+ * aus Krankmeldungen und der internen Trainer-Notizen. Noch nicht anwaltlich
+ * geprüft; das sagt die Seite auch selbst.
+ */
 export default function DatenschutzPage() {
   return <LegalPage kind="datenschutz" />;
 }
