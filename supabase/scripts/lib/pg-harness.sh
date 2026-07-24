@@ -169,6 +169,44 @@ grant usage on schema auth to anon, authenticated, service_role;
 SQL
 }
 
+# === DAS MIGRATIONS-BUCH =====================================================
+#
+# WARUM ES DAS GIBT (24.07.2026, teuer gelernt)
+# Bis heute wusste NIEMAND, welche Migrationen in einer bestehenden Datenbank
+# stecken. `dev-stack.sh up` spielte sie nur ein, wenn die DB LEER war, und
+# meldete sonst "Migrations/Seed uebersprungen". Eine einmal angelegte Dev-DB
+# blieb damit fuer immer auf dem Stand ihres Anlegetages.
+#
+# Der Schaden war nicht theoretisch: In der Dev-DB fehlten ZWOELF Migrationen
+# (0066-0077) — Fahrgemeinschaften, Trainer-Notizen, Schliessfach-Miete,
+# Mahngebuehren, MwSt, Pflichtstunden, Betreiber-Zweckbindung,
+# Modul-Sichtbarkeit. `GET /coach-notes` antwortete mit 500, weil die Tabelle
+# schlicht nicht existierte.
+#
+# Das Bittere daran ist nicht der 500er, sondern was er mit der PRUEFUNG macht:
+# Wer eine dieser Funktionen "im Browser nachgesehen" oder "per curl geprueft"
+# hat, hat gegen eine Datenbank geprueft, die sie gar nicht kannte. Ein gruener
+# Haken, der nichts bedeutet, ist schlimmer als gar kein Haken — er beendet die
+# Suche. (Die SQL-Testsuite war davon NIE betroffen: run-tests.sh startet einen
+# eigenen Wegwerf-Container und spielt immer alles frisch ein.)
+#
+# Das Buch steht bewusst in `public` und nicht in `app`: Es muss existieren
+# koennen, BEVOR die erste Migration das Schema `app` ueberhaupt anlegt.
+_harness_ledger_ensure() {
+  # client_min_messages: sonst meldet `if not exists` bei jedem Start ein
+  # NOTICE, das wie ein Problem aussieht und keines ist.
+  pgexec -c "set client_min_messages to warning;
+             create table if not exists public.rsm_schema_migrations (
+               name text primary key,
+               applied_at timestamptz not null default now()
+             );" >/dev/null
+}
+
+_harness_ledger_record() {
+  pgexec -c "insert into public.rsm_schema_migrations (name) values ('$1')
+             on conflict (name) do nothing;" >/dev/null
+}
+
 # Apply every migration in order, then the seed. Requires SUPABASE_DIR.
 harness_apply_migrations_and_seed() {
   [ -n "${SUPABASE_DIR:-}" ] || _harness_fail "SUPABASE_DIR is not set"
@@ -176,12 +214,59 @@ harness_apply_migrations_and_seed() {
   local migrations=("$SUPABASE_DIR"/migrations/[0-9]*.sql)
   [ ${#migrations[@]} -gt 0 ] || _harness_fail "no migrations found in $SUPABASE_DIR/migrations"
 
+  _harness_ledger_ensure
+
   local f
   for f in "${migrations[@]}"; do
     _harness_log "migration: $(basename "$f")"
     pgexec < "$f"
+    _harness_ledger_record "$(basename "$f")"
   done
 
   _harness_log "seed: seed/seed.sql"
   pgexec < "$SUPABASE_DIR/seed/seed.sql"
+}
+
+# Spielt NUR die Migrationen ein, die im Buch noch fehlen — fuer eine bereits
+# bestehende Datenbank. Gibt die Anzahl der nachgetragenen Dateien aus.
+#
+# Eine Datenbank aus der Zeit VOR dem Buch hat keinen Eintrag. Dann waere jede
+# Migration "ausstehend", und die erste wuerde an einer laengst existierenden
+# Tabelle scheitern. Deshalb der Erstbefund: Ist das Buch leer, obwohl `app`
+# schon Tabellen hat, wird nichts eingespielt, sondern nach `dev-stack.sh
+# reset` verlangt. Lieber ein klarer Abbruch als ein halb angewandter Stand.
+harness_apply_pending_migrations() {
+  [ -n "${SUPABASE_DIR:-}" ] || _harness_fail "SUPABASE_DIR is not set"
+  shopt -s nullglob
+  local migrations=("$SUPABASE_DIR"/migrations/[0-9]*.sql)
+  [ ${#migrations[@]} -gt 0 ] || _harness_fail "no migrations found in $SUPABASE_DIR/migrations"
+
+  _harness_ledger_ensure
+
+  local applied count
+  applied="$(pgexec -tA -c "select name from public.rsm_schema_migrations")"
+  count="$(printf '%s' "$applied" | grep -c . || true)"
+
+  if [ "$count" = "0" ]; then
+    _harness_fail "Die Datenbank hat Tabellen, aber kein Migrations-Buch — sie
+  stammt aus der Zeit davor. Welche Migrationen drinstecken, ist von aussen
+  nicht sicher feststellbar. Bitte einmal neu aufsetzen:
+      ./scripts/dev-stack.sh down && rm -rf .dev/pgdata && ./scripts/dev-stack.sh up"
+  fi
+
+  local f base pending=0
+  for f in "${migrations[@]}"; do
+    base="$(basename "$f")"
+    if ! printf '%s\n' "$applied" | grep -qx "$base"; then
+      # Meldung nach stderr: stdout traegt hier den Rueckgabewert (die Anzahl),
+      # der Aufrufer liest ihn per $(...). Eine Log-Zeile auf stdout wuerde
+      # still zur "Anzahl" werden.
+      _harness_log "nachtragen: $base" >&2
+      pgexec < "$f"
+      _harness_ledger_record "$base"
+      pending=$((pending + 1))
+    fi
+  done
+
+  printf '%s' "$pending"
 }

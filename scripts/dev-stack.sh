@@ -147,7 +147,19 @@ cmd_up() {
     log "Dev-Rechtstexte einspielen (seed/dev-legal-texts.sql) ..."
     pgexec < "$SUPABASE_DIR/seed/dev-legal-texts.sql"
   else
-    log "DB enthält bereits das app-Schema — Migrations/Seed übersprungen"
+    # NICHT mehr "übersprungen". Genau dieser Satz hat am 24.07.2026 zwölf
+    # fehlende Migrationen (0066–0077) monatelang unsichtbar gemacht: Die
+    # Dev-DB blieb auf dem Stand ihres Anlegetages, `GET /coach-notes` gab 500,
+    # und wer eine dieser Funktionen "im Browser nachgesehen" hat, prüfte gegen
+    # eine Datenbank, die sie gar nicht kannte. Ausstehendes wird nachgetragen;
+    # das Migrations-Buch steht in public.rsm_schema_migrations.
+    local nachgetragen
+    nachgetragen="$(harness_apply_pending_migrations)"
+    if [ "${nachgetragen:-0}" = "0" ]; then
+      log "DB ist auf dem neuesten Stand (keine ausstehenden Migrations)"
+    else
+      log "$nachgetragen Migration(en) nachgetragen"
+    fi
   fi
   start_api
   echo
