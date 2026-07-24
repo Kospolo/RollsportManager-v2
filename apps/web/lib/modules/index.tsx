@@ -32,6 +32,21 @@ export interface ModulesValue {
   isModuleAvailable: (key: string) => boolean;
   /** Ist der Schalter eingeschaltet (unabhaengig vom PRO-Entitlement)? Fail-open. */
   isModuleEnabled: (key: string) => boolean;
+  /**
+   * Wird das Modul DIESER Person ueberhaupt angeboten? (0077)
+   *
+   * Die vierte Frage neben gekauft / eingeschaltet / erlaubt. `available` sagt
+   * nur, ob der VEREIN das Modul hat — deshalb sah ein Mitglied im Menue
+   * „Mehr" alle 26 Kacheln, auch Auswertung, Schliessfaecher, Jubilaeen,
+   * Wartelisten, Gruppen und Finanzen.
+   *
+   * Quelle ist GET /clubs/{clubId}/modules/effective: eine FERTIG GEFILTERTE
+   * Liste. Was darin fehlt, wird nicht angeboten. Deshalb muss „noch nicht
+   * geladen" von „geladen, aber nicht dabei" unterschieden werden — sonst
+   * kehrt sich die Bedeutung um und beim ersten Rendern verschwindet das halbe
+   * Menue.
+   */
+  isModuleVisible: (key: string) => boolean;
   reload: () => void;
 }
 
@@ -51,15 +66,30 @@ export function ModulesProvider({ children }: { children: ReactNode }) {
   const isModuleAvailable = useCallback((key: string) => byKey.get(key)?.available ?? true, [byKey]);
   const isModuleEnabled = useCallback((key: string) => byKey.get(key)?.enabled ?? true, [byKey]);
 
+  // Zweite, PERSONENBEZOGENE Liste (0077) — siehe isModuleVisible oben.
+  const effective = useData((repo) => repo.listEffectiveModules(), []);
+  const visibleKeys = useMemo(
+    () => new Set((effective.data ?? []).map((m) => m.moduleKey)),
+    [effective.data],
+  );
+  const effectiveLoaded = effective.data != null;
+  const isModuleVisible = useCallback(
+    // Solange keine Antwort da ist: nichts ausblenden. Erst wenn eine da ist,
+    // gilt sie — dann ist Fehlen eine Aussage, kein Ladezustand.
+    (key: string) => !effectiveLoaded || visibleKeys.has(key),
+    [effectiveLoaded, visibleKeys],
+  );
+
   const value = useMemo<ModulesValue>(
     () => ({
       states,
       status: state.status,
       isModuleAvailable,
       isModuleEnabled,
+      isModuleVisible,
       reload: state.reload,
     }),
-    [states, state.status, state.reload, isModuleAvailable, isModuleEnabled],
+    [states, state.status, state.reload, isModuleAvailable, isModuleEnabled, isModuleVisible],
   );
 
   return <ModulesContext.Provider value={value}>{children}</ModulesContext.Provider>;

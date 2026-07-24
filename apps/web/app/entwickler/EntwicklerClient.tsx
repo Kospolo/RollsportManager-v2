@@ -42,13 +42,20 @@ export function EntwicklerClient() {
   const [aktiv, setAktiv] = useState<string | null>(null);
 
   // Erst nach dem Mounten lesen: Diese Seite wird ebenfalls statisch
-  // vorgerendert, und localStorage gibt es dort nicht.
+  // vorgerendert, und localStorage gibt es dort nicht. Bis dahin ist `aktiv`
+  // null und keine Karte trägt die Markierung — lieber gar keine Auskunft als
+  // eine falsche.
   useEffect(() => {
+    let gespeichert: string | null = null;
     try {
-      setAktiv(window.localStorage.getItem(MOCK_VIEWER_KEY) ?? mock.currentUser.id);
+      gespeichert = window.localStorage.getItem(MOCK_VIEWER_KEY);
     } catch {
-      setAktiv(mock.currentUser.id);
+      gespeichert = null;
     }
+    // Der Wert steht erst im Browser zur Verfügung; ein zweiter Render ist der
+    // Preis dafür, dass der erste zum vorgerenderten HTML passt.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAktiv(gespeichert ?? mock.currentUser.id);
   }, []);
 
   function waehle(id: string) {
@@ -85,8 +92,8 @@ export function EntwicklerClient() {
           <p className="max-w-prose text-ink-soft">
             Die Beta läuft mit Demo-Daten und ohne echte Anmeldung. Wähle hier, als wen du das
             Portal sehen willst — die Auswahl bleibt in diesem Browser gespeichert, bis du sie
-            zurücksetzt. Sie wirkt auf alle Seiten: Menü, Kacheln unter „Mehr", Finanzen,
-            Trainer-Notizen.
+            zurücksetzt. Sie wirkt auf alle Seiten: Menü, Kacheln unter &bdquo;Mehr&ldquo;,
+            Finanzen, Trainer-Notizen.
           </p>
           <p className="max-w-prose text-caption text-ink-faint">
             Diese Seite ist nirgends verlinkt und für Suchmaschinen gesperrt. Sie schaltet nur die

@@ -3,8 +3,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n";
-import { permissions, type ClubModuleState } from "@/lib/data";
+import { permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useModules } from "@/lib/modules";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Icon, type IconName } from "@/components/shell/icons";
@@ -33,9 +34,13 @@ import { mehrDict, type MehrKey } from "./i18n";
  * Die Schalterstellung kommt vom Server (GET /clubs/{clubId}/modules); die
  * Facade-Methode `listClubModules` bedient mock UND api.
  *
- * Gefiltert wird auf `available` = eingeschaltet UND gekauft (das PRO-Gate ist
- * Teil der Und-Kette, 0044). Ein PRO-Modul ohne Entitlement fällt damit auch
- * dann raus, wenn der Schalter an steht — genau wie serverseitig.
+ * ### SEIT 0077 WIRD AUF SICHTBARKEIT GEFILTERT, NICHT AUF `available` ###
+ * `available` = eingeschaltet UND gekauft beantwortet nur, ob der VEREIN das
+ * Modul hat. Deshalb sah hier jedes Mitglied alle 26 Kacheln — auch Auswertung,
+ * Schließfächer, Jubiläen, Wartelisten, Gruppen und Finanzen. Maßgeblich ist
+ * jetzt `isModuleVisible` aus dem ModulesProvider (GET …/modules/effective):
+ * die fertig gefilterte Liste FÜR DIESE PERSON. Die Und-Kette bleibt darin
+ * enthalten — ein PRO-Modul ohne Entitlement kommt gar nicht erst vor.
  *
  * ### DAS AUSBLENDEN IST KOSMETIK ###
  * Die Durchsetzung sind die restriktiven RLS-Policies aus 0044, nicht dieser
@@ -144,20 +149,38 @@ export function MehrHub() {
   const t = useT(mehrDict);
   const me = useData((repo) => repo.getCurrentUser());
   const isClubAdmin = permissions(me.data ?? null).isClubAdmin;
-  const modules = useData((repo) => repo.listClubModules());
+  /**
+   * `listEffectiveModules` (0077) statt `listClubModules`: Der Server
+   * beantwortet damit nicht nur „gekauft und eingeschaltet?", sondern auch die
+   * vierte Frage — „wird diese Kachel DIESER Person überhaupt angeboten?" — und
+   * liefert die Liste FERTIG GEFILTERT.
+   *
+   * Vorher hing die Seite an `available` und zeigte deshalb jedem Mitglied alle
+   * 26 Kacheln, auch Auswertung, Schließfächer, Jubiläen, Wartelisten, Gruppen
+   * und Finanzen. Genau das war Marcels Einwand („als Mitglied unter ‚Mehr' so
+   * viele Module"). Serverseitig war es mit 0077 gelöst und in der iOS-App
+   * nachgezogen — im Web nicht.
+   *
+   * AUSBLENDEN IST KEIN ZUGRIFFSSCHUTZ. Wer die Adresse kennt, kommt weiter auf
+   * die Seite; was er dort sieht, entscheidet allein die RLS. Hier geht es um
+   * ein Menü, das nicht mit Dingen zugestellt ist, die man nicht darf.
+   *
+   * Geladen wird die Liste im ModulesProvider, nicht hier: Seitenleiste, untere
+   * Leiste und diese Seite fragen dieselbe Antwort ab. Zwei getrennte Ladungen
+   * könnten sich für einen Moment widersprechen — und ein Menü, das sich selbst
+   * widerspricht, ist schlimmer als eines, das zu viel zeigt.
+   */
+  const { isModuleVisible: istModulSichtbar } = useModules();
 
   /**
-   * moduleKey -> verfügbar? Solange die Liste lädt (oder nicht erreichbar ist),
-   * bleibt die Map leer und es wird NICHTS ausgeblendet: ein Ladefehler darf
-   * dem Verein nicht sein halbes Menü wegnehmen. Die Kachel führt im
-   * schlimmsten Fall auf eine leere Seite — das Gate sitzt ohnehin im Server.
+   * Kachel -> Modul. Nur „Sparten" braucht eine Zuordnung: Sparten sind kein
+   * eigenes Modul, sie hängen an „departments" (im UI „Gruppen"). Ohne diese
+   * Zeile verschwände die Sparten-Kachel für alle, weil ihr Schlüssel in keiner
+   * Antwort vorkommt.
    */
-  const moduleAvailability = new Map<string, boolean>(
-    (modules.data ?? []).map((m: ClubModuleState) => [m.moduleKey, m.available]),
-  );
+  const MODUL_ZUR_KACHEL: Record<string, string> = { sparten: "departments" };
 
-  /** Unbekannter Key = kein Schalter = sichtbar (fail-open wie app.module_enabled). */
-  const isModuleVisible = (key: string) => moduleAvailability.get(key) ?? true;
+  const isModuleVisible = (key: string) => istModulSichtbar(MODUL_ZUR_KACHEL[key] ?? key);
 
   const available = AVAILABLE.filter(
     (tile) => (!tile.adminOnly || isClubAdmin) && isModuleVisible(tile.key),

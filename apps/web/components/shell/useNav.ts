@@ -55,9 +55,14 @@ export function useVisibleNavItems(): NavItem[] {
   // das Nav-Ziel „Finanzen" — der Nutzer war klar: dann „in keinem bereich was
   // mit finanzen/rechnungen anzeigen". Ausblenden, NICHT 403: der Server ist
   // ohnehin dicht (RLS-Gates + Service-Mode-Checks). Fail-open beim Laden.
-  const { isModuleAvailable } = useModules();
+  // 0077: `isModuleVisible` statt `isModuleAvailable`. `available` beantwortet
+  // nur „hat der VEREIN das Modul?" — dem Mitglied stand „Finanzen" deshalb
+  // weiter in der Leiste, obwohl es ihm nicht angeboten werden soll. Der
+  // Modul-Schalter des Vereins wirkt unverändert mit: die personenbezogene
+  // Liste enthält ohnehin nur, was gekauft UND eingeschaltet ist.
+  const { isModuleVisible } = useModules();
   const items = NAV_ITEMS.filter(
-    (item) => item.href !== "/finanzen" || isModuleAvailable("finance"),
+    (item) => item.href !== "/finanzen" || isModuleVisible("finance"),
   );
 
   const base = isClubAdmin || isOperator ? [...items, MANAGE_NAV_ITEM] : items;

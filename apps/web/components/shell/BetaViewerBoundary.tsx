@@ -57,6 +57,12 @@ export function BetaViewerBoundary({ children }: { children: ReactNode }) {
       return;
     }
     if (!stored || stored === mock.currentUser.id) return;
+    // Der zweite Render ist hier der ZWECK, nicht ein Versehen: Der erste muss
+    // zum vorgerenderten HTML passen (Vorgabe-Person), erst danach darf
+    // umgeschaltet werden. Genau einmal pro Seitenaufruf, und nur wenn
+    // tatsächlich eine andere Person gespeichert ist — für normale
+    // Besucher:innen passiert gar nichts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (mock.setCurrentUser(stored)) setViewerKey(stored);
   }, []);
 
