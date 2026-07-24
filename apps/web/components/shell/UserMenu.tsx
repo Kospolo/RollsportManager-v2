@@ -6,7 +6,7 @@ import { useLocale, useT, type Dict } from "@/lib/i18n";
 import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
 import { data, dataSource } from "@/lib/data";
-import { currentUser } from "@/lib/mock";
+import { currentUser, fullName } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { AVATAR_CHANGED_EVENT } from "./avatar-events";
 import { Icon, type IconName } from "./icons";
@@ -47,13 +47,19 @@ export function UserMenu() {
   // Anzeigedaten: echte Persona im api-Modus, sonst Demo-Nutzerin.
   const apiSession = dataSource === "api" ? session : null;
   const persona = apiSession ? personaByKey(apiSession.persona) : undefined;
-  const displayName = apiSession ? apiSession.profile.display_name : t("userName");
+  // Im mock-Modus aus der eingeloggten Demo-Person, NICHT aus einem festen
+  // Übersetzungstext. Vorher stand hier immer „Sandra Vogel · Trainer:in" —
+  // auch nachdem /entwickler auf eine andere Person umgeschaltet hatte. Das
+  // Kürzel im Kreis stimmte (es kommt aus currentUser), Name und Rolle nicht:
+  // eine Anzeige, die der eigenen Auswahl widerspricht und beim Prüfen von
+  // Rollen genau die Frage falsch beantwortet, um die es geht.
+  const displayName = apiSession ? apiSession.profile.display_name : fullName(currentUser);
   const roleLabel = apiSession
     ? (persona?.role[locale] ??
       (apiSession.profile.club_role
         ? ROLE_LABELS[apiSession.profile.club_role][locale]
         : t("userRole")))
-    : t("userRole");
+    : (ROLE_LABELS[currentUser.role]?.[locale] ?? t("userRole"));
   // Plattform-Persona hat keine Mitgliedszeile → profil-sub als Avatar-Seed.
   const avatarId = apiSession
     ? (apiSession.profile.member_id ?? apiSession.profile.sub)

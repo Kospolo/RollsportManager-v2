@@ -7,7 +7,7 @@ import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
 import { dataSource } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
-import { club, currentUser, upcomingEvents } from "@/lib/mock";
+import { club, currentUser, fullName, upcomingEvents } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "./icons";
 import { isActive } from "./nav";
@@ -37,13 +37,15 @@ export function Sidebar() {
   // (gleiche Ableitung wie im Topbar-UserMenu, damit beide konsistent sind).
   const apiSession = dataSource === "api" ? session : null;
   const persona = apiSession ? personaByKey(apiSession.persona) : undefined;
-  const displayName = apiSession ? apiSession.profile.display_name : t("userName");
+  // mock-Modus: aus der eingeloggten Demo-Person, nicht aus einem festen
+  // Übersetzungstext — siehe die ausführliche Begründung im UserMenu.
+  const displayName = apiSession ? apiSession.profile.display_name : fullName(currentUser);
   const roleLabel = apiSession
     ? (persona?.role[locale] ??
       (apiSession.profile.club_role
         ? ROLE_LABELS[apiSession.profile.club_role][locale]
         : t("userRole")))
-    : t("userRole");
+    : (ROLE_LABELS[currentUser.role]?.[locale] ?? t("userRole"));
   const avatarId = apiSession
     ? (apiSession.profile.member_id ?? apiSession.profile.sub)
     : currentUser.id;
