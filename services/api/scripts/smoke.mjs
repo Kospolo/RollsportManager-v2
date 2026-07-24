@@ -635,6 +635,114 @@ console.log('[smoke] platform console: Betreiber-Konsole base (settings/licenses
 }
 
 // ============================================================================
+// DIE ZWECKBINDUNG DES BETREIBERS (Migration 0074) — ueber HTTP.
+//
+// Die DB-Seite ist in 99e/99pA/99pB bewiesen. Was NUR hier messbar ist: dass
+// die ECHTE Kette greift. Der Befund entstand ja nicht in psql, sondern weil
+// services/api/src/middleware/operator-access.ts die Einsicht bei JEDEM
+// Plattform-Request einschaltet — dieser Block laeuft durch genau diese
+// Middleware, mit einem echten Token, ueber echte Routen.
+//
+// Aufbau wie in den SQL-Suiten: erst die GEGENPROBE (der Zugang ist echt und
+// der Betrieb geht weiter), dann die Sperre. Ohne die Gegenprobe waere jede
+// leere Liste auch dann gruen, wenn der Betreiber schlicht ausgesperrt waere —
+// und das ist ausdruecklich NICHT gewollt.
+// ============================================================================
+{
+  console.log('\n[smoke] --- Betreiber-Zweckbindung (0074) ---');
+
+  // --- GEGENPROBE: Betrieb und Support gehen weiter -------------------------
+  {
+    // Gemessen wird gegen den VORSTAND zum selben Zeitpunkt, nicht gegen die
+    // Seed-Zahl 24: frueher in dieser Suite werden Mitglieder angelegt, ein
+    // fester Zaehler maesse also die Reihenfolge der Schritte statt der Zusage.
+    const owner = await call('GET', `/clubs/${CLUB}/members`, { as: t.owner });
+    const r = await call('GET', `/clubs/${CLUB}/members`, { as: t.platform });
+    assertEq('Betreiber liest den Roster -> 200', r.status, 200);
+    assertEq('...und sieht GENAU so viele Mitglieder wie der Vorstand (Support bleibt moeglich)',
+      r.json.length, owner.json.length);
+    if (r.json.length >= 24) ok(`...und das sind mindestens die 24 aus dem Seed (${r.json.length})`);
+    else fail('Betreiber-Roster', `got ${r.json.length}`);
+  }
+
+  // Die schaerfste Einzelmessung: die aufgeloesten Raenge, so wie die API sie
+  // selbst ausliefert. 5 = owner-gleich, 0 = gesperrt. Wer 0074 aufweicht,
+  // sieht es hier als Zahl.
+  {
+    const r = await call('GET', `/me/capabilities?club_id=${CLUB}`, { as: t.platform });
+    assertEq('Betreiber liest /me/capabilities -> 200', r.status, 200);
+    const rank = (key) => r.json?.capabilities?.find((c) => c.capability_key === key)?.rank;
+
+    for (const key of ['members', 'roles', 'club_settings', 'departments', 'teams',
+                       'team_coaches', 'routines', 'routines_edit', 'anniversaries']) {
+      assertEq(`...freigegeben: ${key} = 5`, rank(key), 5);
+    }
+    for (const key of ['coach_notes', 'lockers', 'finance', 'member_contact',
+                       'attendance', 'checkins', 'chat', 'documents', 'events']) {
+      assertEq(`...gesperrt: ${key} = 0`, rank(key), 0);
+    }
+    // Und die Allowlist ist echt kleiner als der Katalog — sonst waere oben
+    // nichts bewiesen, sondern nur eine Liste abgeschrieben.
+    const total = r.json?.capabilities?.length ?? 0;
+    const open = r.json?.capabilities?.filter((c) => c.rank === 5).length ?? 0;
+    if (open === 9 && total > open) ok(`...9 von ${total} Faehigkeiten offen, der Rest gesperrt`);
+    else fail('Betreiber-Allowlist', `offen=${open} gesamt=${total}`);
+  }
+
+  // --- DER BEFUND, ueber HTTP: die interne Trainer-Notiz ueber ein Kind -----
+  {
+    // Gegenprobe: die Trainerin sieht die Notiz sehr wohl. Ohne diese Zeile
+    // koennte die 0 unten auch bedeuten, dass es gar keine Notiz gibt.
+    const coach = await call('GET',
+      `/coach-notes?club_id=${CLUB}&member_id=${MEMBER.linaChildOfParent}`, { as: t.coach });
+    assertEq('GEGENPROBE: die Trainerin liest die interne Notiz ueber Lina', coach.json.length, 1);
+
+    const r = await call('GET',
+      `/coach-notes?club_id=${CLUB}&member_id=${MEMBER.linaChildOfParent}`, { as: t.platform });
+    assertEq('Betreiber ruft /coach-notes -> 200 (kein Fehler, kein Hinweis)', r.status, 200);
+    assertEq('...aber KEINE Notiz ueber das Kind', r.json.length, 0);
+
+    const post = await call('POST', '/coach-notes', {
+      as: t.platform,
+      body: {
+        club_id: CLUB,
+        member_id: MEMBER.linaChildOfParent,
+        author_member_id: MEMBER.owner,
+        body: 'Betreiber-Versuch.',
+      },
+    });
+    if (post.status >= 400) ok(`...und er kann auch keine anlegen (${post.status})`);
+    else fail('Betreiber legt Trainer-Notiz an', `got ${post.status}`);
+  }
+
+  // --- DER BEFUND, zweite Haelfte: "welches Kind mietet welches Fach" -------
+  {
+    const treasurer = await call('GET', `/locker-rentals?club_id=${CLUB}`, { as: t.treasurer });
+    assertEq('GEGENPROBE: die Kassenwartin sieht die 5 Vermietungen', treasurer.json.length, 5);
+
+    const r = await call('GET', `/locker-rentals?club_id=${CLUB}`, { as: t.platform });
+    assertEq('Betreiber ruft /locker-rentals -> 200', r.status, 200);
+    assertEq('...aber KEINEN Mietvertrag (weder member_id noch Preis)', r.json.length, 0);
+  }
+
+  // --- Personenbezogene Finanzdetails --------------------------------------
+  {
+    const r = await call('GET', `/invoices?club_id=${CLUB}`, { as: t.platform });
+    assertEq('Betreiber sieht KEINE Rechnungen (Kassenwartin sieht 10)', r.json.length, 0);
+    const s = await call('GET', `/sepa-mandates?club_id=${CLUB}`, { as: t.platform });
+    assertEq('Betreiber sieht KEIN SEPA-Mandat', s.json.length, 0);
+  }
+
+  // --- Kontaktdaten: der Roster bleibt, die Kontaktspalten gehen -----------
+  {
+    const r = await call('GET', `/reports/anniversaries?club_id=${CLUB}`, { as: t.platform });
+    // 'anniversaries' ist freigegeben (0051-Bedarf), 'member_contact' nicht —
+    // die Jubilaeen-Auswertung muss also weiterhin gehen.
+    assertEq('Betreiber liest die Jubilaeen-Auswertung weiterhin -> 200', r.status, 200);
+  }
+}
+
+// ============================================================================
 // RBAC Phase 2 — GET /me/capabilities (RBAC-DESIGN §6).
 //
 // Das ist der Endpunkt, der die 0025-Zusage API-seitig einloest: die Rechte
