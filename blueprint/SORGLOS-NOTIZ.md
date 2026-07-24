@@ -99,6 +99,25 @@ plus Mutter und Kind. Nirgends verlinkt, doppelt auf noindex.
 - Sechs Module kopierten die eingeloggte Person beim Laden (`members[0]`); sie melden sich jetzt bei
   `onViewerChange` an. Topbar und Seitenleiste lasen den Namen aus einem festen Übersetzungstext — behoben.
 
+**🟢 AUS v1 GEHOLT — Rechtstexte, Preise, Konten (24.07.2026).** Marcel: „viele sachen kannst du aus
+dem alten ziehen." Stimmt, und es hat drei offene Punkte auf einmal erledigt:
+- **Impressum** wörtlich aus `RollsportManager/rollsportmanager-backend/www/impressum.html` (dort seit
+  Januar 2026 öffentlich). Vorher stand auf der **erreichbaren** v2-Seite „Musterstraße 1 · Max Mustermann".
+- **Datenschutz** auf v1-Basis, aber **bewusst NICHT wörtlich**: v1 nennt nur Mitglieder-, Trainings-,
+  Küren- und Chat-Daten. v2 verarbeitet Heikleres — Gesundheitsdaten (Krankmeldung mit Freitext, Art. 9),
+  interne Trainer-Notizen, Fotos mit Einwilligung, Telefonnummern aus Fahrgemeinschaften. Eine übernommene
+  Erklärung, die das verschweigt, behauptete Vollständigkeit. **Wer ein Feature baut, das neue Datenarten
+  anfasst, gehört in den Abschnitt „Welche Daten verarbeitet werden".**
+- **⚖️ DIE PREISFRAGE IST ENTSCHIEDEN — durch v1 selbst.** Maßgeblich ist die Tabelle, nach der v1
+  tatsächlich abgerechnet hat (`migrations/20260122_license_payment_config.sql`):
+  **Basis 29 €/Monat (290/Jahr, bis 50 Mitglieder) · Pro 49 € (490, bis 200) · Premium 79 € (790,
+  unbegrenzt)**. Die 9/29/59 auf der Landingpage waren die Marketing-Seite. Die Mitgliedergrenzen stimmten
+  schon vorher exakt — nur die Preise nicht. Jetzt passt beides zusammen (`b522670`).
+- **SMTP**: v1 nutzt Strato (`smtp.strato.de`), und jeder Verein konnte eigene Zugangsdaten hinterlegen
+  (`vereine.smtp_host/_port/_user`). Passwörter lagen dort im Klartext in der DB — **nicht übernehmen,
+  neu setzen.**
+- **Konten**: siehe `/Apps/Accounts.md` und `supabase/seed/dev-accounts.sql`.
+
 **📘 Original nachschlagen statt neu erklären: [`blueprint/ORIGINAL-VOLLREFERENZ.md`](ORIGINAL-VOLLREFERENZ.md)** —
 vollständige v1-Referenz mit Fundstellen: Geschäftsmodell, alle Preise/Limits (inkl. **Schließfach-Miete
 pro Fach + abweichendem Preis pro Vermietung**), Funktions-Inventar je Plattform, Datenmodell, Chef-Regeln,
