@@ -190,11 +190,19 @@ export type {
 } from "./inputs-platform";
 export type { SaveRoutineScoreInput, WettkampfRepository } from "./inputs-wettkampf";
 export type { DataSourceName } from "./config";
-/** Modul-Schalter pro Verein (0044): gekauft -> EINGESCHALTET -> erlaubt. */
+/**
+ * Modul-Schalter pro Verein (0044): gekauft -> EINGESCHALTET -> erlaubt.
+ * Dazu die vierte Frage (0077): GEZEIGT? — wem wird die Kachel angeboten.
+ * Sichtbarkeit ist ein Menü, kein Schutz: Ausblenden nimmt kein Recht.
+ */
 export type {
   ClubModuleState,
+  EffectiveModule,
   ModuleEnforcement,
   ModuleRepository,
+  ModuleVisibilityRow,
+  ModuleVisibilityScope,
+  SetModuleVisibilityInput,
 } from "./inputs-clubmodules";
 
 export { permissions, type Permissions } from "./permissions";

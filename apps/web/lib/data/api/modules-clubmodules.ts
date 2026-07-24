@@ -2,7 +2,15 @@ import { ApiError } from "@/lib/api/generated";
 import type { Problem } from "@/lib/api/generated/types";
 import { readSession } from "@/lib/auth/storage";
 import { API_BASE_URL } from "../config";
-import type { ClubModuleState, ModuleEnforcement, ModuleRepository } from "../inputs-clubmodules";
+import type {
+  ClubModuleState,
+  EffectiveModule,
+  ModuleEnforcement,
+  ModuleRepository,
+  ModuleVisibilityRow,
+  ModuleVisibilityScope,
+  SetModuleVisibilityInput,
+} from "../inputs-clubmodules";
 import { activeClubId } from "./client";
 
 /**
@@ -47,6 +55,35 @@ interface ClubModuleStateWire {
   enabled: boolean;
   pro_ok: boolean;
   available: boolean;
+}
+
+/** app.my_effective_modules() — ClubModuleState + die zwei Sichtbarkeits-Felder. */
+interface EffectiveModuleWire extends ClubModuleStateWire {
+  visible: boolean;
+  visibility_source: string;
+}
+
+/** app.club_module_visibility_matrix() — snake_case wie die API. */
+interface ModuleVisibilityRowWire {
+  module_key: string;
+  scope: ModuleVisibilityScope;
+  target_id: string;
+  target_label: string;
+  default_visible: boolean | null;
+  override: boolean | null;
+  effective: boolean;
+}
+
+function mapVisibilityRow(r: ModuleVisibilityRowWire): ModuleVisibilityRow {
+  return {
+    moduleKey: r.module_key,
+    scope: r.scope,
+    targetId: r.target_id,
+    targetLabel: r.target_label,
+    defaultVisible: r.default_visible,
+    override: r.override,
+    effective: r.effective,
+  };
 }
 
 function mapState(m: ClubModuleStateWire): ClubModuleState {
@@ -109,5 +146,48 @@ export const moduleApiRepositoryClubModules: ModuleRepository = {
     // available false, obwohl enabled true ist. Genau das soll die Oberfläche
     // zeigen — deshalb wird hier nichts „korrigiert".
     return mapState(row);
+  },
+
+  // --------------------------------------------------------------------------
+  // Sichtbarkeit (Migration 0077). NUR ein Menü — kein Zugriffsrecht: ein hier
+  // fehlendes Modul bleibt über einen Deeplink genauso erreichbar bzw. gesperrt
+  // wie vorher. Die Facade prüft dementsprechend auch hier NICHTS.
+  // --------------------------------------------------------------------------
+  async listEffectiveModules(): Promise<EffectiveModule[]> {
+    const rows = await call<EffectiveModuleWire[]>(
+      `/clubs/${activeClubId()}/modules/effective`,
+    );
+    return rows.map((m) => ({
+      ...mapState(m),
+      visible: m.visible,
+      visibilitySource: m.visibility_source,
+    }));
+  },
+
+  async listModuleVisibility(): Promise<ModuleVisibilityRow[]> {
+    const rows = await call<ModuleVisibilityRowWire[]>(
+      `/clubs/${activeClubId()}/modules/visibility`,
+    );
+    return rows.map(mapVisibilityRow);
+  },
+
+  async setModuleVisibility(
+    moduleKey: string,
+    input: SetModuleVisibilityInput,
+  ): Promise<ModuleVisibilityRow[]> {
+    const rows = await call<ModuleVisibilityRowWire[]>(
+      `/clubs/${activeClubId()}/modules/${encodeURIComponent(moduleKey)}/visibility`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          scope: input.scope,
+          target_id: input.targetId,
+          // null ist hier eine ECHTE Aussage („zurück auf die Vorgabe"), kein
+          // fehlender Wert — deshalb wird sie mitgeschickt und nicht weggelassen.
+          visible: input.visible,
+        }),
+      },
+    );
+    return rows.map(mapVisibilityRow);
   },
 };

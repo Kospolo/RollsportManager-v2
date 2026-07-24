@@ -33,6 +33,34 @@ sich aus dem NPM-Schlüssel ein Admin-Token ausstellt und der Berechtigungsfilte
   aus v1 (die DB, nach der v1 abrechnete, sagte 29/49/79). Solange die Preisfrage offen ist, steht auf
   der Beta eine Zusage, die das System nicht einlöst.
 
+**🟢 MENÜ-SICHTBARKEIT — „wer sieht welche Kachel" (Migration `0077`, 24.07.2026).**
+Marcel am iPhone: „Vereins-Admin soll Module für Gruppen und Mitglieder einstellen können. Jetzt sind als
+Mitglied unter ‚Mehr' so viele Module, wo für das normale Mitglied eigentlich nicht zu sehen sein sollen."
+Gemessen stimmte das: 30 Kacheln gingen **ungefiltert** an jeden, gefiltert wurden nur Verwaltung + Betreiber.
+- **Die vierte Frage.** 0044 trennt gekauft / eingeschaltet / erlaubt. 0077 ergänzt **gezeigt?** — und nur das.
+- **Drei Ebenen, eine abgeleitete Vorgabe.** Basis ist die **Rolle**, dazu **Gruppe** (`departments`) und
+  **einzelnes Mitglied**. Reihenfolge: **Mitglied > Gruppe > Rolle > Vorgabe**. Die Vorgabe steht **nirgends
+  als Liste**, sie wird aus der Rechtematrix **gerechnet**: `app.modules.visibility_capability` +
+  `visibility_min_rank`. Ändert der Verein die Rechte einer Rolle, wandert die Kachel mit.
+- **Ein normales Mitglied sieht jetzt 19 von 26** (Termine, Teams, Küren, News, Chat, Galerie, Dokumente,
+  Notizen, Übungen, Trainingsplan, Medaillen, Belegungsplan, Ausrüstung, Check-in, Pflichtstunden,
+  Überregionale Events, Wettkampf, Familie, Mitglieder) — **nicht mehr** Verwaltung, Finanzen/Mahnwesen,
+  Schließfach-Verwaltung, Wartelisten, Auswertung, Jubiläen, Abteilungen. Trainer 22 · Kassenwart 23 · Inhaber 26.
+- **EINE Quelle für alle Clients:** `GET /clubs/{clubId}/modules/effective` liefert die **fertig gefilterte**
+  Liste für den Aufrufenden. Web, iOS, macOS und Android bauen ihr Menü daraus — niemand rechnet es nach.
+  Einstellen: `GET …/modules/visibility` (Matrix) · `PUT …/modules/{key}/visibility` (`visible: null` = zurück
+  auf die Vorgabe). Schreibrecht `is_club_admin`, keine neue Fähigkeit (0033 zählt den Katalog auf exakt 32 ab).
+- **⚠️ SICHTBARKEIT IST KEIN ZUGRIFFSSCHUTZ** — steht im Migrationskopf, im Route-Kopf und **auf dem
+  Bildschirm**. Belegt über HTTP: eine ausgeblendete News-Kachel liefert derselben Person weiter **3 Zeilen**
+  auf `GET /news`; eine eingeblendete Finanz-Kachel bleibt auf `GET /ledger` bei **403**. Kein neues Loch,
+  keine neue Sperre. `99rA` Block F2 prüft zusätzlich, dass die Funktionen in **keiner** RLS-Policy stehen.
+- **Verwaltung nimmt keine Zeile an** (Trigger, 409) — sonst gäbe es keinen Weg zurück zur Einstellung.
+- Web: Verwaltung → Module um den Abschnitt „Wer sieht was" erweitert (Rolle/Gruppe/Mitglied, dreiwertig
+  Vorgabe/Zeigen/Ausblenden), DE+EN. **Gates:** SQL **2001 ✅** · api tsc ✅ · vitest 297 ✅ · api-db-test ✅ ·
+  contracts ✅ · web tsc ✅.
+- **Offen:** iOS/macOS/Android hängen ihr „Mehr"-Raster noch nicht an den neuen Endpunkt (eigene Spur), und
+  die iOS-Kachel `medals` heißt in der Datenbank `medal` — beim Umbau mitziehen.
+
 **📘 Original nachschlagen statt neu erklären: [`blueprint/ORIGINAL-VOLLREFERENZ.md`](ORIGINAL-VOLLREFERENZ.md)** —
 vollständige v1-Referenz mit Fundstellen: Geschäftsmodell, alle Preise/Limits (inkl. **Schließfach-Miete
 pro Fach + abweichendem Preis pro Vermietung**), Funktions-Inventar je Plattform, Datenmodell, Chef-Regeln,

@@ -216,6 +216,12 @@ public enum CapabilityEnforcement: String, Codable, CaseIterable, Sendable, Equa
     case unenforced = "unenforced"
 }
 
+public enum ModuleVisibilityScope: String, Codable, CaseIterable, Sendable, Equatable {
+    case role = "role"
+    case department = "department"
+    case member = "member"
+}
+
 public enum PlatformTier: String, Codable, CaseIterable, Sendable, Equatable {
     case basic = "basic"
     case pro = "pro"
@@ -397,6 +403,13 @@ public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
 
 /// Inline enum of ClubModuleState.enforcement (hoisted by codegen).
 public enum ClubModuleStateEnforcement: String, Codable, CaseIterable, Sendable, Equatable {
+    case enforced = "enforced"
+    case partial = "partial"
+    case menuOnly = "menu_only"
+}
+
+/// Inline enum of EffectiveModule.enforcement (hoisted by codegen).
+public enum EffectiveModuleEnforcement: String, Codable, CaseIterable, Sendable, Equatable {
     case enforced = "enforced"
     case partial = "partial"
     case menuOnly = "menu_only"
@@ -3463,6 +3476,138 @@ public struct ClubModuleSet: Codable, Equatable, Sendable {
         enabled: Bool
     ) {
         self.enabled = enabled
+    }
+}
+
+public struct EffectiveModule: Codable, Equatable, Sendable {
+    public var moduleKey: String
+    public var labelDe: String
+    public var labelEn: String
+    public var descDe: String
+    public var descEn: String
+    public var sort: Int
+    public var core: Bool
+    public var requiresPro: Bool
+    public var enforcement: EffectiveModuleEnforcement?
+    public var defaultEnabled: Bool
+    public var enabled: Bool
+    public var proOk: Bool
+    public var available: Bool
+    public var visible: Bool
+    public var visibilitySource: String
+
+    enum CodingKeys: String, CodingKey {
+        case moduleKey = "module_key"
+        case labelDe = "label_de"
+        case labelEn = "label_en"
+        case descDe = "desc_de"
+        case descEn = "desc_en"
+        case sort
+        case core
+        case requiresPro = "requires_pro"
+        case enforcement
+        case defaultEnabled = "default_enabled"
+        case enabled
+        case proOk = "pro_ok"
+        case available
+        case visible
+        case visibilitySource = "visibility_source"
+    }
+
+    public init(
+        moduleKey: String,
+        labelDe: String,
+        labelEn: String,
+        descDe: String,
+        descEn: String,
+        sort: Int,
+        core: Bool,
+        requiresPro: Bool,
+        enforcement: EffectiveModuleEnforcement? = nil,
+        defaultEnabled: Bool,
+        enabled: Bool,
+        proOk: Bool,
+        available: Bool,
+        visible: Bool,
+        visibilitySource: String
+    ) {
+        self.moduleKey = moduleKey
+        self.labelDe = labelDe
+        self.labelEn = labelEn
+        self.descDe = descDe
+        self.descEn = descEn
+        self.sort = sort
+        self.core = core
+        self.requiresPro = requiresPro
+        self.enforcement = enforcement
+        self.defaultEnabled = defaultEnabled
+        self.enabled = enabled
+        self.proOk = proOk
+        self.available = available
+        self.visible = visible
+        self.visibilitySource = visibilitySource
+    }
+}
+
+public struct ModuleVisibilityRow: Codable, Equatable, Sendable {
+    public var moduleKey: String
+    public var scope: ModuleVisibilityScope
+    /// Format: uuid
+    public var targetId: String
+    public var targetLabel: String
+    public var defaultVisible: Bool?
+    public var override: Bool?
+    public var effective: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case moduleKey = "module_key"
+        case scope
+        case targetId = "target_id"
+        case targetLabel = "target_label"
+        case defaultVisible = "default_visible"
+        case override
+        case effective
+    }
+
+    public init(
+        moduleKey: String,
+        scope: ModuleVisibilityScope,
+        targetId: String,
+        targetLabel: String,
+        defaultVisible: Bool? = nil,
+        override: Bool? = nil,
+        effective: Bool
+    ) {
+        self.moduleKey = moduleKey
+        self.scope = scope
+        self.targetId = targetId
+        self.targetLabel = targetLabel
+        self.defaultVisible = defaultVisible
+        self.override = override
+        self.effective = effective
+    }
+}
+
+public struct ModuleVisibilitySet: Codable, Equatable, Sendable {
+    public var scope: ModuleVisibilityScope
+    /// Format: uuid
+    public var targetId: String
+    public var visible: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case scope
+        case targetId = "target_id"
+        case visible
+    }
+
+    public init(
+        scope: ModuleVisibilityScope,
+        targetId: String,
+        visible: Bool? = nil
+    ) {
+        self.scope = scope
+        self.targetId = targetId
+        self.visible = visible
     }
 }
 

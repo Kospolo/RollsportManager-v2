@@ -3369,6 +3369,93 @@ export const clubModuleSetSchema = z
   .openapi('ClubModuleSet');
 
 // ----------------------------------------------------------------------------
+// Modul-SICHTBARKEIT (Migration 0077) — die vierte Frage.
+//
+// 0044 trennt drei Fragen (gekauft / eingeschaltet / erlaubt). 0077 fuegt genau
+// eine hinzu: GEZEIGT? — welche Kachel wird welcher Rolle, Gruppe oder Person
+// im "Mehr"-Raster ueberhaupt angeboten.
+//
+// ### SICHTBARKEIT IST KEIN SICHERHEITSERSATZ ###
+// Das Ausblenden einer Kachel ist Bequemlichkeit, nicht Schutz. Wer ein Modul
+// nicht sieht, darf ueber einen Deeplink genau so viel wie vorher; wer es sieht,
+// bekommt dadurch kein Recht. Die Grenzen bleiben RLS, Entitlement, Modul-Gate
+// und Faehigkeit. Diese Schemas beschreiben ein MENUE, keine Erlaubnis.
+// ----------------------------------------------------------------------------
+
+/**
+ * Ein Modul, wie es die AUFRUFENDE Person sieht (app.my_effective_modules).
+ *
+ * Die Erweiterung gegenueber ClubModuleState sind die zwei letzten Felder:
+ * `visible` ist die volle Kette (gekauft UND eingeschaltet UND angeboten),
+ * `visibility_source` sagt, welche Ebene entschieden hat — fuer das Admin-UI
+ * und fuer die Fehlersuche ("warum sehe ich das nicht?").
+ */
+export const effectiveModuleSchema = z
+  .object({
+    module_key: z.string(),
+    label_de: z.string(),
+    label_en: z.string(),
+    desc_de: z.string(),
+    desc_en: z.string(),
+    sort: z.number().int(),
+    core: z.boolean(),
+    requires_pro: z.boolean(),
+    enforcement: moduleEnforcementSchema.nullable(),
+    default_enabled: z.boolean(),
+    enabled: z.boolean(),
+    pro_ok: z.boolean(),
+    available: z.boolean(),
+    /** available UND angeboten. Die eine Wahrheit fuer das "Mehr"-Raster. */
+    visible: z.boolean(),
+    /** member | department | role | default | no_membership | operator. */
+    visibility_source: z.string(),
+  })
+  .openapi('EffectiveModule');
+
+/** Auf WEN eine Sichtbarkeits-Zeile zielt (app.module_visibility_scope). */
+export const moduleVisibilityScopeSchema = z
+  .enum(['role', 'department', 'member'])
+  .openapi('ModuleVisibilityScope');
+
+/**
+ * Eine Zeile der Sichtbarkeits-Matrix (app.club_module_visibility_matrix).
+ *
+ * Rollen-Zeilen kommen VOLLSTAENDIG (jedes Modul x jede Rolle) mit
+ * `default_visible` — der aus der Rechtematrix abgeleiteten Vorgabe. Gruppen-
+ * und Mitglieds-Zeilen kommen nur, wo tatsaechlich eine Ausnahme gesetzt ist;
+ * dort ist `default_visible` null, weil es fuer diese Ebenen keine Vorgabe gibt
+ * (sie ist die Ausnahme von der Rollen-Vorgabe).
+ */
+export const moduleVisibilityRowSchema = z
+  .object({
+    module_key: z.string(),
+    scope: moduleVisibilityScopeSchema,
+    target_id: uuid,
+    target_label: z.string(),
+    default_visible: z.boolean().nullable(),
+    /** Die gesetzte Ausnahme — null heisst "keine, es gilt die Vorgabe". */
+    override: z.boolean().nullable(),
+    effective: z.boolean(),
+  })
+  .openapi('ModuleVisibilityRow');
+
+/**
+ * Eine Sichtbarkeit setzen ODER auf die Vorgabe zuruecksetzen.
+ *
+ * `visible: null` ist bewusst kein zweites Verb: es gibt kein "unset" in der
+ * Tabelle — wer die Vorgabe zurueckhaben will, loescht die Ausnahme. Ein DELETE
+ * mit Rumpf waere die haesslichere Alternative gewesen.
+ */
+export const moduleVisibilitySetSchema = z
+  .object({
+    scope: moduleVisibilityScopeSchema,
+    /** Rolle, Abteilung ("Gruppe") oder Mitglied — passend zu `scope`. */
+    target_id: uuid,
+    visible: z.boolean().nullable(),
+  })
+  .openapi('ModuleVisibilitySet');
+
+// ----------------------------------------------------------------------------
 // Support-Tickets (Migration 0052) — Verein <-> Betreiber.
 //
 // Schema-Namen: "Message" allein ist als Contract-Name verboten (kollidiert mit

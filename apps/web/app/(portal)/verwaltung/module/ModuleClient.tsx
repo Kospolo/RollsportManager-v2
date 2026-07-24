@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { moduleDict } from "./i18n";
+import { ModuleVisibility } from "./ModuleVisibility";
 
 /**
  * Verwaltung → Module (Migration 0044): welche Bereiche benutzt der Verein?
@@ -236,6 +237,14 @@ export function ModuleClient() {
           ))}
         </div>
       </section>
+
+      {/* ---------------- Sichtbarkeit (0077) ----------------
+          Die VIERTE Frage, und die einzige, die von der Person abhängt statt
+          vom Verein: „wem wird die Kachel angeboten?" Sie steht bewusst UNTER
+          den Schaltern — was der Verein gar nicht benutzt, muss man auch
+          niemandem zeigen oder verbergen. Und sie ist ausdrücklich KEIN
+          Zugriffsschutz; das sagt die Karte im Abschnitt selbst. */}
+      <ModuleVisibility modules={rows} isClubAdmin={isClubAdmin} />
     </div>
   );
 }

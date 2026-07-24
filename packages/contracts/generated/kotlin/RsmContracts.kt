@@ -205,6 +205,13 @@ enum class CapabilityEnforcement {
 }
 
 @Serializable
+enum class ModuleVisibilityScope {
+    @SerialName("role") ROLE,
+    @SerialName("department") DEPARTMENT,
+    @SerialName("member") MEMBER;
+}
+
+@Serializable
 enum class PlatformTier {
     @SerialName("basic") BASIC,
     @SerialName("pro") PRO,
@@ -415,6 +422,14 @@ enum class DeletedStatus {
 /** Inline enum of ClubModuleState.enforcement (hoisted by codegen). */
 @Serializable
 enum class ClubModuleStateEnforcement {
+    @SerialName("enforced") ENFORCED,
+    @SerialName("partial") PARTIAL,
+    @SerialName("menu_only") MENU_ONLY;
+}
+
+/** Inline enum of EffectiveModule.enforcement (hoisted by codegen). */
+@Serializable
+enum class EffectiveModuleEnforcement {
     @SerialName("enforced") ENFORCED,
     @SerialName("partial") PARTIAL,
     @SerialName("menu_only") MENU_ONLY;
@@ -1360,6 +1375,43 @@ data class ClubModuleState(
 @Serializable
 data class ClubModuleSet(
     val enabled: Boolean
+)
+
+@Serializable
+data class EffectiveModule(
+    @SerialName("module_key") val moduleKey: String,
+    @SerialName("label_de") val labelDe: String,
+    @SerialName("label_en") val labelEn: String,
+    @SerialName("desc_de") val descDe: String,
+    @SerialName("desc_en") val descEn: String,
+    val sort: Long,
+    val core: Boolean,
+    @SerialName("requires_pro") val requiresPro: Boolean,
+    val enforcement: EffectiveModuleEnforcement?,
+    @SerialName("default_enabled") val defaultEnabled: Boolean,
+    val enabled: Boolean,
+    @SerialName("pro_ok") val proOk: Boolean,
+    val available: Boolean,
+    val visible: Boolean,
+    @SerialName("visibility_source") val visibilitySource: String
+)
+
+@Serializable
+data class ModuleVisibilityRow(
+    @SerialName("module_key") val moduleKey: String,
+    val scope: ModuleVisibilityScope,
+    @SerialName("target_id") val targetId: String,
+    @SerialName("target_label") val targetLabel: String,
+    @SerialName("default_visible") val defaultVisible: Boolean?,
+    val override: Boolean?,
+    val effective: Boolean
+)
+
+@Serializable
+data class ModuleVisibilitySet(
+    val scope: ModuleVisibilityScope,
+    @SerialName("target_id") val targetId: String,
+    val visible: Boolean?
 )
 
 @Serializable

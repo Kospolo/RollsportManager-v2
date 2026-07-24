@@ -44,3 +44,49 @@ export const MODULE_CATALOG: readonly Omit<ClubModuleState, "enabled" | "availab
   { moduleKey: "finance", labelDe: "Finanzen", labelEn: "Finance", descDe: "Beiträge, offene Posten und Kasse.", descEn: "Fees, open items and cash.", sort: 260, core: true, requiresPro: false, enforcement: null, proOk: true },
   { moduleKey: "manage", labelDe: "Verwaltung", labelEn: "Administration", descDe: "Verein, Rollen und Teams.", descEn: "Club, roles and teams.", sort: 270, core: true, requiresPro: false, enforcement: null, proOk: true },
 ];
+
+/**
+ * Die VORGABE-Zuordnung aus Migration 0077 — abgeschrieben aus
+ * app.modules.visibility_capability / visibility_min_rank, nicht geraten.
+ *
+ * Sie beantwortet nicht „darf jemand", sondern „lohnt sich die Kachel": aus dem
+ * Rang, den eine ROLLE auf der genannten Fähigkeit ohnehin hat, ergibt sich, ob
+ * ihr das Modul im Menü angeboten wird. Deshalb steht hier eine MINDESTSTUFE
+ * und nicht nur ein Fähigkeits-Name: Schließfächer, Finanzen und Wartelisten
+ * sind Verwaltungs-Bildschirme, obwohl jede Person am selben Thema ein kleines
+ * Eigenrecht hat (read_own) — ohne Mindeststufe sähe sie ein Kind wieder.
+ *
+ * `null` = immer sichtbar (rein persönliche Module: Notizen, Familie).
+ *
+ * Rang: none=0 · read_own=1 · read_team=2 · read_all=3 · edit=4 · manage=5.
+ */
+export const MODULE_VISIBILITY_DEFAULTS: Readonly<
+  Record<string, { capability: string; minRank: number } | null>
+> = {
+  news: { capability: "news", minRank: 3 },
+  notes: null,
+  exercises: { capability: "exercises", minRank: 3 },
+  family: null,
+  facility: { capability: "facilities_booking", minRank: 1 },
+  equipment: { capability: "equipment", minRank: 3 },
+  medal: { capability: "achievements", minRank: 3 },
+  trainingplan: { capability: "training_slots", minRank: 3 },
+  hours: { capability: "duty_hours", minRank: 1 },
+  chart: { capability: "members", minRank: 5 },
+  chat: { capability: "chat", minRank: 2 },
+  checkin: { capability: "checkins", minRank: 1 },
+  regevents: { capability: "regional_events", minRank: 3 },
+  gallery: { capability: "gallery", minRank: 3 },
+  document: { capability: "documents", minRank: 3 },
+  teams: { capability: "teams", minRank: 3 },
+  departments: { capability: "departments", minRank: 1 },
+  lockers: { capability: "lockers", minRank: 5 },
+  anniversaries: { capability: "anniversaries", minRank: 3 },
+  waitlists: { capability: "waitlists", minRank: 4 },
+  events: { capability: "events", minRank: 3 },
+  members: { capability: "members", minRank: 3 },
+  routines: { capability: "routines", minRank: 1 },
+  competition: { capability: "competitions", minRank: 3 },
+  finance: { capability: "finance", minRank: 5 },
+  manage: { capability: "club_settings", minRank: 5 },
+};

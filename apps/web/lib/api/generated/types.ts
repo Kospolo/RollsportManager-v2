@@ -809,6 +809,43 @@ export interface ClubModuleSet {
   "enabled": boolean;
 }
 
+export interface EffectiveModule {
+  "module_key": string;
+  "label_de": string;
+  "label_en": string;
+  "desc_de": string;
+  "desc_en": string;
+  "sort": number;
+  "core": boolean;
+  "requires_pro": boolean;
+  "enforcement": "enforced" | "partial" | "menu_only" | null;
+  "default_enabled": boolean;
+  "enabled": boolean;
+  "pro_ok": boolean;
+  "available": boolean;
+  "visible": boolean;
+  "visibility_source": string;
+}
+
+export type ModuleVisibilityScope = "role" | "department" | "member";
+export const ModuleVisibilityScopeValues: readonly ModuleVisibilityScope[] = ["role", "department", "member"] as const;
+
+export interface ModuleVisibilityRow {
+  "module_key": string;
+  "scope": ModuleVisibilityScope;
+  "target_id": string;
+  "target_label": string;
+  "default_visible": boolean | null;
+  "override": boolean | null;
+  "effective": boolean;
+}
+
+export interface ModuleVisibilitySet {
+  "scope": ModuleVisibilityScope;
+  "target_id": string;
+  "visible": boolean | null;
+}
+
 export interface Team {
   "id": string;
   "club_id": string;

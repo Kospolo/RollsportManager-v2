@@ -590,6 +590,35 @@ export class ApiClient {
   }
 
   /**
+   * Die Module, die DIESE Person im Menue sehen soll (is_club_member)
+   * Katalog + Vereins-Schalter + PRO + aufgeloeste Sichtbarkeit (Mitglied > Gruppe > Rolle > Vorgabe) fuer die aufrufende Person. NUR ein Menue — kein Zugriffsrecht: ein hier fehlendes Modul bleibt ueber einen Deeplink genauso erreichbar bzw. gesperrt wie vorher.
+   * 
+   * `GET /clubs/{clubId}/modules/effective`
+   */
+  async getClubsByClubIdModulesEffective(clubId: string, options?: RequestOptions): Promise<M.EffectiveModule[]> {
+    return this.request<M.EffectiveModule[]>("GET", `/clubs/${encodeURIComponent(clubId)}/modules/effective`, { auth: true, options });
+  }
+
+  /**
+   * Sichtbarkeits-Matrix des Vereins (is_club_member)
+   * 
+   * `GET /clubs/{clubId}/modules/visibility`
+   */
+  async getClubsByClubIdModulesVisibility(clubId: string, options?: RequestOptions): Promise<M.ModuleVisibilityRow[]> {
+    return this.request<M.ModuleVisibilityRow[]>("GET", `/clubs/${encodeURIComponent(clubId)}/modules/visibility`, { auth: true, options });
+  }
+
+  /**
+   * Modul fuer Rolle/Gruppe/Mitglied ein- oder ausblenden (is_club_admin)
+   * Setzt eine Ausnahme von der abgeleiteten Vorgabe. visible: null nimmt die Ausnahme zurueck. NUR das Menue — es wird dadurch kein Zugriff gewaehrt und keiner entzogen.
+   * 
+   * `PUT /clubs/{clubId}/modules/{moduleKey}/visibility`
+   */
+  async putClubsByClubIdModulesByModuleKeyVisibility(clubId: string, moduleKey: string, body: M.ModuleVisibilitySet, options?: RequestOptions): Promise<M.ModuleVisibilityRow[]> {
+    return this.request<M.ModuleVisibilityRow[]>("PUT", `/clubs/${encodeURIComponent(clubId)}/modules/${encodeURIComponent(moduleKey)}/visibility`, { body, auth: true, options });
+  }
+
+  /**
    * List teams of a club incl. skater/coach member ids
    * 
    * `GET /clubs/{clubId}/teams`

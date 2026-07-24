@@ -80,12 +80,96 @@ export interface ClubModuleState {
   available: boolean;
 }
 
+// ----------------------------------------------------------------------------
+// Modul-SICHTBARKEIT (Migration 0077) — die VIERTE Frage.
+//
+// 0044 trennt drei Fragen (gekauft / eingeschaltet / erlaubt). 0077 fügt genau
+// eine hinzu: GEZEIGT? — welche Kachel wird welcher Rolle, Gruppe oder Person
+// im „Mehr"-Raster überhaupt angeboten.
+//
+// ### SICHTBARKEIT IST KEIN SICHERHEITSERSATZ ###
+// Das Ausblenden einer Kachel ist Bequemlichkeit, nicht Schutz. Wer ein Modul
+// nicht sieht, darf über einen Deeplink genau so viel wie vorher; wer es sieht,
+// bekommt dadurch kein Recht. Die Grenzen bleiben RLS, Entitlement, Modul-Gate
+// und Fähigkeit — nachgemessen in 99rA_modul_sichtbarkeit.sql Block F.
+// Diese Typen beschreiben ein MENÜ, keine Erlaubnis.
+// ----------------------------------------------------------------------------
+
+/** Auf WEN eine Sichtbarkeits-Zeile zielt (app.module_visibility_scope). */
+export type ModuleVisibilityScope = "role" | "department" | "member";
+
+/**
+ * Ein Modul, wie es die EINGELOGGTE Person sieht (GET …/modules/effective).
+ *
+ * Der Server liefert hier NUR die sichtbaren Module — bewusst gefiltert und
+ * nicht als Liste mit Flag: ein Client, der das Flag vergisst, zeigte sonst
+ * wieder alles. Genau das war der Befund.
+ */
+export interface EffectiveModule extends ClubModuleState {
+  /** available UND angeboten. Die eine Wahrheit für das „Mehr"-Raster. */
+  visible: boolean;
+  /** Welche Ebene entschieden hat: member | department | role | default | operator. */
+  visibilitySource: string;
+}
+
+/**
+ * Eine Zeile der Sichtbarkeits-Matrix (app.club_module_visibility_matrix).
+ *
+ * Rollen-Zeilen kommen VOLLSTÄNDIG (jedes Modul × jede Rolle) mit
+ * `defaultVisible` — der aus der Rechtematrix abgeleiteten Vorgabe. Gruppen-
+ * und Mitglieds-Zeilen kommen nur, wo tatsächlich eine Ausnahme gesetzt ist;
+ * dort ist `defaultVisible` null, denn für diese Ebenen gibt es keine eigene
+ * Vorgabe — sie SIND die Ausnahme von der Rollen-Vorgabe.
+ */
+export interface ModuleVisibilityRow {
+  moduleKey: string;
+  scope: ModuleVisibilityScope;
+  targetId: string;
+  targetLabel: string;
+  defaultVisible: boolean | null;
+  /** Die gesetzte Ausnahme — null heißt „keine, es gilt die Vorgabe". */
+  override: boolean | null;
+  effective: boolean;
+}
+
+/** Eine Sichtbarkeit setzen — oder mit `visible: null` auf die Vorgabe zurück. */
+export interface SetModuleVisibilityInput {
+  scope: ModuleVisibilityScope;
+  targetId: string;
+  visible: boolean | null;
+}
+
 export interface ModuleRepository {
   /**
    * Katalog + Schalterstellung des Vereins (GET /clubs/{clubId}/modules).
    * Für JEDES Mitglied lesbar — die Clients bauen daraus ihr Menü.
    */
   listClubModules(): Promise<ClubModuleState[]>;
+  /**
+   * Die Module, die DIESE Person im Menü sehen soll
+   * (GET /clubs/{clubId}/modules/effective, Migration 0077).
+   *
+   * DIE EINE QUELLE: Web, iOS, macOS und Android fragen dieselbe Liste, damit
+   * niemand sie im Client nachbaut. Nur ein Menü — kein Zugriffsrecht.
+   */
+  listEffectiveModules(): Promise<EffectiveModule[]>;
+  /**
+   * Die Sichtbarkeits-Matrix des Vereins (GET …/modules/visibility).
+   * Rollen-Ebene vollständig, Gruppen/Mitglieder nur die gesetzten Ausnahmen.
+   */
+  listModuleVisibility(): Promise<ModuleVisibilityRow[]>;
+  /**
+   * Eine Ausnahme setzen oder zurücknehmen
+   * (PUT …/modules/{moduleKey}/visibility).
+   *
+   * Gated `is_club_admin` — durchgesetzt von der RLS, nicht hier. 409 bei der
+   * Verwaltung (die nimmt keine Zeile an: sonst gäbe es keinen Weg zurück) ·
+   * 403 ohne Admin-Rolle. Liefert die Matrix-Zeilen dieses Moduls zurück.
+   */
+  setModuleVisibility(
+    moduleKey: string,
+    input: SetModuleVisibilityInput,
+  ): Promise<ModuleVisibilityRow[]>;
   /**
    * Einen Schalter stellen (PUT /clubs/{clubId}/modules/{moduleKey}).
    * Gated `is_club_admin` (owner/admin/moderator) — durchgesetzt von der RLS,

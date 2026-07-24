@@ -3672,6 +3672,146 @@
           "enabled"
         ]
       },
+      "EffectiveModule": {
+        "type": "object",
+        "properties": {
+          "module_key": {
+            "type": "string"
+          },
+          "label_de": {
+            "type": "string"
+          },
+          "label_en": {
+            "type": "string"
+          },
+          "desc_de": {
+            "type": "string"
+          },
+          "desc_en": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "core": {
+            "type": "boolean"
+          },
+          "requires_pro": {
+            "type": "boolean"
+          },
+          "enforcement": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "enforced",
+              "partial",
+              "menu_only"
+            ]
+          },
+          "default_enabled": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "pro_ok": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "visibility_source": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "module_key",
+          "label_de",
+          "label_en",
+          "desc_de",
+          "desc_en",
+          "sort",
+          "core",
+          "requires_pro",
+          "enforcement",
+          "default_enabled",
+          "enabled",
+          "pro_ok",
+          "available",
+          "visible",
+          "visibility_source"
+        ]
+      },
+      "ModuleVisibilityScope": {
+        "type": "string",
+        "enum": [
+          "role",
+          "department",
+          "member"
+        ]
+      },
+      "ModuleVisibilityRow": {
+        "type": "object",
+        "properties": {
+          "module_key": {
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/ModuleVisibilityScope"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "target_label": {
+            "type": "string"
+          },
+          "default_visible": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "override": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "effective": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "module_key",
+          "scope",
+          "target_id",
+          "target_label",
+          "default_visible",
+          "override",
+          "effective"
+        ]
+      },
+      "ModuleVisibilitySet": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/ModuleVisibilityScope"
+          },
+          "target_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "visible": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "required": [
+          "scope",
+          "target_id",
+          "visible"
+        ]
+      },
       "Team": {
         "type": "object",
         "properties": {
@@ -15298,6 +15438,273 @@
           },
           "409": {
             "description": "Kernmodul — nicht abschaltbar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/modules/effective": {
+      "get": {
+        "tags": [
+          "modules"
+        ],
+        "summary": "Die Module, die DIESE Person im Menue sehen soll (is_club_member)",
+        "description": "Katalog + Vereins-Schalter + PRO + aufgeloeste Sichtbarkeit (Mitglied > Gruppe > Rolle > Vorgabe) fuer die aufrufende Person. NUR ein Menue — kein Zugriffsrecht: ein hier fehlendes Modul bleibt ueber einen Deeplink genauso erreichbar bzw. gesperrt wie vorher.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sichtbare Module dieser Person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EffectiveModule"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/modules/visibility": {
+      "get": {
+        "tags": [
+          "modules"
+        ],
+        "summary": "Sichtbarkeits-Matrix des Vereins (is_club_member)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rollen-Matrix + gesetzte Ausnahmen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleVisibilityRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/modules/{moduleKey}/visibility": {
+      "put": {
+        "tags": [
+          "modules"
+        ],
+        "summary": "Modul fuer Rolle/Gruppe/Mitglied ein- oder ausblenden (is_club_admin)",
+        "description": "Setzt eine Ausnahme von der abgeleiteten Vorgabe. visible: null nimmt die Ausnahme zurueck. NUR das Menue — es wird dadurch kein Zugriff gewaehrt und keiner entzogen.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "moduleKey",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "description": "Ziel + neue Sichtbarkeit",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModuleVisibilitySet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Die Matrix-Zeilen dieses Moduls nach der Aenderung",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleVisibilityRow"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Verwaltung — nicht ausblendbar",
             "content": {
               "application/json": {
                 "schema": {
