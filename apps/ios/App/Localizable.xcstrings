@@ -13131,6 +13131,70 @@
         }
       }
     },
+    "mehr.visibility.error.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Verein legt fest, welche Bereiche du siehst — diese Einstellung ist gerade nicht erreichbar. Solange zeigt der Hub nur deine persönlichen Bereiche. An deinen Rechten ändert das nichts: die liegen auf dem Server, nicht in diesem Menü."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The club decides which sections you see — that setting cannot be reached right now. Until then the hub only shows your personal sections. This does not change your permissions: they live on the server, not in this menu."
+          }
+        }
+      }
+    },
+    "mehr.visibility.error.retry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        }
+      }
+    },
+    "mehr.visibility.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereiche nicht geladen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sections not loaded"
+          }
+        }
+      }
+    },
+    "mehr.visibility.loading": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereiche werden geladen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading sections"
+          }
+        }
+      }
+    },
     "member.sparten.assignCta": {
       "localizations": {
         "de": {
