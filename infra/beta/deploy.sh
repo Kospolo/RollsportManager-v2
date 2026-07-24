@@ -36,6 +36,27 @@ fi
 # mitwandert (Skizzen, Notizen, halbe Versuche).
 git archive HEAD apps/web | tar -x -C "$STAGE"
 
+# === BASIS-IMAGE ZUERST, UND ZWAR SICHTBAR ===================================
+# Am 24.07.2026 stand ein Build 25 Minuten bei 0 % CPU, ohne eine Zeile Ausgabe.
+# Ursache: BuildKit legt das Basis-Image im BUILD-CACHE ab, nicht als eigenes
+# Image in `docker images`. Ein `docker builder prune` — hier gelaufen, weil die
+# Platte knapp wurde — loescht es also mit. Der naechste Build wollte es neu
+# holen und blieb beim Schritt "load metadata" stehen.
+#
+# Das Tueckische ist nicht das Nachladen, sondern das SCHWEIGEN: `--quiet`
+# verschluckt die Fortschrittsanzeige, und ein wartender Build sieht von aussen
+# genauso aus wie ein rechnender. Deshalb wird das Image ab jetzt VORHER und
+# ausdruecklich geholt — mit eigener Meldung und eigenem Fehlerfall.
+BASE_IMAGE="node:22-alpine"
+if ! docker image inspect "$BASE_IMAGE" >/dev/null 2>&1; then
+  echo "→ Basis-Image $BASE_IMAGE liegt nicht lokal — hole es (kann dauern) …"
+  if ! docker pull "$BASE_IMAGE"; then
+    echo "✗ $BASE_IMAGE liess sich nicht laden. Netz/Registry pruefen:" >&2
+    echo "  curl -sI https://registry-1.docker.io/v2/" >&2
+    exit 1
+  fi
+fi
+
 echo "→ Image bauen …"
 docker build --quiet -t "$IMAGE" "$STAGE/apps/web" >/dev/null
 
