@@ -1,7 +1,7 @@
 # RollsportManager v2 — Sorglos-Notiz (Stand & „mach weiter")
 
 **Zweck:** Alles an einem Ort. Du sagst einfach **„mach weiter"**, dann arbeite ich die
-Reihenfolge unten von oben ab. **Stand: 2026-07-18.** (Wird nach jedem Meilenstein aktualisiert —
+Reihenfolge unten von oben ab. **Stand: 2026-07-24.** (Wird nach jedem Meilenstein aktualisiert —
 du sollst dich nie wiederholen müssen.)
 
 Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf Branch `main`
@@ -16,6 +16,22 @@ Browser/curl verifizieren, dann handeln. Offenlegen ist keine Behebung. Team-Mus
 Fach-Agenten + Angreifer-Gegenprüfung vor dem „fertig". Genutzte Skills: database-designer,
 senior-backend/-frontend, api-design-reviewer, ui-ux-pro-max, frontend-design, gdpr-dsgvo-expert,
 code-reviewer, web-design-guidelines (via `find-skills` / `~/.claude/skills/`).
+
+**🟢 BETA ÖFFENTLICH — `beta.rollsportmanager.de` (24.07.2026).** Das Web-Portal läuft als
+Docker-Container `rollsportmanager-beta` auf **Port 8095** mit `restart: unless-stopped`
+(Autostart nach Neustart). Ausrollen: **`./infra/beta/deploy.sh`** — rollt immer den letzten
+Commit aus, nie den Arbeitsstand (ein Build lief mal mitten in die Schreibvorgänge eines Agenten).
+Reverse-Proxy: **`./infra/beta/npm-proxy.sh`** — muss **Marcel selbst starten**, weil der Schritt
+sich aus dem NPM-Schlüssel ein Admin-Token ausstellt und der Berechtigungsfilter das (zu Recht) sperrt.
+- **KEINE API, KEINE Datenbank, nur Demo-Daten — Absicht, kein Rückstand.** v2 hat bis heute keinen
+  echten Login. Mit API könnte sich jeder Besucher als Vereinsinhaber ausgeben und Daten von Kindern
+  sehen. Erzwungen von `lib/data/config.ts`: bei `NODE_ENV=production` fällt die Datenquelle hart auf
+  `mock`, egal was in der Umgebung steht. **Wer das ändert, ändert die Sicherheitslage der Beta.**
+- Doppelte Suchmaschinen-Sperre (`robots.txt` + `X-Robots-Tag`), sonst wäre es doppelter Inhalt zur
+  Produktivseite. Die v1-Website (Container `rollsportmanager-website`, Port 8080) läuft unverändert weiter.
+- **Offen:** Die Startseite nennt Preise **9/29/59 €** — eine von **vier** widersprüchlichen Preislisten
+  aus v1 (die DB, nach der v1 abrechnete, sagte 29/49/79). Solange die Preisfrage offen ist, steht auf
+  der Beta eine Zusage, die das System nicht einlöst.
 
 **📘 Original nachschlagen statt neu erklären: [`blueprint/ORIGINAL-VOLLREFERENZ.md`](ORIGINAL-VOLLREFERENZ.md)** —
 vollständige v1-Referenz mit Fundstellen: Geschäftsmodell, alle Preise/Limits (inkl. **Schließfach-Miete
