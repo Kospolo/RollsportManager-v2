@@ -194,7 +194,75 @@ rollback;
 --    Zweig — locker_rentals_select bewusst NICHT. Genau das wird hier gemessen,
 --    denn eine bewusste Abweichung, die niemand prueft, ist beim naechsten
 --    „Vereinheitlichen" weg.
+--
+--    ### WAS AN DIESEM BLOCK FALSCH WAR ####################################
+--    Er hat den Betreiber gemessen, wie es ihn im Betrieb NICHT gibt: nur mit
+--    dem Claim, OHNE die Sitzungsvariable app.operator_override. Die echte API
+--    setzt sie aber bei JEDEM Plattform-Request
+--    (services/api/src/middleware/operator-access.ts). Gemessen wurde also ein
+--    Zustand, den kein einziger Request je erreicht — und das Ergebnis „0
+--    Vermietungen" war deshalb keine Zusicherung, sondern ein Zufall.
+--    Nachgemessen im echten Zustand sah der Betreiber ALLE 5 Vertraege, mit
+--    member_id und Preis. Ein Test, der eine Zusage nur scheinbar prueft, ist
+--    schlimmer als kein Test: er beendet das Nachdenken.
+--
+--    Der Block misst jetzt BEIDE Zustaende und benennt, welcher der echte ist.
 -- ---------------------------------------------------------------------------
+
+-- E1) DER ECHTE BETRIEBSZUSTAND: Claim UND Sitzungsvariable, wie die API sie
+--     setzt. Das ist der Fall, auf den es ankommt.
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+select set_config('app.operator_override', 'on', true);   -- wie die echte API
+set local role authenticated;
+do $$
+begin
+  -- Gegenprobe zuerst, und diesmal eine, die etwas wert ist: die Einsicht ist
+  -- nachweislich AN und wirkt nachweislich — sonst waere jede 0 unten wertlos.
+  perform testkit.is_eq('fach-betreiber: die Betreiber-Einsicht ist eingeschaltet',
+    (select case when app.operator_override() then 1 else 0 end), 1);
+  perform testkit.is_eq('fach-betreiber: sie wirkt auch — "members" ist owner-gleich (Rang 5)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'members')), 5);
+  perform testkit.is_eq('fach-betreiber: er sieht die 8 Faecher (lockers_select, is_platform_admin-Zweig)',
+    (select count(*) from app.lockers where deleted_at is null), 8);
+
+  -- DER KERN: trotzdem keine Vermietung. Nicht weil der Zugang fehlt, sondern
+  -- weil die Faehigkeit "lockers" fuer den Betreiber nicht freigegeben ist (0074).
+  perform testkit.is_eq('fach-betreiber: aber KEINE Vermietung (Kinderdaten + Vereinsgeld)',
+    (select count(*) from app.locker_rentals where deleted_at is null), 0);
+  perform testkit.is_eq('fach-betreiber: cap_rank(lockers) ist 0 — die Zweckbindung greift (0074)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'lockers')), 0);
+  perform testkit.is_eq('fach-betreiber: "lockers" steht NICHT auf der Betreiber-Allowlist',
+    (select count(*) from app.operator_capabilities where capability_key = 'lockers'), 0);
+
+  -- Und er kann auch keine anlegen oder aendern.
+  perform testkit.throws('fach-betreiber: er kann auch keine Vermietung anlegen (42501)',
+    $q$insert into app.locker_rentals (club_id, locker_id, member_id, start_on)
+       values ('c1ab0000-0000-4000-8000-000000000001',
+               'e0c00000-0000-4000-8000-000000000007',
+               'a0000000-0000-4000-8000-000000000007', current_date)$q$,
+    '42501');
+end;
+$$;
+rollback;
+
+-- E2) Gegenprobe, dass es die Vertraege ueberhaupt gibt — RLS-frei gezaehlt.
+--     Ohne sie bestuende E1 auch bei leerer Tabelle.
+begin;
+set local role service_role;
+do $$
+begin
+  perform testkit.is_eq('fach-betreiber/Gegenprobe: es gibt ueberhaupt 5 Vermietungen',
+    (select count(*) from app.locker_rentals where deleted_at is null), 5);
+end;
+$$;
+rollback;
+
+-- E3) Der Claim ALLEIN — der Zustand, den der alte Block gemessen hat. Er
+--     bleibt gueltig und wird bewusst behalten, aber jetzt als das, was er ist:
+--     die schwaechere der beiden Aussagen.
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
@@ -202,10 +270,9 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 do $$
 begin
-  -- Gegenprobe zuerst: der Zugang ist echt — die FAECHER sieht er sehr wohl.
-  perform testkit.is_eq('fach-betreiber: der Plattform-Admin sieht die 8 Faecher (lockers_select)',
+  perform testkit.is_eq('fach-betreiber/ohne Einsicht: der blosse Claim sieht die 8 Faecher',
     (select count(*) from app.lockers where deleted_at is null), 8);
-  perform testkit.is_eq('fach-betreiber: aber KEINE Vermietung (Kinderdaten + Vereinsgeld)',
+  perform testkit.is_eq('fach-betreiber/ohne Einsicht: und ebenfalls keine Vermietung',
     (select count(*) from app.locker_rentals where deleted_at is null), 0);
 end;
 $$;

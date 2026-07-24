@@ -538,3 +538,110 @@ begin
 end;
 $$;
 rollback;
+
+-- ---------------------------------------------------------------------------
+-- L) DER PLATTFORM-BETREIBER — der Fall, den diese Datei zuerst NICHT gemessen
+--    hat.
+--
+--    Das war die eigentliche Luecke: Bloecke B und C messen die Familie, D-G
+--    messen den Verein, K misst die Abgrenzung — und NIEMAND mass den
+--    Auftragsverarbeiter. Genau der aber sah die Notiz im Klartext, weil
+--    app.cap_rank bei eingeschalteter Betreiber-Einsicht pauschal Rang 5 gab
+--    (0051) und services/api/src/middleware/operator-access.ts diese Einsicht
+--    bei JEDEM Plattform-Request einschaltet.
+--
+--    Entscheidend fuer die Aussagekraft: hier wird die Sitzungsvariable
+--    app.operator_override GESETZT — also GENAU DER ZUSTAND, in dem die echte
+--    API laeuft. Ein Test ohne sie misst einen Zustand, den es im Betrieb nicht
+--    gibt, und beruhigt falsch (siehe 99pB, Block E, vor der Korrektur).
+--
+--    Und wie ueberall in dieser Datei steht die GEGENPROBE zuerst: der Zugang
+--    ist echt, der Betreiber ist wirklich eingeschaltet und sieht wirklich
+--    etwas. Nur die Notiz nicht.
+-- ---------------------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+select set_config('app.operator_override', 'on', true);   -- wie die echte API
+set local role authenticated;
+do $$
+begin
+  -- GEGENPROBE: die Einsicht ist wirklich an, und sie wirkt wirklich.
+  perform testkit.is_eq('notiz-betreiber/Gegenprobe: die Betreiber-Einsicht ist eingeschaltet',
+    (select case when app.operator_override() then 1 else 0 end), 1);
+  perform testkit.is_eq('notiz-betreiber/Gegenprobe: er ist owner-gleich fuer "members" (Rang 5)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'members')), 5);
+  -- Namentlich statt gezaehlt: fruehere Suiten legen Mitglieder an und
+  -- COMMITTEN sie, ein Zaehler maesse also die Reihenfolge der Suiten und nicht
+  -- die Zusage. Lina und Finn sind genau die beiden Kinder, ueber die es
+  -- Notizen gibt — er sieht ihre Stammdaten und trotzdem keine Notiz.
+  perform testkit.is_eq('notiz-betreiber/Gegenprobe: er sieht die Stammdaten von Lina UND Finn',
+    (select count(*) from app.club_members
+      where id in ('a0000000-0000-4000-8000-000000000007',
+                   'a0000000-0000-4000-8000-000000000013')), 2);
+end;
+$$;
+-- Und es WAERE etwas zu sehen gewesen: die Notizen liegen da. Ohne diese Zeile
+-- bestuende der Test unten auch dann, wenn die Tabelle schlicht leer waere.
+reset role;
+do $$
+begin
+  perform testkit.is_eq('notiz-betreiber/Gegenprobe: es gibt ueberhaupt zwei Notizen (RLS-frei gezaehlt)',
+    (select count(*) from app.member_coach_notes where deleted_at is null), 2);
+end;
+$$;
+rollback;
+
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+select set_config('app.operator_override', 'on', true);
+set local role authenticated;
+do $$
+begin
+  -- DER KERN: der Auftragsverarbeiter liest die interne Notiz NICHT.
+  perform testkit.is_eq('notiz-betreiber: der Plattform-Admin sieht KEINE Trainer-Notiz — auch mit eingeschalteter Einsicht',
+    (select count(*) from app.member_coach_notes where deleted_at is null), 0);
+  perform testkit.is_eq('notiz-betreiber: auch nicht die eine ueber Lina, namentlich',
+    (select count(*) from app.member_coach_notes
+      where member_id = 'a0000000-0000-4000-8000-000000000007'), 0);
+
+  -- Die Ursache, an der Wurzel gemessen: die Faehigkeit ist fuer ihn nicht
+  -- freigegeben (0074), also ist der Rang 0 und nicht 5.
+  perform testkit.is_eq('notiz-betreiber: cap_rank(coach_notes) ist 0 — die Zweckbindung greift (0074)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'coach_notes')), 0);
+  perform testkit.is_eq('notiz-betreiber: "coach_notes" steht NICHT auf der Betreiber-Allowlist',
+    (select count(*) from app.operator_capabilities where capability_key = 'coach_notes'), 0);
+  perform testkit.is_eq('notiz-betreiber: can_read_coach_note ist false, nicht null',
+    (select case when app.can_read_coach_note('c1ab0000-0000-4000-8000-000000000001',
+                                              'a0000000-0000-4000-8000-000000000007') then 1 else 0 end), 0);
+
+  -- Und schreiben erst recht nicht. Ein Betreiber, der die Notiz nicht lesen,
+  -- aber anlegen koennte, waere die absurdere Haelfte desselben Lochs.
+  perform testkit.throws('notiz-betreiber: er kann auch keine Notiz ANLEGEN (42501)',
+    $q$insert into app.member_coach_notes (club_id, member_id, author_member_id, body)
+       values ('c1ab0000-0000-4000-8000-000000000001',
+               'a0000000-0000-4000-8000-000000000007',
+               'a0000000-0000-4000-8000-000000000001', 'Betreiber-Versuch.')$q$,
+    '42501');
+end;
+$$;
+rollback;
+
+-- Und OHNE die Sitzungsvariable — der Claim allein — ebenfalls nichts. Das ist
+-- die Messung, die vorher als einzige denkbar gewesen waere; sie bleibt gueltig,
+-- beweist aber fuer sich genommen NICHTS ueber den Betriebszustand.
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+set local role authenticated;
+do $$
+begin
+  perform testkit.is_eq('notiz-betreiber/ohne Einsicht: der blosse Claim sieht ebenfalls keine Notiz',
+    (select count(*) from app.member_coach_notes where deleted_at is null), 0);
+end;
+$$;
+rollback;

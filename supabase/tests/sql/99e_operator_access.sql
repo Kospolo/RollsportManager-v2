@@ -406,3 +406,193 @@ begin
 end;
 $$;
 rollback;
+
+-- ---------------------------------------------------------------------------
+-- 7. DIE ZWECKBINDUNG (0074) — der Override ist kein Generalschluessel mehr.
+--
+--    Abschnitt 3 oben beweist, dass die Einsicht OEFFNET. Dieser Abschnitt
+--    beweist, dass sie nur die FREIGEGEBENEN Zwecke oeffnet — und dass die
+--    Freigabe selbst nicht zur Laufzeit erweiterbar ist. Ohne den zweiten Teil
+--    waere die Allowlist eine Bitte: der Betreiber-Code laeuft an einer Stelle
+--    im Service-Modus, und service_role umgeht RLS.
+--
+--    Aufbau wie ueberall in dieser Datei: erst die Gegenprobe, dass ueberhaupt
+--    etwas offen ist, dann die Sperre.
+-- ---------------------------------------------------------------------------
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+select set_config('app.operator_override', 'on', true);
+set local role authenticated;
+
+do $$
+begin
+  -- (a) Die Allowlist ist echt kleiner als der Katalog. Waere sie es nicht,
+  --     haette 0074 nichts bewirkt — und dieser ganze Abschnitt waere gruen,
+  --     ohne etwas zu zeigen.
+  perform testkit.is_eq('0074/Zweckbindung: die Allowlist ist ECHT kleiner als der Faehigkeiten-Katalog',
+    (select case when (select count(*) from app.operator_capabilities)
+                    < (select count(*) from app.capabilities) then 1 else 0 end), 1);
+  perform testkit.is_eq('0074/Zweckbindung: jede Freigabe traegt eine Begruendung (DE und EN)',
+    (select count(*) from app.operator_capabilities
+      where btrim(reason_de) = '' or btrim(reason_en) = ''), 0);
+
+  -- (b) FREIGEGEBEN: der Betrieb geht weiter. Dieselben vier Faehigkeiten, die
+  --     Abschnitt 3 misst — sie stehen hier nicht doppelt zum Spass, sondern
+  --     weil sie ab jetzt einen NAMENTLICHEN Grund brauchen, um 5 zu sein.
+  perform testkit.is_eq('0074/freigegeben: cap_rank(members) bleibt 5',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'members')), 5);
+  perform testkit.is_eq('0074/freigegeben: cap_rank(roles) bleibt 5',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'roles')), 5);
+  perform testkit.is_eq('0074/freigegeben: cap_rank(routines) bleibt 5',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'routines')), 5);
+  perform testkit.is_eq('0074/freigegeben: cap_rank(club_settings) bleibt 5',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'club_settings')), 5);
+
+  -- (c) NICHT freigegeben: Rang 0, nicht 5. Das ist der ganze Befund.
+  perform testkit.is_eq('0074/gesperrt: cap_rank(coach_notes) = 0 (interne Notizen ueber Kinder)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'coach_notes')), 0);
+  perform testkit.is_eq('0074/gesperrt: cap_rank(lockers) = 0 (welches Kind mietet welches Fach)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'lockers')), 0);
+  perform testkit.is_eq('0074/gesperrt: cap_rank(finance) = 0 (Rechnungen, Mandate, Beitraege)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'finance')), 0);
+  perform testkit.is_eq('0074/gesperrt: cap_rank(member_contact) = 0 (Adresse, Telefon, Geburtsdatum)',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'member_contact')), 0);
+  perform testkit.is_eq('0074/gesperrt: cap_rank(chat) = 0',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'chat')), 0);
+
+  -- (d) FAIL-CLOSED: eine Faehigkeit, die es im Katalog gar nicht gibt, oeffnet
+  --     nicht. Das ist die Probe auf das Verhalten einer KUENFTIGEN Fähigkeit,
+  --     an die niemand denkt — der eigentliche Grund fuer die Allowlist.
+  perform testkit.is_eq('0074/fail-closed: eine unbekannte Faehigkeit gibt Rang 0, keinen Vollzugriff',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'gibt_es_noch_nicht')), 0);
+
+  -- (e) app.operator_may liefert strikt true/false, nie NULL — dieselbe Falle
+  --     wie in 0051: 14 Schutztrigger negieren Helfer dieses Musters, und
+  --     'if not NULL then …' ist in plpgsql NIE wahr.
+  perform testkit.is_eq('0074: operator_may(gesperrt) ist strikt FALSE, nicht NULL',
+    (select case when app.operator_may('coach_notes') is null then 1 else 0 end), 0);
+
+  -- (f) Die zweckgebundenen Rollen-Helfer. can_manage_finance ist der Hebel,
+  --     der die ganze Finanz-Flaeche schliesst (41 Aufrufstellen);
+  --     can_manage_members und is_club_admin bleiben offen, weil ihre
+  --     Faehigkeit freigegeben ist.
+  perform testkit.is_eq('0074/Helfer: can_manage_finance ist fuer den Betreiber FALSE (Zweck nicht freigegeben)',
+    (select case when app.can_manage_finance('c1ab0000-0000-4000-8000-000000000001') then 1 else 0 end), 0);
+  perform testkit.is_eq('0074/Helfer: can_manage_members bleibt TRUE (Zweck "members" freigegeben)',
+    (select case when app.can_manage_members('c1ab0000-0000-4000-8000-000000000001') then 1 else 0 end), 1);
+  perform testkit.is_eq('0074/Helfer: is_club_admin bleibt TRUE (Zweck "club_settings" freigegeben)',
+    (select case when app.is_club_admin('c1ab0000-0000-4000-8000-000000000001') then 1 else 0 end), 1);
+
+  -- (g) Und die WIRKUNG, nicht nur die Funktionswerte: die Zeilen sind weg.
+  perform testkit.is_eq('0074/Wirkung: keine SEPA-Mandate mehr (IBAN der Eltern)',
+    (select count(*) from app.sepa_mandates), 0);
+  perform testkit.is_eq('0074/Wirkung: keine Rechnungen mehr',
+    (select count(*) from app.invoices), 0);
+  perform testkit.is_eq('0074/Wirkung: keine Beitragssaetze einzelner Mitglieder mehr',
+    (select count(*) from app.member_fees), 0);
+  perform testkit.is_eq('0074/Wirkung: kein Kassenbuch mehr',
+    (select count(*) from app.ledger_entries), 0);
+  -- … und der Betrieb geht trotzdem weiter. Namentlich statt gezaehlt, aus dem
+  -- Grund, der in Abschnitt 3 steht: fruehere Suiten committen Mitglieder, ein
+  -- Zaehler maesse die Reihenfolge der Suiten und nicht die Zusage.
+  perform testkit.is_eq('0074/Wirkung: der Roster BEIDER Vereine bleibt sichtbar (A und B, namentlich)',
+    (select count(distinct club_id) from app.club_members
+      where club_id in ('c1ab0000-0000-4000-8000-000000000001',
+                        'deadbeef-0000-4000-8000-000000000001')), 2);
+
+  -- (h) Die Allowlist ist fuer den Betreiber LESBAR (Transparenz) …
+  perform testkit.is_eq('0074/Transparenz: der Betreiber sieht seine eigene Allowlist',
+    (select case when count(*) > 0 then 1 else 0 end from app.operator_capabilities), 1);
+  -- … aber NICHT erweiterbar. Das ist der Punkt, an dem die Allowlist von einer
+  -- Bitte zu einer Eigenschaft wird.
+  perform testkit.throws('0074/Sperre: der Betreiber kann sich coach_notes NICHT selbst freigeben',
+    $q$insert into app.operator_capabilities (capability_key, reason_de, reason_en)
+       values ('coach_notes', 'Selbstbedienung durch den Betreiber.', 'Operator self-service.')$q$,
+    '42501');
+end;
+$$;
+
+-- UPDATE und DELETE: hier steckt dieselbe Falle wie in Abschnitt 6b — ein
+-- Statement OHNE passende Policy wirft NICHT 42501. RLS FILTERT die Zeile weg,
+-- das Statement meldet brav "0 rows" und laeuft durch; der Trigger feuert gar
+-- nicht, weil keine Zeile getroffen wird. Ein throws()-Test waere hier gruen
+-- geworden, ohne irgendetwas zu beweisen (dieser Test ist genau einmal
+-- hineingelaufen). Die Zusicherung, auf die es ankommt, ist nicht "es kracht",
+-- sondern "die Allowlist steht danach unveraendert da":
+do $$
+begin
+  update app.operator_capabilities set capability_key = 'coach_notes' where capability_key = 'members';
+  delete from app.operator_capabilities where capability_key = 'members';
+  perform testkit.is_eq('0074/Sperre: nach UPDATE+DELETE des Betreibers steht "members" unveraendert da',
+    (select count(*) from app.operator_capabilities where capability_key = 'members'), 1);
+  perform testkit.is_eq('0074/Sperre: und "coach_notes" ist NICHT dazugekommen',
+    (select count(*) from app.operator_capabilities where capability_key = 'coach_notes'), 0);
+  perform testkit.is_eq('0074/Sperre: cap_rank(coach_notes) ist danach immer noch 0',
+    (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'coach_notes')), 0);
+end;
+$$;
+rollback;
+
+-- Der VEREIN darf ebenfalls sehen, was sein Auftragsverarbeiter DARF — die
+-- zweite Haelfte der Kontrolle nach Art. 28 Abs. 3 lit. h DSGVO (die erste ist
+-- app.operator_audit_log: was er GETAN hat).
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000002","role":"authenticated","club_roles":{"c1ab0000-0000-4000-8000-000000000001":"owner"}}',
+  true);
+set local role authenticated;
+do $$
+begin
+  perform testkit.is_eq('0074/Transparenz: der Vereins-Inhaber liest die Betreiber-Allowlist',
+    (select case when count(*) > 0 then 1 else 0 end from app.operator_capabilities), 1);
+  -- Wieder: RLS filtert, es kracht nicht — gemessen wird das ERGEBNIS.
+  delete from app.operator_capabilities where capability_key = 'members';
+  perform testkit.is_eq('0074/Sperre: aber auch er kann sie nicht aendern — die Zeile ist danach noch da',
+    (select count(*) from app.operator_capabilities where capability_key = 'members'), 1);
+  perform testkit.throws('0074/Sperre: und er kann auch nichts hinzufuegen',
+    $q$insert into app.operator_capabilities (capability_key, reason_de, reason_en)
+       values ('finance', 'Der Verein erlaubt es dem Betreiber.', 'The club allows the operator.')$q$,
+    '42501');
+end;
+$$;
+rollback;
+
+-- Und die Sperre gilt auch gegen SERVICE_ROLE — also gegen unseren eigenen
+-- API-Code und gegen psql. Ohne diesen Fall waere die Allowlist genau so weit
+-- wie das Vertrauen in jede kuenftige Service-Mode-Route.
+begin;
+set local role service_role;
+do $$
+begin
+  perform testkit.throws('0074/Sperre: auch service_role kann die Allowlist nicht erweitern',
+    $q$insert into app.operator_capabilities (capability_key, reason_de, reason_en)
+       values ('finance', 'Ueber eine Service-Mode-Route eingeschleust.', 'Injected via a service-mode route.')$q$,
+    '42501');
+  perform testkit.throws('0074/Sperre: und auch nicht loeschen',
+    $q$delete from app.operator_capabilities$q$,
+    '42501');
+end;
+$$;
+rollback;
+
+-- Gegenprobe zum Schluss: ein NORMALES Mitglied merkt von 0074 nichts.
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000003","role":"authenticated","club_roles":{"c1ab0000-0000-4000-8000-000000000001":"treasurer"}}',
+  true);
+set local role authenticated;
+do $$
+begin
+  perform testkit.is_eq('0074/Gegenprobe Kassenwartin: operator_may ist fuer sie immer false',
+    (select case when app.operator_may('finance') then 1 else 0 end), 0);
+  perform testkit.is_eq('0074/Gegenprobe Kassenwartin: can_manage_finance bleibt TRUE (echte Vereinsrolle)',
+    (select case when app.can_manage_finance('c1ab0000-0000-4000-8000-000000000001') then 1 else 0 end), 1);
+  perform testkit.is_eq('0074/Gegenprobe Kassenwartin: sie sieht ihre Rechnungen weiterhin',
+    (select case when count(*) > 0 then 1 else 0 end from app.invoices), 1);
+  perform testkit.is_eq('0074/Gegenprobe Kassenwartin: und die SEPA-Mandate weiterhin',
+    (select case when count(*) > 0 then 1 else 0 end from app.sepa_mandates), 1);
+end;
+$$;
+rollback;
