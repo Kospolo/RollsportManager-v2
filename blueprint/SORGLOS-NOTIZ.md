@@ -357,3 +357,53 @@ Betreiber ausdrücklich gibt. Er erreicht dadurch weiterhin: **checkins** (wer w
 (Direktnachrichten waren nie offen), waitlists, duty_entries, event_rsvps, documents, member_assessments
 (die offizielle Beurteilung — die liest die Familie ohnehin, anders als die interne Notiz). Das zu schließen ist eine
 **eigene Entscheidung** des Chefs, weil sie dem Betreiber in derselben Zeile Schreibrechte nimmt.
+
+### ✅ ERLEDIGT (2026-07-24, zweite Runde) — die Zweckbindung ist jetzt VOLLSTÄNDIG
+Der Angreifer hat 0074 mit **MÄNGEL** bewertet und hatte recht: die Allowlist wirkte nur dort, wo
+`app.cap_rank` oder einer der vier namentlichen Helfer davorstand. **Zwei parallele Türen** blieben offen.
+
+**T1 — alte RLS-Zweige mit unbedingtem `app.is_platform_admin()`.** `lockers_select` (0026:57) zeigte
+**8 Fächer inkl. `assigned_member_id` und `price_per_month_cents`**; von den 4 Mieter:innen sind **drei
+minderjährig** (15, 15, 17). Dazu meldete `app.locker_has_active_rental` SECURITY DEFINER **an der RLS vorbei**,
+dass gerade eine Vermietung läuft. „Welches Kind mietet welches Fach für wie viel Geld" blieb also
+rekonstruierbar, obwohl `/locker-rentals` seit 0074 zu war.
+Schlimmer noch: diese Zweige hingen am **bloßen Claim**, ohne die Sitzungsvariable — also **ohne** die
+Kopplung an die Protokollzeile, die 0051 zur Bedingung gemacht hat.
+
+**T2 — die TypeScript-Tür.** Die Kontakt-Maskierung ist ein reiner TS-Gate
+(`maySeeFullRoster` → `hasClubRole`), und dort stand `if (hasOperatorOverride) return true` **für jede
+Rollenliste**. Über `GET /clubs/{id}/members` las der Betreiber **Geburtsdatum von 15 Minderjährigen sowie
+Telefon und Anschrift von 5** — Feld für Feld dasselbe wie der Vereinsinhaber, während ein normales Mitglied
+überall `null` bekam.
+
+**Der Weg — Migration `0075` + die TS-Schicht:** genau **eine** Quelle der Betreiber-Autorität. Jede Tür fragt
+`app.operator_may(<Fähigkeit>)` bzw. in TypeScript `operatorMay()`; `hasClubRole` nimmt jetzt eine **Fähigkeit**
+entgegen und ist **ohne sie fail-closed**. Die Vereinsseite ist überall wortgleich übernommen
+(`club_role_held` / `club_membership_held`) — kein Vereinsmitglied verliert oder gewinnt ein Recht.
+Ein **Spiegel-Test** beweist, dass die TS-Liste dieselbe ist wie `app.operator_capabilities` in der Migration.
+
+**Was der Betreiber JETZT sieht** (Curl gegen die echte API, Claim + Einsicht): Vereine · Roster **ohne**
+Kontaktdaten · Rollen-Matrix · Teams/Sparten/Abteilungen · Küren (Moderation, lesen **und** schreiben) ·
+Jubiläen · Modulschalter · Lizenz · Beitrittscode · sein eigenes Protokoll · Support.
+**Was nicht mehr:** Schließfächer+Mieter+Preis · Vormundschaften · Check-ins · Anwesenheit · Beurteilungen ·
+Trainer-Notizen · Chat · Dokumente/Medien/Galerie/Foto-Markierungen · Einwilligungen · Rückmeldungen (inkl.
+Krankmeldungen) · Rückrufnummern der Fahrgemeinschaften · Erfolge · Wettkampf-Meldungen · Reservierungen ·
+Hallenbuchungen · Aufgaben · Pflichtstunden · Wartelisten · Familien-Nachlässe · Einladungen · Finanzen ·
+`/reports/summary`.
+
+**Der Ansehen-Weg lebt:** `api-db-test.sh` Schritt 4 grün — jeder Betreiber-Request hinterlässt weiterhin eine
+Protokollzeile, auch die abgewiesenen.
+
+**Neu gegen die NÄCHSTE Tür: eine Zählschleife** (`99q` Abschnitt 5). Für Fähigkeiten ist die Allowlist
+fail-closed; für **Tabellen** war sie es nie — wer morgen eine Tabelle mit `is_club_member(club_id)` anlegt,
+öffnet sie dem Betreiber, ohne dass etwas rot wird. Genau so sind acht der Türen entstanden. Die Schleife zählt
+über **alle** RLS-Tabellen, was der eingeschaltete Betreiber sieht, und nennt die erlaubten mit ihrem Zweck.
+
+**Gates:** SQL **1940 ✅** (war 1863) · api tsc ✅ · vitest **297 ✅** · api-db-test ✅ · contracts ✅ · web tsc ✅.
+(iOS/Android nicht gebaut — dort wurde nichts geändert.)
+
+**⚠️ Bewusst offen:** `app.has_club_role` / `app.is_club_trainer` behalten den pauschalen Override. Sie tragen
+22 **schreibende** Policies, die 0051 dem Betreiber ausdrücklich gibt (Struktur reparieren). 0075 nimmt ihnen
+stattdessen die **Lese**türen ab. Der Betreiber kann also weiterhin z. B. einen Trainingsslot anlegen — aber
+keine Check-ins, Beurteilungen oder Chatnachrichten mehr lesen. Ob er auch die Schreibrechte verlieren soll,
+ist eine eigene Entscheidung des Chefs.
