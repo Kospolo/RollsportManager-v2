@@ -62,10 +62,22 @@ describe('maySeeFullRoster', () => {
     expect(maySeeFullRoster(platformAdminClaims(), CLUB)).toBe(false);
   });
 
-  it('is true only WITH the operator override', () => {
+  // ### GEAENDERT DURCH MIGRATION 0075 ###
+  // Hier stand: „is true only WITH the operator override". Das war die zweite
+  // Haelfte derselben Luecke: die eingeschaltete Einsicht liess den Betreiber
+  // PAUSCHAL durch jede Rollenliste (guards.ts: `if (hasOperatorOverride)
+  // return true`). Ueber genau diesen Zweig las er Geburtsdatum, Telefon und
+  // Anschrift von Kindern — waehrend dieselbe Person ueber /coach-notes und
+  // /locker-rentals seit 0074 sauber ausgesperrt war.
+  //
+  // Seit 0075 braucht der Betreiber-Zweig eine FAEHIGKEIT, und maySeeFullRoster
+  // nennt 'member_contact' — von 0074 mit Begruendung GESPERRT („Adresse,
+  // Telefon, Geburtsdatum. Fuer den Support nicht noetig"). Die Maskierung
+  // greift damit fuer ihn wie fuer jede andere nicht berechtigte Rolle.
+  it('is FALSE auch MIT eingeschalteter Einsicht — member_contact ist gesperrt (0075)', () => {
     const c = platformAdminClaims();
     markOperatorAccess(c);
-    expect(maySeeFullRoster(c, CLUB)).toBe(true);
+    expect(maySeeFullRoster(c, CLUB)).toBe(false);
   });
 });
 

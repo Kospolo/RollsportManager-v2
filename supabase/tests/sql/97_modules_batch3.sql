@@ -156,18 +156,40 @@ begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+-- 0075: seit der Zweckbindung oeffnet der blosse Claim nichts mehr. Gemessen
+-- wird deshalb der ECHTE Zustand — Claim UND eingeschaltete Einsicht, genau so,
+-- wie middleware/operator-access.ts sie vor jedem Plattform-Request setzt.
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 
 do $$
 begin
   perform testkit.is_eq('training_slots: platform admin reads across tenants (5)',
     (select count(*) from app.training_slots), 5);
-  perform testkit.is_eq('duty_requirements: platform admin reads across tenants (1)',
-    (select count(*) from app.duty_requirements), 1);
+  -- 0075: ZUGEGANGEN. duty_requirements traegt eine member_id (wer schuldet
+  -- wie viele Pflichtstunden); 'duty_hours' ist nicht freigegeben.
+  perform testkit.is_eq('duty_requirements: platform admin sees 0 (0075, member_id)',
+    (select count(*) from app.duty_requirements), 0);
   -- duty_entries are own-or-trainer only: a platform admin is neither -> 0
   perform testkit.is_eq('duty_entries: platform admin cannot read private entries (0)',
     (select count(*) from app.duty_entries), 0);
+end;
+$$;
+rollback;
 
+-- (Schreib-Sperren: gemessen mit dem BLOSSEN Claim, also ohne eingeschaltete
+--  Einsicht. Diese Zusage ist von 0075 unberuehrt und gilt hier weiter woertlich.
+--  Was der EINGESCHALTETE Betreiber schreiben darf, ist eine eigene Entscheidung
+--  aus 0051/0074 — is_club_trainer behaelt dort bewusst den pauschalen Override,
+--  damit er Struktur reparieren kann; nachgemessen in 99q.)
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+set local role authenticated;
+
+do $$
+begin
   perform testkit.throws('training_slots: platform admin MAY NOT create a slot (not a trainer)',
     $q$insert into app.training_slots (club_id, weekday, starts_time, ends_time)
        values ('c1ab0000-0000-4000-8000-000000000001', 4, '17:00', '18:00')$q$, '42501');

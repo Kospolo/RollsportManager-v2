@@ -57,6 +57,9 @@ begin;
 -- als Plattform-Admin eine Sparte in Verein B anlegen
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}', true);
+-- 0075: gemessen wird der ECHTE Zustand — Claim UND eingeschaltete Einsicht
+-- ('departments' ist freigegeben, die Sparten-Verwaltung bleibt damit offen).
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 insert into app.sparten (id, club_id, name) values
   ('bbbb0000-0000-4000-8000-000000000002', 'deadbeef-0000-4000-8000-000000000001', 'Hockey B2');
@@ -113,6 +116,9 @@ rollback;
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}', true);
+-- 0075: gemessen wird der ECHTE Zustand — Claim UND eingeschaltete Einsicht
+-- ('departments' ist freigegeben, die Sparten-Verwaltung bleibt damit offen).
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 do $$ begin
   perform testkit.affects('platform admin: MAY clear a team''s sparte',

@@ -126,6 +126,24 @@ rollback;
 
 -- ---------------------------------------------------------------------------
 -- PLATFORM ADMIN (90..90) — cross-club READ, but no club-role WRITE
+--
+-- ### GEAENDERT DURCH MIGRATION 0075 — bewusst, nicht abgeschwaecht ###
+-- Hier stand bis 0075: der blosse Plattform-Claim sieht beide Vereine.
+-- app.is_club_member (0007:68 / 0025:92) begann seit jeher mit
+-- 'app.is_platform_admin() or …' — OHNE die Sitzungsvariable. Damit las ein
+-- Plattform-Token 24 Mitgliederzeilen ueber Mandantengrenzen hinweg, ohne dass
+-- irgendwo eine Protokollzeile entstehen musste. 0051 hatte den Betreiber-
+-- Zugriff ausdruecklich an den Nachweis gekoppelt („kein Einblick ohne
+-- Protokollzeile"); dieser Zweig war aelter und umging die Kopplung in der
+-- Datenbank vollstaendig. 0074 hat ihn im Kopf unter „Ebenfalls benannt"
+-- ausdruecklich als offenen Punkt stehen lassen — 0075 schliesst ihn.
+--
+-- Fuer den LAUFENDEN BETRIEB aendert das nichts: middleware/operator-access.ts
+-- liegt auf '*' und setzt die Einsicht vor jeder Route eines Plattform-Tokens.
+-- Was wegfaellt, ist der Weg an der API vorbei.
+--
+-- Der Block prueft deshalb jetzt BEIDE Lagen — erst die neue Sperre, dann die
+-- unveraenderte Zusage aus 0051.
 -- ---------------------------------------------------------------------------
 begin;
 select set_config('request.jwt.claims',
@@ -135,14 +153,11 @@ set local role authenticated;
 
 do $$
 begin
-  -- sees BOTH tenants' clubs (club A + club B fixture)
-  perform testkit.is_eq('platform admin: sees clubs across ALL tenants (2)',
-    (select count(*) from app.clubs), 2);
-  perform testkit.is_eq('platform admin: rosters span both clubs (2 distinct club_ids)',
-    (select count(distinct club_id) from app.club_members), 2);
-  perform testkit.is_eq('platform admin: sees club B''s roster too (3 rows)',
-    (select count(*) from app.club_members
-      where club_id = 'deadbeef-0000-4000-8000-000000000001'), 3);
+  -- (1) CLAIM ALLEIN: seit 0075 kein Cross-Club-READ mehr.
+  perform testkit.is_eq('platform admin: der Claim ALLEIN sieht keinen Verein mehr (0075)',
+    (select count(*) from app.clubs), 0);
+  perform testkit.is_eq('platform admin: … und keine einzige Mitgliederzeile',
+    (select count(*) from app.club_members), 0);
 
   -- READ only: without a club role the write policies still reject
   perform testkit.throws('platform admin: has no club-role WRITE (team INSERT rejected)',
@@ -152,6 +167,28 @@ begin
     $q$insert into app.club_members (club_id, first_name, last_name, role, status)
        values ('c1ab0000-0000-4000-8000-000000000001', 'Platform', 'Ghost', 'member', 'active')$q$,
     '42501');
+end;
+$$;
+rollback;
+
+-- (2) DERSELBE CLAIM + die eingeschaltete Einsicht (das, was die Middleware vor
+--     jedem Request tut): die Zusage aus 0051 haelt unveraendert.
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+select set_config('app.operator_override', 'on', true);
+set local role authenticated;
+
+do $$
+begin
+  perform testkit.is_eq('platform admin (Einsicht EIN): sees clubs across ALL tenants (2)',
+    (select count(*) from app.clubs), 2);
+  perform testkit.is_eq('platform admin (Einsicht EIN): rosters span both clubs (2 distinct club_ids)',
+    (select count(distinct club_id) from app.club_members), 2);
+  perform testkit.is_eq('platform admin (Einsicht EIN): sees club B''s roster too (3 rows)',
+    (select count(*) from app.club_members
+      where club_id = 'deadbeef-0000-4000-8000-000000000001'), 3);
 end;
 $$;
 rollback;

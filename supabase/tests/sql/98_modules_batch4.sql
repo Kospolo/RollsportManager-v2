@@ -194,12 +194,30 @@ begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+-- 0075: der blosse Claim oeffnet nichts mehr. Gemessen wird der ECHTE Zustand —
+-- Claim UND eingeschaltete Einsicht, wie die Audit-Middleware sie setzt.
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 
 do $$
 begin
   perform testkit.is_eq('regional_events: platform admin reads across tenants (3)',
     (select count(*) from app.regional_events), 3);
+end;
+$$;
+rollback;
+
+-- (Schreib-Sperre: mit dem BLOSSEN Claim gemessen — diese Zusage ist von 0075
+--  unberuehrt. Was der EINGESCHALTETE Betreiber schreiben darf, entscheidet
+--  0051/0074 und misst 99q.)
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+set local role authenticated;
+
+do $$
+begin
   perform testkit.throws('regional_events: platform admin MAY NOT create one (not a trainer)',
     $q$insert into app.regional_events (club_id, title, starts_on)
        values ('c1ab0000-0000-4000-8000-000000000001', 'Platform', current_date)$q$, '42501');

@@ -225,10 +225,21 @@ begin
     (select case when app.operator_override() then 1 else 0 end), 1);
   perform testkit.is_eq('fach-betreiber: sie wirkt auch — "members" ist owner-gleich (Rang 5)',
     (select app.cap_rank('c1ab0000-0000-4000-8000-000000000001', 'members')), 5);
-  perform testkit.is_eq('fach-betreiber: er sieht die 8 Faecher (lockers_select, is_platform_admin-Zweig)',
-    (select count(*) from app.lockers where deleted_at is null), 8);
+  -- ### GEAENDERT DURCH MIGRATION 0075 ###
+  -- Hier stand: „er sieht die 8 Faecher (lockers_select, is_platform_admin-
+  -- Zweig)" — und genau diese Zeile war der Rest des Lecks. app.lockers traegt
+  -- assigned_member_id UND price_per_month_cents; von den 4 vermieteten
+  -- Faechern gehoeren DREI Minderjaehrigen. „Welches Kind mietet welches Fach
+  -- fuer wie viel Geld" blieb damit rekonstruierbar, obwohl locker_rentals
+  -- schon zu war. 0075 bindet lockers_select an app.operator_may('lockers').
+  perform testkit.is_eq('fach-betreiber: er sieht KEIN Fach mehr (0075, waren 8)',
+    (select count(*) from app.lockers where deleted_at is null), 0);
+  -- Und auch die SECURITY-DEFINER-Warnfunktion meldet nicht mehr an der RLS
+  -- vorbei, dass an einem Fach gerade eine Vermietung laeuft.
+  perform testkit.is_eq('fach-betreiber: locker_has_active_rental meldet nichts mehr (0075)',
+    (select count(*) from app.lockers l where app.locker_has_active_rental(l.id)), 0);
 
-  -- DER KERN: trotzdem keine Vermietung. Nicht weil der Zugang fehlt, sondern
+  -- DER KERN: keine Vermietung. Nicht weil der Zugang fehlt, sondern
   -- weil die Faehigkeit "lockers" fuer den Betreiber nicht freigegeben ist (0074).
   perform testkit.is_eq('fach-betreiber: aber KEINE Vermietung (Kinderdaten + Vereinsgeld)',
     (select count(*) from app.locker_rentals where deleted_at is null), 0);
@@ -260,9 +271,11 @@ end;
 $$;
 rollback;
 
--- E3) Der Claim ALLEIN — der Zustand, den der alte Block gemessen hat. Er
---     bleibt gueltig und wird bewusst behalten, aber jetzt als das, was er ist:
---     die schwaechere der beiden Aussagen.
+-- E3) Der Claim ALLEIN — der Zustand, den der alte Block gemessen hat.
+--     Bis 0075 sah er hier 8 Faecher: lockers_select fragte app.is_platform_admin()
+--     direkt, also OHNE die Sitzungsvariable und damit ohne jede Kopplung an die
+--     Protokollzeile aus 0051. Seit 0075 haengt auch dieser Zweig an
+--     app.operator_may('lockers') — und der verlangt beides.
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
@@ -270,8 +283,8 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 do $$
 begin
-  perform testkit.is_eq('fach-betreiber/ohne Einsicht: der blosse Claim sieht die 8 Faecher',
-    (select count(*) from app.lockers where deleted_at is null), 8);
+  perform testkit.is_eq('fach-betreiber/ohne Einsicht: der blosse Claim sieht KEIN Fach mehr (0075, waren 8)',
+    (select count(*) from app.lockers where deleted_at is null), 0);
   perform testkit.is_eq('fach-betreiber/ohne Einsicht: und ebenfalls keine Vermietung',
     (select count(*) from app.locker_rentals where deleted_at is null), 0);
 end;

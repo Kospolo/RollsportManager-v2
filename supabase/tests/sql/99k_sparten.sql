@@ -87,6 +87,9 @@ rollback;
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}', true);
+-- 0075: gemessen wird der ECHTE Zustand — Claim UND eingeschaltete Einsicht
+-- ('departments' ist freigegeben, die Sparten-Verwaltung bleibt damit offen).
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 do $$ begin
   perform testkit.is_eq('can_manage_sparten: platform admin = TRUE',
@@ -219,6 +222,9 @@ rollback;
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}', true);
+-- 0075: gemessen wird der ECHTE Zustand — Claim UND eingeschaltete Einsicht
+-- ('departments' ist freigegeben, die Sparten-Verwaltung bleibt damit offen).
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 do $$ begin
   perform testkit.is_eq('platform admin: sees sparten across ALL tenants',
@@ -236,6 +242,9 @@ begin;
 -- als Plattform-Admin eine Sparte in Verein B anlegen (fuer den Cross-Club-Test)
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}', true);
+-- 0075: gemessen wird der ECHTE Zustand — Claim UND eingeschaltete Einsicht
+-- ('departments' ist freigegeben, die Sparten-Verwaltung bleibt damit offen).
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 insert into app.sparten (id, club_id, name) values
   ('bbbb0000-0000-4000-8000-000000000001', 'deadbeef-0000-4000-8000-000000000001', 'Hockey B');

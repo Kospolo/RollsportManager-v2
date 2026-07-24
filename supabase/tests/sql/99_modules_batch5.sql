@@ -173,18 +173,39 @@ begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+-- 0075: der blosse Claim oeffnet nichts mehr. Gemessen wird der ECHTE Zustand —
+-- Claim UND eingeschaltete Einsicht, wie die Audit-Middleware sie setzt.
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 
 do $$
 begin
   perform testkit.is_eq('pro-gate: is_club_pro(club A) is true for a platform admin',
     (select case when app.is_club_pro('c1ab0000-0000-4000-8000-000000000001') then 1 else 0 end), 1);
-  perform testkit.is_eq('gallery: platform admin reads club A gallery (4)',
+  -- 0075: ZUGEGANGEN. Galerie und Dokumente sind „Inhalte des Vereins, oft mit
+  -- Kinderfotos" (0074) — 'gallery' und 'documents' sind nicht freigegeben.
+  -- Der PRO-Gate darueber bleibt offen: die Lizenzfrage ist Betrieb.
+  perform testkit.is_eq('gallery: platform admin sieht 0 Bilder (0075)',
     (select count(*) from app.gallery_items
-      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 4);
-  perform testkit.is_eq('documents: platform admin reads club A documents (3)',
+      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 0);
+  perform testkit.is_eq('documents: platform admin sieht 0 Dokumente (0075)',
     (select count(*) from app.documents
-      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 3);
+      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 0);
+end;
+$$;
+rollback;
+
+-- (Schreib-Sperre: mit dem BLOSSEN Claim gemessen — diese Zusage ist von 0075
+--  unberuehrt. Was der EINGESCHALTETE Betreiber schreiben darf, entscheidet
+--  0051/0074 und misst 99q.)
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+set local role authenticated;
+
+do $$
+begin
   perform testkit.throws('gallery: platform admin MAY NOT add an item (not a trainer)',
     $q$insert into app.gallery_items
         (club_id, title, kind, storage_key, content_type, size_bytes, uploaded_by_member_id)

@@ -184,6 +184,10 @@ begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+-- 0075: seit der Zweckbindung oeffnet der blosse Claim nichts mehr. Gemessen
+-- wird deshalb der ECHTE Zustand — Claim UND eingeschaltete Einsicht, genau so,
+-- wie middleware/operator-access.ts sie vor jedem Plattform-Request setzt.
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 
 do $$
@@ -192,9 +196,29 @@ begin
     (select count(*) from app.facilities), 3);
   perform testkit.is_eq('equipment: platform admin reads across tenants (4)',
     (select count(*) from app.equipment), 4);
-  perform testkit.is_eq('achievements: platform admin reads across tenants (6)',
-    (select count(*) from app.achievements), 6);
+  -- 0075: ZUGEGANGEN. Ein Erfolg sagt aus, WELCHE Person ihn errungen hat
+  -- (achievements.member_id); die Faehigkeit 'achievements' ist nicht
+  -- freigegeben. Anlagen und Material bleiben offen — sie sagen ueber
+  -- niemanden etwas aus.
+  perform testkit.is_eq('achievements: platform admin sees 0 (0075, member_id)',
+    (select count(*) from app.achievements), 0);
+end;
+$$;
+rollback;
 
+-- (Schreib-Sperren: gemessen mit dem BLOSSEN Claim, also ohne eingeschaltete
+--  Einsicht. Diese Zusage ist von 0075 unberuehrt und gilt hier weiter woertlich.
+--  Was der EINGESCHALTETE Betreiber schreiben darf, ist eine eigene Entscheidung
+--  aus 0051/0074 — is_club_trainer behaelt dort bewusst den pauschalen Override,
+--  damit er Struktur reparieren kann; nachgemessen in 99q.)
+begin;
+select set_config('request.jwt.claims',
+  '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
+  true);
+set local role authenticated;
+
+do $$
+begin
   -- platform admin is is_club_member but NOT is_club_trainer -> no facility write
   perform testkit.throws('facilities: platform admin MAY NOT create a facility (not a trainer)',
     $q$insert into app.facilities (club_id, name)

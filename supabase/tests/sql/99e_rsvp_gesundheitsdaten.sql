@@ -271,24 +271,34 @@ $$;
 rollback;
 
 -- ---------------------------------------------------------------------------
--- G) DER PLATTFORM-ADMIN: app.is_club_member() traegt einen is_platform_admin-
---    Bypass (0025:85-95) — er sieht die ZEILEN jedes Vereins. Den GRUND soll er
---    ausdruecklich NICHT sehen: can_read_rsvp_reason traegt den Bypass nicht.
---    Diese Zeile haelt genau diese Entscheidung fest.
+-- G) DER PLATTFORM-ADMIN.
+--
+--    ### GEAENDERT DURCH MIGRATION 0075 ###
+--    Hier stand: „app.is_club_member() traegt einen is_platform_admin-Bypass
+--    (0025:85-95) — er sieht die ZEILEN jedes Vereins, nur den GRUND nicht."
+--    Beide Haelften sind jetzt strenger:
+--      * die ZEILEN: event_rsvps_select haengt seit 0075 an
+--        app.operator_may('events') — nicht freigegeben, also 0. Eine
+--        Rueckmeldung sagt aus, wer wann wo erscheint; das ist kein Betriebsdatum.
+--      * der GRUND: can_read_rsvp_reason hatte den Bypass nie und haengt seit
+--        0075 zusaetzlich an app.operator_may('attendance') — ebenfalls gesperrt.
+--    Gemessen wird der ECHTE Zustand (Claim UND eingeschaltete Einsicht): waere
+--    hier nur der Claim gesetzt, waere die 0 nichtssagend.
 -- ---------------------------------------------------------------------------
 begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000099","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 do $$
 begin
-  perform testkit.is_eq('rsvp-art9: der Plattform-Admin sieht die Zeilen (Bypass wirkt)',
+  perform testkit.is_eq('rsvp-art9: der Betreiber sieht die Zeilen NICHT mehr (0075, waren 28)',
     (select count(*) from app.event_rsvps_visible
-      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 28);
-  perform testkit.is_eq('rsvp-art9: der Plattform-Admin sieht den GRUND trotzdem nicht',
+      where club_id = 'c1ab0000-0000-4000-8000-000000000001'), 0);
+  perform testkit.is_eq('rsvp-art9: … und den GRUND erst recht nicht',
     (select count(*) from app.event_rsvps_visible where status = 'sick'), 0);
-  perform testkit.is_eq('rsvp-art9: der Plattform-Admin sieht keinen Freitext',
+  perform testkit.is_eq('rsvp-art9: … und keinen Freitext',
     (select count(*) from app.event_rsvps_visible where comment is not null), 0);
 end;
 $$;

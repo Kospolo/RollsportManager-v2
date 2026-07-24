@@ -121,6 +121,10 @@ begin;
 select set_config('request.jwt.claims',
   '{"sub":"90000000-0000-4000-8000-000000000090","role":"authenticated","app_metadata":{"is_platform_admin":true}}',
   true);
+-- 0075: seit der Zweckbindung oeffnet der blosse Claim nichts mehr. Gemessen
+-- wird deshalb der ECHTE Zustand — Claim UND eingeschaltete Einsicht, genau so,
+-- wie middleware/operator-access.ts sie vor jedem Plattform-Request setzt.
+select set_config('app.operator_override', 'on', true);
 set local role authenticated;
 
 do $$
