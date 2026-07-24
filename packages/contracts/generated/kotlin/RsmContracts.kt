@@ -114,6 +114,7 @@ enum class ReservationStatus {
 enum class InvoiceStatus {
     @SerialName("draft") DRAFT,
     @SerialName("open") OPEN,
+    @SerialName("partially_paid") PARTIALLY_PAID,
     @SerialName("paid") PAID,
     @SerialName("cancelled") CANCELLED;
 }
@@ -327,6 +328,20 @@ enum class LockerStatus {
 }
 
 @Serializable
+enum class LockerSize {
+    @SerialName("klein") KLEIN,
+    @SerialName("mittel") MITTEL,
+    @SerialName("gross") GROSS;
+}
+
+@Serializable
+enum class LockerRentalStatus {
+    @SerialName("aktiv") AKTIV,
+    @SerialName("beendet") BEENDET,
+    @SerialName("gekuendigt") GEKUENDIGT;
+}
+
+@Serializable
 enum class CounterpartyKind {
     @SerialName("person") PERSON,
     @SerialName("org") ORG;
@@ -465,6 +480,7 @@ enum class EventRideUpdateStatus {
 @Serializable
 enum class InvoiceUpdateStatus {
     @SerialName("paid") PAID,
+    @SerialName("partially_paid") PARTIALLY_PAID,
     @SerialName("cancelled") CANCELLED;
 }
 
@@ -858,6 +874,7 @@ data class DutyRequirement(
     @SerialName("required_hours") val requiredHours: Double?,
     @SerialName("period_start") val periodStart: String,
     @SerialName("period_end") val periodEnd: String,
+    @SerialName("cost_per_hour_cents") val costPerHourCents: Long?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -918,6 +935,12 @@ data class Invoice(
     val currency: String,
     val status: InvoiceStatus,
     @SerialName("dunning_level") val dunningLevel: Long,
+    @SerialName("dunning_fee_cents") val dunningFeeCents: Long?,
+    @SerialName("dunning_interest_cents") val dunningInterestCents: Long?,
+    @SerialName("total_cents") val totalCents: Long?,
+    @SerialName("vat_total_cents") val vatTotalCents: Long?,
+    @SerialName("paid_cents") val paidCents: Long?,
+    @SerialName("open_cents") val openCents: Long?,
     @SerialName("issued_on") val issuedOn: String?,
     @SerialName("due_on") val dueOn: String?,
     @SerialName("paid_at") val paidAt: String?,
@@ -2296,7 +2319,8 @@ data class DutyRequirementCreate(
     @SerialName("period_start") val periodStart: String,
     @SerialName("period_end") val periodEnd: String,
     @SerialName("team_id") val teamId: String? = null,
-    @SerialName("member_id") val memberId: String? = null
+    @SerialName("member_id") val memberId: String? = null,
+    @SerialName("cost_per_hour_cents") val costPerHourCents: Long? = null
 )
 
 @Serializable
@@ -2306,7 +2330,19 @@ data class DutyRequirementUpdate(
     @SerialName("period_start") val periodStart: String? = null,
     @SerialName("period_end") val periodEnd: String? = null,
     @SerialName("team_id") val teamId: String? = null,
-    @SerialName("member_id") val memberId: String? = null
+    @SerialName("member_id") val memberId: String? = null,
+    @SerialName("cost_per_hour_cents") val costPerHourCents: Long? = null
+)
+
+@Serializable
+data class DutyBuyout(
+    @SerialName("requirement_id") val requirementId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("required_hours") val requiredHours: Double?,
+    @SerialName("done_hours") val doneHours: Double?,
+    @SerialName("missing_hours") val missingHours: Double?,
+    @SerialName("cost_per_hour_cents") val costPerHourCents: Long?,
+    @SerialName("buyout_cents") val buyoutCents: Long?
 )
 
 @Serializable
@@ -2611,6 +2647,9 @@ data class Locker(
     val label: String,
     val location: String?,
     val status: LockerStatus,
+    val size: LockerSize,
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long?,
+    @SerialName("has_active_rental") val hasActiveRental: Boolean,
     @SerialName("assigned_member_id") val assignedMemberId: String?,
     val note: String?,
     @SerialName("created_at") val createdAt: String,
@@ -2623,6 +2662,8 @@ data class LockerCreate(
     val label: String,
     val location: String? = null,
     val status: LockerStatus? = LockerStatus.FREE,
+    val size: LockerSize? = LockerSize.MITTEL,
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long? = null,
     @SerialName("assigned_member_id") val assignedMemberId: String? = null,
     val note: String? = null
 )
@@ -2632,6 +2673,8 @@ data class LockerUpdate(
     val label: String? = null,
     val location: String? = null,
     val status: LockerStatus? = null,
+    val size: LockerSize? = null,
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long? = null,
     @SerialName("assigned_member_id") val assignedMemberId: String? = null,
     val note: String? = null
 )
@@ -2639,6 +2682,42 @@ data class LockerUpdate(
 @Serializable
 data class LockerAssign(
     @SerialName("member_id") val memberId: String
+)
+
+@Serializable
+data class LockerRental(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("locker_id") val lockerId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long?,
+    @SerialName("start_on") val startOn: String,
+    @SerialName("end_on") val endOn: String?,
+    val status: LockerRentalStatus,
+    val note: String?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class LockerRentalCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("locker_id") val lockerId: String,
+    @SerialName("member_id") val memberId: String,
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long? = null,
+    @SerialName("start_on") val startOn: String,
+    @SerialName("end_on") val endOn: String? = null,
+    val status: LockerRentalStatus? = LockerRentalStatus.AKTIV,
+    val note: String? = null
+)
+
+@Serializable
+data class LockerRentalUpdate(
+    @SerialName("price_per_month_cents") val pricePerMonthCents: Long? = null,
+    @SerialName("start_on") val startOn: String? = null,
+    @SerialName("end_on") val endOn: String? = null,
+    val status: LockerRentalStatus? = null,
+    val note: String? = null
 )
 
 @Serializable
@@ -2656,7 +2735,45 @@ data class InvoiceUpdate(
     val status: InvoiceUpdateStatus,
     @SerialName("paid_via") val paidVia: String? = null,
     @SerialName("post_to_ledger") val postToLedger: Boolean? = true,
-    @SerialName("ledger_category_id") val ledgerCategoryId: String? = null
+    @SerialName("ledger_category_id") val ledgerCategoryId: String? = null,
+    @SerialName("paid_cents") val paidCents: Long? = null
+)
+
+@Serializable
+data class InvoiceItem(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("invoice_id") val invoiceId: String,
+    @SerialName("sort_order") val sortOrder: Long?,
+    val description: String,
+    val quantity: Double?,
+    @SerialName("unit_price_cents") val unitPriceCents: Long?,
+    @SerialName("vat_rate") val vatRate: Double?,
+    @SerialName("net_cents") val netCents: Long?,
+    @SerialName("vat_cents") val vatCents: Long?,
+    @SerialName("gross_cents") val grossCents: Long?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class InvoiceItemCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("invoice_id") val invoiceId: String,
+    @SerialName("sort_order") val sortOrder: Long? = 0L,
+    val description: String,
+    val quantity: Double,
+    @SerialName("unit_price_cents") val unitPriceCents: Long,
+    @SerialName("vat_rate") val vatRate: Double? = 0
+)
+
+@Serializable
+data class InvoiceItemUpdate(
+    @SerialName("sort_order") val sortOrder: Long? = null,
+    val description: String? = null,
+    val quantity: Double? = null,
+    @SerialName("unit_price_cents") val unitPriceCents: Long? = null,
+    @SerialName("vat_rate") val vatRate: Double? = null
 )
 
 @Serializable
@@ -3000,6 +3117,8 @@ data class DunningLogEntry(
     val action: DunningLogAction,
     @SerialName("actor_member_id") val actorMemberId: String?,
     val note: String?,
+    @SerialName("fee_cents") val feeCents: Long?,
+    @SerialName("interest_cents") val interestCents: Long?,
     @SerialName("created_at") val createdAt: String
 )
 
@@ -3018,5 +3137,7 @@ data class DunningApplyRequest(
     @SerialName("invoice_ids") val invoiceIds: List<String>,
     @SerialName("to_stage") val toStage: Long,
     @SerialName("approve_escalation") val approveEscalation: Boolean? = false,
-    val note: String? = null
+    val note: String? = null,
+    @SerialName("fee_cents") val feeCents: Long? = 0L,
+    @SerialName("interest_cents") val interestCents: Long? = 0L
 )

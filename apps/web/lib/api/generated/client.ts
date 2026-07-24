@@ -1516,6 +1516,16 @@ export class ApiClient {
   }
 
   /**
+   * Duty-hour settlement for one member: target, approved hours, missing hours, buyout
+   * Computed by the database (app.duty_buyout). Only APPROVED hours inside the requirement period count; missing hours are floored at 0 (over-fulfilment never yields a credit); without cost_per_hour_cents buyout_cents is null, not 0.
+   * 
+   * `GET /duty-requirements/{requirementId}/buyout`
+   */
+  async getDutyRequirementsByRequirementIdBuyout(requirementId: string, query: { "member_id": string }, options?: RequestOptions): Promise<M.DutyBuyout> {
+    return this.request<M.DutyBuyout>("GET", `/duty-requirements/${encodeURIComponent(requirementId)}/buyout`, { query, auth: true, options });
+  }
+
+  /**
    * List duty entries (own entries, or all for coaching staff)
    * 
    * `GET /duty-entries`
@@ -1879,6 +1889,46 @@ export class ApiClient {
   }
 
   /**
+   * List locker rentals (RLS: locker managers see all, members their own / their children's)
+   * Optional filters: member_id, locker_id, status. A member only ever sees their own or their child's rental regardless of the filter — the RLS policy locker_rentals_select decides.
+   * 
+   * `GET /locker-rentals`
+   */
+  async getLockerRentals(query: { "club_id": string; "member_id"?: string; "locker_id"?: string; "status"?: M.LockerRentalStatus }, options?: RequestOptions): Promise<M.LockerRental[]> {
+    return this.request<M.LockerRental[]>("GET", "/locker-rentals", { query, auth: true, options });
+  }
+
+  /**
+   * Rent out a locker (owner/admin/treasurer)
+   * The agreed price may differ from the locker list price and may be null ("not set") or 0 (explicitly free). A locker can only have ONE active rental at a time (unique index).
+   * 
+   * `POST /locker-rentals`
+   */
+  async postLockerRentals(body: M.LockerRentalCreate, options?: RequestOptions): Promise<M.LockerRental> {
+    return this.request<M.LockerRental>("POST", "/locker-rentals", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a locker rental: price, period, status (owner/admin/treasurer)
+   * club_id, locker_id and member_id are immutable in the database — a different locker means a NEW rental and ending the old one. That keeps payment history attributable.
+   * 
+   * `PATCH /locker-rentals/{rentalId}`
+   */
+  async patchLockerRentalsByRentalId(rentalId: string, body: M.LockerRentalUpdate, options?: RequestOptions): Promise<M.LockerRental> {
+    return this.request<M.LockerRental>("PATCH", `/locker-rentals/${encodeURIComponent(rentalId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a locker rental (owner/admin/treasurer)
+   * Use this only for a rental entered by mistake. A rental that really happened is ENDED (status beendet/gekuendigt), not deleted — the history is what makes the money traceable.
+   * 
+   * `DELETE /locker-rentals/{rentalId}`
+   */
+  async deleteLockerRentalsByRentalId(rentalId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/locker-rentals/${encodeURIComponent(rentalId)}`, { auth: true, options });
+  }
+
+  /**
    * List invoices (RLS: finance roles see all, members their own/children)
    * Optional filters: status (draft/open/paid/cancelled) and member_id. Members only ever see their own / their children's invoices regardless of the filter (RLS).
    * 
@@ -1908,8 +1958,8 @@ export class ApiClient {
   }
 
   /**
-   * Settle an invoice: mark paid or cancelled (can_manage_finance)
-   * open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.
+   * Settle an invoice: paid, partially paid or cancelled (can_manage_finance)
+   * open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.
    * 
    * `PATCH /invoices/{invoiceId}`
    */
@@ -1924,6 +1974,44 @@ export class ApiClient {
    */
   async postInvoicesByInvoiceIdSendReminder(invoiceId: string, options?: RequestOptions): Promise<M.Invoice> {
     return this.request<M.Invoice>("POST", `/invoices/${encodeURIComponent(invoiceId)}/send-reminder`, { auth: true, options });
+  }
+
+  /**
+   * List the line items of one invoice (visible to whoever may see the invoice)
+   * 
+   * `GET /invoice-items`
+   */
+  async getInvoiceItems(query: { "club_id": string; "invoice_id": string }, options?: RequestOptions): Promise<M.InvoiceItem[]> {
+    return this.request<M.InvoiceItem[]>("GET", "/invoice-items", { query, auth: true, options });
+  }
+
+  /**
+   * Add a line item to a DRAFT invoice (finance roles)
+   * Line net/VAT/gross are computed by the database (generated columns) and must not be sent. Adding an item rewrites invoices.amount_cents and invoices.vat_total_cents from the items.
+   * 
+   * `POST /invoice-items`
+   */
+  async postInvoiceItems(body: M.InvoiceItemCreate, options?: RequestOptions): Promise<M.InvoiceItem> {
+    return this.request<M.InvoiceItem>("POST", "/invoice-items", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a line item of a DRAFT invoice (finance roles)
+   * 
+   * `PATCH /invoice-items/{itemId}`
+   */
+  async patchInvoiceItemsByItemId(itemId: string, body: M.InvoiceItemUpdate, options?: RequestOptions): Promise<M.InvoiceItem> {
+    return this.request<M.InvoiceItem>("PATCH", `/invoice-items/${encodeURIComponent(itemId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Remove a line item from a DRAFT invoice (finance roles)
+   * Hard delete — a draft is not a booking. Removing the LAST item leaves the invoice at amount_cents = 0, which is the only honest answer for an invoice without items.
+   * 
+   * `DELETE /invoice-items/{itemId}`
+   */
+  async deleteInvoiceItemsByItemId(itemId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/invoice-items/${encodeURIComponent(itemId)}`, { auth: true, options });
   }
 
   /**
@@ -2251,7 +2339,7 @@ export class ApiClient {
 
   /**
    * Apply a dunning stage to invoices + write the audit log (finance only)
-   * Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step.
+   * Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step. fee_cents/interest_cents are charged PER invoice and are written onto the invoice by the database trigger - there is no configured rate and no automatic interest calculation anywhere by design.
    * 
    * `POST /clubs/{clubId}/dunning/apply`
    */

@@ -1499,6 +1499,10 @@
           "period_end": {
             "type": "string"
           },
+          "cost_per_hour_cents": {
+            "type": "integer",
+            "nullable": true
+          },
           "created_at": {
             "anyOf": [
               {
@@ -1529,6 +1533,7 @@
           "required_hours",
           "period_start",
           "period_end",
+          "cost_per_hour_cents",
           "created_at",
           "updated_at"
         ]
@@ -1779,6 +1784,7 @@
         "enum": [
           "draft",
           "open",
+          "partially_paid",
           "paid",
           "cancelled"
         ]
@@ -1816,6 +1822,30 @@
           },
           "dunning_level": {
             "type": "integer"
+          },
+          "dunning_fee_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dunning_interest_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "total_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "vat_total_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "paid_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "open_cents": {
+            "type": "integer",
+            "nullable": true
           },
           "issued_on": {
             "type": "string",
@@ -1873,6 +1903,12 @@
           "currency",
           "status",
           "dunning_level",
+          "dunning_fee_cents",
+          "dunning_interest_cents",
+          "total_cents",
+          "vat_total_cents",
+          "paid_cents",
+          "open_cents",
           "issued_on",
           "due_on",
           "paid_at",
@@ -7600,6 +7636,11 @@
           "member_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "cost_per_hour_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
           }
         },
         "required": [
@@ -7638,8 +7679,55 @@
             "type": "string",
             "nullable": true,
             "format": "uuid"
+          },
+          "cost_per_hour_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
           }
         }
+      },
+      "DutyBuyout": {
+        "type": "object",
+        "properties": {
+          "requirement_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "required_hours": {
+            "type": "number",
+            "nullable": true
+          },
+          "done_hours": {
+            "type": "number",
+            "nullable": true
+          },
+          "missing_hours": {
+            "type": "number",
+            "nullable": true
+          },
+          "cost_per_hour_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "buyout_cents": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "requirement_id",
+          "member_id",
+          "required_hours",
+          "done_hours",
+          "missing_hours",
+          "cost_per_hour_cents",
+          "buyout_cents"
+        ]
       },
       "DutyEntryCreate": {
         "type": "object",
@@ -8803,6 +8891,14 @@
           "broken"
         ]
       },
+      "LockerSize": {
+        "type": "string",
+        "enum": [
+          "klein",
+          "mittel",
+          "gross"
+        ]
+      },
       "Locker": {
         "type": "object",
         "properties": {
@@ -8823,6 +8919,16 @@
           },
           "status": {
             "$ref": "#/components/schemas/LockerStatus"
+          },
+          "size": {
+            "$ref": "#/components/schemas/LockerSize"
+          },
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "has_active_rental": {
+            "type": "boolean"
           },
           "assigned_member_id": {
             "type": "string",
@@ -8860,6 +8966,9 @@
           "label",
           "location",
           "status",
+          "size",
+          "price_per_month_cents",
+          "has_active_rental",
           "assigned_member_id",
           "note",
           "created_at",
@@ -8891,6 +9000,21 @@
               }
             ]
           },
+          "size": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LockerSize"
+              },
+              {
+                "default": "mittel"
+              }
+            ]
+          },
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
           "assigned_member_id": {
             "type": "string",
             "nullable": true,
@@ -8920,6 +9044,14 @@
           "status": {
             "$ref": "#/components/schemas/LockerStatus"
           },
+          "size": {
+            "$ref": "#/components/schemas/LockerSize"
+          },
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
           "assigned_member_id": {
             "type": "string",
             "nullable": true,
@@ -8942,6 +9074,165 @@
         "required": [
           "member_id"
         ]
+      },
+      "LockerRentalStatus": {
+        "type": "string",
+        "enum": [
+          "aktiv",
+          "beendet",
+          "gekuendigt"
+        ]
+      },
+      "LockerRental": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locker_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "start_on": {
+            "type": "string"
+          },
+          "end_on": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/LockerRentalStatus"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "locker_id",
+          "member_id",
+          "price_per_month_cents",
+          "start_on",
+          "end_on",
+          "status",
+          "note",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "LockerRentalCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locker_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "start_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_on": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LockerRentalStatus"
+              },
+              {
+                "default": "aktiv"
+              }
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "club_id",
+          "locker_id",
+          "member_id",
+          "start_on"
+        ]
+      },
+      "LockerRentalUpdate": {
+        "type": "object",
+        "properties": {
+          "price_per_month_cents": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0
+          },
+          "start_on": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_on": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LockerRentalStatus"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          }
+        }
       },
       "InvoiceCreate": {
         "type": "object",
@@ -8985,6 +9276,7 @@
             "type": "string",
             "enum": [
               "paid",
+              "partially_paid",
               "cancelled"
             ]
           },
@@ -8999,11 +9291,170 @@
           "ledger_category_id": {
             "type": "string",
             "format": "uuid"
+          },
+          "paid_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true
           }
         },
         "required": [
           "status"
         ]
+      },
+      "InvoiceItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sort_order": {
+            "type": "integer",
+            "nullable": true
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "nullable": true
+          },
+          "unit_price_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "vat_rate": {
+            "type": "number",
+            "nullable": true
+          },
+          "net_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "vat_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "gross_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "invoice_id",
+          "sort_order",
+          "description",
+          "quantity",
+          "unit_price_cents",
+          "vat_rate",
+          "net_cents",
+          "vat_cents",
+          "gross_cents",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "InvoiceItemCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invoice_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sort_order": {
+            "type": "integer",
+            "default": 0
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "unit_price_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vat_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 0
+          }
+        },
+        "required": [
+          "club_id",
+          "invoice_id",
+          "description",
+          "quantity",
+          "unit_price_cents"
+        ]
+      },
+      "InvoiceItemUpdate": {
+        "type": "object",
+        "properties": {
+          "sort_order": {
+            "type": "integer"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0,
+            "exclusiveMinimum": true
+          },
+          "unit_price_cents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "vat_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
       },
       "CounterpartyKind": {
         "type": "string",
@@ -10356,6 +10807,14 @@
             "type": "string",
             "nullable": true
           },
+          "fee_cents": {
+            "type": "integer",
+            "nullable": true
+          },
+          "interest_cents": {
+            "type": "integer",
+            "nullable": true
+          },
           "created_at": {
             "anyOf": [
               {
@@ -10376,6 +10835,8 @@
           "action",
           "actor_member_id",
           "note",
+          "fee_cents",
+          "interest_cents",
           "created_at"
         ]
       },
@@ -10440,6 +10901,16 @@
           "note": {
             "type": "string",
             "maxLength": 500
+          },
+          "fee_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          },
+          "interest_cents": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
           }
         },
         "required": [
@@ -23080,6 +23551,92 @@
         }
       }
     },
+    "/duty-requirements/{requirementId}/buyout": {
+      "get": {
+        "tags": [
+          "duty"
+        ],
+        "summary": "Duty-hour settlement for one member: target, approved hours, missing hours, buyout",
+        "description": "Computed by the database (app.duty_buyout). Only APPROVED hours inside the requirement period count; missing hours are floored at 0 (over-fulfilment never yields a credit); without cost_per_hour_cents buyout_cents is null, not 0.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "requirementId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "member_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settlement row",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DutyBuyout"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/duty-entries": {
       "get": {
         "tags": [
@@ -26296,6 +26853,370 @@
         }
       }
     },
+    "/locker-rentals": {
+      "get": {
+        "tags": [
+          "lockers"
+        ],
+        "summary": "List locker rentals (RLS: locker managers see all, members their own / their children's)",
+        "description": "Optional filters: member_id, locker_id, status. A member only ever sees their own or their child's rental regardless of the filter — the RLS policy locker_rentals_select decides.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "member_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "locker_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/LockerRentalStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rentals visible to the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LockerRental"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "lockers"
+        ],
+        "summary": "Rent out a locker (owner/admin/treasurer)",
+        "description": "The agreed price may differ from the locker list price and may be null (\"not set\") or 0 (explicitly free). A locker can only have ONE active rental at a time (unique index).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockerRentalCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created rental",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockerRental"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This locker already has an active rental",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locker-rentals/{rentalId}": {
+      "patch": {
+        "tags": [
+          "lockers"
+        ],
+        "summary": "Edit a locker rental: price, period, status (owner/admin/treasurer)",
+        "description": "club_id, locker_id and member_id are immutable in the database — a different locker means a NEW rental and ending the old one. That keeps payment history attributable.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "rentalId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockerRentalUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated rental",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LockerRental"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This locker already has another active rental",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "lockers"
+        ],
+        "summary": "Soft-delete a locker rental (owner/admin/treasurer)",
+        "description": "Use this only for a rental entered by mistake. A rental that really happened is ENDED (status beendet/gekuendigt), not deleted — the history is what makes the money traceable.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "rentalId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rental soft-deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/invoices": {
       "get": {
         "tags": [
@@ -26546,8 +27467,8 @@
         "tags": [
           "invoices"
         ],
-        "summary": "Settle an invoice: mark paid or cancelled (can_manage_finance)",
-        "description": "open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true) or draft/open → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.",
+        "summary": "Settle an invoice: paid, partially paid or cancelled (can_manage_finance)",
+        "description": "open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.",
         "security": [
           {
             "bearerAuth": []
@@ -26714,6 +27635,362 @@
           },
           "409": {
             "description": "Invoice is not open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoice-items": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "List the line items of one invoice (visible to whoever may see the invoice)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "invoice_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Line items visible to the caller",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceItem"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Add a line item to a DRAFT invoice (finance roles)",
+        "description": "Line net/VAT/gross are computed by the database (generated columns) and must not be sent. Adding an item rewrites invoices.amount_cents and invoices.vat_total_cents from the items.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceItemCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created line item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The invoice is no longer a draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoice-items/{itemId}": {
+      "patch": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Edit a line item of a DRAFT invoice (finance roles)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "itemId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceItemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated line item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The invoice is no longer a draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Remove a line item from a DRAFT invoice (finance roles)",
+        "description": "Hard delete — a draft is not a booking. Removing the LAST item leaves the invoice at amount_cents = 0, which is the only honest answer for an invoice without items.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "itemId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Line item removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The invoice is no longer a draft",
             "content": {
               "application/json": {
                 "schema": {
@@ -29502,7 +30779,7 @@
           "dunning"
         ],
         "summary": "Apply a dunning stage to invoices + write the audit log (finance only)",
-        "description": "Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step.",
+        "description": "Raises dunning_level to to_stage (capped at the DB max) for the given open invoices and appends one app.dunning_log row each. Stages >= 2 require approve_escalation=true - the deliberate human approval; stage 1 (reminder) is the routine step. fee_cents/interest_cents are charged PER invoice and are written onto the invoice by the database trigger - there is no configured rate and no automatic interest calculation anywhere by design.",
         "security": [
           {
             "bearerAuth": []

@@ -324,6 +324,7 @@ export interface DutyRequirement {
   "required_hours": number | null;
   "period_start": string;
   "period_end": string;
+  "cost_per_hour_cents": number | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -378,8 +379,8 @@ export interface EquipmentReservation {
   "updated_at": string;
 }
 
-export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
-export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "paid", "cancelled"] as const;
+export type InvoiceStatus = "draft" | "open" | "partially_paid" | "paid" | "cancelled";
+export const InvoiceStatusValues: readonly InvoiceStatus[] = ["draft", "open", "partially_paid", "paid", "cancelled"] as const;
 
 export interface Invoice {
   "id": string;
@@ -391,6 +392,12 @@ export interface Invoice {
   "currency": string;
   "status": InvoiceStatus;
   "dunning_level": number;
+  "dunning_fee_cents": number | null;
+  "dunning_interest_cents": number | null;
+  "total_cents": number | null;
+  "vat_total_cents": number | null;
+  "paid_cents": number | null;
+  "open_cents": number | null;
   "issued_on": string | null;
   "due_on": string | null;
   "paid_at": string | null;
@@ -1712,6 +1719,7 @@ export interface DutyRequirementCreate {
   "period_end": string;
   "team_id"?: string;
   "member_id"?: string;
+  "cost_per_hour_cents"?: number | null;
 }
 
 export interface DutyRequirementUpdate {
@@ -1721,6 +1729,17 @@ export interface DutyRequirementUpdate {
   "period_end"?: string;
   "team_id"?: string | null;
   "member_id"?: string | null;
+  "cost_per_hour_cents"?: number | null;
+}
+
+export interface DutyBuyout {
+  "requirement_id": string;
+  "member_id": string;
+  "required_hours": number | null;
+  "done_hours": number | null;
+  "missing_hours": number | null;
+  "cost_per_hour_cents": number | null;
+  "buyout_cents": number | null;
 }
 
 export interface DutyEntryCreate {
@@ -1999,12 +2018,18 @@ export interface DepartmentMembersSet {
 export type LockerStatus = "free" | "assigned" | "broken";
 export const LockerStatusValues: readonly LockerStatus[] = ["free", "assigned", "broken"] as const;
 
+export type LockerSize = "klein" | "mittel" | "gross";
+export const LockerSizeValues: readonly LockerSize[] = ["klein", "mittel", "gross"] as const;
+
 export interface Locker {
   "id": string;
   "club_id": string;
   "label": string;
   "location": string | null;
   "status": LockerStatus;
+  "size": LockerSize;
+  "price_per_month_cents": number | null;
+  "has_active_rental": boolean;
   "assigned_member_id": string | null;
   "note": string | null;
   "created_at": string;
@@ -2016,6 +2041,8 @@ export interface LockerCreate {
   "label": string;
   "location"?: string | null;
   "status"?: LockerStatus;
+  "size"?: LockerSize;
+  "price_per_month_cents"?: number | null;
   "assigned_member_id"?: string | null;
   "note"?: string | null;
 }
@@ -2024,12 +2051,50 @@ export interface LockerUpdate {
   "label"?: string;
   "location"?: string | null;
   "status"?: LockerStatus;
+  "size"?: LockerSize;
+  "price_per_month_cents"?: number | null;
   "assigned_member_id"?: string | null;
   "note"?: string | null;
 }
 
 export interface LockerAssign {
   "member_id": string;
+}
+
+export type LockerRentalStatus = "aktiv" | "beendet" | "gekuendigt";
+export const LockerRentalStatusValues: readonly LockerRentalStatus[] = ["aktiv", "beendet", "gekuendigt"] as const;
+
+export interface LockerRental {
+  "id": string;
+  "club_id": string;
+  "locker_id": string;
+  "member_id": string;
+  "price_per_month_cents": number | null;
+  "start_on": string;
+  "end_on": string | null;
+  "status": LockerRentalStatus;
+  "note": string | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface LockerRentalCreate {
+  "club_id": string;
+  "locker_id": string;
+  "member_id": string;
+  "price_per_month_cents"?: number | null;
+  "start_on": string;
+  "end_on"?: string | null;
+  "status"?: LockerRentalStatus;
+  "note"?: string | null;
+}
+
+export interface LockerRentalUpdate {
+  "price_per_month_cents"?: number | null;
+  "start_on"?: string;
+  "end_on"?: string | null;
+  "status"?: LockerRentalStatus;
+  "note"?: string | null;
 }
 
 export interface InvoiceCreate {
@@ -2042,10 +2107,45 @@ export interface InvoiceCreate {
 }
 
 export interface InvoiceUpdate {
-  "status": "paid" | "cancelled";
+  "status": "paid" | "partially_paid" | "cancelled";
   "paid_via"?: string;
   "post_to_ledger"?: boolean;
   "ledger_category_id"?: string;
+  "paid_cents"?: number;
+}
+
+export interface InvoiceItem {
+  "id": string;
+  "club_id": string;
+  "invoice_id": string;
+  "sort_order": number | null;
+  "description": string;
+  "quantity": number | null;
+  "unit_price_cents": number | null;
+  "vat_rate": number | null;
+  "net_cents": number | null;
+  "vat_cents": number | null;
+  "gross_cents": number | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface InvoiceItemCreate {
+  "club_id": string;
+  "invoice_id": string;
+  "sort_order"?: number;
+  "description": string;
+  "quantity": number;
+  "unit_price_cents": number;
+  "vat_rate"?: number;
+}
+
+export interface InvoiceItemUpdate {
+  "sort_order"?: number;
+  "description"?: string;
+  "quantity"?: number;
+  "unit_price_cents"?: number;
+  "vat_rate"?: number;
 }
 
 export type CounterpartyKind = "person" | "org";
@@ -2368,6 +2468,8 @@ export interface DunningLogEntry {
   "action": DunningLogAction;
   "actor_member_id": string | null;
   "note": string | null;
+  "fee_cents": number | null;
+  "interest_cents": number | null;
   "created_at": string;
 }
 
@@ -2385,5 +2487,7 @@ export interface DunningApplyRequest {
   "to_stage": number;
   "approve_escalation"?: boolean;
   "note"?: string;
+  "fee_cents"?: number;
+  "interest_cents"?: number;
 }
 

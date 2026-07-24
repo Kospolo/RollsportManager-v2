@@ -137,6 +137,7 @@ public enum ReservationStatus: String, Codable, CaseIterable, Sendable, Equatabl
 public enum InvoiceStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case draft = "draft"
     case open = "open"
+    case partiallyPaid = "partially_paid"
     case paid = "paid"
     case cancelled = "cancelled"
 }
@@ -321,6 +322,18 @@ public enum LockerStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case broken = "broken"
 }
 
+public enum LockerSize: String, Codable, CaseIterable, Sendable, Equatable {
+    case klein = "klein"
+    case mittel = "mittel"
+    case gross = "gross"
+}
+
+public enum LockerRentalStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case aktiv = "aktiv"
+    case beendet = "beendet"
+    case gekuendigt = "gekuendigt"
+}
+
 public enum CounterpartyKind: String, Codable, CaseIterable, Sendable, Equatable {
     case person = "person"
     case org = "org"
@@ -440,6 +453,7 @@ public enum EventRideUpdateStatus: String, Codable, CaseIterable, Sendable, Equa
 /// Inline enum of InvoiceUpdate.status (hoisted by codegen).
 public enum InvoiceUpdateStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case paid = "paid"
+    case partiallyPaid = "partially_paid"
     case cancelled = "cancelled"
 }
 
@@ -1683,6 +1697,7 @@ public struct DutyRequirement: Codable, Equatable, Sendable {
     public var requiredHours: Double?
     public var periodStart: String
     public var periodEnd: String
+    public var costPerHourCents: Int?
     public var createdAt: String
     public var updatedAt: String
 
@@ -1695,6 +1710,7 @@ public struct DutyRequirement: Codable, Equatable, Sendable {
         case requiredHours = "required_hours"
         case periodStart = "period_start"
         case periodEnd = "period_end"
+        case costPerHourCents = "cost_per_hour_cents"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -1708,6 +1724,7 @@ public struct DutyRequirement: Codable, Equatable, Sendable {
         requiredHours: Double? = nil,
         periodStart: String,
         periodEnd: String,
+        costPerHourCents: Int? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -1719,6 +1736,7 @@ public struct DutyRequirement: Codable, Equatable, Sendable {
         self.requiredHours = requiredHours
         self.periodStart = periodStart
         self.periodEnd = periodEnd
+        self.costPerHourCents = costPerHourCents
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -1904,6 +1922,12 @@ public struct Invoice: Codable, Equatable, Sendable {
     public var currency: String
     public var status: InvoiceStatus
     public var dunningLevel: Int
+    public var dunningFeeCents: Int?
+    public var dunningInterestCents: Int?
+    public var totalCents: Int?
+    public var vatTotalCents: Int?
+    public var paidCents: Int?
+    public var openCents: Int?
     public var issuedOn: String?
     public var dueOn: String?
     public var paidAt: String?
@@ -1921,6 +1945,12 @@ public struct Invoice: Codable, Equatable, Sendable {
         case currency
         case status
         case dunningLevel = "dunning_level"
+        case dunningFeeCents = "dunning_fee_cents"
+        case dunningInterestCents = "dunning_interest_cents"
+        case totalCents = "total_cents"
+        case vatTotalCents = "vat_total_cents"
+        case paidCents = "paid_cents"
+        case openCents = "open_cents"
         case issuedOn = "issued_on"
         case dueOn = "due_on"
         case paidAt = "paid_at"
@@ -1939,6 +1969,12 @@ public struct Invoice: Codable, Equatable, Sendable {
         currency: String,
         status: InvoiceStatus,
         dunningLevel: Int,
+        dunningFeeCents: Int? = nil,
+        dunningInterestCents: Int? = nil,
+        totalCents: Int? = nil,
+        vatTotalCents: Int? = nil,
+        paidCents: Int? = nil,
+        openCents: Int? = nil,
         issuedOn: String? = nil,
         dueOn: String? = nil,
         paidAt: String? = nil,
@@ -1955,6 +1991,12 @@ public struct Invoice: Codable, Equatable, Sendable {
         self.currency = currency
         self.status = status
         self.dunningLevel = dunningLevel
+        self.dunningFeeCents = dunningFeeCents
+        self.dunningInterestCents = dunningInterestCents
+        self.totalCents = totalCents
+        self.vatTotalCents = vatTotalCents
+        self.paidCents = paidCents
+        self.openCents = openCents
         self.issuedOn = issuedOn
         self.dueOn = dueOn
         self.paidAt = paidAt
@@ -6825,6 +6867,7 @@ public struct DutyRequirementCreate: Codable, Equatable, Sendable {
     public var teamId: String?
     /// Format: uuid
     public var memberId: String?
+    public var costPerHourCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case clubId = "club_id"
@@ -6834,6 +6877,7 @@ public struct DutyRequirementCreate: Codable, Equatable, Sendable {
         case periodEnd = "period_end"
         case teamId = "team_id"
         case memberId = "member_id"
+        case costPerHourCents = "cost_per_hour_cents"
     }
 
     public init(
@@ -6843,7 +6887,8 @@ public struct DutyRequirementCreate: Codable, Equatable, Sendable {
         periodStart: String,
         periodEnd: String,
         teamId: String? = nil,
-        memberId: String? = nil
+        memberId: String? = nil,
+        costPerHourCents: Int? = nil
     ) {
         self.clubId = clubId
         self.seasonLabel = seasonLabel
@@ -6852,6 +6897,7 @@ public struct DutyRequirementCreate: Codable, Equatable, Sendable {
         self.periodEnd = periodEnd
         self.teamId = teamId
         self.memberId = memberId
+        self.costPerHourCents = costPerHourCents
     }
 }
 
@@ -6866,6 +6912,7 @@ public struct DutyRequirementUpdate: Codable, Equatable, Sendable {
     public var teamId: String?
     /// Format: uuid
     public var memberId: String?
+    public var costPerHourCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case seasonLabel = "season_label"
@@ -6874,6 +6921,7 @@ public struct DutyRequirementUpdate: Codable, Equatable, Sendable {
         case periodEnd = "period_end"
         case teamId = "team_id"
         case memberId = "member_id"
+        case costPerHourCents = "cost_per_hour_cents"
     }
 
     public init(
@@ -6882,7 +6930,8 @@ public struct DutyRequirementUpdate: Codable, Equatable, Sendable {
         periodStart: String? = nil,
         periodEnd: String? = nil,
         teamId: String? = nil,
-        memberId: String? = nil
+        memberId: String? = nil,
+        costPerHourCents: Int? = nil
     ) {
         self.seasonLabel = seasonLabel
         self.requiredHours = requiredHours
@@ -6890,6 +6939,47 @@ public struct DutyRequirementUpdate: Codable, Equatable, Sendable {
         self.periodEnd = periodEnd
         self.teamId = teamId
         self.memberId = memberId
+        self.costPerHourCents = costPerHourCents
+    }
+}
+
+public struct DutyBuyout: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var requirementId: String
+    /// Format: uuid
+    public var memberId: String
+    public var requiredHours: Double?
+    public var doneHours: Double?
+    public var missingHours: Double?
+    public var costPerHourCents: Int?
+    public var buyoutCents: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case requirementId = "requirement_id"
+        case memberId = "member_id"
+        case requiredHours = "required_hours"
+        case doneHours = "done_hours"
+        case missingHours = "missing_hours"
+        case costPerHourCents = "cost_per_hour_cents"
+        case buyoutCents = "buyout_cents"
+    }
+
+    public init(
+        requirementId: String,
+        memberId: String,
+        requiredHours: Double? = nil,
+        doneHours: Double? = nil,
+        missingHours: Double? = nil,
+        costPerHourCents: Int? = nil,
+        buyoutCents: Int? = nil
+    ) {
+        self.requirementId = requirementId
+        self.memberId = memberId
+        self.requiredHours = requiredHours
+        self.doneHours = doneHours
+        self.missingHours = missingHours
+        self.costPerHourCents = costPerHourCents
+        self.buyoutCents = buyoutCents
     }
 }
 
@@ -7973,6 +8063,9 @@ public struct Locker: Codable, Equatable, Sendable {
     public var label: String
     public var location: String?
     public var status: LockerStatus
+    public var size: LockerSize
+    public var pricePerMonthCents: Int?
+    public var hasActiveRental: Bool
     /// Format: uuid
     public var assignedMemberId: String?
     public var note: String?
@@ -7985,6 +8078,9 @@ public struct Locker: Codable, Equatable, Sendable {
         case label
         case location
         case status
+        case size
+        case pricePerMonthCents = "price_per_month_cents"
+        case hasActiveRental = "has_active_rental"
         case assignedMemberId = "assigned_member_id"
         case note
         case createdAt = "created_at"
@@ -7997,6 +8093,9 @@ public struct Locker: Codable, Equatable, Sendable {
         label: String,
         location: String? = nil,
         status: LockerStatus,
+        size: LockerSize,
+        pricePerMonthCents: Int? = nil,
+        hasActiveRental: Bool,
         assignedMemberId: String? = nil,
         note: String? = nil,
         createdAt: String,
@@ -8007,6 +8106,9 @@ public struct Locker: Codable, Equatable, Sendable {
         self.label = label
         self.location = location
         self.status = status
+        self.size = size
+        self.pricePerMonthCents = pricePerMonthCents
+        self.hasActiveRental = hasActiveRental
         self.assignedMemberId = assignedMemberId
         self.note = note
         self.createdAt = createdAt
@@ -8020,6 +8122,8 @@ public struct LockerCreate: Codable, Equatable, Sendable {
     public var label: String
     public var location: String?
     public var status: LockerStatus?
+    public var size: LockerSize?
+    public var pricePerMonthCents: Int?
     /// Format: uuid
     public var assignedMemberId: String?
     public var note: String?
@@ -8029,6 +8133,8 @@ public struct LockerCreate: Codable, Equatable, Sendable {
         case label
         case location
         case status
+        case size
+        case pricePerMonthCents = "price_per_month_cents"
         case assignedMemberId = "assigned_member_id"
         case note
     }
@@ -8038,6 +8144,8 @@ public struct LockerCreate: Codable, Equatable, Sendable {
         label: String,
         location: String? = nil,
         status: LockerStatus? = .free,
+        size: LockerSize? = .mittel,
+        pricePerMonthCents: Int? = nil,
         assignedMemberId: String? = nil,
         note: String? = nil
     ) {
@@ -8045,6 +8153,8 @@ public struct LockerCreate: Codable, Equatable, Sendable {
         self.label = label
         self.location = location
         self.status = status
+        self.size = size
+        self.pricePerMonthCents = pricePerMonthCents
         self.assignedMemberId = assignedMemberId
         self.note = note
     }
@@ -8054,6 +8164,8 @@ public struct LockerUpdate: Codable, Equatable, Sendable {
     public var label: String?
     public var location: String?
     public var status: LockerStatus?
+    public var size: LockerSize?
+    public var pricePerMonthCents: Int?
     /// Format: uuid
     public var assignedMemberId: String?
     public var note: String?
@@ -8062,6 +8174,8 @@ public struct LockerUpdate: Codable, Equatable, Sendable {
         case label
         case location
         case status
+        case size
+        case pricePerMonthCents = "price_per_month_cents"
         case assignedMemberId = "assigned_member_id"
         case note
     }
@@ -8070,12 +8184,16 @@ public struct LockerUpdate: Codable, Equatable, Sendable {
         label: String? = nil,
         location: String? = nil,
         status: LockerStatus? = nil,
+        size: LockerSize? = nil,
+        pricePerMonthCents: Int? = nil,
         assignedMemberId: String? = nil,
         note: String? = nil
     ) {
         self.label = label
         self.location = location
         self.status = status
+        self.size = size
+        self.pricePerMonthCents = pricePerMonthCents
         self.assignedMemberId = assignedMemberId
         self.note = note
     }
@@ -8093,6 +8211,143 @@ public struct LockerAssign: Codable, Equatable, Sendable {
         memberId: String
     ) {
         self.memberId = memberId
+    }
+}
+
+public struct LockerRental: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var lockerId: String
+    /// Format: uuid
+    public var memberId: String
+    public var pricePerMonthCents: Int?
+    public var startOn: String
+    public var endOn: String?
+    public var status: LockerRentalStatus
+    public var note: String?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case lockerId = "locker_id"
+        case memberId = "member_id"
+        case pricePerMonthCents = "price_per_month_cents"
+        case startOn = "start_on"
+        case endOn = "end_on"
+        case status
+        case note
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        lockerId: String,
+        memberId: String,
+        pricePerMonthCents: Int? = nil,
+        startOn: String,
+        endOn: String? = nil,
+        status: LockerRentalStatus,
+        note: String? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.lockerId = lockerId
+        self.memberId = memberId
+        self.pricePerMonthCents = pricePerMonthCents
+        self.startOn = startOn
+        self.endOn = endOn
+        self.status = status
+        self.note = note
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct LockerRentalCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var lockerId: String
+    /// Format: uuid
+    public var memberId: String
+    public var pricePerMonthCents: Int?
+    /// Format: date
+    public var startOn: String
+    /// Format: date
+    public var endOn: String?
+    public var status: LockerRentalStatus?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case lockerId = "locker_id"
+        case memberId = "member_id"
+        case pricePerMonthCents = "price_per_month_cents"
+        case startOn = "start_on"
+        case endOn = "end_on"
+        case status
+        case note
+    }
+
+    public init(
+        clubId: String,
+        lockerId: String,
+        memberId: String,
+        pricePerMonthCents: Int? = nil,
+        startOn: String,
+        endOn: String? = nil,
+        status: LockerRentalStatus? = .aktiv,
+        note: String? = nil
+    ) {
+        self.clubId = clubId
+        self.lockerId = lockerId
+        self.memberId = memberId
+        self.pricePerMonthCents = pricePerMonthCents
+        self.startOn = startOn
+        self.endOn = endOn
+        self.status = status
+        self.note = note
+    }
+}
+
+public struct LockerRentalUpdate: Codable, Equatable, Sendable {
+    public var pricePerMonthCents: Int?
+    /// Format: date
+    public var startOn: String?
+    /// Format: date
+    public var endOn: String?
+    public var status: LockerRentalStatus?
+    public var note: String?
+
+    enum CodingKeys: String, CodingKey {
+        case pricePerMonthCents = "price_per_month_cents"
+        case startOn = "start_on"
+        case endOn = "end_on"
+        case status
+        case note
+    }
+
+    public init(
+        pricePerMonthCents: Int? = nil,
+        startOn: String? = nil,
+        endOn: String? = nil,
+        status: LockerRentalStatus? = nil,
+        note: String? = nil
+    ) {
+        self.pricePerMonthCents = pricePerMonthCents
+        self.startOn = startOn
+        self.endOn = endOn
+        self.status = status
+        self.note = note
     }
 }
 
@@ -8139,24 +8394,163 @@ public struct InvoiceUpdate: Codable, Equatable, Sendable {
     public var postToLedger: Bool?
     /// Format: uuid
     public var ledgerCategoryId: String?
+    public var paidCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case status
         case paidVia = "paid_via"
         case postToLedger = "post_to_ledger"
         case ledgerCategoryId = "ledger_category_id"
+        case paidCents = "paid_cents"
     }
 
     public init(
         status: InvoiceUpdateStatus,
         paidVia: String? = nil,
         postToLedger: Bool? = true,
-        ledgerCategoryId: String? = nil
+        ledgerCategoryId: String? = nil,
+        paidCents: Int? = nil
     ) {
         self.status = status
         self.paidVia = paidVia
         self.postToLedger = postToLedger
         self.ledgerCategoryId = ledgerCategoryId
+        self.paidCents = paidCents
+    }
+}
+
+public struct InvoiceItem: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var invoiceId: String
+    public var sortOrder: Int?
+    public var description: String
+    public var quantity: Double?
+    public var unitPriceCents: Int?
+    public var vatRate: Double?
+    public var netCents: Int?
+    public var vatCents: Int?
+    public var grossCents: Int?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case invoiceId = "invoice_id"
+        case sortOrder = "sort_order"
+        case description
+        case quantity
+        case unitPriceCents = "unit_price_cents"
+        case vatRate = "vat_rate"
+        case netCents = "net_cents"
+        case vatCents = "vat_cents"
+        case grossCents = "gross_cents"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        invoiceId: String,
+        sortOrder: Int? = nil,
+        description: String,
+        quantity: Double? = nil,
+        unitPriceCents: Int? = nil,
+        vatRate: Double? = nil,
+        netCents: Int? = nil,
+        vatCents: Int? = nil,
+        grossCents: Int? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.invoiceId = invoiceId
+        self.sortOrder = sortOrder
+        self.description = description
+        self.quantity = quantity
+        self.unitPriceCents = unitPriceCents
+        self.vatRate = vatRate
+        self.netCents = netCents
+        self.vatCents = vatCents
+        self.grossCents = grossCents
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct InvoiceItemCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var invoiceId: String
+    public var sortOrder: Int?
+    public var description: String
+    public var quantity: Double
+    public var unitPriceCents: Int
+    public var vatRate: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case invoiceId = "invoice_id"
+        case sortOrder = "sort_order"
+        case description
+        case quantity
+        case unitPriceCents = "unit_price_cents"
+        case vatRate = "vat_rate"
+    }
+
+    public init(
+        clubId: String,
+        invoiceId: String,
+        sortOrder: Int? = 0,
+        description: String,
+        quantity: Double,
+        unitPriceCents: Int,
+        vatRate: Double? = 0
+    ) {
+        self.clubId = clubId
+        self.invoiceId = invoiceId
+        self.sortOrder = sortOrder
+        self.description = description
+        self.quantity = quantity
+        self.unitPriceCents = unitPriceCents
+        self.vatRate = vatRate
+    }
+}
+
+public struct InvoiceItemUpdate: Codable, Equatable, Sendable {
+    public var sortOrder: Int?
+    public var description: String?
+    public var quantity: Double?
+    public var unitPriceCents: Int?
+    public var vatRate: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case sortOrder = "sort_order"
+        case description
+        case quantity
+        case unitPriceCents = "unit_price_cents"
+        case vatRate = "vat_rate"
+    }
+
+    public init(
+        sortOrder: Int? = nil,
+        description: String? = nil,
+        quantity: Double? = nil,
+        unitPriceCents: Int? = nil,
+        vatRate: Double? = nil
+    ) {
+        self.sortOrder = sortOrder
+        self.description = description
+        self.quantity = quantity
+        self.unitPriceCents = unitPriceCents
+        self.vatRate = vatRate
     }
 }
 
@@ -9362,6 +9756,8 @@ public struct DunningLogEntry: Codable, Equatable, Sendable {
     /// Format: uuid
     public var actorMemberId: String?
     public var note: String?
+    public var feeCents: Int?
+    public var interestCents: Int?
     public var createdAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -9373,6 +9769,8 @@ public struct DunningLogEntry: Codable, Equatable, Sendable {
         case action
         case actorMemberId = "actor_member_id"
         case note
+        case feeCents = "fee_cents"
+        case interestCents = "interest_cents"
         case createdAt = "created_at"
     }
 
@@ -9385,6 +9783,8 @@ public struct DunningLogEntry: Codable, Equatable, Sendable {
         action: DunningLogAction,
         actorMemberId: String? = nil,
         note: String? = nil,
+        feeCents: Int? = nil,
+        interestCents: Int? = nil,
         createdAt: String
     ) {
         self.id = id
@@ -9395,6 +9795,8 @@ public struct DunningLogEntry: Codable, Equatable, Sendable {
         self.action = action
         self.actorMemberId = actorMemberId
         self.note = note
+        self.feeCents = feeCents
+        self.interestCents = interestCents
         self.createdAt = createdAt
     }
 }
@@ -9440,23 +9842,31 @@ public struct DunningApplyRequest: Codable, Equatable, Sendable {
     public var toStage: Int
     public var approveEscalation: Bool?
     public var note: String?
+    public var feeCents: Int?
+    public var interestCents: Int?
 
     enum CodingKeys: String, CodingKey {
         case invoiceIds = "invoice_ids"
         case toStage = "to_stage"
         case approveEscalation = "approve_escalation"
         case note
+        case feeCents = "fee_cents"
+        case interestCents = "interest_cents"
     }
 
     public init(
         invoiceIds: [String],
         toStage: Int,
         approveEscalation: Bool? = false,
-        note: String? = nil
+        note: String? = nil,
+        feeCents: Int? = 0,
+        interestCents: Int? = 0
     ) {
         self.invoiceIds = invoiceIds
         self.toStage = toStage
         self.approveEscalation = approveEscalation
         self.note = note
+        self.feeCents = feeCents
+        self.interestCents = interestCents
     }
 }
