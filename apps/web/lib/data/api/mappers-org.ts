@@ -1,5 +1,5 @@
 import type * as M from "@/lib/api/generated";
-import type { Anniversary, Department, Locker } from "@/lib/types";
+import type { Anniversary, Department, Locker, LockerRental } from "@/lib/types";
 
 /**
  * Mapper der Organisations-Module (Abteilungen, Schließfächer, Jubiläen):
@@ -28,7 +28,30 @@ export function mapLocker(w: M.Locker): Locker {
     label: w.label,
     location: w.location ?? undefined,
     status: w.status,
+    size: w.size,
+    // Beträge werden NICHT mit ?? undefined entschärft: null ist hier eine
+    // Aussage („kein Preis festgelegt") und muss von 0 („kostenlos")
+    // unterscheidbar bleiben. undefined würde beides zu „nichts" einebnen.
+    pricePerMonthCents: w.price_per_month_cents,
+    hasActiveRental: w.has_active_rental,
     assignedMemberId: w.assigned_member_id ?? undefined,
+    note: w.note ?? undefined,
+    createdAt: w.created_at,
+    updatedAt: w.updated_at,
+  };
+}
+
+export function mapLockerRental(w: M.LockerRental): LockerRental {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    lockerId: w.locker_id,
+    memberId: w.member_id,
+    // Siehe mapLocker: null bleibt null.
+    pricePerMonthCents: w.price_per_month_cents,
+    startOn: w.start_on,
+    endOn: w.end_on,
+    status: w.status,
     note: w.note ?? undefined,
     createdAt: w.created_at,
     updatedAt: w.updated_at,

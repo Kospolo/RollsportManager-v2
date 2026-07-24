@@ -1,6 +1,6 @@
 import type { OrgRepository } from "../inputs-org";
 import { activeClubId, apiClient } from "./client";
-import { mapAnniversary, mapDepartment, mapLocker } from "./mappers-org";
+import { mapAnniversary, mapDepartment, mapLocker, mapLockerRental } from "./mappers-org";
 
 /**
  * API-Implementierung der Organisations-Module (Abteilungen, Schließfächer,
@@ -58,6 +58,8 @@ export const moduleApiRepositoryOrg: OrgRepository = {
       label: input.label,
       location: input.location,
       status: input.status,
+      size: input.size,
+      price_per_month_cents: input.pricePerMonthCents,
       assigned_member_id: input.assignedMemberId,
       note: input.note,
     });
@@ -68,6 +70,8 @@ export const moduleApiRepositoryOrg: OrgRepository = {
       label: patch.label,
       location: patch.location,
       status: patch.status,
+      size: patch.size,
+      price_per_month_cents: patch.pricePerMonthCents,
       assigned_member_id: patch.assignedMemberId,
       note: patch.note,
     });
@@ -87,6 +91,46 @@ export const moduleApiRepositoryOrg: OrgRepository = {
     // Bodyless PATCH (in check.mjs allowlisted) — Server setzt status=free, member=null.
     const updated = await apiClient.patchLockersByLockerIdRelease(lockerId);
     return mapLocker(updated);
+  },
+
+  /* ---------- Vermietung (0070) ---------- */
+  async listLockerRentals(filter) {
+    const rows = await apiClient.getLockerRentals({
+      club_id: activeClubId(),
+      member_id: filter?.memberId,
+      locker_id: filter?.lockerId,
+      status: filter?.status,
+    });
+    return rows.map(mapLockerRental);
+  },
+  async createLockerRental(input) {
+    const created = await apiClient.postLockerRentals({
+      club_id: activeClubId(),
+      locker_id: input.lockerId,
+      member_id: input.memberId,
+      // Bewusst KEIN `?? null`: weggelassen soll weggelassen bleiben (dann
+      // entscheidet der Server-Default), null ist eine ausdrückliche Angabe.
+      price_per_month_cents: input.pricePerMonthCents,
+      start_on: input.startOn,
+      end_on: input.endOn,
+      status: input.status,
+      note: input.note,
+    });
+    return mapLockerRental(created);
+  },
+  async updateLockerRental(rentalId, patch) {
+    const updated = await apiClient.patchLockerRentalsByRentalId(rentalId, {
+      price_per_month_cents: patch.pricePerMonthCents,
+      start_on: patch.startOn,
+      end_on: patch.endOn,
+      status: patch.status,
+      note: patch.note,
+    });
+    return mapLockerRental(updated);
+  },
+  async deleteLockerRental(rentalId) {
+    const deleted = await apiClient.deleteLockerRentalsByRentalId(rentalId);
+    return { id: deleted.id };
   },
 
   /* ---------- Jubiläen (reine Lesesicht) ---------- */

@@ -1,5 +1,5 @@
 import { club } from "@/lib/mock";
-import type { Department, Locker } from "@/lib/types";
+import type { Department, Locker, LockerRental } from "@/lib/types";
 
 /**
  * Start-Seed der Organisations-Modul-Stores (Abteilungen, Schließfächer) für
@@ -52,6 +52,14 @@ export const departmentSeed: Department[] = [
   },
 ];
 
+/**
+ * Schließfächer inkl. Größe und LISTENPREIS (0070).
+ *
+ * Der Seed zeigt bewusst alle drei Preis-Zustände nebeneinander, weil genau
+ * dort die Ansicht falsch werden kann: A-01 hat einen Preis, B-05 ist
+ * AUSDRÜCKLICH KOSTENLOS (0 Cent) und B-06 hat NOCH KEINEN festgelegt (null).
+ * Wer 0 und null in der Oberfläche zusammenwirft, sieht es hier sofort.
+ */
 export const lockerSeed: Locker[] = [
   {
     id: "loc-01",
@@ -59,6 +67,9 @@ export const lockerSeed: Locker[] = [
     label: "A-01",
     location: "Umkleide Nord",
     status: "assigned",
+    size: "mittel",
+    pricePerMonthCents: 500,
+    hasActiveRental: true,
     assignedMemberId: "m-16",
     note: undefined,
     createdAt: createdIso(300),
@@ -70,6 +81,9 @@ export const lockerSeed: Locker[] = [
     label: "A-02",
     location: "Umkleide Nord",
     status: "free",
+    size: "klein",
+    pricePerMonthCents: 300,
+    hasActiveRental: false,
     assignedMemberId: undefined,
     note: undefined,
     createdAt: createdIso(300),
@@ -81,6 +95,10 @@ export const lockerSeed: Locker[] = [
     label: "B-05",
     location: "Umkleide Süd",
     status: "assigned",
+    size: "gross",
+    // 0 = ausdrücklich kostenlos (Ehrenmitglied), NICHT „kein Preis".
+    pricePerMonthCents: 0,
+    hasActiveRental: true,
     assignedMemberId: "m-17",
     note: "Schlüssel Nr. 5",
     createdAt: createdIso(300),
@@ -92,9 +110,63 @@ export const lockerSeed: Locker[] = [
     label: "B-06",
     location: "Umkleide Süd",
     status: "broken",
+    size: "mittel",
+    // null = noch kein Preis festgelegt.
+    pricePerMonthCents: null,
+    hasActiveRental: false,
     assignedMemberId: undefined,
     note: "Schloss defekt — Reparatur beauftragt",
     createdAt: createdIso(300),
     updatedAt: createdIso(5),
+  },
+];
+
+/**
+ * Laufende und beendete Mietverträge (0070).
+ *
+ * loc-01 zeigt die zweite Preisebene in Aktion: der Listenpreis steht heute
+ * bei 5,00 €, der laufende Vertrag von m-16 wurde aber zu 4,00 € geschlossen.
+ * Genau das darf die Ansicht NICHT stillschweigend angleichen — der alte
+ * Vertrag bleibt bei seinem Betrag.
+ */
+export const lockerRentalSeed: LockerRental[] = [
+  {
+    id: "lrent-01",
+    clubId,
+    lockerId: "loc-01",
+    memberId: "m-16",
+    pricePerMonthCents: 400,
+    startOn: dateDaysAgo(200),
+    endOn: null,
+    status: "aktiv",
+    note: undefined,
+    createdAt: createdIso(200),
+    updatedAt: createdIso(200),
+  },
+  {
+    id: "lrent-02",
+    clubId,
+    lockerId: "loc-03",
+    memberId: "m-17",
+    pricePerMonthCents: 0,
+    startOn: dateDaysAgo(120),
+    endOn: null,
+    status: "aktiv",
+    note: "Ehrenmitglied — beitragsfrei",
+    createdAt: createdIso(120),
+    updatedAt: createdIso(120),
+  },
+  {
+    id: "lrent-03",
+    clubId,
+    lockerId: "loc-02",
+    memberId: "m-07",
+    pricePerMonthCents: 300,
+    startOn: dateDaysAgo(400),
+    endOn: dateDaysAgo(30),
+    status: "gekuendigt",
+    note: undefined,
+    createdAt: createdIso(400),
+    updatedAt: createdIso(30),
   },
 ];

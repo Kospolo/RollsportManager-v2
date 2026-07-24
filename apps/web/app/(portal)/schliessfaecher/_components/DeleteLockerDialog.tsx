@@ -14,6 +14,12 @@ import { schliessfaecherDict } from "../i18n";
  * Wird BEWUSST nie automatisch bestätigt — der Löschlauf startet nur über den
  * expliziten Klick. Erfolg: Toast + onDeleted() + schließen; 403 bleibt als
  * Klartext-Toast, der Dialog bleibt offen.
+ *
+ * Läuft für das Fach eine VERMIETUNG, steht das hier als Warnung — nicht als
+ * Sperre. Der Server verbietet es nicht, und diese Oberfläche erfindet keine
+ * Regel dazu; sie sagt nur, was sonst passiert: eine Zahlungspflicht ohne Fach.
+ * Das ist der Unterschied zwischen „ich hindere dich" und „ich lasse dich nicht
+ * ins offene Messer laufen".
  */
 export function DeleteLockerDialog({
   locker,
@@ -62,7 +68,17 @@ export function DeleteLockerDialog({
         </>
       }
     >
-      <p className="text-body text-ink-soft">{t("deleteBody")}</p>
+      <div className="grid gap-3">
+        <p className="text-body text-ink-soft">{t("deleteBody")}</p>
+        {locker?.hasActiveRental && (
+          <p
+            role="note"
+            className="rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-caption leading-[18px] text-amber-900 dark:border-amber-400/30 dark:bg-amber-950/40 dark:text-amber-100"
+          >
+            {t("deleteWithRental")}
+          </p>
+        )}
+      </div>
     </Modal>
   );
 }
