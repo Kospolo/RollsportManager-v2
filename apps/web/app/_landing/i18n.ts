@@ -122,6 +122,7 @@ export const landingDict = {
     footerLegal: "Rechtliches",
     imprint: "Impressum",
     privacy: "Datenschutz",
+    terms: "AGB",
     footerCopy: "© {year} RollsportManager · Alle Angaben ohne Gewähr",
   },
   en: {
@@ -241,6 +242,7 @@ export const landingDict = {
     footerLegal: "Legal",
     imprint: "Imprint",
     privacy: "Privacy",
+    terms: "Terms",
     footerCopy: "© {year} RollsportManager · All information without guarantee",
   },
 } satisfies Dict;

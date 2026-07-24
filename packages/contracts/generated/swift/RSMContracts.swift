@@ -578,6 +578,63 @@ public struct PublicRoutineScores: Codable, Equatable, Sendable {
     }
 }
 
+/// Inline object of PublicLegal.impressum (hoisted by codegen).
+public struct PublicLegalImpressum: Codable, Equatable, Sendable {
+    public var de: String
+    public var en: String
+
+    enum CodingKeys: String, CodingKey {
+        case de
+        case en
+    }
+
+    public init(
+        de: String,
+        en: String
+    ) {
+        self.de = de
+        self.en = en
+    }
+}
+
+/// Inline object of PublicLegal.datenschutz (hoisted by codegen).
+public struct PublicLegalDatenschutz: Codable, Equatable, Sendable {
+    public var de: String
+    public var en: String
+
+    enum CodingKeys: String, CodingKey {
+        case de
+        case en
+    }
+
+    public init(
+        de: String,
+        en: String
+    ) {
+        self.de = de
+        self.en = en
+    }
+}
+
+/// Inline object of PublicLegal.agb (hoisted by codegen).
+public struct PublicLegalAgb: Codable, Equatable, Sendable {
+    public var de: String
+    public var en: String
+
+    enum CodingKeys: String, CodingKey {
+        case de
+        case en
+    }
+
+    public init(
+        de: String,
+        en: String
+    ) {
+        self.de = de
+        self.en = en
+    }
+}
+
 /// Inline object of DunningRunResult.summary (hoisted by codegen).
 public struct DunningRunResultSummary: Codable, Equatable, Sendable {
     public var auto: Int
@@ -4022,23 +4079,35 @@ public struct PlatformSmtp: Codable, Equatable, Sendable {
 
 public struct PlatformLegal: Codable, Equatable, Sendable {
     public var impressum: String
+    public var impressumEn: String
     public var datenschutz: String
+    public var datenschutzEn: String
     public var agb: String
+    public var agbEn: String
 
     enum CodingKeys: String, CodingKey {
         case impressum
+        case impressumEn = "impressum_en"
         case datenschutz
+        case datenschutzEn = "datenschutz_en"
         case agb
+        case agbEn = "agb_en"
     }
 
     public init(
         impressum: String,
+        impressumEn: String,
         datenschutz: String,
-        agb: String
+        datenschutzEn: String,
+        agb: String,
+        agbEn: String
     ) {
         self.impressum = impressum
+        self.impressumEn = impressumEn
         self.datenschutz = datenschutz
+        self.datenschutzEn = datenschutzEn
         self.agb = agb
+        self.agbEn = agbEn
     }
 }
 
@@ -4138,23 +4207,35 @@ public struct PlatformSmtpPatch: Codable, Equatable, Sendable {
 
 public struct PlatformLegalPatch: Codable, Equatable, Sendable {
     public var impressum: String?
+    public var impressumEn: String?
     public var datenschutz: String?
+    public var datenschutzEn: String?
     public var agb: String?
+    public var agbEn: String?
 
     enum CodingKeys: String, CodingKey {
         case impressum
+        case impressumEn = "impressum_en"
         case datenschutz
+        case datenschutzEn = "datenschutz_en"
         case agb
+        case agbEn = "agb_en"
     }
 
     public init(
         impressum: String? = nil,
+        impressumEn: String? = nil,
         datenschutz: String? = nil,
-        agb: String? = nil
+        datenschutzEn: String? = nil,
+        agb: String? = nil,
+        agbEn: String? = nil
     ) {
         self.impressum = impressum
+        self.impressumEn = impressumEn
         self.datenschutz = datenschutz
+        self.datenschutzEn = datenschutzEn
         self.agb = agb
+        self.agbEn = agbEn
     }
 }
 
@@ -5522,6 +5603,28 @@ public struct PublicRoutine: Codable, Equatable, Sendable {
         self.musicDurationMs = musicDurationMs
         self.markers = markers
         self.scores = scores
+    }
+}
+
+public struct PublicLegal: Codable, Equatable, Sendable {
+    public var impressum: PublicLegalImpressum
+    public var datenschutz: PublicLegalDatenschutz
+    public var agb: PublicLegalAgb
+
+    enum CodingKeys: String, CodingKey {
+        case impressum
+        case datenschutz
+        case agb
+    }
+
+    public init(
+        impressum: PublicLegalImpressum,
+        datenschutz: PublicLegalDatenschutz,
+        agb: PublicLegalAgb
+    ) {
+        self.impressum = impressum
+        self.datenschutz = datenschutz
+        self.agb = agb
     }
 }
 

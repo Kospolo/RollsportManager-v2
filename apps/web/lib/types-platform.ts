@@ -185,11 +185,35 @@ export interface PlatformSmtpSettings {
   passwordSet: boolean;
 }
 
-/** Rechtstexte der Plattform (Impressum/Datenschutz/AGB). */
+/**
+ * Rechtstexte-OVERRIDE des Betreibers (Impressum/Datenschutz/AGB), zweisprachig.
+ * Leer bedeutet nicht „kein Text", sondern „zeig den eingebauten Standardtext"
+ * (LegalPage DEFAULT_LEGAL). Deshalb je Dokument ein deutsches UND ein
+ * englisches Feld — v2 ist durchgängig DE+EN.
+ */
 export interface PlatformLegalSettings {
   impressum: string;
+  impressumEn: string;
   datenschutz: string;
+  datenschutzEn: string;
   agb: string;
+  agbEn: string;
+}
+
+/** Ein Rechtsdokument in beiden Sprachen (Ausgabe von GET /public/legal). */
+export interface LegalDocText {
+  de: string;
+  en: string;
+}
+
+/**
+ * Was die öffentlichen Seiten lesen (GET /public/legal) — NUR die Rechtstexte,
+ * kein SMTP, keine Flags. Ein leerer Wert heißt: eingebauter Standard.
+ */
+export interface PublicLegal {
+  impressum: LegalDocText;
+  datenschutz: LegalDocText;
+  agb: LegalDocText;
 }
 
 /** Website-Inhalte + SEO-Metadaten der Plattform. */

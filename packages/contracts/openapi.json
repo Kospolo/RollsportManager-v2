@@ -4264,17 +4264,29 @@
           "impressum": {
             "type": "string"
           },
+          "impressum_en": {
+            "type": "string"
+          },
           "datenschutz": {
             "type": "string"
           },
+          "datenschutz_en": {
+            "type": "string"
+          },
           "agb": {
+            "type": "string"
+          },
+          "agb_en": {
             "type": "string"
           }
         },
         "required": [
           "impressum",
+          "impressum_en",
           "datenschutz",
-          "agb"
+          "datenschutz_en",
+          "agb",
+          "agb_en"
         ]
       },
       "PlatformContent": {
@@ -4376,10 +4388,19 @@
           "impressum": {
             "type": "string"
           },
+          "impressum_en": {
+            "type": "string"
+          },
           "datenschutz": {
             "type": "string"
           },
+          "datenschutz_en": {
+            "type": "string"
+          },
           "agb": {
+            "type": "string"
+          },
+          "agb_en": {
             "type": "string"
           }
         }
@@ -6047,6 +6068,61 @@
           "music_duration_ms",
           "markers",
           "scores"
+        ]
+      },
+      "PublicLegal": {
+        "type": "object",
+        "properties": {
+          "impressum": {
+            "type": "object",
+            "properties": {
+              "de": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "de",
+              "en"
+            ]
+          },
+          "datenschutz": {
+            "type": "object",
+            "properties": {
+              "de": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "de",
+              "en"
+            ]
+          },
+          "agb": {
+            "type": "object",
+            "properties": {
+              "de": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "de",
+              "en"
+            ]
+          }
+        },
+        "required": [
+          "impressum",
+          "datenschutz",
+          "agb"
         ]
       },
       "Task": {
@@ -19505,6 +19581,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/legal": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Public, login-free legal texts (imprint, privacy, terms)",
+        "description": "Unauthenticated. Returns ONLY the operator-maintained legal override texts (imprint, privacy policy, terms) in German and English. An empty value means the public page shows its built-in default. No other operator settings are exposed.",
+        "responses": {
+          "200": {
+            "description": "Legal override texts (empty = built-in default)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicLegal"
                 }
               }
             }

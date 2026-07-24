@@ -9,6 +9,7 @@ import type {
   PlatformSettings,
   PlatformSystemInfo,
   PlatformTier,
+  PublicLegal,
 } from "@/lib/types";
 
 /**
@@ -105,8 +106,11 @@ export interface UpdatePlatformSmtpInput {
 /** Rechtstexte-Patch (Impressum/Datenschutz/AGB). */
 export interface UpdatePlatformLegalInput {
   impressum?: string;
+  impressumEn?: string;
   datenschutz?: string;
+  datenschutzEn?: string;
   agb?: string;
+  agbEn?: string;
 }
 
 /** Content-/SEO-Patch. */
@@ -140,6 +144,13 @@ export interface PlatformConsoleRepository {
   platformGetSettings(): Promise<PlatformSettings>;
   /** Plattform-Einstellungen ändern (deep-merge); smtp.password ist WRITE-ONLY. */
   platformUpdateSettings(patch: UpdatePlatformSettingsInput): Promise<PlatformSettings>;
+  /**
+   * ÖFFENTLICHE Rechtstexte (GET /public/legal) — OHNE Auth, für die Seiten
+   * /impressum, /datenschutz, /agb. Liefert NUR die Override-Texte; ein leerer
+   * Wert heißt „eingebauter Standard". Bewusst getrennt von
+   * platformGetSettings: die ist Betreiber-only und enthält Geheimnisse.
+   */
+  getPublicLegal(): Promise<PublicLegal>;
 
   /* ---------- Lizenzen (Lesen im Service-Mode hinter Guard, Schreiben Service-only) ---------- */
   /** Alle Vereine mit Mitgliederzahl + aktueller Lizenz. */

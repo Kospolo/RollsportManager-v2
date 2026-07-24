@@ -48,10 +48,17 @@ export const einstellungenDict = {
     // Rechtstexte
     legalEyebrow: "Pflichtangaben",
     legalTitle: "Rechtstexte",
-    legalDesc: "Impressum, Datenschutzerklärung und AGB der Plattform.",
+    legalDesc:
+      "Impressum, Datenschutzerklärung und AGB der Plattform — zweisprachig. Formatierung: ## Überschrift, ### Unterüberschrift, - Aufzählung. Wird auf /impressum, /datenschutz und /agb angezeigt.",
     fieldImpressum: "Impressum",
     fieldDatenschutz: "Datenschutzerklärung",
     fieldAgb: "AGB",
+    legalLangDe: "Deutsch",
+    legalLangEn: "Englisch",
+    legalEmptyHint: "Leer lassen = der eingebaute Standardtext wird angezeigt.",
+    legalLoadDefault: "Standardtext einfügen",
+    legalIsDefault: "Zeigt aktuell den eingebauten Standardtext.",
+    legalIsOverride: "Überschreibt den Standardtext.",
 
     // Website & SEO
     contentEyebrow: "Auftritt",
@@ -120,10 +127,17 @@ export const einstellungenDict = {
 
     legalEyebrow: "Legal notices",
     legalTitle: "Legal texts",
-    legalDesc: "Imprint, privacy policy and terms of the platform.",
+    legalDesc:
+      "Imprint, privacy policy and terms of the platform — bilingual. Formatting: ## heading, ### sub-heading, - bullet. Shown on /impressum, /datenschutz and /agb.",
     fieldImpressum: "Imprint",
     fieldDatenschutz: "Privacy policy",
     fieldAgb: "Terms & conditions",
+    legalLangDe: "German",
+    legalLangEn: "English",
+    legalEmptyHint: "Leave empty = the built-in default text is shown.",
+    legalLoadDefault: "Insert default text",
+    legalIsDefault: "Currently showing the built-in default text.",
+    legalIsOverride: "Overrides the default text.",
 
     contentEyebrow: "Presence",
     contentTitle: "Website & SEO",

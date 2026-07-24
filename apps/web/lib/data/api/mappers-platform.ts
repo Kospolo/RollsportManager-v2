@@ -131,8 +131,11 @@ export function mapPlatformSettings(w: M.PlatformSettings): PlatformSettings {
     },
     legal: {
       impressum: w.legal.impressum,
+      impressumEn: w.legal.impressum_en,
       datenschutz: w.legal.datenschutz,
+      datenschutzEn: w.legal.datenschutz_en,
       agb: w.legal.agb,
+      agbEn: w.legal.agb_en,
     },
     content: {
       websiteTitle: w.content.website_title,

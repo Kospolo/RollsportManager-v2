@@ -73,6 +73,10 @@ const PUBLIC_ROUTES = new Set([
   // Login-free invitation preview: token in, club name + target role out.
   // Handler resolves the token in service mode (routes/invitations.ts).
   "GET /public/invitations/{token}",
+  // Login-free legal texts for the public /impressum, /datenschutz, /agb pages.
+  // Service mode reads ONLY the legal column and returns only the legal texts
+  // (routes/public-legal.ts). No SMTP, no other operator settings.
+  "GET /public/legal",
 ]);
 
 let failures = 0;

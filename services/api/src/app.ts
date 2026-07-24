@@ -37,6 +37,7 @@ import { eventRidesRouter } from './routes/event-rides.js';
 import { routinesRouter } from './routes/routines.js';
 import { competitionsRouter } from './routes/competitions.js';
 import { publicRoutinesRouter } from './routes/public-routines.js';
+import { publicLegalRouter } from './routes/public-legal.js';
 import { tasksRouter } from './routes/tasks.js';
 import { newsRouter } from './routes/news.js';
 import { notesRouter } from './routes/notes.js';
@@ -168,6 +169,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', routinesRouter);
   app.route('/', competitionsRouter);
   app.route('/', publicRoutinesRouter);
+  app.route('/', publicLegalRouter);
   app.route('/', tasksRouter);
   app.route('/', newsRouter);
   app.route('/', notesRouter);

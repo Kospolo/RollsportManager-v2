@@ -192,13 +192,33 @@ export const platformSmtpSchema = z
   })
   .openapi('PlatformSmtp');
 
+// Rechtstexte-OVERRIDE des Betreibers, ZWEISPRACHIG. Die *_en-Felder kamen mit
+// der öffentlichen Rechtstext-Anzeige dazu: v2 ist durchgängig DE+EN, also muss
+// auch ein vom Betreiber gepflegter Text beide Sprachen tragen können. Ein
+// leerer Wert bedeutet nicht "kein Text", sondern "zeig den eingebauten
+// Standard" (LegalPage DEFAULT_LEGAL) — die Auflösung passiert im Web.
 export const platformLegalSchema = z
   .object({
     impressum: z.string(),
+    impressum_en: z.string(),
     datenschutz: z.string(),
+    datenschutz_en: z.string(),
     agb: z.string(),
+    agb_en: z.string(),
   })
   .openapi('PlatformLegal');
+
+// Was GET /public/legal ausliefert — OHNE Auth, deshalb bewusst NUR die
+// Rechtstexte und nichts sonst aus platform_settings (kein SMTP, keine Flags).
+// Pro Dokument je ein deutscher und ein englischer Text; leer = eingebauter
+// Standard.
+export const publicLegalSchema = z
+  .object({
+    impressum: z.object({ de: z.string(), en: z.string() }),
+    datenschutz: z.object({ de: z.string(), en: z.string() }),
+    agb: z.object({ de: z.string(), en: z.string() }),
+  })
+  .openapi('PublicLegal');
 
 export const platformContentSchema = z
   .object({
@@ -236,8 +256,11 @@ export const platformSmtpPatchSchema = z
 export const platformLegalPatchSchema = z
   .object({
     impressum: z.string().optional(),
+    impressum_en: z.string().optional(),
     datenschutz: z.string().optional(),
+    datenschutz_en: z.string().optional(),
     agb: z.string().optional(),
+    agb_en: z.string().optional(),
   })
   .openapi('PlatformLegalPatch');
 

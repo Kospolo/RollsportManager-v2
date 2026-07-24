@@ -270,7 +270,14 @@ interface SettingsStore {
     /** Klartext bleibt im Store, verlässt ihn NIE (nur passwordSet nach außen). */
     password: string;
   };
-  legal: { impressum: string; datenschutz: string; agb: string };
+  legal: {
+    impressum: string;
+    impressumEn: string;
+    datenschutz: string;
+    datenschutzEn: string;
+    agb: string;
+    agbEn: string;
+  };
   content: {
     websiteTitle: string;
     websiteSubtitle: string;
@@ -291,10 +298,19 @@ const settingsStore: SettingsStore = {
     secure: true,
     password: "gespeichertes-geheimnis",
   },
+  // LEER = die öffentliche Seite zeigt den eingebauten Standardtext (LegalPage
+  // DEFAULT_LEGAL, aus v1 übernommen). So verhält sich der Mock wie die frisch
+  // aufgesetzte Datenbank nach Migration 0078 — der Betreiber-Editor beginnt
+  // leer und überschreibt den Standard nur, wenn er etwas Eigenes einträgt.
+  // Ein Platzhaltertext hier würde auf der Beta den gepflegten Standard
+  // verdecken (die Beta läuft immer im Mock).
   legal: {
-    impressum: "RollsportManager GmbH, Musterstraße 1, 68000 Mannheim",
-    datenschutz: "Wir verarbeiten personenbezogene Daten gemäß DSGVO …",
-    agb: "Es gelten die folgenden Allgemeinen Geschäftsbedingungen …",
+    impressum: "",
+    impressumEn: "",
+    datenschutz: "",
+    datenschutzEn: "",
+    agb: "",
+    agbEn: "",
   },
   content: {
     websiteTitle: "RollsportManager",
@@ -333,6 +349,15 @@ export const moduleRepositoryPlatform: PlatformConsoleRepository = {
   /* ---------- Einstellungen ---------- */
   async platformGetSettings() {
     return settingsView();
+  },
+  async getPublicLegal() {
+    // Nur der Override-Blob (leer = eingebauter Standard), wie GET /public/legal.
+    const l = settingsStore.legal;
+    return {
+      impressum: { de: l.impressum, en: l.impressumEn },
+      datenschutz: { de: l.datenschutz, en: l.datenschutzEn },
+      agb: { de: l.agb, en: l.agbEn },
+    };
   },
   async platformUpdateSettings(patch) {
     if (patch.smtp) {

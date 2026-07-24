@@ -1041,6 +1041,16 @@ export class ApiClient {
   }
 
   /**
+   * Public, login-free legal texts (imprint, privacy, terms)
+   * Unauthenticated. Returns ONLY the operator-maintained legal override texts (imprint, privacy policy, terms) in German and English. An empty value means the public page shows its built-in default. No other operator settings are exposed.
+   * 
+   * `GET /public/legal`
+   */
+  async getPublicLegal(options?: RequestOptions): Promise<M.PublicLegal> {
+    return this.request<M.PublicLegal>("GET", "/public/legal", { auth: false, options });
+  }
+
+  /**
    * List tasks of a club (open first, then by due date)
    * 
    * `GET /tasks`

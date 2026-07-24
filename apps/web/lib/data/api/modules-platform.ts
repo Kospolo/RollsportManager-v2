@@ -90,8 +90,11 @@ export const moduleApiRepositoryPlatform: PlatformConsoleRepository = {
       },
       legal: patch.legal && {
         impressum: patch.legal.impressum,
+        impressum_en: patch.legal.impressumEn,
         datenschutz: patch.legal.datenschutz,
+        datenschutz_en: patch.legal.datenschutzEn,
         agb: patch.legal.agb,
+        agb_en: patch.legal.agbEn,
       },
       content: patch.content && {
         website_title: patch.content.websiteTitle,
@@ -103,6 +106,15 @@ export const moduleApiRepositoryPlatform: PlatformConsoleRepository = {
       feature_flags: patch.featureFlags,
     });
     return mapPlatformSettings(updated);
+  },
+  async getPublicLegal() {
+    // Öffentlich, ohne Auth (apiClient setzt für diese Route keinen Bearer).
+    const w = await apiClient.getPublicLegal();
+    return {
+      impressum: { de: w.impressum.de, en: w.impressum.en },
+      datenschutz: { de: w.datenschutz.de, en: w.datenschutz.en },
+      agb: { de: w.agb.de, en: w.agb.en },
+    };
   },
 
   /* ---------- Lizenzen ---------- */

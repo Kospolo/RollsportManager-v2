@@ -564,6 +564,27 @@ data class PublicRoutineScores(
     val placement: Long?
 )
 
+/** Inline object of PublicLegal.impressum (hoisted by codegen). */
+@Serializable
+data class PublicLegalImpressum(
+    val de: String,
+    val en: String
+)
+
+/** Inline object of PublicLegal.datenschutz (hoisted by codegen). */
+@Serializable
+data class PublicLegalDatenschutz(
+    val de: String,
+    val en: String
+)
+
+/** Inline object of PublicLegal.agb (hoisted by codegen). */
+@Serializable
+data class PublicLegalAgb(
+    val de: String,
+    val en: String
+)
+
 /** Inline object of DunningRunResult.summary (hoisted by codegen). */
 @Serializable
 data class DunningRunResultSummary(
@@ -1535,8 +1556,11 @@ data class PlatformSmtp(
 @Serializable
 data class PlatformLegal(
     val impressum: String,
+    @SerialName("impressum_en") val impressumEn: String,
     val datenschutz: String,
-    val agb: String
+    @SerialName("datenschutz_en") val datenschutzEn: String,
+    val agb: String,
+    @SerialName("agb_en") val agbEn: String
 )
 
 @Serializable
@@ -1570,8 +1594,11 @@ data class PlatformSmtpPatch(
 @Serializable
 data class PlatformLegalPatch(
     val impressum: String? = null,
+    @SerialName("impressum_en") val impressumEn: String? = null,
     val datenschutz: String? = null,
-    val agb: String? = null
+    @SerialName("datenschutz_en") val datenschutzEn: String? = null,
+    val agb: String? = null,
+    @SerialName("agb_en") val agbEn: String? = null
 )
 
 @Serializable
@@ -1959,6 +1986,13 @@ data class PublicRoutine(
     @SerialName("music_duration_ms") val musicDurationMs: Long?,
     val markers: List<PublicRoutineMarkers>,
     val scores: List<PublicRoutineScores>
+)
+
+@Serializable
+data class PublicLegal(
+    val impressum: PublicLegalImpressum,
+    val datenschutz: PublicLegalDatenschutz,
+    val agb: PublicLegalAgb
 )
 
 @Serializable

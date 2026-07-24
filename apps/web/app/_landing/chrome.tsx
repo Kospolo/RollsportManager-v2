@@ -148,6 +148,9 @@ export function LandingFooter() {
           <Link href="/datenschutz" className="inline-flex min-h-9 items-center text-body font-semibold text-ink-soft no-underline hover:text-ink">
             {t("privacy")}
           </Link>
+          <Link href="/agb" className="inline-flex min-h-9 items-center text-body font-semibold text-ink-soft no-underline hover:text-ink">
+            {t("terms")}
+          </Link>
         </nav>
       </div>
       <div className="border-t border-line">

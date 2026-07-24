@@ -50,8 +50,11 @@ function toResponse(row: Json): SettingsResponse {
     },
     legal: {
       impressum: legal['impressum'] ?? '',
+      impressum_en: legal['impressum_en'] ?? '',
       datenschutz: legal['datenschutz'] ?? '',
+      datenschutz_en: legal['datenschutz_en'] ?? '',
       agb: legal['agb'] ?? '',
+      agb_en: legal['agb_en'] ?? '',
     },
     content: {
       website_title: content['website_title'] ?? '',

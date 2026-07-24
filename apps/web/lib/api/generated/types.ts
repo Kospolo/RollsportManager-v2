@@ -953,8 +953,11 @@ export interface PlatformSmtp {
 
 export interface PlatformLegal {
   "impressum": string;
+  "impressum_en": string;
   "datenschutz": string;
+  "datenschutz_en": string;
   "agb": string;
+  "agb_en": string;
 }
 
 export interface PlatformContent {
@@ -984,8 +987,11 @@ export interface PlatformSmtpPatch {
 
 export interface PlatformLegalPatch {
   "impressum"?: string;
+  "impressum_en"?: string;
   "datenschutz"?: string;
+  "datenschutz_en"?: string;
   "agb"?: string;
+  "agb_en"?: string;
 }
 
 export interface PlatformContentPatch {
@@ -1356,6 +1362,12 @@ export interface PublicRoutine {
   "music_duration_ms": number | null;
   "markers": { "time_ms": number | null; "label": string; "element_code": string | null }[];
   "scores": { "scored_on": string; "technical_score": number | null; "components_score": number | null; "total_score": number | null; "placement": number | null }[];
+}
+
+export interface PublicLegal {
+  "impressum": { "de": string; "en": string };
+  "datenschutz": { "de": string; "en": string };
+  "agb": { "de": string; "en": string };
 }
 
 export interface Task {
