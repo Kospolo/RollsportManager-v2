@@ -16,6 +16,17 @@ struct MembersListView: View {
     /// der die Liste umbaut, darf sich im Daumen bemerkbar machen.
     @State private var selectionTick = 0
 
+#if DEBUG
+    /// Dev-Automation fuer Smoke-Tests: `-devMemberOpen <member-uuid>` oeffnet
+    /// beim Start direkt DIESE Person. Ohne das Argument liesse sich der
+    /// Persona-Beweis („was sieht ein Mitglied von einem fremden Menschen")
+    /// nur durch blindes Tippen auf Bildschirmkoordinaten fuehren — und der
+    /// Beweis waere beim naechsten Layout-Wechsel hinfaellig.
+    @State private var devOpenedMemberId: String? = UserDefaults.standard
+        .string(forKey: "devMemberOpen")
+        .flatMap { $0.isEmpty ? nil : $0 }
+#endif
+
     var body: some View {
         Group {
             switch viewModel.state {
@@ -32,6 +43,18 @@ struct MembersListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { groupMenu }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
+#if DEBUG
+        .navigationDestination(
+            isPresented: Binding(
+                get: { devOpenedMemberId != nil && viewModel.state == .loaded },
+                set: { if !$0 { devOpenedMemberId = nil } }
+            )
+        ) {
+            if let id = devOpenedMemberId {
+                MemberDetailView(memberId: id, viewModel: viewModel)
+            }
+        }
+#endif
     }
 
     // MARK: - Zustände
@@ -40,10 +63,11 @@ struct MembersListView: View {
     /// Form des Ergebnisses; beim Eintreffen springt das Layout nicht.
     private var loadingView: some View {
         ScrollView {
-            VStack(spacing: Theme.Spacing.s3) {
-                ForEach(0..<6, id: \.self) { _ in MembersSkeletonCard() }
+            VStack(spacing: Theme.Spacing.s2) {
+                ForEach(0..<8, id: \.self) { _ in MembersSkeletonCard() }
             }
-            .padding(Theme.Spacing.s4)
+            .padding(.horizontal, Theme.Spacing.s4)
+            .padding(.vertical, Theme.Spacing.s3)
         }
         .accessibilityLabel(Text("members.loading"))
     }
@@ -87,9 +111,10 @@ struct MembersListView: View {
 
     private var memberList: some View {
         ScrollView {
-            // s3 zwischen den Karten: die Karte selbst traegt schon Rand und
-            // Schatten — mit s4 stand mehr Papier als Verein auf dem Schirm.
-            LazyVStack(alignment: .leading, spacing: Theme.Spacing.s3, pinnedViews: []) {
+            // s2 zwischen den Karten: die Karte traegt Rand UND Schatten, sie
+            // grenzt sich also von selbst ab — jeder zusaetzliche Punkt Luft
+            // kostet im Verzeichnis unmittelbar Menschen pro Bildschirm.
+            LazyVStack(alignment: .leading, spacing: Theme.Spacing.s2, pinnedViews: []) {
                 filterBar
                 if viewModel.members.isEmpty {
                     emptyClubState

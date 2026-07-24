@@ -12,6 +12,18 @@ import SwiftUI
 // Die Karte dreht das um: Flaeche links (Monogramm-Kachel im Farbton der
 // Person), lauter Name daneben, darunter die Einordnung und das eigene Wort.
 //
+// ### NACHTRAG: EIN VERZEICHNIS MUSS MAN AUCH DURCHSEHEN KOENNEN ###
+// Die erste Fassung dieser Karte war zu grosszuegig: 68-pt-Kachel, s4-Rand,
+// s2-Zeilenabstand — bei Standard-Textgroesse standen VIER Menschen auf dem
+// Schirm. Fuer ein Verzeichnis mit zwei Dutzend Namen ist das doppelt so viel
+// Scrollen wie noetig; die Karte hat den Menschen zurueckgebracht und dabei
+// den UEBERBLICK verloren („iphone mitglieder uebersicht gefaellt mir nicht").
+//
+// Gekuerzt wurde deshalb genau das, was keine Identitaet traegt: Kachel
+// 68 → 48 pt, Karten-Rand s4 → s3, Zeilenabstand s2 → s1/s2, Kartenabstand
+// s3 → s2. UNANGETASTET bleiben Namensgroesse (`listTitle`), Farbton,
+// Monogramm, Pillen und das Motto — die Karte ist enger, nicht leiser.
+//
 // LEITPLANKEN (nicht verhandelbar, stehen hier als Code-Kommentar, damit sie
 // beim naechsten Umbau nicht verloren gehen):
 //   * KEINE Fotos — `members.ts` hat keine Einwilligungs-Wache, der Verein ist
@@ -46,14 +58,24 @@ struct MemberCardView: View {
         return motto
     }
 
+    /// Kantenlaenge der Monogramm-Kachel bei Standard-Textgroesse.
+    /// 48 pt statt 68: gross genug, dass die Flaeche traegt (ein 40-pt-Kreis
+    /// waere wieder ein Aufzaehlungspunkt), klein genug, dass die Karte in die
+    /// Hoehe von zwei Textzeilen passt statt in drei.
+    private static let tileSide: CGFloat = 48
+
     var body: some View {
         let layout = dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Spacing.s3))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Spacing.s4))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Spacing.s3))
 
         return layout {
-            RSMMonogramTile(name: member.membersFullName, personId: member.id)
-            VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+            RSMMonogramTile(
+                name: member.membersFullName,
+                personId: member.id,
+                size: Self.tileSide
+            )
+            VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
                 nameLine
                 badgeLine
                 if let motto {
@@ -63,11 +85,11 @@ struct MemberCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Theme.Spacing.s4)
+        .padding(Theme.Spacing.s3)
         .background(Theme.Colors.bgSurface)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous)
                 .stroke(Theme.Colors.line, lineWidth: 1)
         )
         .shadow(
@@ -76,7 +98,7 @@ struct MemberCardView: View {
             x: Theme.Shadows.card.x,
             y: Theme.Shadows.card.y
         )
-        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
     }
 
     /// Der Name ist das Lauteste auf der Karte — er bekommt die volle Breite
@@ -90,9 +112,17 @@ struct MemberCardView: View {
     }
 
     private var badgeLine: some View {
-        // Umbrechendes Layout: Rolle + Teams + Jahrgang fliessen in die naechste
-        // Zeile statt zu kuerzen. Ein abgeschnittener Teamname hilft niemandem.
-        MembersFlowRow(spacing: Theme.Spacing.s2, lineSpacing: Theme.Spacing.s2) {
+        // EINE Zeile, nicht zwei. Vorher floss jedes Team in eine eigene Reihe,
+        // wenn die Breite nicht reichte — und genau daran hing die Kartenhoehe:
+        // eine Person mit zwei Teams war 17 pt hoeher als ihre Nachbarn, die
+        // Liste bekam ein unruhiges Raster und verlor pro Bildschirm eine
+        // ganze Person.
+        //
+        // Deshalb steht hier jetzt das ERSTE Team und, wenn es mehr sind, ein
+        // ehrlicher Zaehler „+2". Das ist KEIN abgeschnittener Teamname (den
+        // wollte die alte Fassung zu Recht nicht): die Zahl sagt, dass da noch
+        // etwas ist, und die Detailseite nennt alle Teams vollstaendig.
+        MembersFlowRow(spacing: Theme.Spacing.s2, lineSpacing: Theme.Spacing.s1) {
             RSMStatusPill(
                 text: MembersL10n.roleKey(member.role),
                 kind: MembersL10n.roleKind(member.role)
@@ -100,8 +130,11 @@ struct MemberCardView: View {
             if isSelf {
                 RSMStatusPill(text: "members.card.you", kind: .brand)
             }
-            ForEach(teamNames, id: \.self) { name in
-                MembersTeamBadge(name: name)
+            if let first = teamNames.first {
+                MembersTeamBadge(name: first)
+            }
+            if teamNames.count > 1 {
+                MembersTeamBadge(name: "+\(teamNames.count - 1)")
             }
             if let birthYear {
                 Text("members.card.bornYear \(birthYear)")
@@ -133,10 +166,19 @@ struct MemberCardView: View {
 struct MembersTeamBadge: View {
     let name: String
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         Text(verbatim: name)
             .font(Theme.Fonts.caption)
             .foregroundStyle(Theme.Colors.inkSoft)
+            // Deckel, damit ein besonders langer Teamname die Badge-Zeile nicht
+            // doch noch umbrechen laesst. Bei den Accessibility-Stufen faellt
+            // der Deckel weg — dort ist die Karte ohnehin gestapelt.
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? nil : 168, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, Theme.Spacing.s3)
             .padding(.vertical, Theme.Spacing.s1)
             .background(Theme.Colors.bgSunken)
@@ -190,22 +232,24 @@ struct MembersSkeletonCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.s4) {
+        // Geometrie EXAKT wie `MemberCardView` (48-pt-Kachel, s3-Rand, zwei
+        // Balken): sonst springt das Layout beim Eintreffen der Namen — genau
+        // das, was ein Skelett verhindern soll.
+        HStack(alignment: .top, spacing: Theme.Spacing.s3) {
             RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous)
                 .fill(Theme.Colors.bgSunken)
-                .frame(width: 68, height: 68)
-            VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
+                .frame(width: 48, height: 48)
+            VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                 bar(width: 168, height: 17)
-                bar(width: 116, height: 13)
                 bar(width: 196, height: 13)
             }
             Spacer(minLength: 0)
         }
-        .padding(Theme.Spacing.s4)
+        .padding(Theme.Spacing.s3)
         .background(Theme.Colors.bgSurface)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous)
                 .stroke(Theme.Colors.line, lineWidth: 1)
         )
         .opacity(isPulsing ? 0.62 : 1)

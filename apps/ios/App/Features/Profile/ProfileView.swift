@@ -69,10 +69,25 @@ struct ProfileView: View {
             VStack(spacing: Theme.Spacing.cardGap) {
                 ProfileHeaderCard(
                     displayName: viewModel.displayName,
-                    membership: viewModel.primaryMembership
+                    membership: viewModel.primaryMembership,
+                    photoKey: viewModel.photoKey
                 )
 
                 if viewModel.primaryMembership != nil {
+                    // „Dein Bild" steht VOR den Stammdaten: es ist das erste,
+                    // was andere von einem sehen — und war bisher gar nicht
+                    // setzbar (Befund am iPhone).
+                    ProfilePhotoCard(
+                        viewModel: viewModel,
+                        displayName: viewModel.displayName,
+                        personId: viewModel.primaryMembership?.id,
+                        onPick: { data in
+                            _Concurrency.Task { await viewModel.setPhoto(data: data, api: session.api) }
+                        },
+                        onRemove: {
+                            _Concurrency.Task { await viewModel.removePhoto(api: session.api) }
+                        }
+                    )
                     ProfileEditCard(viewModel: viewModel) {
                         _Concurrency.Task { await viewModel.saveProfile(api: session.api) }
                     }

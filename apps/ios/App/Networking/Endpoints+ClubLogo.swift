@@ -59,7 +59,9 @@ extension APIClient {
         }
         request.httpBody = body
 
-        return try await send(request)
+        // Multipart-Sender liegt in Endpoints+MyPhoto.swift — dieselbe
+        // Byte-Strecke, dieselbe RFC-7807-Fehlerbehandlung, EINE Stelle.
+        return try await sendMultipart(request)
     }
 
     /// DELETE /clubs/{clubId}/logo — Logo entfernen (owner/admin; sonst 403).
@@ -69,30 +71,4 @@ extension APIClient {
         try await delete("/clubs/\(clubId)/logo")
     }
 
-    /// Eigener Sende-Weg für den Multipart-Upload: `APIClient.request` kodiert
-    /// den Body immer als JSON — hier sind es rohe Bytes. Fehlerbehandlung
-    /// (RFC 7807) bleibt identisch.
-    private func send<Response: Decodable>(_ request: URLRequest) async throws -> Response {
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await URLSession.shared.data(for: request)
-        } catch {
-            throw APIError.transport(underlying: error)
-        }
-        guard let http = response as? HTTPURLResponse else {
-            throw APIError.unexpectedStatus(code: -1)
-        }
-        guard (200..<300).contains(http.statusCode) else {
-            if let problem = try? JSONDecoder().decode(Problem.self, from: data) {
-                throw APIError.problem(problem)
-            }
-            throw APIError.unexpectedStatus(code: http.statusCode)
-        }
-        do {
-            return try JSONDecoder().decode(Response.self, from: data)
-        } catch {
-            throw APIError.decoding(underlying: error)
-        }
-    }
 }

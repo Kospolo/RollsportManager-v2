@@ -8,15 +8,15 @@ import SwiftUI
 struct ProfileHeaderCard: View {
     let displayName: String
     let membership: MeMembership?
+    /// Medien-Key des eigenen Profilbildes; `nil` ⇒ Initialen-Avatar.
+    /// Das EIGENE Gesicht darf hier stehen — die Einwilligungs-Frage stellt
+    /// sich erst, wenn ANDERE es sehen (siehe MemberProfileViewModel).
+    var photoKey: String?
 
     var body: some View {
         RSMCard {
             HStack(alignment: .center, spacing: Theme.Spacing.s4) {
-                RSMAvatarView(
-                    name: displayName,
-                    personId: membership?.id,
-                    size: 60
-                )
+                portrait
                 VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                     Text(verbatim: displayName)
                         .font(Theme.Fonts.h2)
@@ -33,6 +33,20 @@ struct ProfileHeaderCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder
+    private var portrait: some View {
+        if let photoKey {
+            Color.clear
+                .frame(width: 60, height: 60)
+                .overlay { MediaImage(key: photoKey, placeholderSystemImage: "person.fill") }
+                .clipShape(Circle())
+                .overlay(Circle().stroke(Theme.Colors.line, lineWidth: 1))
+                .accessibilityHidden(true) // der Name steht daneben
+        } else {
+            RSMAvatarView(name: displayName, personId: membership?.id, size: 60)
         }
     }
 

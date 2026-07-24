@@ -48,6 +48,13 @@ final class ProfileViewModel: ObservableObject {
     /// Kurzzeitige Erfolgsbestätigung nach dem Speichern.
     @Published var profileSaved = false
 
+    // MARK: - Eigenes Profilbild (POST/DELETE /me/photo)
+
+    /// Laeuft gerade ein Upload oder ein Entfernen?
+    @Published private(set) var isSavingPhoto = false
+    /// Klartext-Fehler des Bild-Wegs (415 „kein Bild", 413 „zu gross", Transport).
+    @Published var photoError: String?
+
     // MARK: - Einstellungen (privat)
 
     /// Ausgewählte Sprache der Oberfläche — „de“ / „en“ (aus `preferences.locale`).
@@ -93,6 +100,19 @@ final class ProfileViewModel: ObservableObject {
 
     /// Anmelde-E-Mail (aus der Primär-Mitgliedschaft) — nur lesend im Konto-Block.
     var accountEmail: String? { primaryMembership?.email }
+
+    /// Medien-Key des EIGENEN Profilbildes (aus `avatar_url` = „/media/{key}“),
+    /// oder `nil`, solange keines gesetzt ist. Angezeigt wird es über
+    /// `MediaImage` — `GET /media/{key}` verlangt immer ein Bearer-Token.
+    var photoKey: String? {
+        guard let url = primaryMembership?.avatarUrl else { return nil }
+        let prefix = "/media/"
+        guard url.hasPrefix(prefix) else { return nil }
+        let key = String(url.dropFirst(prefix.count))
+        return key.isEmpty ? nil : key
+    }
+
+    var hasPhoto: Bool { photoKey != nil }
 
     /// Aktuelles ColorScheme aus der Theme-Präferenz (best-effort Live-Anwendung
     /// im Screen; `auto` = dem System folgen).
@@ -318,5 +338,56 @@ final class ProfileViewModel: ObservableObject {
 
     private static func message(for error: Error) -> String {
         (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+
+    // MARK: - Eigenes Profilbild
+
+    /// Setzt das eigene Profilbild (`POST /me/photo`).
+    ///
+    /// `data` kommt roh aus dem `PhotosPicker` — ein iPhone-Foto ist HEIC und
+    /// mehrere Megabyte gross. `ProfilePhotoEncoder` macht daraus ein gedrehtes
+    /// JPEG mit 1024 px laengster Kante: das ist fuer eine 72-pt-Kachel reichlich
+    /// und spart dem Verein (und dem Datentarif der Eltern) den Rest.
+    ///
+    /// Danach wird `/me` NEU GELESEN statt lokal gepatcht — der Server ist die
+    /// Quelle des `avatar_url`, und nur so ist bewiesen, dass es wirklich liegt.
+    func setPhoto(data: Data, api: APIClient) async {
+        guard !isSavingPhoto else { return }
+        isSavingPhoto = true
+        photoError = nil
+        defer { isSavingPhoto = false }
+
+        guard let jpeg = ProfilePhotoEncoder.jpeg(from: data) else {
+            photoError = String(localized: "profil.photo.err.notAnImage")
+            return
+        }
+        do {
+            try await api.uploadMyPhoto(data: jpeg)
+            await reloadMe(api: api)
+        } catch {
+            photoError = Self.message(for: error)
+        }
+    }
+
+    /// Entfernt das eigene Profilbild (`DELETE /me/photo`, idempotent).
+    func removePhoto(api: APIClient) async {
+        guard !isSavingPhoto else { return }
+        isSavingPhoto = true
+        photoError = nil
+        defer { isSavingPhoto = false }
+
+        do {
+            try await api.deleteMyPhoto()
+            await reloadMe(api: api)
+        } catch {
+            photoError = Self.message(for: error)
+        }
+    }
+
+    /// `/me` nachladen, ohne den Bildschirm in den Ladezustand zu werfen (das
+    /// Formular des Nutzers bleibt stehen — nur `profile` wird frisch).
+    private func reloadMe(api: APIClient) async {
+        guard let me = try? await api.getMyProfile() else { return }
+        profile = me
     }
 }
