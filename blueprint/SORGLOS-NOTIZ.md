@@ -33,6 +33,22 @@ sich aus dem NPM-Schlüssel ein Admin-Token ausstellt und der Berechtigungsfilte
   aus v1 (die DB, nach der v1 abrechnete, sagte 29/49/79). Solange die Preisfrage offen ist, steht auf
   der Beta eine Zusage, die das System nicht einlöst.
 
+**🔴→🟢 DIE DEV-DATENBANK LAG ZWÖLF MIGRATIONEN ZURÜCK (24.07.2026, behoben — `88794c0`).**
+`dev-stack.sh` spielte Migrationen **nur in eine leere Datenbank** ein und meldete sonst
+„Migrations/Seed übersprungen". Eine einmal angelegte Dev-DB blieb damit für immer auf dem Stand
+ihres Anlegetages — es fehlten **0066–0077**: Fahrgemeinschaften, Trainer-Notizen, Schließfach-Miete,
+Mahngebühren, MwSt, Pflichtstunden, Betreiber-Zweckbindung, Modul-Sichtbarkeit.
+- **Warum das schlimmer ist als ein Fehler:** Wer eine dieser Funktionen „im Browser nachgesehen"
+  oder „per curl geprüft" hat, prüfte gegen eine Datenbank, die sie **gar nicht kannte**. Ein grüner
+  Haken, der nichts bedeutet, ist schlimmer als kein Haken — er beendet die Suche.
+- **Die SQL-Testsuite war NIE betroffen** (`run-tests.sh` startet einen eigenen Wegwerf-Container und
+  spielt alles frisch ein). Deshalb standen die Gates grün, während die Dev-API 500 gab. Wenn Gate und
+  Handprobe auseinanderlaufen, ist ab sofort **zuerst der Migrationsstand zu prüfen**.
+- **Behoben:** `public.rsm_schema_migrations` führt Buch, `up` trägt Ausstehendes nach; eine DB aus der
+  Zeit davor bricht mit klarer Anweisung ab statt zu raten. Ende-zu-Ende geprüft.
+- **Gemessen nach dem Nachtrag:** `/coach-notes` 500 → **200** · `/modules/effective` Inhaber **26**,
+  Mitglied **19** · `/events/{id}/rides` **200**.
+
 **🟢 MENÜ-SICHTBARKEIT — „wer sieht welche Kachel" (Migration `0077`, 24.07.2026).**
 Marcel am iPhone: „Vereins-Admin soll Module für Gruppen und Mitglieder einstellen können. Jetzt sind als
 Mitglied unter ‚Mehr' so viele Module, wo für das normale Mitglied eigentlich nicht zu sehen sein sollen."
