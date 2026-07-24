@@ -119,6 +119,95 @@ export const DEV_PERSONAS = {
     clubRole: null,
     platformAdmin: true,
   },
+
+  // === BENANNTE KONTEN (seed/dev-accounts.sql) =============================
+  // Die Personas oben sind erfundene Vereinsleute aus dem Seed — gut zum
+  // Ansehen, unpraktisch zum Arbeiten: Wer pruefen will, was ein Kassenwart
+  // sieht, will "kasse" tippen und nicht wissen muessen, dass Beate Schaefer
+  // die Kasse fuehrt. Die folgenden Konten heissen deshalb nach ihrem Bereich.
+  //
+  // Die Kennungen (sub/memberId) sind fest und stehen ebenso in
+  // supabase/seed/dev-accounts.sql. Wer dort etwas aendert, muss es HIER
+  // mitziehen — sonst zeigt der Login auf eine Person, die es nicht gibt.
+  superadmin: {
+    // Betreiber UND Vorstand: Ein reiner Betreiber sieht nur die Konsole,
+    // nicht das Vereinsportal (er ist dort kein Mitglied).
+    sub: '90000000-0000-4000-8000-0000000000a0',
+    memberId: '90000000-0000-4000-8000-0000000000a0',
+    displayName: 'Marcel Goldfuß',
+    email: 'marcelgoldfuss@icloud.com',
+    clubRole: 'owner',
+    platformAdmin: true,
+  },
+  apple: {
+    // Bewusst KEIN Betreiber: Die App-Store-Pruefung soll das Produkt sehen,
+    // nicht die Konsole, mit der wir fremde Vereine verwalten.
+    sub: '90000000-0000-4000-8000-0000000000a1',
+    memberId: '90000000-0000-4000-8000-0000000000a1',
+    displayName: 'Apple Review',
+    email: 'apple-review@rollsportmanager.de',
+    clubRole: 'owner',
+  },
+  vorstand: {
+    sub: '90000000-0000-4000-8000-0000000000a2',
+    memberId: '90000000-0000-4000-8000-0000000000a2',
+    displayName: 'Demo Vorstand',
+    email: 'vorstand@rollsportmanager.de',
+    clubRole: 'owner',
+  },
+  verwaltung: {
+    sub: '90000000-0000-4000-8000-0000000000a3',
+    memberId: '90000000-0000-4000-8000-0000000000a3',
+    displayName: 'Demo Verwaltung',
+    email: 'verwaltung@rollsportmanager.de',
+    clubRole: 'admin',
+  },
+  kasse: {
+    sub: '90000000-0000-4000-8000-0000000000a4',
+    memberId: '90000000-0000-4000-8000-0000000000a4',
+    displayName: 'Demo Kassenwart',
+    email: 'kasse@rollsportmanager.de',
+    clubRole: 'treasurer',
+  },
+  moderation: {
+    sub: '90000000-0000-4000-8000-0000000000a5',
+    memberId: '90000000-0000-4000-8000-0000000000a5',
+    displayName: 'Demo Moderation',
+    email: 'moderation@rollsportmanager.de',
+    clubRole: 'moderator',
+  },
+  trainer: {
+    sub: '90000000-0000-4000-8000-0000000000a6',
+    memberId: '90000000-0000-4000-8000-0000000000a6',
+    displayName: 'Demo Trainer',
+    email: 'trainer@rollsportmanager.de',
+    clubRole: 'coach',
+  },
+  gasttrainer: {
+    // Befristet (valid_until = +90 Tage, von der Datenbank erzwungen).
+    sub: '90000000-0000-4000-8000-0000000000a7',
+    memberId: '90000000-0000-4000-8000-0000000000a7',
+    displayName: 'Demo Gasttrainer',
+    email: 'gasttrainer@rollsportmanager.de',
+    clubRole: 'guest_coach',
+  },
+  mitglied: {
+    sub: '90000000-0000-4000-8000-0000000000a8',
+    memberId: '90000000-0000-4000-8000-0000000000a8',
+    displayName: 'Demo Mitglied',
+    email: 'mitglied@rollsportmanager.de',
+    clubRole: 'member',
+  },
+  eltern: {
+    // Rolle und Rechte sind identisch mit `mitglied` — der Unterschied
+    // entsteht allein durch die Sorgeberechtigung fuer Emma Gruenewald.
+    // Genau daran laesst sich der Kinderschutz pruefen.
+    sub: '90000000-0000-4000-8000-0000000000a9',
+    memberId: '90000000-0000-4000-8000-0000000000a9',
+    displayName: 'Demo Elternteil',
+    email: 'eltern@rollsportmanager.de',
+    clubRole: 'member',
+  },
 } as const satisfies Record<string, DevPersona>;
 
 export type DevPersonaName = keyof typeof DEV_PERSONAS;

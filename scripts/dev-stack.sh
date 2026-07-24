@@ -161,6 +161,14 @@ cmd_up() {
       log "$nachgetragen Migration(en) nachgetragen"
     fi
   fi
+
+  # Benannte Konten je Bereich (Marcels Super-Admin, Apple-Pruefkonto, je ein
+  # Konto pro Rolle). AUSSERHALB des if: Die Datei ist wiederholbar geschrieben
+  # (on conflict do nothing), und sie soll auch in einer BESTEHENDEN Datenbank
+  # nachgetragen werden — sonst haette sie nur, wer seine DB neu aufsetzt.
+  log "Benannte Konten einspielen (seed/dev-accounts.sql) ..."
+  pgexec < "$SUPABASE_DIR/seed/dev-accounts.sql"
+
   start_api
   echo
   log "Dev-Stack läuft:"
