@@ -74,8 +74,30 @@ Gemessen stimmte das: 30 Kacheln gingen **ungefiltert** an jeden, gefiltert wurd
 - Web: Verwaltung → Module um den Abschnitt „Wer sieht was" erweitert (Rolle/Gruppe/Mitglied, dreiwertig
   Vorgabe/Zeigen/Ausblenden), DE+EN. **Gates:** SQL **2001 ✅** · api tsc ✅ · vitest 297 ✅ · api-db-test ✅ ·
   contracts ✅ · web tsc ✅.
-- **Offen:** iOS/macOS/Android hängen ihr „Mehr"-Raster noch nicht an den neuen Endpunkt (eigene Spur), und
-  die iOS-Kachel `medals` heißt in der Datenbank `medal` — beim Umbau mitziehen.
+- **Nachtrag 24.07. — das WEB filterte gar nicht** (`0237e06`). Die Meldung „im Web sichtbar" bezog sich auf die
+  Admin-Matrix, nicht auf die eigene Sicht: „Mehr" hing weiter an `available` und zeigte **jedem Mitglied alle
+  26 Kacheln**, inkl. Auswertung, Schließfächer, Jubiläen, Wartelisten, Gruppen, Finanzen. Also genau der
+  Befund, der 0077 ausgelöst hat — serverseitig gelöst, in iOS nachgezogen, im Web offen. Gefunden durch
+  Durchklicken als Katrin Grünewald auf der Beta. Jetzt liefert der `ModulesProvider` ein `isModuleVisible`
+  aus `…/modules/effective`; Seitenleiste, untere Leiste und Mehr-Seite lesen **dieselbe** Antwort.
+  Zwei Fallen darin: „noch nicht geladen" ≠ „nicht dabei" (sonst verschwindet beim ersten Rendern das halbe
+  Menü), und die Kachel `sparten` hat kein eigenes Modul — sie hängt an `departments`.
+- **Offen:** macOS/Android hängen ihr „Mehr"-Raster noch nicht an den neuen Endpunkt (iOS ist mit `c1d5df2`
+  umgestellt), und die iOS-Kachel `medals` heißt in der Datenbank `medal` — beim Umbau mitziehen.
+
+**🟢 BETA: `/entwickler` schaltet die Demo-Person um (24.07.2026).**
+Die Beta hat keine echte Anmeldung — das Portal zeigte deshalb immer Sandra Vogel (Trainerin), und Rollen
+ließen sich nicht vergleichen. `beta.rollsportmanager.de/entwickler` wählt jetzt die Person: je eine pro Rolle
+plus Mutter und Kind. Nirgends verlinkt, doppelt auf noindex.
+- **Die Reihenfolge ist der ganze Trick:** `next build` rendert alle Portal-Seiten **statisch** vor, das HTML
+  zeigt also immer die Vorgabe. Erster React-Render = Vorgabe (passt zum HTML), **danach** im Effekt
+  umschalten und den Teilbaum über einen Schlüssel neu aufbauen. Wer nichts wählt, merkt nichts.
+- **Ein Schlüssel, nicht zwei:** `rsm.mock.viewer` (aus `lib/data/mock/viewer.ts`) gab es schon — er versorgte
+  aber nur `getCurrentUser()`, nicht die ~230 direkten Leser von `mock.currentUser`. Daher zeigte das Portal
+  zeitweise „KG" im Kürzel und „Hallo, Sandra!" in der Begrüßung. Ich hatte das übersehen und kurzzeitig einen
+  zweiten Schlüssel danebengebaut — **wer das wieder tut, baut den Widerspruch zurück ein**.
+- Sechs Module kopierten die eingeloggte Person beim Laden (`members[0]`); sie melden sich jetzt bei
+  `onViewerChange` an. Topbar und Seitenleiste lasen den Namen aus einem festen Übersetzungstext — behoben.
 
 **📘 Original nachschlagen statt neu erklären: [`blueprint/ORIGINAL-VOLLREFERENZ.md`](ORIGINAL-VOLLREFERENZ.md)** —
 vollständige v1-Referenz mit Fundstellen: Geschäftsmodell, alle Preise/Limits (inkl. **Schließfach-Miete
