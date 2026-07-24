@@ -1,0 +1,29 @@
+# Öffentliche Beta — beta.rollsportmanager.de
+#
+# Starten/aktualisieren (aus diesem Verzeichnis):
+#   docker compose up -d --build
+#
+# Davor liegt der Nginx Proxy Manager auf demselben Rechner (Mac Studio,
+# 192.168.1.220): beta.rollsportmanager.de → http://192.168.1.220:8095.
+# Er bringt auch das Let's-Encrypt-Zertifikat mit; dieser Container spricht
+# nur einfaches HTTP.
+#
+# Nur das Frontend mit Demo-Daten — keine API, keine Datenbank, kein Login.
+# Warum das so ist und warum es so bleiben muss, steht im Dockerfile.
+services:
+  beta:
+    build:
+      context: ../../apps/web
+    image: rollsportmanager-beta:latest
+    container_name: rollsportmanager-beta
+    # Autostart: kommt nach einem Neustart des Rechners von selbst wieder hoch,
+    # sobald Docker läuft — genau wie die anderen Webseiten auf dieser Maschine.
+    # `unless-stopped` und nicht `always`: Wenn jemand den Container bewusst
+    # anhält, soll er angehalten bleiben.
+    restart: unless-stopped
+    # Muss auf der LAN-Adresse lauschen, nicht nur auf 127.0.0.1 — der Proxy
+    # Manager läuft in einem eigenen Container und erreicht den Host sonst nicht.
+    ports:
+      - "8095:3021"
+    # Keine Volumes. Der Container hat keinen Zustand: alle Inhalte sind
+    # Demo-Daten, die im Image liegen.

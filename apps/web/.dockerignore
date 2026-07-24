@@ -1,0 +1,10 @@
+# Was NICHT in den Build-Kontext gehört. Ohne diese Datei schickt Docker die
+# lokalen node_modules und .next-Ordner mit — das sind hunderte Megabyte, die
+# im Image ohnehin neu erzeugt werden.
+node_modules
+.next
+.next-*
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
