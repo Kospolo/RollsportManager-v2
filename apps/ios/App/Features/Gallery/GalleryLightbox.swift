@@ -1,5 +1,11 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+// macOS: AppKit statt UIKit. Die hier benutzten UIKit-Namen
+// (UIImage/UIScreen/UIAccessibility) liefert AppMac/MacPlatformShims.swift.
+import AppKit
+#endif
 import AVKit
 
 /// Vollbild-Vorschau eines Galerie-Eintrags (Web-Referenz: GalleryLightbox).
@@ -154,6 +160,14 @@ enum GalleryDateFormat {
     }
 }
 
+// Teilen der (auth-)geladenen Datei — dieselbe Aufgabe, zwei Systeme.
+//
+// Das ist eine der wenigen Stellen, an denen ein Shim NICHT reicht: iOS teilt
+// über ein modales Blatt (`UIActivityViewController`), der Mac über ein Popover
+// am auslösenden Element (`NSSharingServicePicker`). Beides in einen
+// gemeinsamen Namen zu pressen würde auf einer der Plattformen falsch aussehen.
+
+#if os(iOS)
 /// UIActivityViewController-Brücke fürs Teilen der (auth-)geladenen Datei.
 struct GalleryShareSheet: UIViewControllerRepresentable {
     let url: URL
@@ -164,3 +178,69 @@ struct GalleryShareSheet: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
 }
+#else
+/// Mac-Pendant: `NSSharingServicePicker` in einem kleinen Blatt. Es zeigt
+/// dieselben Ziele wie das iOS-Blatt (Mail, Nachrichten, AirDrop, Finder-
+/// Aktionen) und schließt sich, sobald der Nutzer eines gewählt oder abgebrochen
+/// hat.
+struct GalleryShareSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    @State private var didPresent = false
+
+    var body: some View {
+        VStack(spacing: Theme.Spacing.s4) {
+            Text("gallery.share.title")
+                .font(Theme.Fonts.bodyStrong)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+            Text(url.lastPathComponent)
+                .font(Theme.Fonts.monoCaption)
+                .foregroundStyle(Theme.Colors.inkSoft)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            MacSharingAnchor(url: url, isPresented: $didPresent) { dismiss() }
+                .frame(width: 220, height: 32)
+            Button("common.close") { dismiss() }
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(Theme.Spacing.s5)
+        .frame(minWidth: 320)
+        .background(Theme.Colors.bgSurface)
+        .onAppear { didPresent = true }
+    }
+}
+
+/// Ankerpunkt für den `NSSharingServicePicker` (er braucht eine echte
+/// AppKit-View, an der das Popover hängt).
+private struct MacSharingAnchor: NSViewRepresentable {
+    let url: URL
+    @Binding var isPresented: Bool
+    let onFinish: () -> Void
+
+    func makeNSView(context: Context) -> NSView { NSView() }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        guard isPresented, view.window != nil else { return }
+        DispatchQueue.main.async {
+            isPresented = false
+            let picker = NSSharingServicePicker(items: [url])
+            picker.delegate = context.coordinator
+            picker.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onFinish: onFinish) }
+
+    final class Coordinator: NSObject, NSSharingServicePickerDelegate {
+        private let onFinish: () -> Void
+        init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
+
+        func sharingServicePicker(
+            _ picker: NSSharingServicePicker,
+            didChoose service: NSSharingService?
+        ) {
+            onFinish()
+        }
+    }
+}
+#endif

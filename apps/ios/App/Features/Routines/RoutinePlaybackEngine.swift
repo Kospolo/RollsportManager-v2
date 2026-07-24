@@ -1,7 +1,13 @@
 import AVFoundation
 import Foundation
 import QuartzCore
+#if canImport(UIKit)
 import UIKit
+#else
+// macOS: AppKit statt UIKit. Die hier benutzten UIKit-Namen
+// (UIImage/UIScreen/UIAccessibility) liefert AppMac/MacPlatformShims.swift.
+import AppKit
+#endif
 #if DEBUG
 import os
 #endif
@@ -137,10 +143,16 @@ final class RoutinePlaybackEngine: NSObject, ObservableObject, AVAudioPlayerDele
 
     private func activate(fileURL: URL) {
         do {
+#if os(iOS)
             // .playback: spielt auch bei aktivem Stummschalter (Trainingshalle).
+            //
+            // macOS hat KEINE AVAudioSession — dort gibt es weder Stummschalter
+            // noch Sitzungs-Kategorien; `AVAudioPlayer` spielt einfach. Das ist
+            // kein fehlendes Feature, sondern ein anderes Audio-Modell.
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playback, mode: .default)
             try audioSession.setActive(true)
+#endif
 
             let newPlayer = try AVAudioPlayer(contentsOf: fileURL)
             newPlayer.delegate = self
@@ -280,8 +292,17 @@ final class RoutinePlaybackEngine: NSObject, ObservableObject, AVAudioPlayerDele
             return
         }
         isPlaying = true
-        let link = CADisplayLink(target: self, selector: #selector(tick(_:)))
-        link.add(to: .main, forMode: .common)
+        // Bildtakt der Fortschrittsanzeige. iOS erzeugt den CADisplayLink
+        // direkt; auf macOS (14+) gehoert er zu einem Bildschirm — ohne
+        // Bildschirm laeuft die Anzeige eben nicht, das Abspielen aber schon.
+#if os(iOS)
+        let link: CADisplayLink? = CADisplayLink(target: self, selector: #selector(tick(_:)))
+#else
+        let link: CADisplayLink? = NSScreen.main?.displayLink(
+            target: self, selector: #selector(tick(_:))
+        )
+#endif
+        link?.add(to: .main, forMode: .common)
         displayLink = link
     }
 

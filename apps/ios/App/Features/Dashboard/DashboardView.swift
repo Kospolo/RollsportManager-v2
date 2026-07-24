@@ -19,7 +19,9 @@ struct DashboardView: View {
         // darueber ist die Leiste — und er sagt, WESSEN Verein das ist.
         // Gilt nur fuer diese Wurzelansicht; jede geschobene Detailseite bringt
         // ihre eigene Leiste samt Zurueck-Pfeil mit.
+#if os(iOS)
         .toolbar(.hidden, for: .navigationBar)
+#endif
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
     }
 

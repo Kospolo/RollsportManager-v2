@@ -1,5 +1,11 @@
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+// macOS: AppKit statt UIKit. Die hier benutzten UIKit-Namen
+// (UIImage/UIScreen/UIAccessibility) liefert AppMac/MacPlatformShims.swift.
+import AppKit
+#endif
 
 // ============================================================================
 // Das Vereinslogo als Ansicht (Migration 0060).

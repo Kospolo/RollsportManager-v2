@@ -1,7 +1,13 @@
 import SwiftUI
 import CoreImage
 import CoreImage.CIFilterBuiltins
+#if canImport(UIKit)
 import UIKit
+#else
+// macOS: AppKit statt UIKit. Die hier benutzten UIKit-Namen
+// (UIImage/UIScreen/UIAccessibility) liefert AppMac/MacPlatformShims.swift.
+import AppKit
+#endif
 
 /// QR-Code aus Apples CoreImage (`CIQRCodeGenerator`) — keine externe Bibliothek.
 /// Erzeugt scharfe, nicht interpolierte Kacheln (Nearest-Neighbor-Skalierung)
