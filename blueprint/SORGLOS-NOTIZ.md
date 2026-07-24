@@ -336,7 +336,7 @@ Die Allowlist ist fail-**closed**: eine neue Fähigkeit ist für den Betreiber a
 mit Begründung einträgt (Art. 25 Abs. 2 DSGVO, „Datenschutz durch Voreinstellung").
 - **Offen (9):** members · roles · club_settings · departments · teams · team_coaches · routines · routines_edit · anniversaries.
 - **Zu (24):** u. a. coach_notes · lockers · finance · member_contact · attendance · checkins · chat · documents.
-- `can_manage_finance` ist zusätzlich zweckgebunden (41 Aufrufstellen) → die ganze Finanz-Fläche in EINER Funktion zu.
+- `can_manage_finance` ist zusätzlich zweckgebunden (36 Aufrufstellen in Policies) → die ganze Finanz-Fläche in EINER Funktion zu.
 - Die Allowlist ist **zur Laufzeit unveränderlich** (Trigger, auch gegen `service_role`) und für Vereine **lesbar**:
   zusammen mit `app.operator_audit_log` sieht der Verein, was der Auftragsverarbeiter DARF und was er GETAN hat.
 - **Der protokollierte Weg bleibt unversehrt:** 19 von 19 Betreiber-Requests der Smoke-Suite hinterlassen eine

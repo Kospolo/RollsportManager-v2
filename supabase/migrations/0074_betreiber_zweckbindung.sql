@@ -97,7 +97,8 @@
 --        app.can_change_member_role -> 'roles'
 --    Drei davon ändern HEUTE nichts (ihre Fähigkeit ist freigegeben) — sie
 --    schreiben die Regel nur auf. Eine ändert alles: 'finance' ist NICHT
---    freigegeben, und can_manage_finance trägt 41 Aufrufstellen. Damit schließt
+--    freigegeben, und can_manage_finance trägt 36 Aufrufstellen in Policies
+--    (0007/0013/0014/0015/0020, nachgezählt). Damit schließt
 --    sich die gesamte Finanz-Fläche (member_fees, sepa_mandates,
 --    bank_transactions, donations, budgets, ledger_categories, dunning_log) in
 --    EINER Funktion statt in sieben Policies.
