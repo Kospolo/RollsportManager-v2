@@ -29,6 +29,7 @@ export const invoicesDict = {
     statusDraft: "Entwurf",
     statusOpen: "Offen",
     statusPaid: "Bezahlt",
+    statusPartiallyPaid: "Teilbezahlt",
     statusCancelled: "Storniert",
 
     // Tabelle
@@ -156,6 +157,7 @@ export const invoicesDict = {
     statusDraft: "Draft",
     statusOpen: "Open",
     statusPaid: "Paid",
+    statusPartiallyPaid: "Partially paid",
     statusCancelled: "Cancelled",
 
     // Table

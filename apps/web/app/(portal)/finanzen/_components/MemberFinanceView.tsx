@@ -25,6 +25,8 @@ import { financeDict, type FinanceKey } from "../i18n";
 const STATUS_TONE: Record<InvoiceStatus, BadgeTone> = {
   draft: "neutral",
   open: "warn",
+  // Teilbezahlt (0072): es ist etwas angekommen, aber noch etwas offen.
+  partially_paid: "warn",
   paid: "success",
   cancelled: "neutral",
 };
@@ -32,6 +34,7 @@ const STATUS_TONE: Record<InvoiceStatus, BadgeTone> = {
 const STATUS_KEY: Record<InvoiceStatus, FinanceKey> = {
   draft: "mineStatusDraft",
   open: "mineStatusOpen",
+  partially_paid: "mineStatusPartiallyPaid",
   paid: "mineStatusPaid",
   cancelled: "mineStatusCancelled",
 };
@@ -39,9 +42,10 @@ const STATUS_KEY: Record<InvoiceStatus, FinanceKey> = {
 /** Sortierung: offen zuerst (nach Fälligkeit), dann bezahlt, dann storniert. */
 const STATUS_ORDER: Record<InvoiceStatus, number> = {
   open: 0,
-  draft: 1,
-  paid: 2,
-  cancelled: 3,
+  partially_paid: 1,
+  draft: 2,
+  paid: 3,
+  cancelled: 4,
 };
 
 export function MemberFinanceView({

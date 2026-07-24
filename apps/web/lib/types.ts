@@ -284,7 +284,10 @@ export interface Routine {
  * (getInvoice/listInvoices); die aggregierende getInvoices()-Liste filtert
  * Entwürfe weiterhin heraus. paid/cancelled sind terminal (GoBD, kein Re-Open).
  */
-export type InvoiceStatus = "draft" | "open" | "paid" | "cancelled";
+// "partially_paid" seit Migration 0072: der Zustand zwischen offen und bezahlt.
+// Eine Rechnung, auf die eine Anzahlung eingegangen ist, stand vorher weiter als
+// vollstaendig offen — der Mahnlauf lief darauf, als sei nichts passiert.
+export type InvoiceStatus = "draft" | "open" | "partially_paid" | "paid" | "cancelled";
 
 /** Kassenbuch-Kategorie-Art: Einnahme (> 0) oder Ausgabe (< 0). */
 export type LedgerCategoryKind = "income" | "expense";

@@ -8,12 +8,13 @@ import type { InvoiceDetail, InvoiceStatus } from "@/lib/types";
  * Summen entstehen aus DENSELBEN Datensätzen wie die angezeigten Zeilen.
  */
 
-/** Filter über der Tabelle: „Alle" plus die vier Rechnungs-Status. */
+/** Filter über der Tabelle: „Alle" plus die fünf Rechnungs-Status. */
 export type InvoiceStatusFilter = "all" | InvoiceStatus;
 
 export const STATUS_FILTERS: InvoiceStatusFilter[] = [
   "all",
   "open",
+  "partially_paid",
   "paid",
   "cancelled",
   "draft",
@@ -23,6 +24,8 @@ export const STATUS_FILTERS: InvoiceStatusFilter[] = [
 export const STATUS_TONE: Record<InvoiceStatus, BadgeTone> = {
   draft: "neutral",
   open: "info",
+  // Teilbezahlt (0072) ist bewusst NICHT "success": es ist noch etwas offen.
+  partially_paid: "warn",
   paid: "success",
   cancelled: "neutral",
 };
@@ -31,6 +34,7 @@ export const STATUS_TONE: Record<InvoiceStatus, BadgeTone> = {
 export const STATUS_KEY = {
   draft: "statusDraft",
   open: "statusOpen",
+  partially_paid: "statusPartiallyPaid",
   paid: "statusPaid",
   cancelled: "statusCancelled",
 } as const satisfies Record<InvoiceStatus, string>;
@@ -39,6 +43,7 @@ export const STATUS_KEY = {
 export const FILTER_KEY = {
   all: "fAll",
   open: "statusOpen",
+  partially_paid: "statusPartiallyPaid",
   paid: "statusPaid",
   cancelled: "statusCancelled",
   draft: "statusDraft",
