@@ -640,6 +640,28 @@ insert into app.invoice_counters (club_id, year, last_value)
 values ('c1ab0000-0000-4000-8000-000000000001', extract(year from now())::int, 90);
 
 -- ----------------------------------------------------------------------------
+-- Rechnungspositionen (0072) — an EINER Rechnung, damit sichtbar wird, wie die
+-- zweite Ebene aussieht: f…-004 „Trainingslager Herbst — Anzahlung" (12.000 ct).
+--   Position 1: Lager-Anteil 100,00 EUR, 0 % (Vereinsleistung, nicht steuerbar)
+--   Position 2: Vereins-Trikot 18,69 EUR netto + 7 % = 20,00 EUR brutto
+-- Summe brutto = 12.000 ct = genau der bisherige Rechnungsbetrag; der Trigger
+-- app.invoice_items_recalc schreibt ihn (unverändert) fort und setzt
+-- vat_total_cents = 131. Die uebrigen 9 Rechnungen bleiben positionslos —
+-- beides ist erlaubt, nur nicht gleichzeitig mit anderem Ergebnis.
+-- Der Seed laeuft ohne auth.uid(); die GoBD-Sperre "nur Entwuerfe" gilt fuer
+-- den Client-Kontext und laesst diesen Korrekturlauf durch.
+-- ----------------------------------------------------------------------------
+insert into app.invoice_items
+  (id, club_id, invoice_id, sort_order, description, quantity, unit_price_cents, vat_rate)
+values
+  ('f1000000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'f0000000-0000-4000-8000-000000000004', 1,
+   'Trainingslager Herbst — Anteil Unterkunft und Verpflegung', 1.000, 10000, 0.00),
+  ('f1000000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'f0000000-0000-4000-8000-000000000004', 2,
+   'Vereins-Trikot (7 % MwSt.)', 1.000, 1869, 7.00);
+
+-- ----------------------------------------------------------------------------
 -- Ledger categories (Kassenbuch-Kategorien, 0013). Income vs. expense buckets
 -- the App filters/colours by; the ledger rows below link to them via category_id.
 -- ----------------------------------------------------------------------------
@@ -686,12 +708,19 @@ from (values
 -- is Beate Schäfer (treasurer, member a…-003). f…-001 sits at stage 2, f…-005
 -- at stage 3, so the log mirrors how they got there (each a manual approval).
 -- ----------------------------------------------------------------------------
-insert into app.dunning_log (club_id, invoice_id, from_stage, to_stage, action, actor_member_id, note, created_at)
+-- Seit 0071 trägt jeder Schritt auch seine KOSTEN (fee_cents / interest_cents).
+-- Der Trigger app.dunning_log_apply_costs schreibt sie auf die Rechnung fort;
+-- invoices.total_cents zeigt danach den Gesamtbetrag. Die Beträge hier sind
+-- DEMO-Zahlen des Beispielvereins — es gibt bewusst KEINEN hinterlegten
+-- Gebühren- oder Zinssatz (siehe Kopf von 0071).
+--   f…-001: 1. Mahnung  8600 +  500 Gebühr            = 9100 Gesamt
+--   f…-005: 2. Mahnung  5400 + 1000 Gebühr + 137 Zins = 6537 Gesamt
+insert into app.dunning_log (club_id, invoice_id, from_stage, to_stage, action, actor_member_id, note, fee_cents, interest_cents, created_at)
 values
   ('c1ab0000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000001', 1, 2, 'dunning',
-   'a0000000-0000-4000-8000-000000000003', '1. Mahnung — Familie Grünewald', now() - interval '9 days'),
+   'a0000000-0000-4000-8000-000000000003', '1. Mahnung — Familie Grünewald', 500, 0, now() - interval '9 days'),
   ('c1ab0000-0000-4000-8000-000000000001', 'f0000000-0000-4000-8000-000000000005', 2, 3, 'dunning',
-   'a0000000-0000-4000-8000-000000000003', '2. Mahnung — Vereinsbeitrag Q2', now() - interval '3 days');
+   'a0000000-0000-4000-8000-000000000003', '2. Mahnung — Vereinsbeitrag Q2', 1000, 137, now() - interval '3 days');
 
 -- ----------------------------------------------------------------------------
 -- Membership categories (Beitragskategorien, 0014). The club's public fee
@@ -1026,12 +1055,15 @@ values
 -- Duty requirement (modules batch 3) — one season target for the whole club:
 -- 20 Pflichtstunden je Mitglied in der laufenden Saison.
 -- ----------------------------------------------------------------------------
+-- cost_per_hour_cents (0073): 15,00 EUR je NICHT geleisteter Pflichtstunde.
+-- NULL waere „keine Abloese vereinbart" — hier ist eine vereinbart.
 insert into app.duty_requirements
-  (id, club_id, team_id, member_id, season_label, required_hours, period_start, period_end)
+  (id, club_id, team_id, member_id, season_label, required_hours, period_start, period_end, cost_per_hour_cents)
 values
   ('d0100000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
    null, null, 'Saison 2025/2026', 20.00,
-   date_trunc('year', current_date)::date, (date_trunc('year', current_date) + interval '1 year - 1 day')::date);
+   date_trunc('year', current_date)::date, (date_trunc('year', current_date) + interval '1 year - 1 day')::date,
+   1500);
 
 -- ----------------------------------------------------------------------------
 -- Duty entries (modules batch 3) — 6 recorded actual hours across members.
@@ -1258,24 +1290,62 @@ insert into app.department_members (club_id, department_id, member_id) values
 
 -- ----------------------------------------------------------------------------
 -- Lockers (organisation, migration 0017) — 8 Schließfächer: assigned/free/broken.
+-- Größe + Listenpreis seit 0070. Der Preis ist NULLABLE und NULL ist NICHT 0:
+--   Fach 06/07 haben KEINEN Preis (nicht festgelegt), Fach 04 steht ausdrücklich
+--   auf 0 = kostenlos (Ersatzfach, solange das Schloss defekt ist).
+-- Die 8 Fächer, ihre Zuordnung und ihr Status bleiben unverändert — mehrere
+-- Bestands-Tests (93a, 93i, 94a) messen genau diese Zahlen.
 -- ----------------------------------------------------------------------------
-insert into app.lockers (id, club_id, label, location, status, assigned_member_id, note) values
+insert into app.lockers (id, club_id, label, location, status, assigned_member_id, note, size, price_per_month_cents) values
   ('e0c00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 01', 'Umkleide A – Reihe 1', 'assigned', 'a0000000-0000-4000-8000-000000000009', null),
+   'Fach 01', 'Umkleide A – Reihe 1', 'assigned', 'a0000000-0000-4000-8000-000000000009', null, 'mittel', 500),
   ('e0c00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 02', 'Umkleide A – Reihe 1', 'assigned', 'a0000000-0000-4000-8000-000000000016', 'Schlüssel Nr. 2'),
+   'Fach 02', 'Umkleide A – Reihe 1', 'assigned', 'a0000000-0000-4000-8000-000000000016', 'Schlüssel Nr. 2', 'klein', 300),
   ('e0c00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 03', 'Umkleide A – Reihe 1', 'free', null, null),
+   'Fach 03', 'Umkleide A – Reihe 1', 'free', null, null, 'mittel', 500),
   ('e0c00000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 04', 'Umkleide A – Reihe 2', 'broken', null, 'Schloss defekt – Reparatur beauftragt'),
+   'Fach 04', 'Umkleide A – Reihe 2', 'broken', null, 'Schloss defekt – Reparatur beauftragt', 'mittel', 0),
   ('e0c00000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 05', 'Umkleide A – Reihe 2', 'assigned', 'a0000000-0000-4000-8000-000000000017', null),
+   'Fach 05', 'Umkleide A – Reihe 2', 'assigned', 'a0000000-0000-4000-8000-000000000017', null, 'mittel', 500),
   ('e0c00000-0000-4000-8000-000000000006', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 06', 'Umkleide B – Reihe 1', 'free', null, null),
+   'Fach 06', 'Umkleide B – Reihe 1', 'free', null, null, 'klein', null),
   ('e0c00000-0000-4000-8000-000000000007', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 07', 'Umkleide B – Reihe 1', 'free', null, null),
+   'Fach 07', 'Umkleide B – Reihe 1', 'free', null, null, 'klein', null),
   ('e0c00000-0000-4000-8000-000000000008', 'c1ab0000-0000-4000-8000-000000000001',
-   'Fach 08', 'Umkleide B – Reihe 2', 'broken', 'a0000000-0000-4000-8000-000000000023', 'Tür klemmt – Inhalt noch drin');
+   'Fach 08', 'Umkleide B – Reihe 2', 'broken', 'a0000000-0000-4000-8000-000000000023', 'Tür klemmt – Inhalt noch drin', 'gross', 800);
+
+-- ----------------------------------------------------------------------------
+-- Schließfach-Vermietungen (0070) — die zweite Preisebene, an echten Fällen:
+--   r-01  Fach 01 / Katrin      500 = Listenpreis, unbefristet.
+--   r-02  Fach 02 / Maja        ABWEICHEND 150 statt 300 (halber Preis) — genau
+--                               der Fall, für den es die zweite Ebene gibt.
+--   r-03  Fach 05 / Nils        Preis NULL = „Nicht festgelegt" (nicht 0!).
+--   r-04  Fach 08 / Jonas       800, und das Fach steht auf 'broken': eine
+--                               laufende Vermietung endet NICHT automatisch,
+--                               wenn der Status wechselt. Das ist die v1-Regel,
+--                               und dieser Datensatz ist der Beleg dafür.
+--   r-05  Fach 03 / Sandra      BEENDET (Historie). Deshalb ist Fach 03 heute
+--                               frei — und der Teilindex erlaubt daneben
+--                               jederzeit eine neue aktive Vermietung.
+-- ----------------------------------------------------------------------------
+insert into app.locker_rentals
+  (id, club_id, locker_id, member_id, price_per_month_cents, start_on, end_on, status, note)
+values
+  ('e0d00000-0000-4000-8000-000000000001', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0c00000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000009',
+   500, current_date - 180, null, 'aktiv', null),
+  ('e0d00000-0000-4000-8000-000000000002', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0c00000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000016',
+   150, current_date - 90, null, 'aktiv', 'Ermäßigt (Geschwisterkind)'),
+  ('e0d00000-0000-4000-8000-000000000003', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0c00000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000017',
+   null, current_date - 45, null, 'aktiv', 'Preis noch offen — Vorstand klärt'),
+  ('e0d00000-0000-4000-8000-000000000004', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0c00000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000023',
+   800, current_date - 300, null, 'aktiv', 'Fach defekt — Vermietung läuft weiter, Vorstand entscheidet'),
+  ('e0d00000-0000-4000-8000-000000000005', 'c1ab0000-0000-4000-8000-000000000001',
+   'e0c00000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000001',
+   500, current_date - 400, current_date - 30, 'beendet', 'Saison beendet');
 
 -- ----------------------------------------------------------------------------
 -- Waitlists (Cluster 6a, migration 0020) — 2 self-join entries: Lina (child)
