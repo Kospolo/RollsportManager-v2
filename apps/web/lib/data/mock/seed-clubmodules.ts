@@ -41,7 +41,13 @@ export const MODULE_CATALOG: readonly Omit<ClubModuleState, "enabled" | "availab
   { moduleKey: "members", labelDe: "Mitglieder", labelEn: "Members", descDe: "Alle Menschen im Verein.", descEn: "Everyone in the club.", sort: 230, core: true, requiresPro: false, enforcement: null, proOk: true },
   { moduleKey: "routines", labelDe: "Küren", labelEn: "Routines", descDe: "Musik, Marker und Wertungen.", descEn: "Music, markers and scores.", sort: 240, core: false, requiresPro: false, enforcement: "enforced", proOk: true },
   { moduleKey: "competition", labelDe: "Wettkampf", labelEn: "Competition", descDe: "Vorbereitung, Meldung und Ergebnisse.", descEn: "Preparation, entries and results.", sort: 250, core: false, requiresPro: false, enforcement: "enforced", proOk: true },
-  { moduleKey: "finance", labelDe: "Finanzen", labelEn: "Finance", descDe: "Beiträge, offene Posten und Kasse.", descEn: "Fees, open items and cash.", sort: 260, core: true, requiresPro: false, enforcement: null, proOk: true },
+  // finance ist seit 0061 KEIN Kernmodul mehr: Ein Verein, der seine Beiträge
+  // über den Steuerberater macht, soll die Kachel abschalten dürfen. Die
+  // Aufbewahrungspflicht hängt an den append-only-Triggern des Kassenbuchs
+  // (0005), NICHT am Schalter — deshalb kostet das Abschalten keinen Nachweis.
+  // Kern bleiben nur members (sonst sperrt sich der Verein aus) und manage
+  // (sonst kein Weg zurück zur Einstellung).
+  { moduleKey: "finance", labelDe: "Finanzen", labelEn: "Finance", descDe: "Beiträge, offene Posten und Kasse.", descEn: "Fees, open items and cash.", sort: 260, core: false, requiresPro: false, enforcement: "enforced", proOk: true },
   { moduleKey: "manage", labelDe: "Verwaltung", labelEn: "Administration", descDe: "Verein, Rollen und Teams.", descEn: "Club, roles and teams.", sort: 270, core: true, requiresPro: false, enforcement: null, proOk: true },
 ];
 
