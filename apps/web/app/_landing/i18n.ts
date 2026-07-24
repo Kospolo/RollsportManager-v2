@@ -79,7 +79,7 @@ export const landingDict = {
     tierCta: "Kostenlos testen",
 
     p1Name: "Verein Basis",
-    p1Price: "9 €",
+    p1Price: "29 €",
     p1Audience: "Für kleine Vereine bis 50 Mitglieder",
     p1F1: "Termine mit Zu- und Absagen",
     p1F2: "Mitglieder- und Familienverwaltung",
@@ -87,7 +87,7 @@ export const landingDict = {
     p1F4: "Deutsch und Englisch für alle",
 
     p2Name: "Verein Pro",
-    p2Price: "29 €",
+    p2Price: "49 €",
     p2Audience: "Für aktive Vereine bis 200 Mitglieder",
     p2F1: "Alles aus Basis",
     p2F2: "Küren-Studio: Loop, Tempo, Zeitmarken",
@@ -96,7 +96,7 @@ export const landingDict = {
     p2F5: "SEPA-Mandate für den Beitragseinzug verwalten",
 
     p3Name: "Verein Premium",
-    p3Price: "59 €",
+    p3Price: "79 €",
     p3Audience: "Für große Vereine — Mitglieder unbegrenzt",
     p3F1: "Alles aus Pro",
     p3F2: "Wettkampf-Planung und RollArt-Verlauf",
@@ -198,7 +198,7 @@ export const landingDict = {
     tierCta: "Try it for free",
 
     p1Name: "Club Basic",
-    p1Price: "€9",
+    p1Price: "€29",
     p1Audience: "For small clubs up to 50 members",
     p1F1: "Events with RSVPs",
     p1F2: "Member and family management",
@@ -206,7 +206,7 @@ export const landingDict = {
     p1F4: "German and English for everyone",
 
     p2Name: "Club Pro",
-    p2Price: "€29",
+    p2Price: "€49",
     p2Audience: "For active clubs up to 200 members",
     p2F1: "Everything in Basic",
     p2F2: "Routine studio: loop, tempo, markers",
@@ -215,7 +215,7 @@ export const landingDict = {
     p2F5: "Manage SEPA mandates for membership fees",
 
     p3Name: "Club Premium",
-    p3Price: "€59",
+    p3Price: "€79",
     p3Audience: "For large clubs — unlimited members",
     p3F1: "Everything in Pro",
     p3F2: "Competition planning and RollArt history",
