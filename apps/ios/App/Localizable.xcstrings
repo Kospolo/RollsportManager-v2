@@ -26298,13 +26298,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notiz zur Kür"
+            "value": "Meine persönliche Notiz zu dieser Kür"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Note for this routine"
+            "value": "My personal note on this routine"
           }
         }
       }
@@ -26314,13 +26314,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notizen"
+            "value": "Nur für dich"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notes"
+            "value": "Just for you"
           }
         }
       }
@@ -26330,13 +26330,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wird nur lokal auf diesem Gerät gespeichert."
+            "value": "Dein persönlicher Merkzettel — bleibt auf diesem Gerät. Weder Trainer:innen noch der Verein sehen ihn."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Stored locally on this device only."
+            "value": "Your personal scratchpad — stays on this device. Neither coaches nor the club can see it."
           }
         }
       }
@@ -26346,13 +26346,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Was lief gut? Was üben wir im Loop weiter? …"
+            "value": "Was lief gut? Woran übe ich weiter? …"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "What went well? What do we keep looping? …"
+            "value": "What went well? What do I keep practising? …"
           }
         }
       }
@@ -26394,13 +26394,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trainingsnotizen"
+            "value": "Meine Notiz zu dieser Kür"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Training notes"
+            "value": "My note on this routine"
           }
         }
       }

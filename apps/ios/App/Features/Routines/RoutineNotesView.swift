@@ -1,8 +1,25 @@
 import SwiftUI
 
-/// Trainingsnotizen zur Kür — rein lokal (UserDefaults), keine API.
+/// **Persönlicher** Merkzettel zur Kür — rein lokal (UserDefaults), keine API.
 /// Speichern nur bei Änderung; Zeitstempel des letzten Stands darunter.
 /// Sekundär-Button: die Beere des Screens gehört dem Play im Player.
+///
+/// ⚠️ NAMENSGEBUNG IST HIER SICHERHEITSRELEVANT — nicht „aufräumen".
+/// Das hieß einmal „Trainingsnotizen". Marcel hat es am 2026-07-23 auf dem
+/// iPhone gesehen und zu Recht Alarm geschlagen: Auf der Kür eines KINDES
+/// liest sich „Trainingsnotizen" wie *die Einschätzung der Trainerin über
+/// dieses Kind* — also wie etwas, das ein Mitglied niemals sehen oder gar
+/// schreiben dürfte. Technisch war nie etwas offen (der Text verlässt das
+/// Gerät nicht, und ein Mitglied sieht ohnehin nur die Kür des eigenen Kindes),
+/// aber eine Beschriftung, die einen Datenschutz-Verstoß VORTÄUSCHT, ist selbst
+/// ein Defekt: Sie kostet Vertrauen und provoziert genau den falschen Alarm.
+///
+/// Es gibt DREI verschiedene Notiz-Arten — sie dürfen nie verwechselbar heißen:
+///   1. DIESE hier  — persönlicher Merkzettel, nur auf dem Gerät, niemand sonst.
+///   2. „Notizen"    — persönliche Notizen mit Server (app.notes, nur der Autor).
+///   3. „Trainer-Notiz" — intern ÜBER ein Mitglied (app.member_coach_notes):
+///      nur Trainerstab des Mitglieds + Vereinsleitung, NICHT die Familie.
+/// Wer hier umbenennt, muss diese Abgrenzung mitdenken.
 struct RoutineNotesView: View {
     let routineId: String
 
