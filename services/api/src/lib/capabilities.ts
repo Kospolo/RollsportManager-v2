@@ -31,8 +31,7 @@ import type { Tx } from '../db.js';
 import { withUser } from '../db.js';
 import type { AuthEnv } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
-import { isPlatformAdmin } from './guards.js';
-import { hasOperatorOverride } from './operator-context.js';
+import { operatorMay, type CapabilityKey } from './operator-capabilities.js';
 
 /**
  * Die Stufen-Skala (RBAC-DESIGN §2), in der Reihenfolge des DB-Enums
@@ -210,7 +209,11 @@ export async function isClubMemberInDb(c: Context<AuthEnv>, clubId: string): Pro
   // Mitgliedschaft ist eine Tatsache, die Einsicht eine Befugnis — die beiden
   // zu vermischen (also member_role_keys eine Rolle erfinden zu lassen) haette
   // stillschweigend auch die Auswertungen und Zaehlungen verfaelscht.
-  if (hasOperatorOverride(c.get('claims'))) return true;
+  // 0075: zweckgebunden. 'members' ist die Faehigkeit, unter der 0074 die
+  // Stammdaten freigegeben hat, und app.is_club_member haengt seit 0075 an
+  // derselben — API und DB sagen hier wieder dasselbe. Der blosse
+  // Plattform-Admin-Claim bewirkt nichts mehr (Protokoll-Kopplung).
+  if (operatorMay(c.get('claims'), 'members')) return true;
   const caps = await capsFor(c, clubId);
   return caps.roleKeys.length > 0;
 }
@@ -237,13 +240,20 @@ export async function requireClubRoleDb(
   c: Context<AuthEnv>,
   clubId: string,
   roles: readonly string[],
+  capability?: CapabilityKey,
 ): Promise<void> {
   // BETREIBER-EINSICHT (0051) — owner-gleich, wie ueberall sonst auch. Die
   // Aufrufer sind /reports/summary (COACH_ROLES) und clubs.ts (ADMIN_ROLES);
   // beide Mengen enthalten 'owner'. Deckungsgleich mit der DB: app.has_club_role
   // liefert bei eingeschaltetem Override ebenfalls true, die Policies dahinter
   // lassen also genauso durch — kein Gate, das durchlaesst, wo RLS sperrt.
-  if (hasOperatorOverride(c.get('claims'))) return;
+  // 0075: NUR MIT ZWECK. Ohne capability gibt es keinen Betreiber-Zweig mehr —
+  // fail-closed wie in hasClubRole. Das trifft namentlich /reports/summary:
+  // die Auswertung lief im SERVICE-MODUS (RLS aus!), dieser Guard war dort die
+  // ALLEINIGE Autorisierung, und der pauschale Override liess den Betreiber
+  // durch. Aggregierte Mitglieder- und Rechnungszahlen eines Vereins sind kein
+  // Betriebs- oder Supportzweck; die Route nennt deshalb keine Faehigkeit.
+  if (capability !== undefined && operatorMay(c.get('claims'), capability)) return;
   const caps = await capsFor(c, clubId);
   if (!caps.roleKeys.some((k) => roles.includes(k))) {
     throw problem(
@@ -311,13 +321,13 @@ export async function requireClubMemberDb(c: Context<AuthEnv>, clubId: string): 
 export const SPARTEN_MANAGE_ROLES = ['owner', 'admin', 'treasurer'] as const;
 
 export async function requireCanManageSparten(c: Context<AuthEnv>, clubId: string): Promise<void> {
-  // is_platform_admin()-Zweig: die operatorAccess-Middleware hat fuer jeden
-  // Plattform-Admin bereits app.operator_override markiert (und protokolliert),
-  // also stimmt dieser Kurzschluss mit der DB ueberein (can_manage_sparten =
-  // is_platform_admin() OR ...). Ein Nicht-Plattform-Admin faellt in die
-  // DB-aufgeloeste Rollenpruefung.
-  const claims = c.get('claims');
-  if (isPlatformAdmin(claims) || hasOperatorOverride(claims)) return;
+  // 0075: Spiegel von app.can_manage_sparten NACH der Zweckbindung —
+  // club_role_held(owner/admin/treasurer) ODER operator_may('departments').
+  // Vorher stand hier zusaetzlich isPlatformAdmin(claims): ein protokoll-FREIER
+  // Zweig, der schon beim blossen Claim durchliess, also genau die zweite Tuer,
+  // die 0051 abschaffen wollte. 'departments' ist freigegeben -> fuer den
+  // eingeschalteten Betreiber aendert sich nichts.
+  if (operatorMay(c.get('claims'), 'departments')) return;
   const caps = await capsFor(c, clubId);
   if (!caps.roleKeys.some((k) => (SPARTEN_MANAGE_ROLES as readonly string[]).includes(k))) {
     throw problem(

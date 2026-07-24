@@ -9,7 +9,7 @@
 
 import type { AuthClaims, ClubRole } from '../middleware/auth.js';
 import { problem } from '../middleware/error.js';
-import { hasOperatorOverride } from './operator-context.js';
+import { operatorMay, type CapabilityKey } from './operator-capabilities.js';
 
 // ---------------------------------------------------------------------------
 // Role sets = the Referenz 1.3 capability matrix, mirrored from the DB helpers
@@ -69,38 +69,101 @@ export function clubRole(claims: AuthClaims, clubId: string): ClubRole | undefin
  *
  * 'owner' ist hier keine Notluege, sondern die genaue Entsprechung dessen, was
  * die Datenbank in derselben Lage tut: app.cap_rank liefert bei
- * app.operator_override() den Rang 5 — exakt den Wert, den sonst nur die
- * geschuetzte owner-Rolle bekommt (0025:225-243 / 0051), und
+ * app.operator_may('members') den Rang 5 — exakt den Wert, den sonst nur die
+ * geschuetzte owner-Rolle bekommt (0025:225-243 / 0051/0074), und
  * app.can_change_member_role laesst ihn wie einen owner Rollen vergeben.
  * Genau EIN Begriff von Betreiber-Autoritaet, in API und DB derselbe.
  *
  * Die drei Stellen, die den Rueckgabewert von requireClubRole auswerten
- * (members.ts:155/198/294 -> canAssignRole/checkRoleChange), bekommen damit die
- * richtige Antwort: der Betreiber darf jede Rolle vergeben. Die
- * Selbstschutz-Regel dort greift trotzdem nie versehentlich — sie vergleicht
- * target.profile_id mit claims.sub, und der Betreiber hat in keinem Verein eine
- * Mitgliedszeile.
+ * (members.ts -> canAssignRole/checkRoleChange), bekommen damit die richtige
+ * Antwort: der Betreiber darf jede Rolle vergeben. Die Selbstschutz-Regel dort
+ * greift trotzdem nie versehentlich — sie vergleicht target.profile_id mit
+ * claims.sub, und der Betreiber hat in keinem Verein eine Mitgliedszeile.
  */
 const OPERATOR_CLUB_ROLE: ClubRole = 'owner';
 
-export function isClubMember(claims: AuthClaims, clubId: string): boolean {
-  return hasOperatorOverride(claims) || clubRole(claims, clubId) !== undefined;
-}
-
-export function hasClubRole(claims: AuthClaims, clubId: string, roles: readonly ClubRole[]): boolean {
-  if (hasOperatorOverride(claims)) return true;
+/**
+ * ### ZWECKBINDUNG IN DER API (0075) — die wichtigste Stelle dieser Datei ###
+ *
+ * Hier stand bis 0075:
+ *
+ *     if (hasOperatorOverride(claims)) return true;   // fuer JEDE Rollenliste
+ *
+ * Das war die zweite Tuer neben SQL, und sie war belegt offen: die
+ * Kontaktdaten-Maskierung des Rosters (routes/members.ts -> maySeeFullRoster)
+ * ist ein reiner TypeScript-Gate. Ueber diese eine Zeile las der Betreiber
+ * das GEBURTSDATUM von 15 Minderjaehrigen sowie TELEFON und ANSCHRIFT von 5 —
+ * darunter ein 2015 geborenes Kind mit Strassenangabe. Ein normales Mitglied
+ * bekam fuer dieselben Felder null. Die Zweckbindung aus 0074 lebte nur in SQL
+ * und erreichte diesen Pfad nie.
+ *
+ * ### Die Loesung: der Zweck wird zum Argument ###
+ * hasClubRole nimmt jetzt eine FAEHIGKEIT entgegen. Ohne sie gibt es keinen
+ * Betreiber-Zweig — fail-closed, wie in der Datenbank:
+ *
+ *     hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES)                  -> Betreiber: NEIN
+ *     hasClubRole(claims, clubId, COACH_ROLES, 'routines_edit')         -> Betreiber: JA (freigegeben)
+ *     hasClubRole(claims, clubId, MANAGE_MEMBER_ROLES, 'member_contact')-> Betreiber: NEIN (gesperrt)
+ *
+ * Warum ein optionales Argument und kein zweiter Funktionsname: der Default
+ * muss die sichere Antwort sein. Wer eine neue Aufrufstelle schreibt und nicht
+ * an den Betreiber denkt, bekommt automatisch die Maskierung — nicht
+ * automatisch den Generalschluessel. Genau die Richtung verlangt Art. 25 Abs. 2
+ * DSGVO, und genau in diese Richtung war die alte Zeile falsch.
+ *
+ * Die Verknuepfung ist bewusst ODER und kein CASE (dieselbe Ueberlegung wie in
+ * 0074, Abschnitt 6): eine Person, die BEIDES ist — Plattform-Admin und
+ * Vereins-Kassenwart — darf ihre echte Vereinsrolle nicht verlieren, sobald
+ * die Einsicht anspringt.
+ */
+export function hasClubRole(
+  claims: AuthClaims,
+  clubId: string,
+  roles: readonly ClubRole[],
+  capability?: CapabilityKey,
+): boolean {
+  if (capability !== undefined && operatorMay(claims, capability)) return true;
   const role = clubRole(claims, clubId);
   return role !== undefined && roles.includes(role);
 }
 
-/** Throw 403 unless the caller is a member of the club (any role). */
+/**
+ * Haelt die Person die Rolle TATSAECHLICH — ohne jeden Betreiber-Zweig?
+ * Gegenstueck zu app.club_role_held (0074). Fuer Stellen, an denen die Frage
+ * eine Tatsache ueber die Vereinsmitgliedschaft ist und keine Befugnis
+ * (z.B. „betreut diese Person dieses Team").
+ */
+export function clubRoleHeld(claims: AuthClaims, clubId: string, roles: readonly ClubRole[]): boolean {
+  const role = clubRole(claims, clubId);
+  return role !== undefined && roles.includes(role);
+}
+
+export function isClubMember(claims: AuthClaims, clubId: string): boolean {
+  // 'members' ist die Faehigkeit, unter der 0074 die Stammdaten freigegeben
+  // hat; app.is_club_member haengt seit 0075 an derselben (Migration 0075,
+  // Abschnitt 2). Damit sagen API und DB hier dasselbe.
+  return operatorMay(claims, 'members') || clubRole(claims, clubId) !== undefined;
+}
+
+/**
+ * Throw 403 unless the caller is a member of the club (any role).
+ *
+ * ### Warum hier 'members' und nicht fail-closed ###
+ * Das ist ein 403-GATE, keine Daten-Entscheidung: RLS entscheidet danach noch
+ * einmal, und die Maskierung sitzt in hasClubRole. Waere dieser Gate
+ * fail-closed, verloere der Betreiber jede Route auf einen Schlag — auch die,
+ * die 0051/0074 ihm ausdruecklich lassen (Vereinseinstellungen, Kueren,
+ * Struktur). Gebunden ist er trotzdem: 'members' ist eine Zeile in
+ * app.operator_capabilities, und naehme jemand sie heraus, schloesse sich diese
+ * Flaeche mit. Genau derselbe Schnitt wie app.is_club_member in 0075.
+ */
 export function requireClubMember(claims: AuthClaims, clubId: string): ClubRole {
   const role = clubRole(claims, clubId);
   if (role !== undefined) return role;
   // Betreiber-Einsicht: nur, wenn die Audit-Middleware sie eingeschaltet hat
-  // (und das tut sie nur mit Protokollzeile). Der blosse Plattform-Admin-Claim
-  // fuehrt weiterhin hierher ins 403 — 0051 haengt den Zugriff an den Nachweis.
-  if (hasOperatorOverride(claims)) return OPERATOR_CLUB_ROLE;
+  // (und das tut sie nur mit Protokollzeile) UND 'members' freigegeben ist.
+  // Der blosse Plattform-Admin-Claim fuehrt weiterhin hierher ins 403.
+  if (operatorMay(claims, 'members')) return OPERATOR_CLUB_ROLE;
   throw problem(403, 'Forbidden', 'Not a member of this club');
 }
 
