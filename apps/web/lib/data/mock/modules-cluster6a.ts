@@ -21,7 +21,14 @@ import { ledgerCategorySeed, legacyCategoryMap } from "./seed-finance";
  */
 
 const clubId = mock.club.id;
-const self = mock.currentUser;
+// `let` + Melderegister: Auf der Beta wechselt /entwickler die eingeloggte
+// Person. Eine Kopie beim Laden des Moduls bekäme davon nichts mit — hier
+// hängen Erziehungsberechtigten-Zuordnungen und Foto-Uploads dran, die dann
+// der falschen Person zugeschrieben würden.
+let self = mock.currentUser;
+mock.onViewerChange(() => {
+  self = mock.currentUser;
+});
 const nowIso = (): string => new Date().toISOString();
 const thisYear = new Date().getFullYear();
 

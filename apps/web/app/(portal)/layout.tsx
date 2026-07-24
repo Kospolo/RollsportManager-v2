@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 import { BottomNav } from "@/components/shell/BottomNav";
 import { AuthGate } from "@/components/shell/AuthGate";
+import { BetaViewerBoundary } from "@/components/shell/BetaViewerBoundary";
 import { OperatorPortalGate } from "@/components/shell/OperatorPortalGate";
 import { ToastProvider } from "@/components/ui/Toast";
 import { CapabilitiesProvider } from "@/lib/capabilities";
@@ -31,23 +32,29 @@ export default function PortalLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ToastProvider>
-      <CapabilitiesProvider>
-       <ModulesProvider>
-        <div className="min-h-dvh bg-canvas lg:grid lg:grid-cols-[250px_minmax(0,1fr)]">
-          <Sidebar />
-          <div className="flex min-h-dvh min-w-0 flex-col">
-            <Topbar />
-            <main className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:pb-10 lg:pt-7">
-              <AuthGate>
-                <OperatorPortalGate>{children}</OperatorPortalGate>
-              </AuthGate>
-            </main>
+    // BetaViewerBoundary ganz außen: Sidebar, Topbar und BottomNav lesen die
+    // eingeloggte Person selbst (Namenskürzel, sichtbare Menüpunkte). Läge die
+    // Grenze weiter innen, wechselte nur der Inhalt und die Hülle zeigte
+    // weiter die alte Person.
+    <BetaViewerBoundary>
+      <ToastProvider>
+        <CapabilitiesProvider>
+         <ModulesProvider>
+          <div className="min-h-dvh bg-canvas lg:grid lg:grid-cols-[250px_minmax(0,1fr)]">
+            <Sidebar />
+            <div className="flex min-h-dvh min-w-0 flex-col">
+              <Topbar />
+              <main className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:pb-10 lg:pt-7">
+                <AuthGate>
+                  <OperatorPortalGate>{children}</OperatorPortalGate>
+                </AuthGate>
+              </main>
+            </div>
+            <BottomNav />
           </div>
-          <BottomNav />
-        </div>
-       </ModulesProvider>
-      </CapabilitiesProvider>
-    </ToastProvider>
+         </ModulesProvider>
+        </CapabilitiesProvider>
+      </ToastProvider>
+    </BetaViewerBoundary>
   );
 }

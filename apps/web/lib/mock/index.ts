@@ -6,7 +6,17 @@
  * echten API. Alle Screens lesen ausschließlich von hier.
  */
 
-export { club, members, teams, guardianships, memberById, fullName, currentUser } from "./club";
+export {
+  club,
+  members,
+  teams,
+  guardianships,
+  memberById,
+  fullName,
+  currentUser,
+  setCurrentUser,
+  onViewerChange,
+} from "./club";
 export { events, attendance, upcomingEvents } from "./events";
 export { routines, routineById } from "./routines";
 export {

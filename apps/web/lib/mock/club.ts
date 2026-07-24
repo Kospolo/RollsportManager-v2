@@ -104,5 +104,48 @@ export function fullName(member: Member): string {
   return `${member.firstName} ${member.lastName}`;
 }
 
-/** Die eingeloggte Demo-Nutzerin des Portals. */
-export const currentUser = members[0]; // Sandra Vogel — Trainerin
+/**
+ * Die eingeloggte Demo-Person des Portals — VERÄNDERLICH.
+ *
+ * Vorgabe ist Sandra Vogel (Trainerin). Das ist auch der Stand, mit dem alle
+ * Seiten vorgerendert werden (`next build` erzeugt sie statisch), und deshalb
+ * MUSS der erste Render im Browser ebenfalls Sandra zeigen — sonst passt das
+ * HTML nicht zum ersten React-Render und die Hydration bricht. Umgeschaltet
+ * wird darum erst NACH dem ersten Render, aus `BetaViewerBoundary`.
+ *
+ * `export let` statt `const`: In ES-Modulen ist ein Import eine LEBENDE
+ * Bindung. Wer `mock.currentUser` liest, sieht die Zuweisung von unten sofort
+ * — es gibt keine veralteten Kopien. Ausgenommen sind Stellen, die den Wert
+ * beim Laden des Moduls in eine eigene Variable schreiben; genau dafür gibt es
+ * das Melderegister.
+ */
+export let currentUser: Member = members[0]; // Sandra Vogel — Trainerin
+
+/**
+ * Melderegister für abgeleiteten Zustand.
+ *
+ * Zwei Mock-Module bauen sich beim Laden einen Sitzungs-Speicher aus der
+ * eingeloggten Person (Profilfelder, Selbstprofil, Einstellungen). Die lebende
+ * Bindung hilft ihnen nichts — sie haben den Wert bereits KOPIERT. Sie melden
+ * sich hier an und bauen ihren Speicher neu auf, wenn die Person wechselt.
+ * Ohne das zeigte das Profil nach dem Wechsel weiter Sandras Daten.
+ */
+const viewerListeners: Array<() => void> = [];
+
+/** Beim Wechsel der eingeloggten Person aufrufen (siehe oben). */
+export function onViewerChange(listener: () => void): void {
+  viewerListeners.push(listener);
+}
+
+/**
+ * Wechselt die eingeloggte Demo-Person. Nur für den Entwickler-Bereich der
+ * Beta (`/entwickler`) gedacht — im echten Betrieb kommt die Person aus dem
+ * Login. Gibt zurück, ob die Kennung bekannt war.
+ */
+export function setCurrentUser(memberId: string): boolean {
+  const next = members.find((m) => m.id === memberId);
+  if (!next) return false;
+  currentUser = next;
+  for (const listener of viewerListeners) listener();
+  return true;
+}

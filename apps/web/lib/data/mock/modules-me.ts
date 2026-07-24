@@ -20,7 +20,11 @@ import { MOCK_SELF_PROFILE } from "./seed";
  * gewinnen, fehlende bleiben), damit ein Teilobjekt zum Umschalten genügt.
  */
 
-const self = mock.currentUser;
+// `let`, nicht `const`: Auf der Beta kann die eingeloggte Person über
+// /entwickler gewechselt werden. Die Sitzungs-Speicher unten KOPIEREN ihre
+// Startwerte von hier — sie bekämen einen Wechsel sonst nie mit und zeigten
+// weiter Sandras Profil. Nachgezogen wird das im Block unter den Speichern.
+let self = mock.currentUser;
 const nowIso = (): string => new Date().toISOString();
 
 /** Editierbare Profilfelder der eingeloggten Persona (Session-Store). */
@@ -61,6 +65,42 @@ const preferencesStore: UserPreferences = {
   notifications: { events: true, invoices: true, news: true, chat: true },
   updatedAt: nowIso(),
 };
+
+/**
+ * Personenwechsel auf der Beta (/entwickler): Die drei Speicher oben stehen
+ * auf den Werten der VORHERIGEN Person und werden hier neu aufgebaut.
+ *
+ * Die Objekte werden befüllt, nicht ersetzt (`Object.assign`) — auf sie zeigen
+ * bereits Verweise aus den Lesefunktionen weiter unten. Ein neues Objekt käme
+ * dort nie an.
+ *
+ * Ausdrücklich mit `undefined` überschreiben, wo die neue Person nichts
+ * hinterlegt hat: Sonst behielte Jürgen Sandras Profilfoto, nur weil sein
+ * eigenes Feld leer ist.
+ */
+mock.onViewerChange(() => {
+  self = mock.currentUser;
+  Object.assign(profileStore, {
+    firstName: self.firstName,
+    lastName: self.lastName,
+    email: self.email as string | undefined,
+    birthDate: self.birthDate as string | undefined,
+    avatarUrl: self.avatarUrl as string | undefined,
+    aboutMe: self.aboutMe as string | undefined,
+  });
+  Object.assign(selfProfileStore, {
+    motto: profileStore.aboutMe,
+    favoriteDiscipline: undefined,
+    skatingSince: undefined,
+    visibility: "internal" as ProfileVisibility,
+  });
+  Object.assign(preferencesStore, {
+    locale: "de",
+    theme: "auto",
+    notifications: { events: true, invoices: true, news: true, chat: true },
+    updatedAt: nowIso(),
+  });
+});
 
 function buildProfile(): MyProfile {
   const displayName = `${profileStore.firstName} ${profileStore.lastName}`.trim();
