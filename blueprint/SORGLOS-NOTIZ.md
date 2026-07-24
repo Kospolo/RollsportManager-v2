@@ -172,6 +172,9 @@ wird geblockt). Dev-Stack läuft: Web :3021 (eigener `next dev`, hängt an diese
   - **Betreiberkonsole:** Plattform-Admin sieht/verwaltet alle Vereine — **jeder Zugriff protokolliert**
     (`app.operator_audit_log`, append-only, auch vom Betreiber nicht löschbar). Support-Tickets, Dashboard,
     Vereins-Umschalter, Küren-Moderation. **Zweite protokoll-freie Tür geschlossen** (members.ts, Commit heute).
+    **Seit 0074 zusätzlich zweckgebunden** (2026-07-24): der Betreiber ist owner-gleich nur noch in **9 von 33**
+    Fähigkeiten (`app.operator_capabilities`, Allowlist, fail-closed). Trainer-Notizen über Kinder,
+    Schließfach-Mieten und die gesamte Finanz-Fläche sind für ihn **zu** — siehe „ERLEDIGT (2026-07-24)" unten.
   - **Mitglieder-Seite:** Redesign (Karten statt Tabelle) + **Selbst-Profil** + Trainingsbeteiligung nur noch
     read_own für Mitglieder (Lese-Policy umgestellt: `app.can_read_attendance` — schließt die Phase-1-„none sperrt nur
     Schreiben"-Lücke), `joined_on` jetzt auch für Coach.
@@ -320,3 +323,37 @@ Willst du etwas anderes zuerst (z. B. „iPhone-Install", „iOS fertig", „And
 4. **Team-Detailseite** mit ganzem Kader → Mitglied → Profil (`233bc19`).
 Offener Folge-Nachzug: Mitglieder-**Detail**seite liest „Über mich" evtl. noch über einen eigenen about_me-Pfad
 (gleiche Bug-Klasse) — bei Gelegenheit prüfen.
+
+### ✅ ERLEDIGT (2026-07-24) — Betreiber-Zweckbindung (Befund B4 der Gesamtprüfung)
+**Der Befund:** Der Plattform-Betreiber las **interne Trainer-Notizen über Kinder im Klartext** und
+**alle Schließfach-Mietverträge** (welches Kind, welches Fach, welcher Preis) — dazu SEPA-Mandate und Rechnungen.
+Ursache: `app.cap_rank` gab bei eingeschalteter Betreiber-Einsicht **pauschal Rang 5 für JEDE Fähigkeit** (0051),
+und die Middleware schaltet die Einsicht bei **jedem** Plattform-Request ein.
+
+**Der gewählte Weg — Migration `0074_betreiber_zweckbindung.sql`:** eine **Allowlist** (`app.operator_capabilities`),
+kein Denylist-Flicken. Grund: eine Denylist ist fail-**open** — die nächste neue Fähigkeit läge sofort offen.
+Die Allowlist ist fail-**closed**: eine neue Fähigkeit ist für den Betreiber automatisch gesperrt, bis jemand sie
+mit Begründung einträgt (Art. 25 Abs. 2 DSGVO, „Datenschutz durch Voreinstellung").
+- **Offen (9):** members · roles · club_settings · departments · teams · team_coaches · routines · routines_edit · anniversaries.
+- **Zu (24):** u. a. coach_notes · lockers · finance · member_contact · attendance · checkins · chat · documents.
+- `can_manage_finance` ist zusätzlich zweckgebunden (41 Aufrufstellen) → die ganze Finanz-Fläche in EINER Funktion zu.
+- Die Allowlist ist **zur Laufzeit unveränderlich** (Trigger, auch gegen `service_role`) und für Vereine **lesbar**:
+  zusammen mit `app.operator_audit_log` sieht der Verein, was der Auftragsverarbeiter DARF und was er GETAN hat.
+- **Der protokollierte Weg bleibt unversehrt:** 19 von 19 Betreiber-Requests der Smoke-Suite hinterlassen eine
+  Protokollzeile — auch die abgewiesenen. Neu gemessen statt behauptet: `api-db-test.sh` Schritt 4 und
+  `services/api/test/operator-audit-fail-closed.test.ts` (Protokoll-Ausfall ⇒ 503, Nutzlast verlässt den Prozess nicht).
+
+**Falsch beruhigende Tests korrigiert:** `99pB` Block E maß den Betreiber **ohne** die Sitzungsvariable, die die echte
+API immer setzt (Ergebnis „0 Verträge" war Zufall — echt waren es 5). `99pA` maß den Betreiber gar nicht. Beide messen
+jetzt den echten Betriebszustand, mit Gegenprobe. **Gegenprobe gefahren:** beide Regressionen künstlich wieder
+eingebaut → 99e/99pA/99pB gehen rot, ebenso die Middleware-Mutation.
+
+**Gates:** SQL 1863 ✅ (war 1809) · api tsc/vitest 273 ✅ · api-db-test ✅ · contracts ✅ · web tsc+build ✅ ·
+iOS+macOS xcodebuild ✅ · Android assembleDebug ✅.
+
+**⚠️ Bewusst NICHT geschlossen (offener Punkt, benannt statt versteckt):** `app.is_club_trainer` behält den pauschalen
+Override — sie gated 30 Policies, davon 22 **schreibende** (news, exercises, training_slots, media …), die 0051 dem
+Betreiber ausdrücklich gibt. Er erreicht dadurch weiterhin: **checkins** (wer wann in der Halle war), **Team-Chat**
+(Direktnachrichten waren nie offen), waitlists, duty_entries, event_rsvps, documents, member_assessments
+(die offizielle Beurteilung — die liest die Familie ohnehin, anders als die interne Notiz). Das zu schließen ist eine
+**eigene Entscheidung** des Chefs, weil sie dem Betreiber in derselben Zeile Schreibrechte nimmt.
