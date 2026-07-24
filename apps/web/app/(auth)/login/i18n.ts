@@ -6,6 +6,9 @@ export const loginDict = {
     title: "Willkommen zurück",
     sub: "Melde dich im Portal deines Vereins an.",
     demoBanner: "Demo-Modus: beliebige Eingabe genügt.",
+    // Fuehrt zu /entwickler. Ohne diesen Weg landet jede Anmeldung bei der
+    // Vorgabe-Person (Trainerin) und Rollen lassen sich nicht vergleichen.
+    viewAs: "Oder als andere Person ansehen \u2192",
 
     apple: "Mit Apple anmelden",
     google: "Mit Google anmelden",
@@ -40,6 +43,7 @@ export const loginDict = {
     title: "Welcome back",
     sub: "Sign in to your club's portal.",
     demoBanner: "Demo mode: any input will do.",
+    viewAs: "Or view as a different person \u2192",
 
     apple: "Sign in with Apple",
     google: "Sign in with Google",

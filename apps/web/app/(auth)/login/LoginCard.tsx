@@ -61,9 +61,26 @@ export function LoginCard() {
       <main className="grid flex-1 place-items-center px-4 pb-14 pt-6">
         <div className="w-full max-w-[420px]">
           {/* Demo-Hinweis: Farbe + Wort + Icon — nie nur Farbe */}
-          <p className="mb-4 flex items-center gap-2.5 rounded-lg bg-info-soft px-4 py-3 text-[13.5px] font-bold text-info">
+          <p className="mb-2 flex items-center gap-2.5 rounded-lg bg-info-soft px-4 py-3 text-[13.5px] font-bold text-info">
             <Icon name="sparkle" className="ic h-[17px] w-[17px] flex-none" />
             {t("demoBanner")}
+          </p>
+
+          {/*
+            Weg zur Personen-Auswahl. Ohne ihn landet JEDE Anmeldung bei der
+            Vorgabe-Person (Sandra Vogel, Trainerin) — Marcel am 24.07.: „ich
+            komme nur als trainer rein". Die Auswahl gab es da schon, nur musste
+            man die Adresse /entwickler auswendig können. Eine Funktion, die man
+            nicht findet, gibt es nicht.
+
+            Steht bewusst NUR im mock-Modus: Im api-Modus zeigt diese Seite
+            ohnehin die Persona-Karten des Dev-Logins, und in einer echten
+            Anmeldung hätte ein solcher Link nichts verloren.
+          */}
+          <p className="mb-4 text-center text-caption text-ink-soft">
+            <Link href="/entwickler" className="font-semibold text-brand underline underline-offset-4">
+              {t("viewAs")}
+            </Link>
           </p>
 
           <Card className="shadow-pop">
