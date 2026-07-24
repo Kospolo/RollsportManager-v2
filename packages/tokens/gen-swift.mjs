@@ -190,14 +190,29 @@ const swift = `// ============================================================
 // ============================================================
 
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#else
+import AppKit
+// macOS kennt kein UIKit. Damit die generierten Farbliterale UNVERÄNDERT
+// bleiben (und dieser Generator eine einzige Quelle behält), heißt der
+// Plattform-Farbtyp hier ebenfalls UIColor — NSColor trägt denselben
+// Initializer init(red:green:blue:alpha:) (sRGB).
+typealias UIColor = NSColor
+#endif
 
-/// Dynamische Farbe über den UIColor-Trait-Initializer:
+/// Dynamische Farbe über den Trait- bzw. Appearance-Initializer:
 /// Light („Vormittag in der Halle“) / Dark („Vereinsheim am Abend“).
 private func rsmDynamic(_ light: UIColor, _ dark: UIColor) -> Color {
-    Color(UIColor { traits in
+#if canImport(UIKit)
+    return Color(UIColor { traits in
         traits.userInterfaceStyle == .dark ? dark : light
     })
+#else
+    return Color(NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? dark : light
+    })
+#endif
 }
 
 /// Schatten-Token (größte Ebene des CSS-Mehrfach-Schattens).
