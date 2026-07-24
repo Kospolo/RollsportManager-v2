@@ -29,7 +29,8 @@ import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { AboutMeSheet } from "../AboutMeSheet";
 import { AssessmentSheet } from "./AssessmentSheet";
-import { CoachNoteSheet } from "./CoachNoteSheet";
+import { CoachNoteSheet, type CoachNoteSheetValue } from "./CoachNoteSheet";
+import { CoachNoteDeleteDialog } from "./CoachNoteDeleteDialog";
 import { MemberSpartenCard } from "./MemberSpartenCard";
 import { MemberSpartenSheet } from "./MemberSpartenSheet";
 import { FamilyCard } from "./DetailCards";
@@ -220,7 +221,11 @@ export function MemberDetail({ id }: { id: string }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [assessOpen, setAssessOpen] = useState(false);
   const [spartenOpen, setSpartenOpen] = useState(false);
-  const [noteOpen, setNoteOpen] = useState(false);
+  // Interne Notizen: Schreiben/Bearbeiten teilen sich EIN Sheet (der
+  // Pflicht-Hinweis muss in beiden Faellen erscheinen), Loeschen hat einen
+  // eigenen Bestaetigungs-Dialog.
+  const [noteSheet, setNoteSheet] = useState<CoachNoteSheetValue | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<MemberCoachNote | null>(null);
 
   // INTERNE Trainer-Notizen (0069). Der Hook steht hier OBEN und
   // UNBEDINGT — unterhalb der early returns (loading/error) waere er ein
@@ -235,6 +240,24 @@ export function MemberDetail({ id }: { id: string }) {
     ready ? ready[2] : null,
   );
   const { notes: coachNotes, reload: reloadCoachNotes } = useCoachNotes(id, mayHandleCoachNotes);
+
+  /**
+   * Darf DIESE Notiz geaendert/geloescht werden? Der Server sagt „Only the
+   * author or the board" — und zwar ENGER als beim Lesen. Eine Trainerin sieht
+   * die Notizen einer Kollegin, aber sie schreibt sie nicht um: sonst stuende
+   * am Ende ein Satz unter einem fremden Namen. Genau diese Regel wird hier
+   * gestellt und keine bequemere.
+   *
+   * useCallback, weil die Funktion als prop in CoachNotesCard laeuft; ready[2]
+   * ist die aufrufende Person (getCurrentUser).
+   */
+  const viewerId = ready ? (ready[2]?.id ?? null) : null;
+  const viewerIsClubAdmin = ready ? permissions(ready[2] ?? null).isClubAdmin : false;
+  const mayModifyCoachNote = useCallback(
+    (note: MemberCoachNote) =>
+      viewerId !== null && (note.author_member_id === viewerId || viewerIsClubAdmin),
+    [viewerId, viewerIsClubAdmin],
+  );
 
   const roleOverride = override !== null && override.id === id ? override.role : null;
 
@@ -557,7 +580,10 @@ export function MemberDetail({ id }: { id: string }) {
                   notes={coachNotes}
                   authorName={authorName}
                   canWrite={mayHandleCoachNotes}
-                  onWrite={() => setNoteOpen(true)}
+                  canModify={mayModifyCoachNote}
+                  onWrite={() => setNoteSheet({ mode: "create" })}
+                  onEdit={(note) => setNoteSheet({ mode: "edit", note })}
+                  onDelete={setNoteToDelete}
                 />
               </div>
             )}
@@ -671,14 +697,23 @@ export function MemberDetail({ id }: { id: string }) {
           onSaved={state.reload}
         />
       )}
-      {noteOpen && mayHandleCoachNotes && (
+      {noteSheet && mayHandleCoachNotes && (
         <CoachNoteSheet
-          open={noteOpen}
+          // key: beim Wechsel zwischen „neu" und einer konkreten Notiz muss
+          // der Entwurfstext frisch sein, sonst stuende der Text der zuletzt
+          // bearbeiteten Notiz im naechsten Formular.
+          key={noteSheet.mode === "edit" ? `note-${noteSheet.note.id}` : "note-new"}
+          value={noteSheet}
           memberId={member.id}
-          onClose={() => setNoteOpen(false)}
+          onClose={() => setNoteSheet(null)}
           onSaved={() => void reloadCoachNotes()}
         />
       )}
+      <CoachNoteDeleteDialog
+        note={noteToDelete}
+        onClose={() => setNoteToDelete(null)}
+        onDeleted={() => void reloadCoachNotes()}
+      />
       {spartenOpen && canManageSparten && sparten !== null && (
         <MemberSpartenSheet
           key={member.id}

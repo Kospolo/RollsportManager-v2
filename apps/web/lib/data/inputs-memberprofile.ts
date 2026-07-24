@@ -57,10 +57,33 @@ export interface MemberProfileRepository {
    * und niemals über sich selbst oder das eigene Kind (serverseitig erzwungen).
    */
   createMemberCoachNote(input: CreateCoachNoteInput): Promise<MemberCoachNote>;
+  /**
+   * Interne Notiz ÄNDERN — nur die Verfasserin selbst oder die Vereinsleitung
+   * (serverseitig: „Only the author or the board").
+   *
+   * Warum es diesen Weg überhaupt gibt: eine Notiz über ein Kind, die
+   * unglücklich formuliert ist, muss korrigierbar sein — und zwar von der
+   * Person, die sie geschrieben hat. Ohne Korrekturweg bliebe nur „neu
+   * schreiben und die alte stehen lassen", und im DSGVO-Auskunftsfall (auf den
+   * der Hinweis an der Eingabe zielt) läge dann beides in der Akte.
+   */
+  updateMemberCoachNote(noteId: Id, input: UpdateCoachNoteInput): Promise<MemberCoachNote>;
+  /**
+   * Interne Notiz LÖSCHEN (serverseitig soft) — Verfasserin oder Leitung.
+   * Art. 5 Abs. 1 lit. e DSGVO: eine Notiz, die ihren Zweck erfüllt hat, muss
+   * verschwinden können. Eine Löschfrist-Automatik gibt es nicht (dazu fehlt
+   * eine Vorgabe) — das hier ist der manuelle Weg.
+   */
+  deleteMemberCoachNote(noteId: Id): Promise<{ id: Id }>;
 }
 
 export interface CreateCoachNoteInput {
   memberId: Id;
   /** Der Notiztext (Pflicht, max. 4000 Zeichen). */
+  body: string;
+}
+
+export interface UpdateCoachNoteInput {
+  /** Der neue Notiztext (Pflicht, max. 4000 Zeichen). */
   body: string;
 }

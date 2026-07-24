@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useT } from "@/lib/i18n";
+import type { MemberCoachNote } from "@/lib/api/generated";
 import { data, dataSource, errorMessage, isForbidden } from "@/lib/data";
 import { useToast } from "@/components/ui/Toast";
 import { Sheet } from "@/components/ui/Modal";
@@ -11,7 +12,7 @@ import { mitgliederDict } from "../i18n";
 import { profileDict } from "./profile-i18n";
 
 /**
- * INTERNE Trainer-Notiz schreiben (Migration 0069).
+ * INTERNE Trainer-Notiz schreiben ODER ändern (Migration 0069).
  *
  * ⚠️ NICHT die Beurteilung (AssessmentSheet). Der Unterschied ist der ganze
  * Zweck: die Beurteilung liest die Familie, diese Notiz NICHT.
@@ -28,17 +29,32 @@ import { profileDict } from "./profile-i18n";
  * zweite Satz ist der Grund, warum der erste kein Freibrief ist. Der Text lebt
  * in profile-i18n.ts (cnNoticeTitle/cnNoticeBody), DE und EN.
  *
+ * Er steht im BEARBEITEN-Modus genauso da wie beim Schreiben — gerade dort
+ * wird umformuliert, also faellt dort dieselbe Entscheidung noch einmal.
+ *
+ * ### ABGRENZUNG ZU DEN ANDEREN TEXTSORTEN ###
+ * Unter dem Feld steht in einem Satz, wie sich diese Notiz zur BEURTEILUNG
+ * (Familie liest mit) und zu den persoenlichen "Notizen" verhaelt. Drei Sorten
+ * Text ueber dieselbe Person mit drei verschiedenen Leserkreisen sind eine
+ * Verwechslungsfalle; der Satz kostet zwei Zeilen und verhindert genau die
+ * Notiz, die im falschen Kasten landet.
+ *
  * Kein totes Formular: schreibt ueber die Facade (createMemberCoachNote ->
- * POST /coach-notes) und bedient mock UND api. Der Server erzwingt die
- * Berechtigung endgueltig; dieses Sheet wird nur fuer Berechtigte gerendert.
+ * POST /coach-notes bzw. updateMemberCoachNote -> PATCH /coach-notes/{id}) und
+ * bedient mock UND api. Der Server erzwingt die Berechtigung endgueltig; dieses
+ * Sheet wird nur fuer Berechtigte gerendert.
  */
+export type CoachNoteSheetValue =
+  | { mode: "create" }
+  | { mode: "edit"; note: MemberCoachNote };
+
 export function CoachNoteSheet({
-  open,
+  value,
   memberId,
   onClose,
   onSaved,
 }: {
-  open: boolean;
+  value: CoachNoteSheetValue;
   memberId: string;
   onClose: () => void;
   onSaved: () => void;
@@ -47,7 +63,8 @@ export function CoachNoteSheet({
   const tp = useT(profileDict);
   const { showToast } = useToast();
 
-  const [body, setBody] = useState("");
+  const isEdit = value.mode === "edit";
+  const [body, setBody] = useState(isEdit ? value.note.body : "");
   const [submitting, setSubmitting] = useState(false);
 
   const trimmed = body.trim();
@@ -62,9 +79,14 @@ export function CoachNoteSheet({
     if (!canSave) return;
     setSubmitting(true);
     try {
-      await data.createMemberCoachNote({ memberId, body: trimmed });
-      showToast(tp(dataSource === "api" ? "cnSaved" : "cnSavedMock"), { tone: "success" });
-      setBody("");
+      if (value.mode === "edit") {
+        await data.updateMemberCoachNote(value.note.id, { body: trimmed });
+        showToast(tp(dataSource === "api" ? "cnUpdated" : "cnUpdatedMock"), { tone: "success" });
+      } else {
+        await data.createMemberCoachNote({ memberId, body: trimmed });
+        showToast(tp(dataSource === "api" ? "cnSaved" : "cnSavedMock"), { tone: "success" });
+        setBody("");
+      }
       onSaved();
       onClose();
     } catch (error) {
@@ -80,10 +102,10 @@ export function CoachNoteSheet({
 
   return (
     <Sheet
-      open={open}
+      open
       onClose={close}
-      eyebrow={tp("cnSheetEyebrow")}
-      title={tp("cnSheetTitle")}
+      eyebrow={tp(isEdit ? "cnEditEyebrow" : "cnSheetEyebrow")}
+      title={tp(isEdit ? "cnEditTitle" : "cnSheetTitle")}
       footer={
         <>
           <Button variant="ghost" onClick={close} disabled={submitting}>
@@ -115,6 +137,11 @@ export function CoachNoteSheet({
         maxLength={4000}
         onChange={(event) => setBody(event.target.value)}
       />
+
+      {/* Ruhiger als der Pflicht-Kasten und bewusst UNTER dem Feld: das hier
+          ist Orientierung ("welcher der drei Kaesten ist der richtige?"),
+          keine Warnung. Zwei Warnfarben uebereinander entwerten die erste. */}
+      <p className="mt-3 text-caption leading-[18px] text-ink-soft">{tp("cnVsAssessment")}</p>
     </Sheet>
   );
 }

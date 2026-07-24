@@ -344,6 +344,14 @@ export function AssessmentCard({
           ) : undefined
         }
       />
+      {/* Steht auch dann da, wenn noch nichts geschrieben wurde — gerade dann:
+          die Erwartung „wer liest das?" bildet sich vor dem ersten Satz. Die
+          Beurteilung ist die Textsorte, die die Familie SEHEN DARF; das ist
+          der Unterschied zur internen Notiz weiter unten, und beide Karten
+          sagen ihn ausdrücklich, statt ihn den Titeln zu überlassen. */}
+      <p className="mb-3 text-caption leading-[18px] text-ink-faint">
+        {tp("assessVisibleToFamily")}
+      </p>
       {assessments.length === 0 ? (
         <p className="text-body text-ink-soft">{tp("assessNone")}</p>
       ) : (
@@ -384,12 +392,25 @@ export function CoachNotesCard({
   notes,
   authorName,
   canWrite,
+  canModify,
   onWrite,
+  onEdit,
+  onDelete,
 }: {
   notes: MemberCoachNote[];
   authorName: (memberId: string) => string;
   canWrite: boolean;
+  /**
+   * Darf DIESE Notiz geaendert/geloescht werden? Bewusst je Notiz und nicht
+   * pauschal: der Server laesst „author or board" zu, also darf eine Trainerin
+   * die Notizen einer Kollegin LESEN, aber nicht umschreiben. Ein Knopf, den
+   * der Server ablehnt, ist eine Luege — deshalb wird hier dieselbe Frage
+   * gestellt wie dort.
+   */
+  canModify: (note: MemberCoachNote) => boolean;
   onWrite: () => void;
+  onEdit: (note: MemberCoachNote) => void;
+  onDelete: (note: MemberCoachNote) => void;
 }) {
   const tp = useT(profileDict) as PT;
   const { locale } = useLocale();
@@ -406,19 +427,48 @@ export function CoachNotesCard({
           ) : undefined
         }
       />
+      {/* Das Gegenstueck zum Hinweis auf der Beurteilungs-Karte. Zwei Karten,
+          zwei Leserkreise, beide benannt — sonst entscheidet die Trainerin
+          nach Gefuehl, in welchen Kasten ein Satz gehoert. */}
+      <p className="mb-3 text-caption leading-[18px] text-ink-faint">{tp("cnVsAssessment")}</p>
       {notes.length === 0 ? (
         <p className="text-body text-ink-soft">{tp("cnNone")}</p>
       ) : (
         <ul className="grid list-none gap-3">
-          {notes.map((n) => (
-            <li key={n.id} className="rounded-xl bg-sunken p-4">
-              <p className="text-[14px] leading-[21px] text-ink">{n.body}</p>
-              <span className="mt-3 block text-caption font-semibold text-ink-soft">
-                {tp("assessBy", { name: authorName(n.author_member_id) })} ·{" "}
-                {formatDateShort(n.created_at, locale)}
-              </span>
-            </li>
-          ))}
+          {notes.map((n) => {
+            const mine = canModify(n);
+            // updated_at weicht ab -> die Notiz wurde geaendert. Das gehoert
+            // sichtbar hin: bei einer Auskunft nach Art. 15 DSGVO ist der
+            // Unterschied zwischen „so geschrieben" und „spaeter gefasst"
+            // genau die Frage, die gestellt wird.
+            const edited = n.updated_at.slice(0, 19) !== n.created_at.slice(0, 19);
+            return (
+              <li key={n.id} className="rounded-xl bg-sunken p-4">
+                <p className="text-[14px] leading-[21px] text-ink">{n.body}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <span className="text-caption font-semibold text-ink-soft">
+                    {tp("assessBy", { name: authorName(n.author_member_id) })} ·{" "}
+                    {formatDateShort(n.created_at, locale)}
+                  </span>
+                  {edited && (
+                    <span className="text-caption text-ink-faint">
+                      {tp("cnEditedMark", { date: formatDateShort(n.updated_at, locale) })}
+                    </span>
+                  )}
+                  {mine && (
+                    <span className="ml-auto flex flex-wrap items-center gap-1">
+                      <Button size="sm" variant="ghost" icon="edit" onClick={() => onEdit(n)}>
+                        {tp("cnEdit")}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete(n)}>
+                        {tp("cnDelete")}
+                      </Button>
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Card>

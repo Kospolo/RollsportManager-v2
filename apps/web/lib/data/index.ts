@@ -131,7 +131,12 @@ export type {
   UpdateMySelfProfileInput,
 } from "./inputs-me";
 export { DISCIPLINE_MAX, MOTTO_MAX, SKATING_SINCE_MIN } from "./inputs-me";
-export type { CreateAssessmentInput, MemberProfileRepository } from "./inputs-memberprofile";
+export type {
+  CreateAssessmentInput,
+  CreateCoachNoteInput,
+  MemberProfileRepository,
+  UpdateCoachNoteInput,
+} from "./inputs-memberprofile";
 export type {
   CapabilityEnforcement,
   CapabilityLevel,
@@ -148,10 +153,13 @@ export type {
   AssignLockerInput,
   CreateDepartmentInput,
   CreateLockerInput,
+  CreateLockerRentalInput,
+  ListLockerRentalsFilter,
   OrgRepository,
   SetDepartmentMembersInput,
   UpdateDepartmentInput,
   UpdateLockerInput,
+  UpdateLockerRentalInput,
 } from "./inputs-org";
 export type {
   CreateSparteInput,

@@ -27,6 +27,7 @@ import type {
   CreateAssessmentInput,
   CreateCoachNoteInput,
   MemberProfileRepository,
+  UpdateCoachNoteInput,
 } from "../inputs-memberprofile";
 import { memberStore } from "./member-store";
 import { mockViewer } from "./viewer";
@@ -721,5 +722,36 @@ export const moduleRepositoryMemberProfile: MemberProfileRepository = {
     };
     writtenCoachNotes.unshift(created);
     return created;
+  },
+
+  async updateMemberCoachNote(
+    noteId: string,
+    input: UpdateCoachNoteInput,
+  ): Promise<MemberCoachNote> {
+    const viewer = mockViewer();
+    const note = writtenCoachNotes.find((n) => n.id === noteId);
+    if (!note) throw new Error("Interne Notiz nicht gefunden (mock)");
+    // Server-Regel gespiegelt: „Only the author or the board". BEWUSST enger
+    // als beim Lesen — eine Trainerin darf die Notizen einer Kollegin sehen,
+    // aber nicht umschreiben. Wer das hier auf can_read aufweitet, macht aus
+    // einer Zuschreibung („Sandra hat notiert") eine unbelegbare Behauptung.
+    if (!(note.author_member_id === viewer.id || ADMIN_ROLES.includes(viewer.role))) {
+      throw new Error("Nur die Verfasserin oder die Vereinsleitung darf eine Notiz aendern (mock)");
+    }
+    note.body = input.body;
+    note.updated_at = new Date().toISOString();
+    return { ...note };
+  },
+
+  async deleteMemberCoachNote(noteId: string): Promise<{ id: string }> {
+    const viewer = mockViewer();
+    const idx = writtenCoachNotes.findIndex((n) => n.id === noteId);
+    if (idx < 0) return { id: noteId };
+    const note = writtenCoachNotes[idx];
+    if (!(note.author_member_id === viewer.id || ADMIN_ROLES.includes(viewer.role))) {
+      throw new Error("Nur die Verfasserin oder die Vereinsleitung darf eine Notiz loeschen (mock)");
+    }
+    writtenCoachNotes.splice(idx, 1);
+    return { id: noteId };
   },
 };

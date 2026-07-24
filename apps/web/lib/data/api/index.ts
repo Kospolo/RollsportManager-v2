@@ -183,6 +183,15 @@ export const apiRepository: DataRepository = {
       body: input.body,
     });
   },
+  async updateMemberCoachNote(noteId, input) {
+    // member_id/author_member_id/club_id sind nicht Teil des Update-Schemas —
+    // eine Notiz wandert nicht zu einer anderen Person.
+    return apiClient.patchCoachNotesByNoteId(noteId, { body: input.body });
+  },
+  async deleteMemberCoachNote(noteId) {
+    const deleted = await apiClient.deleteCoachNotesByNoteId(noteId);
+    return { id: deleted.id };
+  },
   async getTeams() {
     const teams = await apiClient.getClubsByClubIdTeams(activeClubId());
     return teams.map(mapTeam);

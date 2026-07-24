@@ -230,6 +230,30 @@ export const profileDict = {
       "Achtung: Bei einem förmlichen Auskunftsersuchen nach DSGVO kann sie dennoch " +
       "herausgegeben werden müssen. Schreib nichts, was du nicht auch vor der Familie " +
       "vertreten könntest.",
+
+    /* Bearbeiten / Löschen (Verfasserin oder Vereinsleitung) */
+    cnEditEyebrow: "Interne Notiz bearbeiten",
+    cnEditTitle: "Interne Notiz ändern",
+    cnEdit: "Bearbeiten",
+    cnDelete: "Löschen",
+    cnUpdated: "Interne Notiz geändert.",
+    cnUpdatedMock: "Interne Notiz geändert — Demo.",
+    cnEditedMark: "geändert {date}",
+    cnDeleteEyebrow: "Interne Notiz löschen",
+    cnDeleteTitle: "Diese interne Notiz löschen?",
+    cnDeleteBody:
+      "Die Notiz wird entfernt. Das lässt sich nicht rückgängig machen — was hier zu Recht " +
+      "verschwindet, soll auch verschwinden.",
+    cnDeleteConfirm: "Notiz löschen",
+    cnDeleted: "Interne Notiz gelöscht.",
+    cnDeleteForbidden: "Ändern und Löschen dürfen nur die Verfasserin und die Vereinsleitung.",
+
+    /* Abgrenzung der drei Textsorten über eine Person */
+    cnVsAssessment:
+      "Nicht zu verwechseln mit der Beurteilung weiter oben: die liest die Familie. Diese Notiz " +
+      "nicht — und deine eigenen, privaten Notizen liegen unter „Notizen“ und gehören niemandem " +
+      "sonst.",
+    assessVisibleToFamily: "Das Mitglied und die Eltern können diese Beurteilung lesen.",
   },
   en: {
     passEyebrow: "Club pass",
@@ -438,6 +462,29 @@ export const profileDict = {
     cnNoticeBody:
       "Careful: under a formal GDPR subject access request it may still have to be " +
       "disclosed. Do not write anything you could not also defend in front of the family.",
+
+    /* Bearbeiten / Löschen (Verfasserin oder Vereinsleitung) */
+    cnEditEyebrow: "Edit internal note",
+    cnEditTitle: "Change internal note",
+    cnEdit: "Edit",
+    cnDelete: "Delete",
+    cnUpdated: "Internal note changed.",
+    cnUpdatedMock: "Internal note changed — demo.",
+    cnEditedMark: "edited {date}",
+    cnDeleteEyebrow: "Delete internal note",
+    cnDeleteTitle: "Delete this internal note?",
+    cnDeleteBody:
+      "The note will be removed. This cannot be undone — and what rightly disappears here " +
+      "should indeed disappear.",
+    cnDeleteConfirm: "Delete note",
+    cnDeleted: "Internal note deleted.",
+    cnDeleteForbidden: "Only the author and the board may edit or delete a note.",
+
+    /* Abgrenzung der drei Textsorten über eine Person */
+    cnVsAssessment:
+      "Not to be confused with the assessment above: the family reads that one. They do not " +
+      "read this note — and your own private notes live under “Notes” and belong to nobody else.",
+    assessVisibleToFamily: "The member and their parents can read this assessment.",
   },
 } satisfies Dict;
 
