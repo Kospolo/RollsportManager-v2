@@ -20,6 +20,20 @@
 //      Service-Mode: die Finanz-Sektion ist auf diese eine (club_id, member_id)
 //      begrenzt und die RLS (can_manage_finance / can_act_for_member) liefert
 //      genau die richtigen Zeilen — BYPASSRLS waere hier unnoetig und riskant.
+//   3. `select *` statt handgepflegter Spaltenlisten. Diese Datei hatte als
+//      EINZIGE im API-Layer explizite Spaltenlisten fuer Sektionen, deren
+//      Antwort-Schema die GANZE Tabelle abbildet. Migration 0073 fuegte
+//      app.duty_requirements.cost_per_hour_cents hinzu, das Schema fuehrte es
+//      als Pflichtfeld — die Spaltenliste kannte es nicht, und der ganze
+//      360-Grad-Endpunkt antwortete fuer JEDE Person und JEDE Rolle mit 500
+//      (Number(undefined) = NaN -> ZodError). Die Projektion macht ohnehin das
+//      Schema: zod strippt unbekannte Schluessel (KEIN .passthrough() im ganzen
+//      validation.ts), eine neue Spalte kann also nur dann nach draussen, wenn
+//      sie jemand BEWUSST ins Schema schreibt. Deshalb liest jede Sektion, deren
+//      Schema die Tabelle spiegelt, `select *` — wie alle anderen Routen auch
+//      (duty-requirements.ts, duty-entries.ts, checkins.ts, assessments.ts …).
+//      Bewusst SCHMAL bleiben nur die Projektionen mit Joins/Aliassen
+//      (roles, departments, member-Kopf) — die haben ein eigenes Schema.
 //
 // N+1: der ganze Profilaufbau laeuft in EINER withUser-Transaktion (EINE
 // Pool-Verbindung, db.ts:35). Die Sektions-Abfragen sind konditional — nur wer
@@ -192,14 +206,12 @@ memberProfileRouter.openapi(
       const competition = routineReader
         ? {
             entries: await tx`
-              select id, member_id, routine_id, status
+              select *
               from app.competition_entries
               where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
               order by created_at desc`,
             scores: await tx`
-              select s.id, s.club_id, s.routine_id, s.competition_id, s.scored_on,
-                     s.scoring_system, s.technical_score, s.components_score,
-                     s.total_score, s.placement, s.note
+              select s.*
               from app.routine_scores s
               where s.club_id = ${clubId} and s.deleted_at is null
                 and exists (select 1 from app.routine_skaters rs
@@ -219,7 +231,7 @@ memberProfileRouter.openapi(
       // Anwesenheit (attendance) — can_read_attendance (read_all/read_team/read_own).
       const attendance = canReadAttendance
         ? await tx`
-            select id, club_id, event_id, member_id, status, checked_in_at
+            select *
             from app.attendance
             where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
             order by created_at desc`
@@ -229,7 +241,7 @@ memberProfileRouter.openapi(
       // Neben der Anwesenheit gestellt; Gate: Trainer ODER Person/Eltern.
       const checkins = trainerOrFamily
         ? await tx`
-            select id, club_id, member_id, event_id, method, checked_in_at, created_at
+            select *
             from app.checkins
             where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
             order by checked_in_at desc`
@@ -241,8 +253,7 @@ memberProfileRouter.openapi(
       const duty = trainerOrFamily
         ? {
             requirements: await tx`
-              select id, club_id, team_id, member_id, season_label, required_hours,
-                     period_start, period_end, created_at, updated_at
+              select *
               from app.duty_requirements
               where club_id = ${clubId} and deleted_at is null
                 and (
@@ -255,8 +266,7 @@ memberProfileRouter.openapi(
                 )
               order by period_start desc`,
             entries: await tx`
-              select id, club_id, member_id, hours, activity_date, kind, note, approved,
-                     created_at, updated_at
+              select *
               from app.duty_entries
               where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
               order by activity_date desc`,
@@ -269,7 +279,7 @@ memberProfileRouter.openapi(
       // Betrachter:in nicht can_read_rsvp_reason erfuellt (Person/Eltern · owner/admin
       // · Team-Trainer). Deshalb NIE die Rohtabelle lesen. Immer vorhanden.
       const rsvps = await tx`
-        select id, club_id, event_id, member_id, status, comment, responded_at
+        select *
         from app.event_rsvps_visible
         where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
         order by responded_at desc`;
@@ -279,8 +289,7 @@ memberProfileRouter.openapi(
       // Section-Gate: Trainer ODER Person/Eltern. Immer nach member gefiltert.
       const equipment = trainerOrFamily
         ? await tx`
-            select id, equipment_id, club_id, reserved_by_member_id, quantity,
-                   from_at, to_at, status, created_at, updated_at
+            select *
             from app.equipment_reservations
             where club_id = ${clubId} and reserved_by_member_id = ${memberId}
               and deleted_at is null
@@ -324,8 +333,7 @@ memberProfileRouter.openapi(
       const assessments =
         privileged || coachesMember || selfOrGuardian
           ? await tx`
-              select id, club_id, member_id, author_member_id, body,
-                     rating_technik, rating_ausdruck, assessed_on, created_at, updated_at
+              select *
               from app.member_assessments
               where club_id = ${clubId} and member_id = ${memberId} and deleted_at is null
               order by assessed_on desc`
@@ -342,9 +350,7 @@ memberProfileRouter.openapi(
       const consents =
         privileged || selfOrGuardian
           ? await tx`
-              select id, club_id, member_id, subject_profile_id, purpose,
-                     granted_by_profile_id, legal_document_id, policy_version,
-                     recorded_at, effective, recorded_granted, granted_by_guardian, state
+              select *
               from app.effective_consents
               where club_id = ${clubId} and member_id = ${memberId}
               order by recorded_at desc`
