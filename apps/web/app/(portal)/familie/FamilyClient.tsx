@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import type { ChildCreated, Guardianship, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
@@ -49,6 +50,7 @@ const EMPTY_OVERLAY: Overlay = { added: [], removedIds: new Set() };
 
 export function FamilyClient() {
   const t = useT(familieDict);
+  const { hasCap } = useCapabilities();
 
   const state = useData((repo) =>
     Promise.all([
@@ -127,8 +129,19 @@ export function FamilyClient() {
   }, [me, members, children]);
 
   const partial = teams === null || invoices === null;
+
+  /**
+   * Der Mahn-/Beitragsstatus ist der FINANZstand einer Person — er gehört
+   * NICHT vor die Augen eines normalen Mitglieds, das hier fremde Personen
+   * (etwa das eigene Elternteil) sieht. Deshalb erscheint die Ampel nur ab
+   * `finance:read_all` (Kassenwart/Vorstand); `read_own`/`none` fallen darunter
+   * und sehen nur Namen, Verhältnis und Teams. Die Verknüpfung selbst bleibt.
+   * Durchgesetzt wird das ohnehin serverseitig — das hier verhindert das Leck
+   * in der Anzeige.
+   */
+  const canSeeDues = hasCap("finance", "read_all");
   const duesFor = (link: FamilyLink): DuesStatus | null =>
-    invoices ? duesStatus(link.member, invoices, guardianships) : null;
+    canSeeDues && invoices ? duesStatus(link.member, invoices, guardianships) : null;
 
   const headerActions = (
     <div className="flex flex-wrap gap-2.5">

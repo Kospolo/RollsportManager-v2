@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { DutyEntry, DutyRequirement, Id, Member, Team } from "@/lib/types";
-import { dataSource, errorMessage, fullName, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Button } from "@/components/ui/Button";
@@ -21,12 +22,16 @@ import { ClubOverview } from "./ClubOverview";
 /**
  * Pflichtstunden (Meine Stunden): oben Soll/Ist der angemeldeten Person plus
  * die eigenen Einträge und das „Stunden erfassen"-Sheet (Selbst-Service für
- * jedes Mitglied). Trainer:innen sehen zusätzlich offene Genehmigungen und die
- * Vereins-Übersicht. Sichtbarkeit ist Komfort — die verbindliche Durchsetzung
- * bleibt serverseitig (RLS/API/DB-Trigger, 403 → Toast + Rollback).
+ * jedes Mitglied). Wer `duty_hours` auf Stufe `edit` hält (Trainer:innen,
+ * Vorstand), sieht zusätzlich offene Genehmigungen und die Vereins-Übersicht
+ * über ALLE Mitglieder. Sichtbarkeit ist Komfort — die verbindliche
+ * Durchsetzung bleibt serverseitig (RLS/API/DB-Trigger, 403 → Toast + Rollback).
  *
- * Im mock-Modus ist die Demo-Persona eine Trainerin, damit alle Schreib- und
- * Genehmigungspfade erlebbar sind; im api-Modus zählt allein die echte Rolle.
+ * Das Gate läuft über `hasCap("duty_hours", "edit")` aus GET /me/capabilities,
+ * nicht über die alte permissions()-Attrappe: die Auflösung hängt am Betrachter
+ * (Mehrfachrollen, Sofortwirkung) und ist fail-closed. Ein normales Mitglied
+ * (duty_hours=read_own) sieht damit NUR die eigenen Pflichtstunden — die
+ * vereinsweite Übersicht ist echter Personendaten-Schutz, nicht bloß ein Knopf.
  */
 
 const NO_REQUIREMENTS: DutyRequirement[] = [];
@@ -53,8 +58,10 @@ export function PflichtstundenScreen() {
   const teams = state.data?.[3] ?? NO_TEAMS;
   const currentUser = state.data?.[4] ?? null;
 
-  const canApprove =
-    (currentUser != null && permissions(currentUser).isTrainer) || dataSource === "mock";
+  const { hasCap } = useCapabilities();
+  // Genehmigen + Vereins-Übersicht nur ab Stufe `edit`; ein Mitglied
+  // (duty_hours=read_own) sieht ausschließlich die eigenen Stunden. Fail-closed.
+  const canManageDutyHours = hasCap("duty_hours", "edit");
 
   const [sheet, setSheet] = useState<LogHoursValue | null>(null);
   const [toDelete, setToDelete] = useState<DutyEntry | null>(null);
@@ -112,7 +119,7 @@ export function PflichtstundenScreen() {
           onEdit={(entry) => setSheet({ mode: "edit", entry })}
           onDelete={setToDelete}
         />
-        {canApprove && (
+        {canManageDutyHours && (
           <>
             <PendingApprovals
               entries={pendingEntries}

@@ -9,14 +9,13 @@ import { FilterChips } from "@/components/ui/FilterChips";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import {
-  dataSource,
   errorMessage,
   isClubModuleDisabled,
   isClubProRequired,
   isNotImplemented,
-  permissions,
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import type { DocumentItem, Member } from "@/lib/types";
 import { documentsDict } from "../i18n";
@@ -30,24 +29,25 @@ import { ModuleNotBookedCard } from "@/components/ui/ModuleNotBookedCard";
 const NO_DOCS: DocumentItem[] = [];
 
 /**
- * Dokumente-Screen (Dateien & Downloads, PRO). Lädt Entitlement, Mitglieder,
- * aktuellen Nutzer und — nur bei aktivem PRO — die Dokumentliste über die
- * Facade. Ohne Entitlement (pro:false bzw. HTTP 402 club_pro_required) erscheint
- * statt der Tabelle der Upgrade-Hinweis. Schreibaktionen (Hochladen/Löschen)
- * zeigt der Screen nur Trainer+ mit PRO; die Durchsetzung bleibt serverseitig
- * (RLS + Entitlement), ein 403/402 kommt in den Dialogen als Toast zurück.
+ * Dokumente-Screen (Dateien & Downloads, PRO). Lädt Entitlement, Mitglieder
+ * und — nur bei aktivem PRO — die Dokumentliste über die Facade. Ohne
+ * Entitlement (pro:false bzw. HTTP 402 club_pro_required) erscheint statt der
+ * Tabelle der Upgrade-Hinweis. Schreibaktionen (Hochladen/Löschen) zeigt der
+ * Screen nur, wer die Fähigkeit `documents` mindestens auf Stufe `edit` hat
+ * (hasCap → fail-closed: ein reines Mitglied fällt auf 0/none und sieht nur die
+ * Lese-Ansicht; der Vereinsinhaber sieht als geschützte Rolle alles). Das ist
+ * Kosmetik — die Durchsetzung bleibt serverseitig (RLS + Entitlement), ein
+ * 403/402 kommt in den Dialogen als Toast zurück.
  */
 export function DocumentsScreen() {
   const t = useT(documentsDict);
+  const { hasCap } = useCapabilities();
 
   const core = useData(async (repo) => {
     const entitlement = await repo.getClubEntitlement();
-    const [members, currentUser] = await Promise.all([
-      repo.getMembers(),
-      repo.getCurrentUser(),
-    ]);
+    const members = await repo.getMembers();
     const documents = entitlement.pro ? await repo.listDocuments() : NO_DOCS;
-    return { entitlement, members, currentUser, documents };
+    return { entitlement, members, documents };
   });
 
   const [filter, setFilter] = useState<string>("all");
@@ -58,10 +58,13 @@ export function DocumentsScreen() {
   const entitlement = ready ? core.data.entitlement : undefined;
   const documents = ready ? core.data.documents : NO_DOCS;
   const members: Member[] = ready ? core.data.members : [];
-  const currentUser = ready ? core.data.currentUser : null;
 
   const pro = entitlement?.pro ?? false;
-  const canWrite = pro && (permissions(currentUser).isTrainer || dataSource === "mock");
+  // Schreib-/Admin-Controls (Hochladen/Löschen) nur ab Stufe `edit` auf der
+  // Fähigkeit `documents`. hasCap ist fail-closed: ein reines Mitglied (keine
+  // Rolle bzw. nur „member") erreicht 0/none und sieht nur die Lese-Ansicht;
+  // der Vereinsinhaber liegt als geschützte Rolle bei rank 5 und sieht alles.
+  const canWrite = pro && hasCap("documents", "edit");
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>();

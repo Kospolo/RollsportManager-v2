@@ -140,12 +140,14 @@ export const kuerenDict = {
     bestValue: "Bestwert {best} Punkte",
     sparkLabel: "Wertungsverlauf: {values} Punkte",
 
-    /* Notizen */
-    notesEyebrow: "Notizen",
-    notesTitle: "Trainingsnotizen",
-    notesLabel: "Notiz zur Kür",
-    notesHint: "Wird nur lokal auf diesem Gerät gespeichert.",
-    notesPlaceholder: "Was lief gut? Was üben wir im Loop weiter? …",
+    /* Notizen — rein persönlich & lokal (wie iOS): bleibt auf dem Gerät,
+       weder Trainer:innen noch Verein sehen sie. */
+    notesEyebrow: "Nur für dich",
+    notesTitle: "Meine Notiz zu dieser Kür",
+    notesLabel: "Meine Notiz",
+    notesHint:
+      "Dein persönlicher Merkzettel — bleibt auf diesem Gerät. Weder Trainer:innen noch der Verein sehen ihn.",
+    notesPlaceholder: "Was lief gut? Woran übe ich weiter? …",
     saveNote: "Notiz speichern",
     noteSaved: "Notiz gespeichert.",
     noteSaveError: "Speichern fehlgeschlagen.",
@@ -314,12 +316,14 @@ export const kuerenDict = {
     bestValue: "Best score {best} points",
     sparkLabel: "Score trend: {values} points",
 
-    /* Notes */
-    notesEyebrow: "Notes",
-    notesTitle: "Training notes",
-    notesLabel: "Note for this routine",
-    notesHint: "Stored locally on this device only.",
-    notesPlaceholder: "What went well? What do we keep looping? …",
+    /* Notes — strictly personal & local (like iOS): stays on the device,
+       neither coaches nor the club can see it. */
+    notesEyebrow: "Just for you",
+    notesTitle: "My note on this routine",
+    notesLabel: "My note",
+    notesHint:
+      "Your personal scratchpad — stays on this device. Neither coaches nor the club can see it.",
+    notesPlaceholder: "What went well? What do I keep practising? …",
     saveNote: "Save note",
     noteSaved: "Note saved.",
     noteSaveError: "Saving failed.",

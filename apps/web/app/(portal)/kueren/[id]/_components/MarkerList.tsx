@@ -14,6 +14,11 @@ import { LoopIcon } from "./PlayerIcons";
  * Zeitmarken-Liste (DESIGN-SYSTEM §3.8): Mono-Zeit-Badge in Honig,
  * Elementname + RollArt-Kürzel-Chip, Klick = Sprung („ab hier abspielen").
  * Marker innerhalb des aktiven A–B-Loops tragen den Honig-Chip „im Loop".
+ *
+ * Ansehen + „ab hier abspielen" steht ALLEN offen; das Anlegen/Ändern von
+ * Elementen ist ein Schreib-Control und hängt an routines:edit (canEdit).
+ * Ein Mitglied behält damit die reine Lese-Ansicht — der „+ Markierung"-Knopf
+ * verschwindet, die Marker bleiben klick- und abspielbar.
  */
 
 export function MarkerList({
@@ -23,6 +28,7 @@ export function MarkerList({
   loopB,
   onJump,
   onAdd,
+  canEdit,
 }: {
   markers: RoutineMarker[];
   loopOn: boolean;
@@ -30,6 +36,7 @@ export function MarkerList({
   loopB: number;
   onJump: (ms: number) => void;
   onAdd: () => void;
+  canEdit: boolean;
 }) {
   const t = useT(kuerenDict);
 
@@ -39,9 +46,11 @@ export function MarkerList({
         eyebrow={t("markersEyebrow")}
         title={t("markersTitle")}
         action={
-          <Button variant="ghost" size="sm" icon="plus" onClick={onAdd}>
-            {t("addMarker")}
-          </Button>
+          canEdit ? (
+            <Button variant="ghost" size="sm" icon="plus" onClick={onAdd}>
+              {t("addMarker")}
+            </Button>
+          ) : undefined
         }
       />
       <ul className="grid gap-0.5">

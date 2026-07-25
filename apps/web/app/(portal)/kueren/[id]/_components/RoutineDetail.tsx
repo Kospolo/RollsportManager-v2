@@ -12,6 +12,7 @@ import {
   permissions,
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
 import { Badge } from "@/components/ui/Badge";
@@ -138,12 +139,22 @@ function LoadedDetail({
 }) {
   const t = useT(kuerenDict);
   const { showToast } = useToast();
+  const { hasCap } = useCapabilities();
   const playback = usePlayback(routine.music.durationMs);
 
   /* Kür-Teilen UND Medien-Upload sind Trainer:innen vorbehalten (serverseitig
      is_club_trainer + PRO); im UI ausgeblendet statt 403. */
   const canManage = permissions(currentUser).isTrainer;
   const canShare = canManage;
+
+  /* Schreiben an der Kür (Marker/Elemente setzen, Wertungen eintragen) hängt an
+     der Fähigkeit routines:edit — fail-closed: ein Mitglied (read_own) fällt
+     darunter und sieht nur die Lese-Ansicht, Vorstand/Owner (rank 5) sieht alles.
+     Reine Kosmetik gegen 403-Läufe; die Durchsetzung bleibt serverseitig. */
+  // routines_edit (nicht routines): Trainer:innen haben routines=read_all, aber
+  // routines_edit=edit — sie DÜRFEN Marker setzen. Mit "routines" wären genau
+  // die eigentlichen Editor:innen ausgesperrt gewesen.
+  const canEditRoutine = hasCap("routines_edit", "edit");
   const [shareOpen, setShareOpen] = useState(false);
 
   /* Marker optimistisch: sofort lokal, dann Facade-Write (api: POST). */
@@ -277,6 +288,7 @@ function LoadedDetail({
           loopB={playback.loopB}
           onJump={playback.playFrom}
           onAdd={addMarkerAtPlayhead}
+          canEdit={canEditRoutine}
         />
         <div className="grid gap-6">
           <ScoreTrend routine={routine} />

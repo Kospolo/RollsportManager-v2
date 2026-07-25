@@ -17,6 +17,7 @@ import {
   permissions,
 } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import type { GalleryItem, Id, Member } from "@/lib/types";
 import { galerieDict } from "../i18n";
@@ -40,9 +41,15 @@ const NO_ALBUM = "__none__";
  * Trainer+ (mit PRO) sehen Upload/Löschen — die Sichtbarkeit ist kosmetisch,
  * durchgesetzt wird per RLS + Entitlement (403/402 → Toast). Nach jedem
  * Schreiben lädt der Screen neu.
+ *
+ * Wer Upload/Löschen sieht, entscheidet die aufgelöste Fähigkeit
+ * `hasCap("gallery", "edit")` (Vorstand/Trainer:in ja, einfaches Mitglied
+ * fällt auf read_all/none und sieht nur die Ansicht). Das ist Kosmetik; der
+ * Server bleibt die verbindliche Grenze.
  */
 export function GalerieScreen() {
   const t = useT(galerieDict);
+  const { hasCap } = useCapabilities();
 
   const core = useData(async (repo) => {
     const [entitlement, currentUser, members] = await Promise.all([
@@ -66,7 +73,11 @@ export function GalerieScreen() {
 
   const isPro = entitlement?.pro ?? false;
   const perms = permissions(currentUser);
-  const canWrite = isPro && (perms.isTrainer || dataSource === "mock");
+  // Upload/Löschen nur mit PRO UND der Schreib-Fähigkeit auf der Galerie.
+  // Ein einfaches Mitglied (gallery = read_all/none) fällt hier auf false und
+  // sieht die Galerie nur an; Vorstand (owner → rank 5) und Trainer:innen
+  // (gallery = edit) behalten die Controls. Server bleibt die harte Grenze.
+  const canWrite = isPro && hasCap("gallery", "edit");
   // Markieren = Staff (Trainer/Vorstand/Moderator, OHNE Kassenwart) — deckt sich
   // mit COACH_ROLES der API (photo-tags.ts). Nur Sichtbarkeit; der Server (403)
   // ist die verbindliche Grenze. isTrainer schließt treasurer bereits aus.

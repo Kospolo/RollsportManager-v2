@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
-import { dataSource, errorMessage, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import type { RegionalEvent } from "@/lib/types";
 import { eventsDict } from "../i18n";
@@ -20,22 +21,21 @@ import { DeleteRegionalEventDialog } from "./DeleteRegionalEventDialog";
 const NO_EVENTS: RegionalEvent[] = [];
 
 /**
- * Screen der überregionalen Events: liest Events + aktuellen Nutzer über die
- * Facade. Kommende Events (frühester zuerst) stehen oben, vergangene gedämpft
- * in einer eigenen Sektion darunter (neueste zuerst). Trainer+ (is_club_trainer)
- * sehen „Event anlegen“ sowie Bearbeiten/Löschen — die Sichtbarkeit ist
- * kosmetisch, die Durchsetzung bleibt serverseitig (RLS); ein 403 wird als
- * Toast behandelt.
+ * Screen der überregionalen Events: liest die Events über die Facade. Kommende
+ * Events (frühester zuerst) stehen oben, vergangene gedämpft in einer eigenen
+ * Sektion darunter (neueste zuerst). Wer die Fähigkeit `regional_events` auf
+ * Stufe `edit` erreicht (Vorstand/Owner, Admin, Trainerstab), sieht „Event
+ * anlegen“ sowie Bearbeiten/Löschen — ein normales Mitglied nur die Lese-
+ * Ansicht inkl. Anmelde-Link. Die Sichtbarkeit ist kosmetisch, die Durchsetzung
+ * bleibt serverseitig (RLS); ein 403 wird als Toast behandelt.
  */
 export function RegionalEventsScreen() {
   const t = useT(eventsDict);
+  const { hasCap } = useCapabilities();
 
   const core = useData(async (repo) => {
-    const [events, currentUser] = await Promise.all([
-      repo.listRegionalEvents(),
-      repo.getCurrentUser(),
-    ]);
-    return { events, currentUser };
+    const events = await repo.listRegionalEvents();
+    return { events };
   });
 
   const [formOpen, setFormOpen] = useState(false);
@@ -44,8 +44,11 @@ export function RegionalEventsScreen() {
   const [deleteTarget, setDeleteTarget] = useState<RegionalEvent | null>(null);
 
   const events = core.status === "ready" ? core.data.events : NO_EVENTS;
-  const currentUser = core.status === "ready" ? core.data.currentUser : null;
-  const canManage = permissions(currentUser).isTrainer || dataSource === "mock";
+  // Schreib-/Admin-Controls (Anlegen/Bearbeiten/Löschen) hängen an der Fähigkeit
+  // `regional_events` auf Stufe `edit`. Ein normales Mitglied fällt fail-closed
+  // darunter und sieht nur die Lese-Ansicht; Vorstand/Owner (protected → Rang 5)
+  // sieht weiterhin alles. Der Server bleibt die eigentliche Durchsetzung.
+  const canManage = hasCap("regional_events", "edit");
 
   const { upcoming, past } = useMemo(() => {
     const today = todayIso();

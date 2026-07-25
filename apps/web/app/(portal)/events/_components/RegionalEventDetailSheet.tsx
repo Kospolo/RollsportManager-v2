@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Modal";
 import { Icon, type IconName } from "@/components/shell/icons";
+import { useCapabilities } from "@/lib/capabilities";
 import { useLocale, useT } from "@/lib/i18n";
 import type { RegionalEvent } from "@/lib/types";
 import { eventsDict } from "../i18n";
@@ -13,9 +14,13 @@ import { formatEventDateSpan, safeExternalUrl } from "../helpers";
 /**
  * Detail-Ansicht eines überregionalen Events als rechtes Sheet: Disziplin-/
  * Vergangen-Chip, Ausrichter, Ort, Datum(sspanne), Anmelde-Link-Button und
- * die vollständige Beschreibung (Zeilenumbrüche erhalten). Trainer+ (canWrite)
- * bekommen im Fuß Bearbeiten/Löschen; die Durchsetzung bleibt serverseitig
- * (RLS), ein 403 wird oben im Screen als Toast behandelt.
+ * die vollständige Beschreibung (Zeilenumbrüche erhalten). Bearbeiten/Löschen
+ * im Fuß nur, wenn der Aufrufer den Schreib-Kontext meldet (canWrite) UND die
+ * Fähigkeit `regional_events` auf Stufe `edit` erreicht ist — so schützt sich
+ * das Sheet selbst und verlässt sich nicht allein auf die Elternkomponente. Ein
+ * normales Mitglied sieht die reine Lese-Ansicht inkl. Anmelde-Link. Die
+ * Durchsetzung bleibt serverseitig (RLS), ein 403 wird im Screen als Toast
+ * behandelt.
  */
 export function RegionalEventDetailSheet({
   event,
@@ -34,6 +39,11 @@ export function RegionalEventDetailSheet({
 }) {
   const t = useT(eventsDict);
   const { locale } = useLocale();
+  const { hasCap } = useCapabilities();
+
+  // Eigenständige Gate: der Fuß mit Bearbeiten/Löschen erscheint nur, wenn der
+  // Aufrufer den Schreib-Kontext meldet UND die Fähigkeit tatsächlich reicht.
+  const canWriteEvents = canWrite && hasCap("regional_events", "edit");
 
   const registerUrl = safeExternalUrl(event.registrationUrl);
 
@@ -44,7 +54,7 @@ export function RegionalEventDetailSheet({
       eyebrow={t("detailEyebrow")}
       title={event.title}
       footer={
-        canWrite ? (
+        canWriteEvents ? (
           <>
             <Button variant="ghost" icon="edit" onClick={onEdit}>
               {t("edit")}

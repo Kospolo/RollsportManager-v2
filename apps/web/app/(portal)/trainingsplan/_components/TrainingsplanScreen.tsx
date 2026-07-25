@@ -2,14 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { Facility, Member, Team, TrainingSlot } from "@/lib/types";
-import {
-  dataSource,
-  errorMessage,
-  fullName,
-  isNotImplemented,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, fullName, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
+import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Tabs } from "@/components/ui/Tabs";
@@ -25,14 +20,20 @@ import { DeleteSlotDialog } from "./DeleteSlotDialog";
 
 /**
  * Trainingsplan-Screen: Wochenraster Mo–So (Karten je Slot, gruppiert nach
- * Wochentag) mit Umschalter Wochenraster/Liste. Trainer:innen legen
- * Trainingszeiten an, bearbeiten und löschen sie (data.*TrainingSlot) — die
- * Sichtbarkeit der Aktionen ist Komfort, die Durchsetzung bleibt serverseitig
- * (RLS/API, 403 → Toast + kein optimistisches Update). Nach jedem Schreiben
- * lädt der Screen neu.
+ * Wochentag) mit Umschalter Wochenraster/Liste. Wer training_slots auf Stufe
+ * „edit" hat (Trainer:innen, Vorstand, Admin …), legt Trainingszeiten an,
+ * bearbeitet und löscht sie (data.*TrainingSlot). Ein normales Mitglied
+ * (read_all) sieht ausschließlich die Lese-Ansicht — die Schreib-Controls
+ * fehlen komplett.
  *
- * Im mock-Modus gibt es keine echte Session; die Demo-Persona ist Trainerin,
- * damit die Schreibpfade erlebbar sind. Im api-Modus zählt die echte Rolle.
+ * ### Das Gating ###
+ * Über useCapabilities().hasCap("training_slots", "edit"), NICHT über die alte
+ * permissions()-Attrappe: die Rechte werden serverseitig live am Betrachter
+ * aufgelöst (GET /me/capabilities), wirken also auch im mock-Modus korrekt.
+ * Die Sichtbarkeit ist Komfort — die Durchsetzung bleibt serverseitig (RLS/API,
+ * 403 → Toast + kein optimistisches Update). Nach jedem Schreiben lädt der
+ * Screen neu.
+ *
  * Teams/Hallen sind Anreicherung — fehlt der Endpoint (api), entfallen die
  * Namen still (isNotImplemented → leer), der Plan bleibt sichtbar.
  */
@@ -46,12 +47,12 @@ const NO_MEMBERS: Member[] = [];
 
 export function TrainingsplanScreen() {
   const t = useT(trainingsplanDict);
+  const { hasCap } = useCapabilities();
 
   const state = useData(async (repo) => {
-    const [slots, members, currentUser] = await Promise.all([
+    const [slots, members] = await Promise.all([
       repo.listTrainingSlots(),
       repo.getMembers(),
-      repo.getCurrentUser(),
     ]);
     // Teams & Hallen sind im api-Modus evtl. nicht lesbar → Namen entfallen still.
     let teams: Team[] = [];
@@ -66,16 +67,17 @@ export function TrainingsplanScreen() {
     } catch (error) {
       if (!isNotImplemented(error)) throw error;
     }
-    return { slots, members, teams, facilities, currentUser };
+    return { slots, members, teams, facilities };
   });
 
   const slots = state.data?.slots ?? NO_SLOTS;
   const teams = state.data?.teams ?? NO_TEAMS;
   const facilities = state.data?.facilities ?? NO_FACILITIES;
   const members = state.data?.members ?? NO_MEMBERS;
-  const currentUser = state.data?.currentUser ?? null;
 
-  const isTrainer = permissions(currentUser).isTrainer || dataSource === "mock";
+  // Schreib-/Admin-Controls (Anlegen/Bearbeiten/Löschen) nur ab Stufe „edit".
+  // Ein normales Mitglied (read_all) fällt hier auf false → reine Lese-Ansicht.
+  const canManage = hasCap("training_slots", "edit");
 
   const [view, setView] = useState<ViewMode>("grid");
   const [slotForm, setSlotForm] = useState<SlotFormValue | null>(null);
@@ -94,7 +96,7 @@ export function TrainingsplanScreen() {
   const listGroups = useMemo(() => groupByWeekday(slots, false), [slots]);
 
   const headerActions =
-    isTrainer && state.status === "ready" && slots.length > 0 ? (
+    canManage && state.status === "ready" && slots.length > 0 ? (
       <Button icon="plus" onClick={() => setSlotForm({ mode: "create" })}>
         {t("newSlot")}
       </Button>
@@ -135,9 +137,9 @@ export function TrainingsplanScreen() {
       <EmptyState
         icon="clock"
         title={t("listEmptyTitle")}
-        body={isTrainer ? t("listEmptyBodyTrainer") : t("listEmptyBodyMember")}
+        body={canManage ? t("listEmptyBodyTrainer") : t("listEmptyBodyMember")}
         action={
-          isTrainer ? (
+          canManage ? (
             <Button icon="plus" onClick={() => setSlotForm({ mode: "create" })}>
               {t("listEmptyCta")}
             </Button>
@@ -153,7 +155,7 @@ export function TrainingsplanScreen() {
           <WeekGrid
             groups={gridGroups}
             lookups={lookups}
-            canManage={isTrainer}
+            canManage={canManage}
             onEdit={(slot) => setSlotForm({ mode: "edit", slot })}
             onDelete={setToDelete}
           />
@@ -161,7 +163,7 @@ export function TrainingsplanScreen() {
           <SlotList
             groups={listGroups}
             lookups={lookups}
-            canManage={isTrainer}
+            canManage={canManage}
             onEdit={(slot) => setSlotForm({ mode: "edit", slot })}
             onDelete={setToDelete}
           />
@@ -176,7 +178,10 @@ export function TrainingsplanScreen() {
 
       {body}
 
-      {slotForm && (
+      {/* Die Schreib-Dialoge sind nur über Controls erreichbar, die bereits an
+          canManage hängen — der zusätzliche Gate hält sie auch dann geschlossen,
+          falls doch einmal State gesetzt würde (fail-closed). */}
+      {canManage && slotForm && (
         <SlotFormDialog
           key={slotForm.mode === "edit" ? `edit-${slotForm.slot.id}` : "create"}
           value={slotForm}
@@ -188,11 +193,13 @@ export function TrainingsplanScreen() {
         />
       )}
 
-      <DeleteSlotDialog
-        slot={toDelete}
-        onClose={() => setToDelete(null)}
-        onDeleted={state.reload}
-      />
+      {canManage && (
+        <DeleteSlotDialog
+          slot={toDelete}
+          onClose={() => setToDelete(null)}
+          onDeleted={state.reload}
+        />
+      )}
     </div>
   );
 }
