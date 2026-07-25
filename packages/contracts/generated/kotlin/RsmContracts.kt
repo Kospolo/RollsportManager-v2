@@ -1978,6 +1978,27 @@ data class Competition(
 )
 
 @Serializable
+data class CompetitionCreate(
+    @SerialName("club_id") val clubId: String,
+    val name: String,
+    val location: String? = null,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("registration_deadline") val registrationDeadline: String? = null,
+    val status: CompetitionStatus? = CompetitionStatus.UPCOMING
+)
+
+@Serializable
+data class CompetitionUpdate(
+    val name: String? = null,
+    val location: String? = null,
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("ends_at") val endsAt: String? = null,
+    @SerialName("registration_deadline") val registrationDeadline: String? = null,
+    val status: CompetitionStatus? = null
+)
+
+@Serializable
 data class CompetitionStandingRow(
     val category: String,
     val rank: Long?,

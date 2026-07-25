@@ -1341,6 +1341,25 @@ export interface Competition {
   "updated_at": string;
 }
 
+export interface CompetitionCreate {
+  "club_id": string;
+  "name": string;
+  "location"?: string;
+  "starts_at": string;
+  "ends_at": string;
+  "registration_deadline"?: string;
+  "status"?: CompetitionStatus;
+}
+
+export interface CompetitionUpdate {
+  "name"?: string;
+  "location"?: string | null;
+  "starts_at"?: string;
+  "ends_at"?: string;
+  "registration_deadline"?: string | null;
+  "status"?: CompetitionStatus;
+}
+
 export interface CompetitionStandingRow {
   "category": string;
   "rank": number | null;

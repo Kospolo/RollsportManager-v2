@@ -1,10 +1,14 @@
-import type { FinanceExport, Id, RoutineShare } from "@/lib/types";
+import type { Competition, FinanceExport, Id, RoutineShare } from "@/lib/types";
 import { ApiError } from "@/lib/api/generated";
 import { readSession } from "@/lib/auth/storage";
 import { API_BASE_URL } from "../config";
-import type { WettkampfRepository } from "../inputs-wettkampf";
-import { apiClient, publicApiClient } from "./client";
-import { mapScore } from "./mappers";
+import type {
+  CreateCompetitionInput,
+  UpdateCompetitionInput,
+  WettkampfRepository,
+} from "../inputs-wettkampf";
+import { activeClubId, apiClient, publicApiClient } from "./client";
+import { mapCompetition, mapScore } from "./mappers";
 import { mapPublicRoutine, mapRoutineShare, mapStandings } from "./mappers-wettkampf";
 
 /**
@@ -58,6 +62,37 @@ function forgetShare(routineId: Id, token: string): void {
 }
 
 export const moduleApiRepositoryWettkampf: WettkampfRepository = {
+  /* ---------- Wettkampf-CRUD (owner/admin/moderator/coach) ---------- */
+  async createCompetition(input: CreateCompetitionInput): Promise<Competition> {
+    // Nur die Stammdaten wandern in den Contract — die Startliste
+    // (participantIds/routineIds → competition_entries) ist eine eigene Ressource.
+    const created = await apiClient.postCompetitions({
+      club_id: activeClubId(),
+      name: input.name,
+      location: input.location,
+      starts_at: input.startsAt,
+      ends_at: input.endsAt ?? input.startsAt,
+      registration_deadline: input.registrationDeadline,
+      status: input.status,
+    });
+    return mapCompetition(created);
+  },
+  async updateCompetition(id: Id, patch: UpdateCompetitionInput): Promise<Competition> {
+    const updated = await apiClient.patchCompetitionsByCompetitionId(id, {
+      name: patch.name,
+      location: patch.location,
+      starts_at: patch.startsAt,
+      ends_at: patch.endsAt ?? undefined,
+      registration_deadline: patch.registrationDeadline,
+      status: patch.status,
+    });
+    return mapCompetition(updated);
+  },
+  async deleteCompetition(id: Id): Promise<{ id: Id }> {
+    const deleted = await apiClient.deleteCompetitionsByCompetitionId(id);
+    return { id: deleted.id };
+  },
+
   /* ---------- Rangliste (is_club_member) ---------- */
   async getCompetitionStandings(competitionId) {
     return mapStandings(await apiClient.getCompetitionsByCompetitionIdStandings(competitionId));

@@ -1050,6 +1050,33 @@ export class ApiClient {
   }
 
   /**
+   * Create a competition (owner/admin/moderator/coach)
+   * 
+   * `POST /competitions`
+   */
+  async postCompetitions(body: M.CompetitionCreate, options?: RequestOptions): Promise<M.Competition> {
+    return this.request<M.Competition>("POST", "/competitions", { body, auth: true, options });
+  }
+
+  /**
+   * Edit a competition (owner/admin/moderator/coach)
+   * 
+   * `PATCH /competitions/{competitionId}`
+   */
+  async patchCompetitionsByCompetitionId(competitionId: string, body: M.CompetitionUpdate, options?: RequestOptions): Promise<M.Competition> {
+    return this.request<M.Competition>("PATCH", `/competitions/${encodeURIComponent(competitionId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete a competition (owner/admin/moderator/coach)
+   * 
+   * `DELETE /competitions/{competitionId}`
+   */
+  async deleteCompetitionsByCompetitionId(competitionId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/competitions/${encodeURIComponent(competitionId)}`, { auth: true, options });
+  }
+
+  /**
    * Ranked standings of a competition (per category)
    * 
    * `GET /competitions/{competitionId}/standings`

@@ -200,7 +200,10 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Wettkampf & Aufgaben ---------- */
   async getCompetitions() {
-    return mock.competitions;
+    // KOPIE zurückgeben: createCompetition/updateCompetition/deleteCompetition
+    // mutieren mock.competitions (push/splice/override). Nur mit einer neuen
+    // Referenz rendert der Screen nach reload() neu (wie getMembers()).
+    return [...mock.competitions];
   },
   async getTasks() {
     return mock.tasks;

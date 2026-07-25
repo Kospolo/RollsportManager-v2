@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { AvatarStack } from "@/components/ui/AvatarStack";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardFooter, CardHeader } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Modal } from "@/components/ui/Modal";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { useToast } from "@/components/ui/Toast";
 import { Icon } from "@/components/shell/icons";
@@ -54,6 +57,10 @@ export function OverviewTab({
   taskDone,
   members,
   routines,
+  canManage,
+  onCreate,
+  onEdit,
+  onDelete,
   onTaskState,
   onSwitchTab,
 }: {
@@ -66,12 +73,48 @@ export function OverviewTab({
   /** Geladene Stammdaten für Namens-/Kür-Auflösung (aus der Facade) */
   members: Member[];
   routines: Routine[];
+  /** Darf der/die Betrachter:in Wettkämpfe anlegen/bearbeiten/löschen? Nur Anzeige. */
+  canManage: boolean;
+  /** „Neuer Wettkampf“ (Empty-State-CTA) öffnen. */
+  onCreate: () => void;
+  /** Bearbeiten öffnen. */
+  onEdit: (competition: Competition) => void;
+  /** Löschen ausführen (Screen: data.deleteCompetition + Toast + reload). true = erfolgreich. */
+  onDelete: (competition: Competition) => Promise<boolean>;
   onTaskState: (taskId: string, done: boolean) => void;
   onSwitchTab: (tab: WettkampfTab) => void;
 }) {
   const t = useT(wettkampfDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+
+  /** Löschen NIE ohne Rückfrage — echter Bestätigungs-Dialog, keine window.confirm. */
+  const [confirmDelete, setConfirmDelete] = useState<Competition | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    const ok = await onDelete(confirmDelete);
+    // Erfolg: der Screen lädt neu (die Karte verschwindet). Fehler: Dialog offen lassen.
+    setDeleting(false);
+    if (ok) setConfirmDelete(null);
+  }
+
+  /** Bearbeiten/Löschen-Aktionen im CardHeader — nur für den Trainerstab. */
+  function manageActions(target: Competition) {
+    if (!canManage) return null;
+    return (
+      <span className="flex items-center gap-1">
+        <Button variant="ghost" size="sm" icon="edit" onClick={() => onEdit(target)}>
+          {t("editAction")}
+        </Button>
+        <Button variant="ghost" size="sm" icon="trash" onClick={() => setConfirmDelete(target)}>
+          {t("deleteAction")}
+        </Button>
+      </span>
+    );
+  }
 
   function toggleTask(task: Task) {
     const nowDone = !taskDone[task.id];
@@ -93,15 +136,32 @@ export function OverviewTab({
         {/* ---------- Kommender Wettkampf ---------- */}
         <section aria-label={t("upcomingTitle")} className="grid gap-5">
           <h2 className="sr-only">{t("upcomingTitle")}</h2>
+          {!competition && pastCompetitions.length === 0 && (
+            <EmptyState
+              icon="competition"
+              title={t("emptyTitle")}
+              body={t("emptyBody")}
+              action={
+                canManage ? (
+                  <Button icon="plus" onClick={onCreate}>
+                    {t("emptyCreate")}
+                  </Button>
+                ) : undefined
+              }
+            />
+          )}
           {competition && (
             <Card>
               <CardHeader
                 eyebrow={`${formatDate(competition.startsAt, locale)} · ${relativeDays(competition.startsAt, locale)}`}
                 title={competition.name}
                 action={
-                  <Badge tone={STATUS_TONE[competition.status]}>
-                    {t(STATUS_KEY[competition.status])}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={STATUS_TONE[competition.status]}>
+                      {t(STATUS_KEY[competition.status])}
+                    </Badge>
+                    {manageActions(competition)}
+                  </div>
                 }
               />
 
@@ -273,7 +333,12 @@ export function OverviewTab({
                 <CardHeader
                   eyebrow={`${formatDate(past.startsAt, locale)} · ${relativeDays(past.startsAt, locale)}`}
                   title={past.name}
-                  action={<Badge tone={STATUS_TONE[past.status]}>{t(STATUS_KEY[past.status])}</Badge>}
+                  action={
+                    <div className="flex items-center gap-2">
+                      <Badge tone={STATUS_TONE[past.status]}>{t(STATUS_KEY[past.status])}</Badge>
+                      {manageActions(past)}
+                    </div>
+                  }
                 />
                 <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-caption text-ink-soft">
                   <span className="inline-flex items-center gap-1.5">
@@ -333,6 +398,30 @@ export function OverviewTab({
           })}
         </section>
       )}
+
+      {/* Löschen-Bestätigung — echter Schritt, keine window.confirm-Autobestätigung. */}
+      <Modal
+        open={confirmDelete !== null}
+        onClose={() => {
+          if (!deleting) setConfirmDelete(null);
+        }}
+        eyebrow={t("manageEyebrow")}
+        title={t("deleteConfirmTitle")}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(null)} disabled={deleting}>
+              {t("cancel")}
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {t("deleteConfirmCta")}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink-soft">
+          {t("deleteConfirmBody", { name: confirmDelete?.name ?? "" })}
+        </p>
+      </Modal>
     </div>
   );
 }

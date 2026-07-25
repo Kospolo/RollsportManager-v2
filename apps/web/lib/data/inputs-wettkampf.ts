@@ -1,5 +1,7 @@
 import type {
+  Competition,
   CompetitionStandings,
+  CompetitionStatus,
   FinanceExport,
   Id,
   PublicRoutine,
@@ -43,11 +45,55 @@ export interface SaveRoutineScoreInput {
 }
 
 /**
+ * Wettkampf anlegen (POST /competitions, Recht owner/admin/moderator/coach).
+ * Felder analog dem Competition-Viewtyp. `startsAt`/`endsAt` sind ISO-Zeitstempel,
+ * `registrationDeadline` ein ISO-Datum (YYYY-MM-DD). `participantIds`/`routineIds`
+ * beschreiben die Startliste (competition_entries) — im mock-Modus honoriert; der
+ * Server verwaltet die Startliste über eine EIGENE Ressource, daher trägt der
+ * api-Schreibpfad hier nur die Stammdaten (Name, Ort, Zeiten, Meldeschluss, Status).
+ */
+export interface CreateCompetitionInput {
+  name: string;
+  location?: string;
+  startsAt: string;
+  endsAt?: string;
+  registrationDeadline?: string;
+  status?: CompetitionStatus;
+  participantIds?: Id[];
+  routineIds?: Id[];
+}
+
+/**
+ * Teil-Update eines Wettkampfs (PATCH /competitions/{id}). Jedes Feld optional;
+ * `location`/`registrationDeadline` sind nullable, damit sich eine Angabe leeren
+ * lässt. Wie bei CreateCompetitionInput bleiben `participantIds`/`routineIds` die
+ * Startliste — im api-Schreibpfad ausgeklammert (eigene Ressource).
+ */
+export interface UpdateCompetitionInput {
+  name?: string;
+  location?: string | null;
+  startsAt?: string;
+  endsAt?: string | null;
+  registrationDeadline?: string | null;
+  status?: CompetitionStatus;
+  participantIds?: Id[];
+  routineIds?: Id[];
+}
+
+/**
  * Facade-Segment des Wettkampf-Moduls. DataRepository erbt es (analog
  * OrgRepository). Lese-/Schreibpfade scopen serverseitig über RLS; die
  * öffentliche Ansicht ist die EINZIGE login-freie Route.
  */
 export interface WettkampfRepository {
+  /* ---------- Wettkampf-CRUD (Schreiben = owner/admin/moderator/coach) ---------- */
+  /** Wettkampf anlegen (POST /competitions) — liefert den angelegten Wettkampf. */
+  createCompetition(input: CreateCompetitionInput): Promise<Competition>;
+  /** Wettkampf teil-aktualisieren (PATCH /competitions/{id}) — liefert den aktualisierten Wettkampf. */
+  updateCompetition(id: Id, patch: UpdateCompetitionInput): Promise<Competition>;
+  /** Wettkampf soft-löschen (DELETE /competitions/{id}). */
+  deleteCompetition(id: Id): Promise<{ id: Id }>;
+
   /* ---------- Rangliste (Lesen = is_club_member) ---------- */
   /**
    * Rangliste eines Wettkampfs — pro Kategorie gruppiert + gerankt. Zeilen

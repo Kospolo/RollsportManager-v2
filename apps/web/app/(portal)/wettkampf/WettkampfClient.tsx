@@ -27,6 +27,8 @@ import { OverviewTab } from "./_components/OverviewTab";
 import { EntriesTab } from "./_components/EntriesTab";
 import { LiveTab } from "./_components/LiveTab";
 import { ExportTab } from "./_components/ExportTab";
+import { NewCompetitionSheet } from "./_components/NewCompetitionSheet";
+import type { Competition } from "@/lib/types";
 
 export type WettkampfTab = "overview" | "entries" | "live" | "export";
 
@@ -69,7 +71,7 @@ export function WettkampfClient() {
     );
   }
 
-  return <WettkampfReady wettkampf={loaded.data} />;
+  return <WettkampfReady wettkampf={loaded.data} onReload={loaded.reload} />;
 }
 
 /* ---------- Rahmen: Kopf + Inhalt (identisch in allen drei Zuständen) ---------- */
@@ -78,16 +80,18 @@ function PageFrame({
   eyebrow,
   title,
   sub,
+  action,
   children,
 }: {
   eyebrow?: string;
   title: string;
   sub: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-6">
-      <SectionHeader level={1} eyebrow={eyebrow} title={title} sub={sub} />
+      <SectionHeader level={1} eyebrow={eyebrow} title={title} sub={sub} action={action} />
       {children}
     </div>
   );
@@ -120,11 +124,21 @@ function WettkampfSkeleton() {
 
 /* ---------- Geladener Zustand: sämtliche Interaktivität ---------- */
 
-function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
+function WettkampfReady({
+  wettkampf,
+  onReload,
+}: {
+  wettkampf: WettkampfData;
+  /** Liste nach Anlegen/Bearbeiten/Löschen neu laden (Facade ist die Wahrheit). */
+  onReload: () => void;
+}) {
   const t = useT(wettkampfDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
   const [tab, setTab] = useState<WettkampfTab>("overview");
+  /** „Neuer Wettkampf“-Sheet (Anlegen) bzw. der gerade bearbeitete Wettkampf. */
+  const [formOpen, setFormOpen] = useState(false);
+  const [editCompetition, setEditCompetition] = useState<Competition | null>(null);
 
   const competition = useMemo(
     () => nextCompetition(wettkampf.competitions),
@@ -147,6 +161,11 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
     () => permissions(wettkampf.currentUser).isTrainer,
     [wettkampf.currentUser],
   );
+  /* Wettkämpfe anlegen/bearbeiten/löschen darf der Trainerstab (owner/admin/
+     moderator/coach) — dieselbe Rolle wie die Live-Wertung. Deckungsgleich mit
+     COMPETITION_WRITE_ROLES in services/api/src/routes/competitions.ts. Nur
+     Anzeige; der Server (RLS) ist die Grenze, ein 403 kommt als Toast zurück. */
+  const canManage = canScore;
   const tasks = useMemo(
     () => (competition ? competitionTasks(competition, wettkampf.tasks) : []),
     [competition, wettkampf],
@@ -169,6 +188,31 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
         onAction: () => setTaskState(taskId, done),
       });
     });
+  }
+
+  /* ----- Wettkampf anlegen / bearbeiten / löschen ----- */
+
+  /** Bearbeiten öffnen: das Formular-Sheet im Edit-Modus zeigen. */
+  function openEdit(target: Competition) {
+    setEditCompetition(target);
+  }
+
+  /** Nach Anlegen/Bearbeiten: Liste neu laden (Facade ist die Wahrheit). */
+  function handleSaved() {
+    onReload();
+  }
+
+  /** Löschen: Facade-Write, dann Liste neu laden. true = erfolgreich. */
+  async function deleteCompetition(target: Competition): Promise<boolean> {
+    try {
+      await data.deleteCompetition(target.id);
+      showToast(t("deletedToast", { name: target.name }), { tone: "success" });
+      onReload();
+      return true;
+    } catch (error) {
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), { tone: "danger" });
+      return false;
+    }
   }
 
   /* Meldeliste senden erledigt zugleich die passende Vorbereitungs-Aufgabe. */
@@ -196,7 +240,18 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
   const deadlineDiff = deadline ? dayDiff(deadline) : undefined;
 
   return (
-    <PageFrame eyebrow={wettkampf.club.name} title={t("pageTitle")} sub={t("pageSub")}>
+    <PageFrame
+      eyebrow={wettkampf.club.name}
+      title={t("pageTitle")}
+      sub={t("pageSub")}
+      action={
+        canManage ? (
+          <Button icon="plus" onClick={() => setFormOpen(true)}>
+            {t("newCompetition")}
+          </Button>
+        ) : undefined
+      }
+    >
       {competition && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <KpiTile
@@ -251,6 +306,10 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
           taskDone={taskDone}
           members={wettkampf.members}
           routines={wettkampf.routines}
+          canManage={canManage}
+          onCreate={() => setFormOpen(true)}
+          onEdit={openEdit}
+          onDelete={deleteCompetition}
           onTaskState={setTaskState}
           onSwitchTab={setTab}
         />
@@ -285,6 +344,25 @@ function WettkampfReady({ wettkampf }: { wettkampf: WettkampfData }) {
           onNotified={setNotified}
         />
       </TabPanel>
+
+      {/* Anlegen-Sheet — nur der Trainerstab öffnet es (Button/Empty-State). */}
+      <NewCompetitionSheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSaved={handleSaved}
+      />
+
+      {/* Bearbeiten-Sheet: gleiche Komponente im Edit-Modus. key = Wettkampf-Id,
+          damit die Vorbefüllung beim Wechsel des Wettkampfs frisch greift. */}
+      {editCompetition && (
+        <NewCompetitionSheet
+          key={editCompetition.id}
+          open
+          competition={editCompetition}
+          onClose={() => setEditCompetition(null)}
+          onSaved={handleSaved}
+        />
+      )}
     </PageFrame>
   );
 }

@@ -1643,6 +1643,56 @@ export const competitionSchema = z
   })
   .openapi('Competition');
 
+/**
+ * Anlegen eines Wettkampfs (POST /competitions). Recht = owner/admin/moderator/
+ * coach (RLS competitions_insert, 0007:337). Die Startliste (entries) wird NICHT
+ * hier gesetzt — sie ist eine eigene Ressource (app.competition_entries).
+ * ends_at > starts_at spiegelt die DB-Bedingung competitions_time_order (0004);
+ * hier faellt es als sauberes 400 statt tief im Insert (23514).
+ */
+export const competitionCreateSchema = z
+  .object({
+    club_id: uuid,
+    name: z.string().min(1),
+    location: z.string().optional(),
+    starts_at: z.string().datetime({ offset: true }),
+    ends_at: z.string().datetime({ offset: true }),
+    /** plain DATE (YYYY-MM-DD); weglassen = kein Meldeschluss. */
+    registration_deadline: isoDate.optional(),
+    status: competitionStatusSchema.default('upcoming'),
+  })
+  .refine((v) => new Date(v.ends_at) > new Date(v.starts_at), {
+    message: 'ends_at must be after starts_at',
+    path: ['ends_at'],
+  })
+  .openapi('CompetitionCreate');
+
+/**
+ * Teil-Update eines Wettkampfs (PATCH /competitions/{competitionId}). Jedes Feld
+ * optional; club_id ist bewusst NICHT dabei — ein Wettkampf wandert nicht in
+ * einen anderen Verein. location/registration_deadline sind nullable, damit sich
+ * eine Angabe leeren laesst. Die Zeit-Kreuzpruefung greift nur, wenn BEIDE
+ * Grenzen mitkommen (sonst prueft die DB gegen den Bestandswert).
+ */
+export const competitionUpdateSchema = z
+  .object({
+    name: z.string().min(1).optional(),
+    location: z.string().nullable().optional(),
+    starts_at: z.string().datetime({ offset: true }).optional(),
+    ends_at: z.string().datetime({ offset: true }).optional(),
+    registration_deadline: isoDate.nullable().optional(),
+    status: competitionStatusSchema.optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .refine(
+    (v) =>
+      v.starts_at === undefined ||
+      v.ends_at === undefined ||
+      new Date(v.ends_at) > new Date(v.starts_at),
+    { message: 'ends_at must be after starts_at', path: ['ends_at'] },
+  )
+  .openapi('CompetitionUpdate');
+
 export const taskSchema = z
   .object({
     id: uuid,

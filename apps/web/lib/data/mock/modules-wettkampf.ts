@@ -1,5 +1,6 @@
 import * as mock from "@/lib/mock";
 import type {
+  Competition,
   CompetitionStandingRow,
   CompetitionStandings,
   FinanceExport,
@@ -8,7 +9,11 @@ import type {
   RollArtScore,
   RoutineShare,
 } from "@/lib/types";
-import type { WettkampfRepository } from "../inputs-wettkampf";
+import type {
+  CreateCompetitionInput,
+  UpdateCompetitionInput,
+  WettkampfRepository,
+} from "../inputs-wettkampf";
 
 /**
  * Mock-Implementierung des Wettkampf-Moduls (Rangliste, Live-Wertung,
@@ -31,6 +36,9 @@ const STARTGELD_STATUS_DE: Record<number, string> = {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+/** Fortlaufende Nummer für lokal (in dieser Session) angelegte Wettkämpfe. */
+let competitionSeq = 0;
 
 /** Session-Registry der Live-Wertungen (mock) — pro Kür an die Historie gehängt. */
 const scoreStore = new Map<Id, RollArtScore[]>();
@@ -97,6 +105,52 @@ function csvExport(rows: string[][], filename: string): FinanceExport {
 }
 
 export const moduleRepositoryWettkampf: WettkampfRepository = {
+  /* ---------- Wettkampf-CRUD (mutiert mock.competitions) ---------- */
+  async createCompetition(input: CreateCompetitionInput): Promise<Competition> {
+    const created: Competition = {
+      id: `c-local-${++competitionSeq}`,
+      clubId: mock.club.id,
+      name: input.name,
+      location: input.location ?? "",
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      registrationDeadline: input.registrationDeadline,
+      status: input.status ?? "upcoming",
+      participantIds: input.participantIds ?? [],
+      routineIds: input.routineIds ?? [],
+    };
+    // In den EINEN Store pushen — getCompetitions() gibt eine Kopie zurück,
+    // die Referenz ändert sich, der Screen rendert nach reload() neu.
+    mock.competitions.push(created);
+    return { ...created };
+  },
+
+  async updateCompetition(id: Id, patch: UpdateCompetitionInput): Promise<Competition> {
+    const index = mock.competitions.findIndex((c) => c.id === id);
+    if (index < 0) throw new Error(`Wettkampf ${id} nicht gefunden (mock)`);
+    const base = mock.competitions[index];
+    const next: Competition = { ...base };
+    if (patch.name !== undefined) next.name = patch.name;
+    // location ist im View-Modell nicht nullable — null/"" wird zum Leerstring.
+    if (patch.location !== undefined) next.location = patch.location ?? "";
+    if (patch.startsAt !== undefined) next.startsAt = patch.startsAt;
+    if (patch.endsAt !== undefined) next.endsAt = patch.endsAt ?? undefined;
+    if (patch.registrationDeadline !== undefined) {
+      next.registrationDeadline = patch.registrationDeadline ?? undefined;
+    }
+    if (patch.status !== undefined) next.status = patch.status;
+    if (patch.participantIds !== undefined) next.participantIds = [...patch.participantIds];
+    if (patch.routineIds !== undefined) next.routineIds = [...patch.routineIds];
+    mock.competitions[index] = next; // Override an Ort und Stelle
+    return { ...next };
+  },
+
+  async deleteCompetition(id: Id): Promise<{ id: Id }> {
+    const index = mock.competitions.findIndex((c) => c.id === id);
+    if (index >= 0) mock.competitions.splice(index, 1);
+    return { id };
+  },
+
   /* ---------- Rangliste ---------- */
   async getCompetitionStandings(competitionId): Promise<CompetitionStandings> {
     const competition = mock.competitions.find((c) => c.id === competitionId);

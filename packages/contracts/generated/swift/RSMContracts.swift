@@ -5545,6 +5545,83 @@ public struct Competition: Codable, Equatable, Sendable {
     }
 }
 
+public struct CompetitionCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var name: String
+    public var location: String?
+    /// Format: date-time
+    public var startsAt: String
+    /// Format: date-time
+    public var endsAt: String
+    public var registrationDeadline: String?
+    public var status: CompetitionStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case name
+        case location
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case registrationDeadline = "registration_deadline"
+        case status
+    }
+
+    public init(
+        clubId: String,
+        name: String,
+        location: String? = nil,
+        startsAt: String,
+        endsAt: String,
+        registrationDeadline: String? = nil,
+        status: CompetitionStatus? = .upcoming
+    ) {
+        self.clubId = clubId
+        self.name = name
+        self.location = location
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.registrationDeadline = registrationDeadline
+        self.status = status
+    }
+}
+
+public struct CompetitionUpdate: Codable, Equatable, Sendable {
+    public var name: String?
+    public var location: String?
+    /// Format: date-time
+    public var startsAt: String?
+    /// Format: date-time
+    public var endsAt: String?
+    public var registrationDeadline: String?
+    public var status: CompetitionStatus?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case location
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case registrationDeadline = "registration_deadline"
+        case status
+    }
+
+    public init(
+        name: String? = nil,
+        location: String? = nil,
+        startsAt: String? = nil,
+        endsAt: String? = nil,
+        registrationDeadline: String? = nil,
+        status: CompetitionStatus? = nil
+    ) {
+        self.name = name
+        self.location = location
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.registrationDeadline = registrationDeadline
+        self.status = status
+    }
+}
+
 public struct CompetitionStandingRow: Codable, Equatable, Sendable {
     public var category: String
     public var rank: Int?
