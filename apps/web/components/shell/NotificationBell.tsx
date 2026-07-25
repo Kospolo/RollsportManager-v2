@@ -43,6 +43,7 @@ const dict = {
     kind_invoice_overdue: "Rechnung überfällig",
     kind_news_new: "Neuigkeit",
     kind_task_open: "Aufgabe",
+    kind_waitlist_new: "Warteliste",
   },
   en: {
     open: "Notifications",
@@ -57,6 +58,7 @@ const dict = {
     kind_invoice_overdue: "Invoice overdue",
     kind_news_new: "News",
     kind_task_open: "Task",
+    kind_waitlist_new: "Waitlist",
   },
 } satisfies Dict;
 
@@ -70,6 +72,7 @@ const KIND_META: Record<NotificationKind, { icon: IconName; tone: IconTileTone; 
   invoice_overdue: { icon: "finance", tone: "danger", key: "kind_invoice_overdue" },
   news_new: { icon: "sparkle", tone: "brand", key: "kind_news_new" },
   task_open: { icon: "check", tone: "neutral", key: "kind_task_open" },
+  waitlist_new: { icon: "clock", tone: "warn", key: "kind_waitlist_new" },
 };
 
 /** Kompaktes Zeitlabel: heutige Einträge als Uhrzeit, sonst relativ in Tagen. */

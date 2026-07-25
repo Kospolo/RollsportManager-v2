@@ -1,4 +1,4 @@
-import { data } from "@/lib/data";
+import { data, fullName, permissions } from "@/lib/data";
 import type { NotificationPrefs } from "@/lib/types";
 
 /**
@@ -10,6 +10,7 @@ import type { NotificationPrefs } from "@/lib/types";
  *   • offene eigene RSVPs        (getEvents, ohne eigene Antwort, in der Zukunft)
  *   • neue Neuigkeiten           (listNews, jünger als NEWS_WINDOW_DAYS)
  *   • offene eigene Aufgaben     (getTasks, assigneeId = self, nicht erledigt)
+ *   • wartende Wartelisten-Einträge (listWaitlists, status=waiting) — NUR Trainer+
  *
  * Die Kategorien werden über die eigenen notifications-Präferenzen gefiltert
  * (getMyPreferences → Glocken-Flags). Der Gelesen-Zustand liegt lokal im
@@ -21,7 +22,8 @@ export type NotificationKind =
   | "invoice_overdue"
   | "rsvp_open"
   | "news_new"
-  | "task_open";
+  | "task_open"
+  | "waitlist_new";
 
 export interface NotificationItem {
   /** Stabile ID `${kind}:${entityId}` — Basis des Gelesen-Zustands. */
@@ -106,13 +108,15 @@ export async function deriveNotifications(opts?: {
   const today = isoDate(now);
   const nowMs = now.getTime();
 
-  const [self, prefs, events, invoices, news, tasks] = await Promise.all([
+  const [self, prefs, events, invoices, news, tasks, waitlists, members] = await Promise.all([
     data.getCurrentUser(),
     data.getMyPreferences().catch(() => null),
     data.getEvents().catch(() => []),
     data.getInvoices().catch(() => []),
     data.listNews().catch(() => []),
     data.getTasks().catch(() => []),
+    data.listWaitlists().catch(() => []),
+    data.getMembers().catch(() => []),
   ]);
 
   const flags = prefs?.notifications ?? null;
@@ -195,6 +199,25 @@ export async function deriveNotifications(opts?: {
         href: "/wettkampf",
         at: t.dueAt,
       });
+    }
+  }
+
+  // Wartelisten (Trainer+): jeder wartende Eintrag der Vereins-Warteschlange.
+  // Kein eigenes Präferenz-Flag (wie Aufgaben). Die RLS liefert Trainer:innen
+  // ohnehin die ganze Queue; der isTrainer-Gate hier ist die zusätzliche
+  // clientseitige Sicht-Grenze (analog WartelistenClient). Titel = Mitgliedsname.
+  if (permissions(self).isTrainer) {
+    const memberName = new Map(members.map((m) => [m.id, fullName(m)] as const));
+    for (const w of waitlists) {
+      if (w.status === "waiting") {
+        push({
+          id: `waitlist_new:${w.id}`,
+          kind: "waitlist_new",
+          title: memberName.get(w.memberId) ?? w.memberId,
+          href: "/wartelisten",
+          at: w.createdAt,
+        });
+      }
     }
   }
 

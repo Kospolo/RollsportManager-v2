@@ -1,5 +1,9 @@
 "use client";
 
+import type { ShellKey } from "@/lib/i18n/shell";
+import { permissions } from "@/lib/data";
+import { useData } from "@/lib/data/useData";
+import { upcomingEvents } from "@/lib/mock";
 import { useCapabilities } from "@/lib/capabilities";
 import { useModules } from "@/lib/modules";
 import { MANAGE_NAV_ITEM, MORE_NAV_ITEM, NAV_ITEMS, type NavItem } from "./nav";
@@ -67,4 +71,34 @@ export function useVisibleNavItems(): NavItem[] {
 
   const base = isClubAdmin || isOperator ? [...items, MANAGE_NAV_ITEM] : items;
   return [...base, MORE_NAV_ITEM];
+}
+
+/**
+ * Anzahl wartender Wartelisten-Einträge (status === "waiting") — NUR für
+ * Trainer+ (permissions(self).isTrainer, wie im Wartelisten-Screen). Quelle ist
+ * die Facade (repo.listWaitlists); die RLS liefert Trainer:innen die ganze
+ * Queue. Nicht-Trainer und Ladefehler (z. B. NotImplemented im api-Modus) → 0,
+ * dann zeigt der Aufrufer kein Badge.
+ */
+export function useWaitlistWaitingCount(): number {
+  const me = useData((repo) => repo.getCurrentUser());
+  const waitlists = useData((repo) => repo.listWaitlists());
+  if (!permissions(me.data ?? null).isTrainer) return 0;
+  return (waitlists.data ?? []).filter((entry) => entry.status === "waiting").length;
+}
+
+/**
+ * Zähler-Badges der Top-Nav — dasselbe Muster wie das bestehende Termine-Badge,
+ * jetzt zentral und um die Warteliste erweitert:
+ *   • navEvents → anstehende Termine (7 Tage), unverändert (upcomingEvents)
+ *   • navMore   → wartende Wartelisten-Einträge (Trainer+); Wartelisten sind
+ *                 über „Mehr" erreichbar. 0 → kein Badge.
+ * Sidebar und Bottom-Nav rendern die Zahl generisch pro Nav-Ziel.
+ */
+export function useNavBadges(): Partial<Record<ShellKey, number>> {
+  const waitlistWaiting = useWaitlistWaitingCount();
+  return {
+    navEvents: upcomingEvents(7).length,
+    navMore: waitlistWaiting,
+  };
 }

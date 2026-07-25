@@ -9,6 +9,7 @@ import { useModules } from "@/lib/modules";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Icon, type IconName } from "@/components/shell/icons";
+import { useWaitlistWaitingCount } from "@/components/shell/useNav";
 import { MehrIcon, type MehrIconName } from "./MehrIcon";
 import { mehrDict, type MehrKey } from "./i18n";
 
@@ -182,6 +183,10 @@ export function MehrHub() {
 
   const isModuleVisible = (key: string) => istModulSichtbar(MODUL_ZUR_KACHEL[key] ?? key);
 
+  // Zähler für die „Wartelisten"-Kachel: wartende Einträge (Trainer+), dieselbe
+  // Zahl wie das „Mehr"-Nav-Badge. 0 → kein Badge (Hook liefert 0 für Nicht-Trainer).
+  const waitlistWaiting = useWaitlistWaitingCount();
+
   const available = AVAILABLE.filter(
     (tile) => (!tile.adminOnly || isClubAdmin) && isModuleVisible(tile.key),
   );
@@ -210,6 +215,9 @@ export function MehrHub() {
                     </b>
                     {tile.isNew && <Badge tone="brand">{t("badgeNew")}</Badge>}
                     {tile.isPro && <Badge tone="warn">{t("badgePro")}</Badge>}
+                    {tile.key === "waitlists" && waitlistWaiting > 0 && (
+                      <Badge tone="info">{waitlistWaiting}</Badge>
+                    )}
                   </span>
                   <span className="text-[13px] leading-snug text-ink-soft">{t(tile.descKey)}</span>
                 </span>

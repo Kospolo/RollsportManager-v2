@@ -7,11 +7,11 @@ import { shellDict } from "@/lib/i18n/shell";
 import { personaByKey, ROLE_LABELS, useAuth } from "@/lib/auth";
 import { dataSource } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
-import { club, currentUser, fullName, upcomingEvents } from "@/lib/mock";
+import { club, currentUser, fullName } from "@/lib/mock";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "./icons";
 import { isActive } from "./nav";
-import { useVisibleNavItems } from "./useNav";
+import { useNavBadges, useVisibleNavItems } from "./useNav";
 
 /**
  * Desktop-Sidebar: Wortmarke, Vereins-Badge, Navigation mit aktivem
@@ -23,7 +23,7 @@ export function Sidebar() {
   const { locale } = useLocale();
   const { session } = useAuth();
   const pathname = usePathname();
-  const eventBadge = upcomingEvents(7).length;
+  const badges = useNavBadges();
   const navItems = useVisibleNavItems();
 
   // Vereinslogo (0060): aus der Facade (api: echter Verein, mock: Demo-Verein).
@@ -101,6 +101,7 @@ export function Sidebar() {
       <nav aria-label={t("navLabel")} className="grid gap-0.5">
         {navItems.map((item) => {
           const active = isActive(pathname, item.href);
+          const badge = badges[item.key] ?? 0;
           return (
             <Link
               key={item.href}
@@ -114,9 +115,9 @@ export function Sidebar() {
             >
               <Icon name={item.icon} />
               {t(item.key)}
-              {item.key === "navEvents" && eventBadge > 0 && (
+              {badge > 0 && (
                 <span className="ml-auto grid h-[22px] min-w-[22px] place-items-center rounded-full bg-brand px-1.5 text-[11.5px] font-extrabold text-brand-contrast">
-                  {eventBadge}
+                  {badge}
                 </span>
               )}
             </Link>
