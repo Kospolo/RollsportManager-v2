@@ -70,6 +70,12 @@ export function TermineScreen() {
   const [filter, setFilter] = useState<TypeFilter>("all");
   const [pastOpen, setPastOpen] = useState(false);
   const [created, setCreated] = useState<Event[]>([]);
+  /** Lokale Overlays für Bearbeiten/Löschen (wie rsvpOverrides/attOverrides):
+   *  edited blendet den geänderten Termin ein, deletedIds nimmt ihn heraus. */
+  const [edited, setEdited] = useState<Record<string, Event>>({});
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(() => new Set<string>());
+  /** Gesetzt = das „Termin bearbeiten“-Sheet ist offen (für diesen Termin). */
+  const [editEvent, setEditEvent] = useState<Event | null>(null);
   const [rsvpOverrides, setRsvpOverrides] = useState<Record<string, Record<string, Rsvp>>>({});
   const [attOverrides, setAttOverrides] = useState<
     Record<string, Record<string, AttendanceStatus>>
@@ -80,7 +86,15 @@ export function TermineScreen() {
   const [now] = useState(() => Date.now());
 
   const events = core.status === "ready" ? core.data.events : NO_EVENTS;
-  const allEvents = useMemo(() => [...events, ...created], [events, created]);
+  // Basis (Facade + lokal angelegt), dann Overlays: Gelöschte raus, Bearbeitete
+  // durch die aktualisierte Fassung ersetzt.
+  const allEvents = useMemo(
+    () =>
+      [...events, ...created]
+        .filter((event) => !deletedIds.has(event.id))
+        .map((event) => edited[event.id] ?? event),
+    [events, created, edited, deletedIds],
+  );
 
   const { upcomingGroups, pastGroups, counts, pastCount } = useMemo(() => {
     const isPast = (event: Event) => new Date(event.endsAt).getTime() < now;
@@ -203,6 +217,49 @@ export function TermineScreen() {
     })();
   }
 
+  /* ----- Termin bearbeiten & löschen ----- */
+
+  /** Bearbeiten öffnen: Detail schließen, „Termin bearbeiten“-Sheet öffnen. */
+  function openEdit(event: Event) {
+    setOpenId(null);
+    setEditEvent(event);
+  }
+
+  /** Bearbeiteter Termin: als Override einblenden; einen lokal angelegten
+   *  Termin zusätzlich in der created-Liste nachziehen (bleibt so die Wahrheit). */
+  function applyEventEdit(updated: Event) {
+    setEdited((previous) => ({ ...previous, [updated.id]: updated }));
+    setCreated((previous) =>
+      previous.map((event) => (event.id === updated.id ? updated : event)),
+    );
+  }
+
+  /** Löschen: Facade-Write, dann aus der Liste nehmen + Detail schließen. */
+  async function deleteEvent(event: Event): Promise<boolean> {
+    try {
+      await data.deleteEvent(event.id);
+      setDeletedIds((previous) => {
+        const next = new Set(previous);
+        next.add(event.id);
+        return next;
+      });
+      setCreated((previous) => previous.filter((e) => e.id !== event.id));
+      setEdited((previous) => {
+        const next = { ...previous };
+        delete next[event.id];
+        return next;
+      });
+      setOpenId((current) => (current === event.id ? null : current));
+      showToast(t("deletedToast", { title: event.title }), { tone: "success" });
+      return true;
+    } catch (error) {
+      showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
+        tone: "danger",
+      });
+      return false;
+    }
+  }
+
   /* ----- Zustands-Gates: Fehler → EmptyState, Laden → Skeleton ----- */
 
   function reloadAll() {
@@ -280,6 +337,17 @@ export function TermineScreen() {
 
   const openEvent = openId ? (allEvents.find((event) => event.id === openId) ?? null) : null;
   const openEventPast = openEvent ? new Date(openEvent.endsAt).getTime() < now : false;
+
+  // Bearbeiten/Löschen sichtbar für Vorstand (isClubAdmin) ODER die Trainer:in
+  // eines betroffenen Teams. NUR Anzeige — durchgesetzt wird es serverseitig
+  // (events.ts + RLS/Trigger 0050), ein 403 kommt als sauberer Toast zurück.
+  const perms = permissions(currentUser);
+  const canManageEvent = (event: Event): boolean =>
+    perms.isClubAdmin ||
+    (perms.isTrainer &&
+      teams.some(
+        (team) => event.teamIds.includes(team.id) && team.coachIds.includes(currentUser.id),
+      ));
 
   return (
     <div className="grid content-start gap-6">
@@ -380,7 +448,10 @@ export function TermineScreen() {
           teams={teams}
           currentUser={currentUser}
           past={openEventPast}
+          canManage={canManageEvent(openEvent)}
           onClose={() => setOpenId(null)}
+          onEdit={openEdit}
+          onDelete={deleteEvent}
           onSetOwnRsvp={setOwnRsvp}
           onChangeOwnComment={changeOwnComment}
           onCommitOwnComment={commitOwnComment}
@@ -397,9 +468,24 @@ export function TermineScreen() {
         // „Vereinsveranstaltung“ — deckungsgleich mit CLUB_AUDIENCE_ROLES in
         // services/api/src/routes/events.ts und dem RLS-Trigger (0050).
         // Reine Anzeige: durchgesetzt wird es serverseitig.
-        canPublishToClub={permissions(currentUser).isClubAdmin}
-        onCreate={(event) => setCreated((previous) => [...previous, event])}
+        canPublishToClub={perms.isClubAdmin}
+        onSaved={(event) => setCreated((previous) => [...previous, event])}
       />
+
+      {/* Bearbeiten-Sheet: gleiche Komponente im Edit-Modus. key = Termin-Id,
+          damit die Vorbefüllung beim Wechsel des Termins frisch greift. */}
+      {editEvent && (
+        <NewEventSheet
+          key={editEvent.id}
+          open
+          event={editEvent}
+          onClose={() => setEditEvent(null)}
+          teams={teams}
+          teamsUnavailable={teamsUnavailable}
+          canPublishToClub={perms.isClubAdmin}
+          onSaved={applyEventEdit}
+        />
+      )}
     </div>
   );
 }

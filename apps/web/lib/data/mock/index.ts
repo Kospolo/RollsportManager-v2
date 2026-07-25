@@ -49,6 +49,13 @@ function mockLocalUrl(file: File): string {
 }
 
 const createdEvents: Event[] = [];
+/**
+ * Seed-Termine (mock.events) sind nicht direkt mutierbar. Änderungen an ihnen
+ * leben als Override in eventOverrides, Löschungen als Id in deletedEventIds;
+ * lokal angelegte Termine (createdEvents) werden dagegen in-place mutiert.
+ */
+const deletedEventIds = new Set<string>();
+const eventOverrides = new Map<string, Event>();
 const teamStore: Team[] = mock.teams.map((t) => ({
   ...t,
   coachIds: [...t.coachIds],
@@ -57,6 +64,22 @@ const teamStore: Team[] = mock.teams.map((t) => ({
 let clubStore: Club = { ...mock.club };
 
 let teamSeq = teamStore.length;
+
+/**
+ * Seed- + lokal angelegte Termine, mit Overrides gemerged und Löschungen
+ * herausgefiltert — IMMER eine frische Kopie (neue Referenz → useMemo/Liste
+ * rendern nach einer Änderung neu; am 25.07. gab der Mock die Store-Referenz
+ * direkt zurück und die Liste blieb stehen).
+ */
+function currentEvents(): Event[] {
+  const merged: Event[] = [];
+  for (const event of [...mock.events, ...createdEvents]) {
+    if (deletedEventIds.has(event.id)) continue;
+    const effective = eventOverrides.get(event.id) ?? event;
+    merged.push({ ...effective, teamIds: [...effective.teamIds], rsvps: [...effective.rsvps] });
+  }
+  return merged;
+}
 
 /**
  * Mock-Implementierung der Repository-Facade — DEFAULT-Datenquelle.
@@ -114,10 +137,19 @@ export const mockRepository: DataRepository = {
 
   /* ---------- Termine, RSVP & Anwesenheit ---------- */
   async getEvents() {
-    return [...mock.events, ...createdEvents];
+    return currentEvents();
   },
   async getUpcomingEvents(withinDays = 7) {
-    return mock.upcomingEvents(withinDays);
+    // Wie mock.upcomingEvents, aber über currentEvents() — so wirken Bearbeiten
+    // und Löschen auch hier, und die Referenz ändert sich bei jedem Aufruf.
+    const now = Date.now();
+    const horizon = now + withinDays * 86_400_000;
+    return currentEvents()
+      .filter((event) => {
+        const t = new Date(event.startsAt).getTime();
+        return t >= now && t <= horizon;
+      })
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
   },
   async getAttendance() {
     return mock.attendance;
@@ -220,6 +252,39 @@ export const mockRepository: DataRepository = {
     };
     createdEvents.push(created);
     return created;
+  },
+  async updateEvent(id, patch): Promise<Event> {
+    // Lokal angelegte Termine in-place mutieren; Seed-Termine als Override
+    // festhalten (mock.events selbst bleibt unangetastet).
+    const created = createdEvents.find((event) => event.id === id);
+    const base = created ?? eventOverrides.get(id) ?? mock.events.find((event) => event.id === id);
+    if (!base) throw new Error(`Termin ${id} nicht gefunden (mock)`);
+    const next: Event = { ...base, teamIds: [...base.teamIds], rsvps: [...base.rsvps] };
+    if (patch.type !== undefined) next.type = patch.type;
+    if (patch.title !== undefined) next.title = patch.title;
+    // location ist im View-Modell nicht nullable — null/"" wird zum Leerstring.
+    if (patch.location !== undefined) next.location = patch.location ?? "";
+    if (patch.startsAt !== undefined) next.startsAt = patch.startsAt;
+    if (patch.endsAt !== undefined) next.endsAt = patch.endsAt;
+    if (patch.audience !== undefined) next.audience = patch.audience;
+    if (patch.teamIds !== undefined) next.teamIds = [...patch.teamIds];
+    if (patch.note !== undefined) next.note = patch.note ?? undefined;
+    if (created) {
+      Object.assign(created, next);
+    } else {
+      eventOverrides.set(id, next);
+    }
+    return { ...next, teamIds: [...next.teamIds], rsvps: [...next.rsvps] };
+  },
+  async deleteEvent(id): Promise<{ id: string }> {
+    const idx = createdEvents.findIndex((event) => event.id === id);
+    if (idx >= 0) {
+      createdEvents.splice(idx, 1);
+    } else {
+      deletedEventIds.add(id);
+      eventOverrides.delete(id);
+    }
+    return { id };
   },
   async inviteMember(input) {
     return { email: input.email };

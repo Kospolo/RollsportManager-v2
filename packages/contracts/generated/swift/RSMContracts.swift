@@ -4962,6 +4962,51 @@ public struct EventCreate: Codable, Equatable, Sendable {
     }
 }
 
+public struct EventUpdate: Codable, Equatable, Sendable {
+    public var type: EventType?
+    public var title: String?
+    public var note: String?
+    public var location: String?
+    /// Format: date-time
+    public var startsAt: String?
+    /// Format: date-time
+    public var endsAt: String?
+    public var audience: EventAudience?
+    /// Format: [uuid]
+    public var teamIds: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case title
+        case note
+        case location
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case audience
+        case teamIds = "team_ids"
+    }
+
+    public init(
+        type: EventType? = nil,
+        title: String? = nil,
+        note: String? = nil,
+        location: String? = nil,
+        startsAt: String? = nil,
+        endsAt: String? = nil,
+        audience: EventAudience? = nil,
+        teamIds: [String]? = nil
+    ) {
+        self.type = type
+        self.title = title
+        self.note = note
+        self.location = location
+        self.startsAt = startsAt
+        self.endsAt = endsAt
+        self.audience = audience
+        self.teamIds = teamIds
+    }
+}
+
 public struct EventRsvpUpsert: Codable, Equatable, Sendable {
     /// Format: uuid
     public var memberId: String

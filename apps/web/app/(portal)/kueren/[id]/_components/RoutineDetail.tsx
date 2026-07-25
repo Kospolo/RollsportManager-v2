@@ -28,6 +28,7 @@ import { PlayerCard } from "./PlayerCard";
 import { MarkerList } from "./MarkerList";
 import { ScoreTrend } from "./ScoreTrend";
 import { NotesCard } from "./NotesCard";
+import { SkaterCoachNotes } from "./SkaterCoachNotes";
 import { ShareRoutineDialog } from "./ShareRoutineDialog";
 import { RoutineMediaCard, RoutineCoverImage } from "./RoutineMediaCard";
 
@@ -146,6 +147,13 @@ function LoadedDetail({
      is_club_trainer + PRO); im UI ausgeblendet statt 403. */
   const canManage = permissions(currentUser).isTrainer;
   const canShare = canManage;
+
+  /* INTERNE Trainer-Notiz (0069) im Kuer-Kontext: nur fuer Trainer:innen UND
+     Vorstand, NIEMALS fuer ein normales Mitglied oder die Familie. Steht neben
+     der persoenlichen „Meine Notiz" (NotesCard), ersetzt sie nicht. Die
+     verbindliche Grenze zieht der Server (RLS); dies ist reine Sichtbarkeit. */
+  const showCoachNotes =
+    permissions(currentUser).isTrainer || permissions(currentUser).isClubAdmin;
 
   /* Schreiben an der Kür (Marker/Elemente setzen, Wertungen eintragen) hängt an
      der Fähigkeit routines:edit — fail-closed: ein Mitglied (read_own) fällt
@@ -294,6 +302,19 @@ function LoadedDetail({
           <ScoreTrend routine={routine} />
           {/* Medien-Upload nur für Trainer:innen (ausgeblendet statt 403). */}
           {canManage && <RoutineMediaCard routine={routine} onChanged={reload} />}
+          {/* INTERNE Trainer-Notiz je Läufer:in — direkt über der persönlichen
+              „Meine Notiz", damit beide Notiz-Arten nebeneinander stehen. Bei
+              Paar-/Gruppenküren trägt jede Karte den Namen (heading). */}
+          {showCoachNotes &&
+            skaters.map((skater) => (
+              <SkaterCoachNotes
+                key={skater.id}
+                skater={skater}
+                members={members}
+                currentUser={currentUser}
+                heading={skaters.length > 1 ? `${skater.firstName} ${skater.lastName}` : null}
+              />
+            ))}
           <NotesCard routineId={routine.id} />
         </div>
       </div>

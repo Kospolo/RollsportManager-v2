@@ -137,6 +137,24 @@ export interface CreateEventInput {
   note?: string;
 }
 
+/**
+ * Teil-Update eines Termins (owner/admin/coach) — alle Felder optional, wie
+ * CreateEventInput. Weggelassene Felder bleiben unverändert; note/location auf
+ * null leert die Angabe. Die Team-Liste ist ein VOLL-Replace der Zuordnung.
+ */
+export interface UpdateEventInput {
+  type?: EventType;
+  title?: string;
+  location?: string | null;
+  /** ISO-Zeitstempel */
+  startsAt?: string;
+  endsAt?: string;
+  /** "club" darf nur der Vorstand — der Server prüft es. */
+  audience?: EventAudience;
+  teamIds?: Id[];
+  note?: string | null;
+}
+
 /** Eingabe für eine Vereins-Einladung per E-Mail (owner/admin). */
 export interface InviteMemberInput {
   email: string;
@@ -280,6 +298,10 @@ export interface DataRepository
   setTaskDone(taskId: Id, done: boolean): Promise<boolean>;
   /** Termin anlegen — liefert den erzeugten Termin (mit echter ID im api-Modus) zurück. */
   createEvent(input: CreateEventInput): Promise<Event>;
+  /** Termin bearbeiten (owner/admin/coach) — liefert den aktualisierten Termin zurück. */
+  updateEvent(id: Id, patch: UpdateEventInput): Promise<Event>;
+  /** Termin soft-löschen (owner/admin/coach; Vereinsveranstaltung nur Vorstand). */
+  deleteEvent(id: Id): Promise<{ id: Id }>;
   /** Person per E-Mail in den Verein einladen. */
   inviteMember(input: InviteMemberInput): Promise<{ email: string }>;
   /** Kür-Marker hinzufügen — liefert den erzeugten Marker zurück. */

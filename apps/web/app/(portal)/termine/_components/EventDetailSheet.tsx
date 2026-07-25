@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { ResponseBar } from "@/components/ui/ResponseBar";
-import { Sheet } from "@/components/ui/Modal";
+import { Modal, Sheet } from "@/components/ui/Modal";
 import { Tabs, TabPanel, type TabItem } from "@/components/ui/Tabs";
 import { Textarea } from "@/components/ui/Field";
 import { Icon } from "@/components/shell/icons";
@@ -59,7 +60,10 @@ export function EventDetailSheet({
   teams,
   currentUser,
   past,
+  canManage = false,
   onClose,
+  onEdit,
+  onDelete,
   onSetOwnRsvp,
   onChangeOwnComment,
   onCommitOwnComment,
@@ -77,7 +81,13 @@ export function EventDetailSheet({
   /** Eingeloggte Person aus der Facade (getCurrentUser) */
   currentUser: Member;
   past: boolean;
+  /** Darf der/die Betrachter:in den Termin bearbeiten/löschen? Nur Anzeige — der Server prüft. */
+  canManage?: boolean;
   onClose: () => void;
+  /** Bearbeiten öffnen (Screen übernimmt: Detail schließen, Edit-Sheet öffnen). */
+  onEdit: (event: Event) => void;
+  /** Löschen ausführen (Screen: data.deleteEvent + Toast). true = erfolgreich. */
+  onDelete: (event: Event) => Promise<boolean>;
   /** Antwort-Pille: optimistischer Write + Toast (im Screen) */
   onSetOwnRsvp: (eventId: string, memberId: string, status: RsvpStatus, comment?: string) => void;
   /** Kommentar-Tippen: nur lokaler Zustand */
@@ -91,6 +101,19 @@ export function EventDetailSheet({
 
   const [tab, setTab] = useState<SectionTab>(past ? "attendance" : "responses");
   const [qrOpen, setQrOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  /** Löschen NIE ohne Rückfrage — der Schreibpfad startet ausschließlich hier. */
+  async function handleDelete() {
+    setDeleting(true);
+    const ok = await onDelete(event);
+    // Erfolg: der Screen schließt das Sheet (Unmount). Fehler: Dialog zurücksetzen.
+    if (!ok) {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
 
   const participants = participantsOf(event, rsvps, members);
   const counts = rsvpCounts(participants.length, rsvps);
@@ -114,6 +137,18 @@ export function EventDetailSheet({
       onClose={onClose}
       eyebrow={t(TYPE_LABEL_KEY[event.type])}
       title={event.title}
+      footer={
+        canManage ? (
+          <>
+            <Button variant="secondary" icon="edit" onClick={() => onEdit(event)}>
+              {t("editAction")}
+            </Button>
+            <Button variant="danger" icon="trash" onClick={() => setConfirmDelete(true)}>
+              {t("deleteAction")}
+            </Button>
+          </>
+        ) : undefined
+      }
     >
       <div className="grid gap-5">
         {/* Meta-Block */}
@@ -234,6 +269,30 @@ export function EventDetailSheet({
       </div>
 
       <QrCheckinModal open={qrOpen} onClose={() => setQrOpen(false)} event={event} />
+
+      {/* Löschen-Bestätigung — echter Schritt, keine window.confirm-Auto­bestätigung. */}
+      <Modal
+        open={confirmDelete}
+        onClose={() => {
+          if (!deleting) setConfirmDelete(false);
+        }}
+        eyebrow={t("manageEyebrow")}
+        title={t("deleteConfirmTitle")}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)} disabled={deleting}>
+              {t("cancel")}
+            </Button>
+            <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+              {t("deleteConfirmCta")}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body text-ink-soft">
+          {t("deleteConfirmBody", { title: event.title })}
+        </p>
+      </Modal>
     </Sheet>
   );
 }

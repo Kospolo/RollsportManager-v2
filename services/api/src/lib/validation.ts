@@ -449,6 +449,39 @@ export const eventCreateSchema = z
   // Schoenheitsfehler.
   .openapi('EventCreate');
 
+/**
+ * Teil-Update eines Termins (PATCH /events/{eventId}). Jedes Feld optional; die
+ * club_id ist bewusst NICHT dabei — ein Termin wandert nicht in einen anderen
+ * Verein. note/location sind nullable, damit sich eine Angabe leeren laesst.
+ *
+ * Die beiden Kreuzpruefungen spiegeln eventCreateSchema, greifen bei einem
+ * Teil-Update aber nur, wenn beide Seiten vorliegen: ends_at > starts_at nur,
+ * wenn beide gesetzt werden; 'club' schliesst Teams aus nur, wenn team_ids
+ * mitkommt. Die Datenbank (DB-Check + die audience-Trigger aus 0050) bleibt die
+ * letzte Instanz fuer die Faelle, die ein Teil-Update hier nicht sehen kann.
+ */
+export const eventUpdateSchema = z
+  .object({
+    type: eventTypeSchema.optional(),
+    title: z.string().min(1).optional(),
+    note: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    starts_at: z.string().datetime({ offset: true }).optional(),
+    ends_at: z.string().datetime({ offset: true }).optional(),
+    audience: eventAudienceSchema.optional(),
+    team_ids: z.array(uuid).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .refine(
+    (v) => v.starts_at === undefined || v.ends_at === undefined || new Date(v.ends_at) > new Date(v.starts_at),
+    { message: 'ends_at must be after starts_at', path: ['ends_at'] },
+  )
+  .refine((v) => !(v.audience === 'club' && (v.team_ids?.length ?? 0) > 0), {
+    message: 'audience=club: a club-wide event carries no team assignment (team_ids must be empty)',
+    path: ['team_ids'],
+  })
+  .openapi('EventUpdate');
+
 export const rsvpUpsertSchema = z
   .object({
     /** club_members.id - own membership or a child via guardianship */

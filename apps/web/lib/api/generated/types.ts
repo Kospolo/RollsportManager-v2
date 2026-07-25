@@ -1185,6 +1185,17 @@ export interface EventCreate {
   "team_ids"?: string[];
 }
 
+export interface EventUpdate {
+  "type"?: EventType;
+  "title"?: string;
+  "note"?: string | null;
+  "location"?: string | null;
+  "starts_at"?: string;
+  "ends_at"?: string;
+  "audience"?: EventAudience;
+  "team_ids"?: string[];
+}
+
 export interface EventRsvpUpsert {
   "member_id": string;
   "status": RsvpStatus;

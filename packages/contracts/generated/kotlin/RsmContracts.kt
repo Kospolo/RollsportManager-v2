@@ -1814,6 +1814,18 @@ data class EventCreate(
 )
 
 @Serializable
+data class EventUpdate(
+    val type: EventType? = null,
+    val title: String? = null,
+    val note: String? = null,
+    val location: String? = null,
+    @SerialName("starts_at") val startsAt: String? = null,
+    @SerialName("ends_at") val endsAt: String? = null,
+    val audience: EventAudience? = null,
+    @SerialName("team_ids") val teamIds: List<String>? = null
+)
+
+@Serializable
 data class EventRsvpUpsert(
     @SerialName("member_id") val memberId: String,
     val status: RsvpStatus,

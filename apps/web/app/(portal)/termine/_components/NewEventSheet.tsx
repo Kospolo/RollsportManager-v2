@@ -14,10 +14,26 @@ const FORM_ID = "new-event-form";
 
 type FieldErrors = Partial<Record<"title" | "location" | "date" | "end" | "teams", string>>;
 
+/** ISO-Zeitstempel → lokales Datum (YYYY-MM-DD) fürs date-Feld. */
+function toDateInput(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** ISO-Zeitstempel → lokale Uhrzeit (HH:mm) fürs time-Feld. */
+function toTimeInput(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 /**
- * „Neuer Termin“-Formular als Sheet — legt den Termin über die Facade an
- * (api-Modus: echter POST /events, mock-Modus: In-Memory). Der erzeugte
- * Termin (mit echter ID) fließt via onCreate zurück in die Liste.
+ * Termin-Formular als Sheet — legt einen Termin über die Facade an ODER
+ * bearbeitet einen bestehenden (Prop `event` gesetzt). Anlegen: POST /events
+ * (mock: In-Memory). Bearbeiten: PATCH /events/{id} über data.updateEvent, mit
+ * den Feldern aus dem Termin vorbefüllt. Der erzeugte/aktualisierte Termin
+ * fließt via onSaved zurück in die Liste.
  * Verein/Teams kommen als Props aus der Facade; sind Teams im api-Modus
  * nicht lesbar (NotImplemented), entfällt die Team-Pflicht mit Hinweis.
  *
@@ -33,7 +49,8 @@ export function NewEventSheet({
   teams,
   teamsUnavailable = false,
   canPublishToClub = false,
-  onCreate,
+  event,
+  onSaved,
 }: {
   open: boolean;
   onClose: () => void;
@@ -42,22 +59,25 @@ export function NewEventSheet({
   teamsUnavailable?: boolean;
   /** Vorstand (owner/admin/moderator)? Nur dann ist das Häkchen sichtbar. */
   canPublishToClub?: boolean;
-  onCreate: (event: Event) => void;
+  /** Gesetzt = Bearbeiten-Modus: Felder vorbefüllen, data.updateEvent statt createEvent. */
+  event?: Event;
+  onSaved: (event: Event) => void;
 }) {
   const t = useT(termineDict);
   const { showToast } = useToast();
   const teamsLabelId = useId();
+  const isEdit = event !== undefined;
   const [submitting, setSubmitting] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [type, setType] = useState<EventType>("training");
-  const [date, setDate] = useState("");
-  const [start, setStart] = useState("17:00");
-  const [end, setEnd] = useState("18:30");
-  const [location, setLocation] = useState("");
-  const [teamIds, setTeamIds] = useState<string[]>([]);
-  const [audience, setAudience] = useState<EventAudience>("teams");
-  const [note, setNote] = useState("");
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [type, setType] = useState<EventType>(event?.type ?? "training");
+  const [date, setDate] = useState(event ? toDateInput(event.startsAt) : "");
+  const [start, setStart] = useState(event ? toTimeInput(event.startsAt) : "17:00");
+  const [end, setEnd] = useState(event ? toTimeInput(event.endsAt) : "18:30");
+  const [location, setLocation] = useState(event?.location ?? "");
+  const [teamIds, setTeamIds] = useState<string[]>(event ? [...event.teamIds] : []);
+  const [audience, setAudience] = useState<EventAudience>(event?.audience ?? "teams");
+  const [note, setNote] = useState(event?.note ?? "");
   const [errors, setErrors] = useState<FieldErrors>({});
 
   function reset() {
@@ -101,22 +121,44 @@ export function NewEventSheet({
 
     setSubmitting(true);
     try {
-      const created = await data.createEvent({
-        type,
-        title: title.trim(),
-        location: location.trim(),
-        startsAt: new Date(`${date}T${start}`).toISOString(),
-        endsAt: new Date(`${date}T${end}`).toISOString(),
-        audience,
-        // Eine Vereinsveranstaltung trägt KEINE Teams — sonst stünden zwei
-        // Wahrheiten nebeneinander, und der Server lehnt ab.
-        teamIds: audience === "club" ? [] : teamIds,
-        note: note.trim() || undefined,
-      });
-      onCreate(created);
-      showToast(t("createdToast", { title: created.title }), { tone: "success" });
-      reset();
-      onClose();
+      // Eine Vereinsveranstaltung trägt KEINE Teams — sonst stünden zwei
+      // Wahrheiten nebeneinander, und der Server lehnt ab.
+      const effectiveTeamIds = audience === "club" ? [] : teamIds;
+      const startsAt = new Date(`${date}T${start}`).toISOString();
+      const endsAt = new Date(`${date}T${end}`).toISOString();
+
+      if (isEdit && event) {
+        const saved = await data.updateEvent(event.id, {
+          type,
+          title: title.trim(),
+          location: location.trim(),
+          startsAt,
+          endsAt,
+          audience,
+          teamIds: effectiveTeamIds,
+          // Leere Notiz LÖSCHT die Angabe (null), nicht undefined — sonst bliebe
+          // eine vorher gesetzte Notiz beim Bearbeiten stehen.
+          note: note.trim() ? note.trim() : null,
+        });
+        onSaved(saved);
+        showToast(t("updatedToast", { title: saved.title }), { tone: "success" });
+        onClose();
+      } else {
+        const created = await data.createEvent({
+          type,
+          title: title.trim(),
+          location: location.trim(),
+          startsAt,
+          endsAt,
+          audience,
+          teamIds: effectiveTeamIds,
+          note: note.trim() || undefined,
+        });
+        onSaved(created);
+        showToast(t("createdToast", { title: created.title }), { tone: "success" });
+        reset();
+        onClose();
+      }
     } catch (error) {
       showToast(isForbidden(error) ? t("noPermission") : errorMessage(error), {
         tone: "danger",
@@ -131,14 +173,19 @@ export function NewEventSheet({
       open={open}
       onClose={onClose}
       eyebrow={t("formEyebrow")}
-      title={t("formTitle")}
+      title={isEdit ? t("editTitle") : t("formTitle")}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             {t("cancel")}
           </Button>
-          <Button type="submit" form={FORM_ID} icon="plus" disabled={submitting}>
-            {t("submit")}
+          <Button
+            type="submit"
+            form={FORM_ID}
+            icon={isEdit ? "check" : "plus"}
+            disabled={submitting}
+          >
+            {isEdit ? t("saveSubmit") : t("submit")}
           </Button>
         </>
       }

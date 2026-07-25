@@ -154,6 +154,11 @@ export const kuerenDict = {
     retry: "Wiederholen",
     lastSaved: "Zuletzt gespeichert: {when}",
 
+    /* Interne Trainer-Notiz (0069) im Kür-Kontext — die Karte selbst bringt ihre
+       Texte aus dem Profil-Dictionary mit; hier nur der Verfasser-Fallback,
+       falls die Person nicht im geladenen Roster steht. */
+    coachNoteAuthorFallback: "Trainer:in",
+
     /* Kür-Medien: Musik & Bild hochladen (nur Trainer:innen des Teams) */
     mediaEyebrow: "Medien",
     mediaTitle: "Musik & Bild",
@@ -329,6 +334,11 @@ export const kuerenDict = {
     noteSaveError: "Saving failed.",
     retry: "Retry",
     lastSaved: "Last saved: {when}",
+
+    /* Internal coach note (0069) in the routine context — the card brings its own
+       copy from the profile dictionary; only the author fallback lives here, for
+       when the person is not in the loaded roster. */
+    coachNoteAuthorFallback: "Coach",
 
     /* Routine media: upload music & image (team coaches only) */
     mediaEyebrow: "Media",

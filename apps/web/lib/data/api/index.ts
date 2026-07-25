@@ -353,6 +353,23 @@ export const apiRepository: DataRepository = {
     });
     return mapEvent(created);
   },
+  async updateEvent(id, patch) {
+    const updated = await apiClient.patchEventsByEventId(id, {
+      type: patch.type,
+      title: patch.title,
+      location: patch.location,
+      starts_at: patch.startsAt,
+      ends_at: patch.endsAt,
+      audience: patch.audience,
+      team_ids: patch.teamIds,
+      note: patch.note,
+    });
+    return mapEvent(updated);
+  },
+  async deleteEvent(id) {
+    const deleted = await apiClient.deleteEventsByEventId(id);
+    return { id: deleted.id };
+  },
   async inviteMember(input) {
     const queued = await apiClient.postClubsByClubIdMembersInvite(activeClubId(), {
       email: input.email,

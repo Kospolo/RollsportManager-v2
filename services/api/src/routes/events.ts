@@ -13,8 +13,10 @@ import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
   attendanceSchema,
   attendanceUpsertSchema,
+  deletedSchema,
   eventCreateSchema,
   eventSchema,
+  eventUpdateSchema,
   rsvpSchema,
   rsvpUpsertSchema,
   uuid,
@@ -88,13 +90,19 @@ async function selectEvent(tx: Tx, eventId: string): Promise<unknown | undefined
   return rows[0];
 }
 
-async function loadEvent(tx: Tx, eventId: string): Promise<{ id: string; club_id: string }> {
+async function loadEvent(
+  tx: Tx,
+  eventId: string,
+): Promise<{ id: string; club_id: string; audience: 'teams' | 'club' }> {
+  // audience mitlesen: PATCH/DELETE gaten damit die Vereinsveranstaltung
+  // API-seitig (deckungsgleich mit CLUB_AUDIENCE_ROLES / dem Trigger 0050) —
+  // die RSVP-/Anwesenheits-Handler ignorieren das Feld schlicht.
   const rows = await tx`
-    select id, club_id from app.events
+    select id, club_id, audience from app.events
     where id = ${eventId} and deleted_at is null`;
   const event = rows[0];
   if (!event) throw problem(404, 'Not Found', 'Event not found');
-  return event as { id: string; club_id: string };
+  return event as { id: string; club_id: string; audience: 'teams' | 'club' };
 }
 
 eventsRouter.openapi(
@@ -250,6 +258,171 @@ eventsRouter.openapi(
       return row;
     });
     return c.json(eventSchema.parse(created), 201);
+  },
+);
+
+eventsRouter.openapi(
+  createRoute({
+    method: 'patch',
+    path: '/events/{eventId}',
+    tags: ['events'],
+    summary: 'Edit an event (owner/admin/coach); team links only for coached teams',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: eventIdParam,
+      body: { content: { 'application/json': { schema: eventUpdateSchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(eventSchema, 'Updated event'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { eventId } = c.req.valid('param');
+    const body = c.req.valid('json');
+    const claims = c.get('claims');
+
+    const updated = await withUser(claims, async (tx) => {
+      // Normaler Lesepfad (RLS aktiv): 404, wenn unsichtbar/nicht vorhanden.
+      const event = await loadEvent(tx, eventId);
+
+      // Gating DECKUNGSGLEICH mit POST /events: dieselben EVENT_WRITE_ROLES.
+      requireClubRole(claims, event.club_id, EVENT_WRITE_ROLES);
+
+      // "ja verein — darf aber nicht jeder was eintragen": eine
+      // Vereinsveranstaltung anzulegen ODER daraus/dazu umzustufen bleibt
+      // rechtepflichtig. new.audience='club' faengt der API-Gate hier ab
+      // (wie in POST), old.audience='club' der Trigger app.protect_event_audience
+      // (0050, 42501 -> 403). Beide Wege sitzen auf CLUB_AUDIENCE_ROLES.
+      if (body.audience === 'club' || event.audience === 'club') {
+        requireClubRole(claims, event.club_id, CLUB_AUDIENCE_ROLES);
+      }
+
+      // Eine Trainerin haengt Termine nur an IHRE Teams — dieselbe Pruefung wie
+      // in POST /events (app.coached_team_ids / Policy event_teams_insert, 0050).
+      if (
+        body.team_ids !== undefined &&
+        body.team_ids.length > 0 &&
+        !hasClubRole(claims, event.club_id, EVENT_WRITE_ANY_TEAM_ROLES)
+      ) {
+        const coachedRows = await tx`select app.coached_team_ids(${event.club_id}) as ids`;
+        const coached = new Set((coachedRows[0] as { ids: string[] }).ids ?? []);
+        const foreign = body.team_ids.filter((id) => !coached.has(id));
+        if (foreign.length > 0) {
+          throw problem(
+            403,
+            'Forbidden',
+            `Termine nur fuer eigene Teams: ${foreign.join(', ')} wird von dir nicht betreut`,
+          );
+        }
+      }
+
+      // Team-Zuordnung als VOLL-Replace, wenn team_ids mitkommt. Das ENTFERNEN
+      // laeuft VOR dem Skalar-Update: sonst schlaegt ein Wechsel auf
+      // audience='club' am AFTER-Trigger events_audience_no_teams fehl (23514),
+      // solange noch aktive Team-Zeilen existieren. Das HINZUFUEGEN laeuft
+      // DANACH (audience steht dann auf 'teams').
+      let toAdd: string[] = [];
+      if (body.team_ids !== undefined) {
+        const desired = new Set(body.team_ids);
+        const activeRows = await tx`
+          select team_id from app.event_teams
+          where event_id = ${eventId} and deleted_at is null`;
+        const active = new Set<string>();
+        for (const r of activeRows) active.add((r as { team_id: string }).team_id);
+        for (const teamId of active) {
+          if (!desired.has(teamId)) {
+            await tx`
+              update app.event_teams set deleted_at = now()
+              where event_id = ${eventId} and team_id = ${teamId} and deleted_at is null`;
+          }
+        }
+        toAdd = body.team_ids.filter((id) => !active.has(id));
+      }
+
+      // Skalar-Felder OHNE team_ids (das ist die n:m-Tabelle, kein Spaltenwert).
+      // KEIN `returning` — derselbe RETURNING-Fallstrick wie in POST /events:
+      // events_select haengt seit 0050 an app.can_read_event. Das Ergebnis wird
+      // unten in einem SEPARATEN Statement (selectEvent) zurueckgelesen.
+      const scalar: Record<string, unknown> = {};
+      if (body.type !== undefined) scalar.type = body.type;
+      if (body.title !== undefined) scalar.title = body.title;
+      if (body.note !== undefined) scalar.note = body.note;
+      if (body.location !== undefined) scalar.location = body.location;
+      if (body.starts_at !== undefined) scalar.starts_at = body.starts_at;
+      if (body.ends_at !== undefined) scalar.ends_at = body.ends_at;
+      if (body.audience !== undefined) scalar.audience = body.audience;
+      if (Object.keys(scalar).length > 0) {
+        await tx`update app.events set ${tx(scalar)} where id = ${eventId} and deleted_at is null`;
+      }
+
+      // Hinzufuegen/Reaktivieren per upsert: event_teams_uq (event_id, team_id)
+      // ist NICHT partiell auf deleted_at — ein erneutes plain INSERT einer
+      // frueher entfernten Zuordnung liefe in die Unique-Kollision.
+      for (const teamId of toAdd) {
+        await tx`
+          insert into app.event_teams (club_id, event_id, team_id)
+          values (${event.club_id}, ${eventId}, ${teamId})
+          on conflict (event_id, team_id) do update
+            set deleted_at = null, updated_at = now()`;
+      }
+
+      // Rueckenlesen ueber den NORMALEN Lesepfad (RLS aktiv) — wie in POST.
+      // Liefert er nichts, hat der Aufrufer den Termin so veraendert, dass er ihn
+      // selbst nicht mehr sehen darf; statt eine unsichtbare Zeile zu
+      // hinterlassen, bricht die Transaktion ab.
+      const row = await selectEvent(tx, eventId);
+      if (row === undefined) {
+        throw problem(
+          422,
+          'Unprocessable Entity',
+          'You may only edit an event you can also see: keep at least one team you coach, or mark it as a club-wide event.',
+        );
+      }
+      return row;
+    });
+    return c.json(eventSchema.parse(updated), 200);
+  },
+);
+
+eventsRouter.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/events/{eventId}',
+    tags: ['events'],
+    summary: 'Soft-delete an event (owner/admin/coach; club-wide events only by the board)',
+    security: [{ bearerAuth: [] }],
+    request: { params: eventIdParam },
+    responses: {
+      200: jsonContent(deletedSchema, 'Event soft-deleted'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { eventId } = c.req.valid('param');
+    const claims = c.get('claims');
+
+    await withUser(claims, async (tx) => {
+      const event = await loadEvent(tx, eventId); // 404 when invisible (RLS)
+      requireClubRole(claims, event.club_id, EVENT_WRITE_ROLES);
+      // Eine Vereinsveranstaltung entfernt nur der Vorstand — API-Gate wie in
+      // POST, zweite Linie ist der Trigger app.protect_event_audience (0050),
+      // der beim UPDATE mit old.audience='club' owner/admin/moderator verlangt.
+      if (event.audience === 'club') {
+        requireClubRole(claims, event.club_id, CLUB_AUDIENCE_ROLES);
+      }
+      // Soft-delete = UPDATE ... set deleted_at (events kennen keinen eigenen
+      // DELETE-Pfad; das PowerSync-Tombstone ist die deleted_at-Spalte, 0003).
+      // KEIN `returning`: der RETURNING-Fallstrick (events_select ->
+      // can_read_event, das deleted_at is null filtert) wuerde auf der eben
+      // getilgten Zeile ein irrefuehrendes 0-rows liefern. Die Autorisierung
+      // steht bereits (requireClubRole == events_update-Policy owner/admin/
+      // moderator/coach), die Existenz hat loadEvent belegt.
+      await tx`
+        update app.events set deleted_at = now()
+        where id = ${eventId} and deleted_at is null`;
+    });
+    return c.json({ status: 'deleted' as const, id: eventId }, 200);
   },
 );
 

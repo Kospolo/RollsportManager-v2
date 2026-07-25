@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
@@ -31,6 +31,7 @@ import { AboutMeSheet } from "../AboutMeSheet";
 import { AssessmentSheet } from "./AssessmentSheet";
 import { CoachNoteSheet, type CoachNoteSheetValue } from "./CoachNoteSheet";
 import { CoachNoteDeleteDialog } from "./CoachNoteDeleteDialog";
+import { useCoachNotes } from "./useCoachNotes";
 import { MemberSpartenCard } from "./MemberSpartenCard";
 import { MemberSpartenSheet } from "./MemberSpartenSheet";
 import { FamilyCard } from "./DetailCards";
@@ -152,50 +153,6 @@ function coachNotesAllowed(
   return (teams ?? []).some(
     (tm) => tm.coachIds.includes(currentUser.id) && profile.member.team_ids.includes(tm.id),
   );
-}
-
-/**
- * Laedt die internen Notizen ueber EINEN eigenen Endpunkt — bewusst nicht ueber
- * das Profil-Aggregat, das die Familie fuer ihr Kind oeffnet.
- * null = nicht geladen bzw. nicht erlaubt (Sektion wird dann gar nicht gebaut).
- */
-function useCoachNotes(memberId: string, enabled: boolean) {
-  const [fetched, setFetched] = useState<MemberCoachNote[] | null>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    // Abbruchmarke: beim Wechsel auf ein anderes Mitglied darf die Antwort der
-    // ALTEN Anfrage nicht mehr in den Zustand der neuen Seite laufen — sonst
-    // stuenden die internen Notizen des vorigen Kindes am neuen Profil.
-    let cancelled = false;
-    void (async () => {
-      try {
-        const rows = await data.listMemberCoachNotes(memberId);
-        if (!cancelled) setFetched(rows);
-      } catch {
-        if (!cancelled) setFetched([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, memberId]);
-
-  // Abgeleitet statt im Effekt zurueckgesetzt: wer nicht darf, sieht null,
-  // ohne dass ein Effekt dafuer synchron Zustand schreiben muss.
-  const notes = enabled ? fetched : null;
-
-  // Nachladen nach dem Speichern. Ohne Abbruchmarke: dieser Aufruf haengt an
-  // einer Nutzeraktion, nicht am Lebenszyklus der Seite.
-  const reload = useCallback(async () => {
-    try {
-      setFetched(await data.listMemberCoachNotes(memberId));
-    } catch {
-      setFetched([]);
-    }
-  }, [memberId]);
-
-  return { notes, reload };
 }
 
 export function MemberDetail({ id }: { id: string }) {

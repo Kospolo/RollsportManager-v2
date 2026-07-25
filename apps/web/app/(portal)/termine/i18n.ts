@@ -112,6 +112,19 @@ export const termineDict = {
     cancel: "Abbrechen",
     createdToast: "Termin „{title}“ ist angelegt",
 
+    /* ---------- Bearbeiten & Löschen ---------- */
+    manageEyebrow: "Termin verwalten",
+    editAction: "Bearbeiten",
+    deleteAction: "Löschen",
+    editTitle: "Termin bearbeiten",
+    saveSubmit: "Änderungen speichern",
+    updatedToast: "Termin „{title}“ ist aktualisiert",
+    deleteConfirmTitle: "Termin löschen?",
+    deleteConfirmBody:
+      "„{title}“ wird für alle Mitglieder entfernt — samt Antworten und erfasster Anwesenheit. Das lässt sich nicht rückgängig machen.",
+    deleteConfirmCta: "Endgültig löschen",
+    deletedToast: "Termin „{title}“ wurde gelöscht",
+
     /* ---------- Fahrgemeinschaften (0066) ---------- */
     ridesTitle: "Fahrgemeinschaften",
     ridesSub: "Wer fährt, wer fährt mit — für diesen Termin.",
@@ -277,6 +290,19 @@ export const termineDict = {
     submit: "Create event",
     cancel: "Cancel",
     createdToast: "Event “{title}” created",
+
+    /* ---------- Edit & delete ---------- */
+    manageEyebrow: "Manage event",
+    editAction: "Edit",
+    deleteAction: "Delete",
+    editTitle: "Edit event",
+    saveSubmit: "Save changes",
+    updatedToast: "Event “{title}” updated",
+    deleteConfirmTitle: "Delete event?",
+    deleteConfirmBody:
+      "“{title}” will be removed for all members — including responses and recorded attendance. This can’t be undone.",
+    deleteConfirmCta: "Delete permanently",
+    deletedToast: "Event “{title}” deleted",
 
     /* ---------- Car pools (0066) ---------- */
     ridesTitle: "Car pools",

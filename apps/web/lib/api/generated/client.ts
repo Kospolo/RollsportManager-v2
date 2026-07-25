@@ -859,6 +859,24 @@ export class ApiClient {
   }
 
   /**
+   * Edit an event (owner/admin/coach); team links only for coached teams
+   * 
+   * `PATCH /events/{eventId}`
+   */
+  async patchEventsByEventId(eventId: string, body: M.EventUpdate, options?: RequestOptions): Promise<M.Event> {
+    return this.request<M.Event>("PATCH", `/events/${encodeURIComponent(eventId)}`, { body, auth: true, options });
+  }
+
+  /**
+   * Soft-delete an event (owner/admin/coach; club-wide events only by the board)
+   * 
+   * `DELETE /events/{eventId}`
+   */
+  async deleteEventsByEventId(eventId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/events/${encodeURIComponent(eventId)}`, { auth: true, options });
+  }
+
+  /**
    * Set an RSVP for the own membership or an own child (guardianship)
    * Upsert on (event, member). RLS enforces can_act_for_member: own row or own child - coaches may answer for anyone in the club.
    * 
