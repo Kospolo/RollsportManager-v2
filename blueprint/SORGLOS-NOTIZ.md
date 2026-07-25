@@ -11,21 +11,30 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ## ⏩ WIEDEREINSTIEG 2026-07-25 (nach Claude-Neustart ZUERST lesen)
 
-**Sicher committet + auf der Beta live: Commit `c7552bf`.** Alles bis dahin ist geprüft (Rechte-Gate
-systemweit, Teams, Termine bearb./löschen, Trainer-Notiz Kür, Mitglieder-CRUD inkl. anlegen ohne E-Mail,
-Kassenbuch-Korrigieren, Wettkampf-CRUD, Wartelisten-Badges+Glocke).
+**Sicher committet + auf der Beta live: Commit `e218fe6`. Arbeitsbaum sauber, nichts offen liegen.**
+Alles geprüft: Rechte-Gate systemweit (30 Seiten), Teams, Termine bearb./löschen, Trainer-Notiz Kür,
+Mitglieder-CRUD (inkl. anlegen ohne E-Mail), Kassenbuch-Korrigieren (GoBD), Wettkampf-CRUD,
+Wartelisten-Badges+Glocke, **Rechnungen (Positionen/MwSt, Rechnungs-Einstellungen/Briefkopf,
+PDF-Druckansicht, Entwurf via Positions-CRUD)**. Migration bis **0080** in Dev-DB + Buch.
 
-**⚠️ UNCOMMITTET im Arbeitsbaum: die halbfertige Rechnungen-Arbeit eines Agenten** (Migration
-`0080_rechnungseinstellungen.sql`, `services/api/src/routes/invoice-settings.ts`, `finanzen/einstellungen/`,
-`finanzen/rechnungen/[id]/` Druckansicht, `InvoiceItemsEditor.tsx`, viele finance-Dateien + Contract). **NICHT
-gate-geprüft**, Agent war beim Neustart evtl. noch nicht fertig. VORGEHEN in der neuen Sitzung:
-1. `git status` ansehen. Migration 0080 in Dev-DB? `docker exec rsm2-pg-dev psql -U postgres -d rsm2 -c "\dt app.invoice_settings"` — falls fehlt: `docker exec -i rsm2-pg-dev psql -U postgres -d rsm2 < supabase/migrations/0080_*.sql` + ins Buch `public.rsm_schema_migrations` eintragen.
-2. Gates fahren: `cd services/api && npx tsc --noEmit && npx vitest run`; `cd packages/contracts && node codegen/check.mjs`; `cd apps/web && npx tsc --noEmit`.
-3. Grün → committen + `./infra/beta/deploy.sh` + Browser-Gegenprobe (Rechnung erstellen mit Positionen, Druckansicht öffnen, Rechnungs-Einstellungen speichern). Rot → betroffene finance-Dateien mit `git checkout --` verwerfen oder gezielt reparieren.
+**Noch OFFEN aus der Vorstand-Liste (25.07.), beides GROSS:**
+1. **Chat**: Gruppenchat + Broadcast an alle; Nachrichten löschen; **Meldesystem** — „Nachricht melden" →
+   an Vereinsadmin UND Superadmin; Admin öffnet/bearbeitet/druckt/speichert die Meldung, kann an gemeldete
+   Person oder Melder schreiben; Meldung mit Chatverlauf im Anhang, wann/wo, möglichst IP+Kontakt, an den
+   Vorstand.
+2. **Vereins-Einstellungen** erweitern: mehr Felder, SMTP für Anmeldung/Info-Mails, Vereins-Infos + Bilder
+   für die spätere Website (kleiner Slider aller Vereine mit Logo+Name, anklickbar → Verein ansehen, nur wenn
+   aktiviert).
 
-**Danach OFFEN (Vorstand-Liste 25.07., Rest):** Chat Gruppenchat + Meldesystem (GROSS) · Vereins-Einstellungen
-erweitern + SMTP + Website-Slider (GROSS). **Arbeitsweise: mach es doch und bleib nicht stehen** — Agenten je
-Bereich (getrennte Dateien), gegen die alte Seite abgleichen, selbst im Browser prüfen, pro Stück committen+deployen.
+Kleinere Reste: Spenden-„Zuwendungsbescheinigung"-Button (nur falls noch zu lang), Rechnungs-E-Mail-Versand
+(braucht SMTP), reines Feld-Editieren positionsloser Entwurfsrechnungen.
+
+**Arbeitsweise (Marcel, 25.07.): „mach es doch und bleib nicht stehen".** Pro Bereich einen Agenten
+(getrennte Dateien, kein Konflikt auf shared facade/contract → shared-file-Features NACHEINANDER), gegen die
+alte Seite (`/Apps/RollsportManager`) abgleichen, selbst im Browser als Rolle prüfen (localStorage
+`rsm.mock.viewer`=m-02 Vorstand / m-07 Kind), pro fertigem Stück committen + `./infra/beta/deploy.sh`.
+Nicht raten, Ist-Zustand vor dem Handeln prüfen, keine Riesen-Texte. Bestandsaufnahme-Audit-Ergebnis lag in
+`tasks/w1yo0dq8l.output` (Scratchpad, evtl. nach Neustart weg — dann neu gegen v1 abgleichen).
 
 ---
 
