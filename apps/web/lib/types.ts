@@ -87,12 +87,44 @@ export interface Club {
   city: string;
   discipline: string;
   foundedYear: number;
+  // Stammdaten (0081). Leerstring = nicht gesetzt (kein null-Jonglieren).
+  contactEmail: string;
+  contactPhone: string;
+  /** Straße + Hausnummer (Ort liegt in city). */
+  street: string;
+  postalCode: string;
+  country: string;
+  websiteUrl: string;
+  /** Interner Freitext „Über den Verein" (öffentliches Pendant: publicDescription). */
+  description: string;
+  // Öffentliches Profil (0081). Opt-in-Schalter + öffentlich sichtbare Felder.
+  // Die öffentliche Slider-Seite selbst folgt separat (siehe Migration 0081).
+  publicProfileEnabled: boolean;
+  publicDescription: string;
+  publicImage: string;
   /**
    * Fertige URL zum Vereinslogo (0060) oder null (dann: Initialen). Die Facade
    * baut sie: im api-Modus GET /public/clubs/{id}/logo mit Cache-Buster ueber
    * die Asset-Id; im mock-Modus eine data-URL. Die Ansicht kennt nur die URL.
    */
   logoUrl: string | null;
+}
+
+/**
+ * Vereins-SMTP-Einstellungen (0081) — eigener Absender für Anmeldungs-/Info-Mails.
+ * DATENSCHUTZ: das Passwort wird NIE im Klartext geliefert. Nur passwordSet zeigt,
+ * ob eines hinterlegt ist (exakt wie PlatformSmtpSettings). Admin-only.
+ */
+export interface ClubSmtpSettings {
+  clubId: Id;
+  host: string;
+  port: number;
+  user: string;
+  /** Absender (From-Header), z. B. „RSV Neckarsulm <noreply@rsv.de>". */
+  from: string;
+  secure: boolean;
+  /** true, wenn ein Passwort hinterlegt ist (Wert bleibt serverseitig). */
+  passwordSet: boolean;
 }
 
 export type MemberRole =

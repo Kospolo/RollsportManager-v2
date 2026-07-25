@@ -3,6 +3,7 @@ import type {
   Attendance,
   AttendanceStatus,
   Club,
+  ClubSmtpSettings,
   Competition,
   DutyEntry,
   DutyRequirement,
@@ -236,8 +237,37 @@ export interface UpdateClubSettingsInput {
   shortName?: string | null;
   city?: string | null;
   discipline?: string | null;
+  /** Gründungsjahr — null = kein Jahr. */
+  foundedYear?: number | null;
+  // Stammdaten (0081).
+  contactEmail?: string;
+  contactPhone?: string;
+  street?: string;
+  postalCode?: string;
+  country?: string;
+  websiteUrl?: string;
+  description?: string;
+  // Öffentliches Profil (0081): Opt-in-Schalter + öffentlich sichtbare Felder.
+  publicProfileEnabled?: boolean;
+  publicDescription?: string;
+  publicImage?: string;
   /** Freies Settings-Objekt (Modulschalter etc.) — im View-Modell nicht gespiegelt. */
   settings?: Record<string, unknown>;
+}
+
+/**
+ * Vereins-SMTP ändern (is_club_admin). DATENSCHUTZ: password ist WRITE-ONLY —
+ * weglassen behält das gespeicherte Passwort, senden ersetzt es (leerer String
+ * löscht). Es wird nie zurückgegeben.
+ */
+export interface UpdateClubSmtpInput {
+  host?: string;
+  port?: number;
+  user?: string;
+  from?: string;
+  secure?: boolean;
+  /** WRITE-ONLY: setzen ersetzt, weglassen behält das gespeicherte Passwort. */
+  password?: string;
 }
 
 export interface DataRepository
@@ -359,6 +389,13 @@ export interface DataRepository
   /* ---------- Verwaltung: Vereins-Einstellungen ---------- */
   /** Vereins-Stammdaten/-Einstellungen ändern (owner/admin). */
   updateClubSettings(patch: UpdateClubSettingsInput): Promise<Club>;
+  /**
+   * Vereins-SMTP lesen (is_club_admin). Das Passwort kommt NIE im Klartext,
+   * nur als passwordSet:boolean. Der Server setzt die Rolle durch (403 sonst).
+   */
+  getClubSmtp(): Promise<ClubSmtpSettings>;
+  /** Vereins-SMTP ändern (is_club_admin); password ist WRITE-ONLY. */
+  updateClubSmtp(patch: UpdateClubSmtpInput): Promise<ClubSmtpSettings>;
 
   /* ---------- Module: Neuigkeiten (Lesen=Mitglied, Schreiben=Trainer+) ---------- */
   /** Vereins-Neuigkeiten des aktiven Vereins (gepinnt zuerst). */

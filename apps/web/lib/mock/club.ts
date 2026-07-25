@@ -14,6 +14,18 @@ export const club: Club = {
   city: "Neckarsulm",
   discipline: "Rollkunstlauf",
   foundedYear: 1968,
+  contactEmail: "vorstand@rsv-neckarsulm.de",
+  contactPhone: "+49 7132 123456",
+  street: "Beethovenstraße 24",
+  postalCode: "74172",
+  country: "Deutschland",
+  websiteUrl: "https://rsv-neckarsulm.de",
+  description:
+    "Rollkunstlauf-Verein aus Neckarsulm — von den Minis bis zur Leistungsgruppe. Gegründet 1968.",
+  publicProfileEnabled: false,
+  publicDescription:
+    "Willkommen beim RSV Neckarsulm! Rollkunstlauf für alle Altersgruppen, vom ersten Rollschuh bis zur Kür.",
+  publicImage: "",
   logoUrl: null,
 };
 

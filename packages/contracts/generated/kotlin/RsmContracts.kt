@@ -623,6 +623,16 @@ data class Club(
     val city: String?,
     val discipline: String?,
     @SerialName("founded_year") val foundedYear: Long?,
+    @SerialName("contact_email") val contactEmail: String,
+    @SerialName("contact_phone") val contactPhone: String,
+    val street: String,
+    @SerialName("postal_code") val postalCode: String,
+    val country: String,
+    @SerialName("website_url") val websiteUrl: String,
+    val description: String,
+    @SerialName("public_profile_enabled") val publicProfileEnabled: Boolean,
+    @SerialName("public_description") val publicDescription: String,
+    @SerialName("public_image") val publicImage: String,
     val settings: JsonObject,
     @SerialName("logo_asset_id") val logoAssetId: String?,
     @SerialName("created_at") val createdAt: String,
@@ -653,6 +663,17 @@ data class ClubUpdate(
     @SerialName("short_name") val shortName: String? = null,
     val city: String? = null,
     val discipline: String? = null,
+    @SerialName("founded_year") val foundedYear: Long? = null,
+    @SerialName("contact_email") val contactEmail: String? = null,
+    @SerialName("contact_phone") val contactPhone: String? = null,
+    val street: String? = null,
+    @SerialName("postal_code") val postalCode: String? = null,
+    val country: String? = null,
+    @SerialName("website_url") val websiteUrl: String? = null,
+    val description: String? = null,
+    @SerialName("public_profile_enabled") val publicProfileEnabled: Boolean? = null,
+    @SerialName("public_description") val publicDescription: String? = null,
+    @SerialName("public_image") val publicImage: String? = null,
     val settings: JsonObject? = null
 )
 
@@ -697,6 +718,27 @@ data class ClubRegistration(
     val discipline: String? = null,
     @SerialName("accept_terms") val acceptTerms: Boolean,
     @SerialName("accept_privacy") val acceptPrivacy: Boolean
+)
+
+@Serializable
+data class ClubSmtp(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("smtp_host") val smtpHost: String,
+    @SerialName("smtp_port") val smtpPort: Long,
+    @SerialName("smtp_user") val smtpUser: String,
+    @SerialName("smtp_from") val smtpFrom: String,
+    @SerialName("smtp_secure") val smtpSecure: Boolean,
+    @SerialName("smtp_password_set") val smtpPasswordSet: Boolean
+)
+
+@Serializable
+data class ClubSmtpUpdate(
+    @SerialName("smtp_host") val smtpHost: String? = null,
+    @SerialName("smtp_port") val smtpPort: Long? = null,
+    @SerialName("smtp_user") val smtpUser: String? = null,
+    @SerialName("smtp_from") val smtpFrom: String? = null,
+    @SerialName("smtp_secure") val smtpSecure: Boolean? = null,
+    @SerialName("smtp_password") val smtpPassword: String? = null
 )
 
 @Serializable

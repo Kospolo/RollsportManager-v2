@@ -181,6 +181,36 @@
             "type": "integer",
             "nullable": true
           },
+          "contact_email": {
+            "type": "string"
+          },
+          "contact_phone": {
+            "type": "string"
+          },
+          "street": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "website_url": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "public_profile_enabled": {
+            "type": "boolean"
+          },
+          "public_description": {
+            "type": "string"
+          },
+          "public_image": {
+            "type": "string"
+          },
           "settings": {
             "type": "object",
             "additionalProperties": {
@@ -220,6 +250,16 @@
           "city",
           "discipline",
           "founded_year",
+          "contact_email",
+          "contact_phone",
+          "street",
+          "postal_code",
+          "country",
+          "website_url",
+          "description",
+          "public_profile_enabled",
+          "public_description",
+          "public_image",
           "settings",
           "logo_asset_id",
           "created_at",
@@ -317,6 +357,51 @@
           "discipline": {
             "type": "string",
             "nullable": true
+          },
+          "founded_year": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 1800,
+            "maximum": 2100
+          },
+          "contact_email": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "contact_phone": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "street": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "postal_code": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "country": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "website_url": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "public_profile_enabled": {
+            "type": "boolean"
+          },
+          "public_description": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "public_image": {
+            "type": "string",
+            "maxLength": 500000
           },
           "settings": {
             "type": "object",
@@ -559,6 +644,71 @@
           "accept_terms",
           "accept_privacy"
         ]
+      },
+      "ClubSmtp": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "smtp_host": {
+            "type": "string"
+          },
+          "smtp_port": {
+            "type": "integer"
+          },
+          "smtp_user": {
+            "type": "string"
+          },
+          "smtp_from": {
+            "type": "string"
+          },
+          "smtp_secure": {
+            "type": "boolean"
+          },
+          "smtp_password_set": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "club_id",
+          "smtp_host",
+          "smtp_port",
+          "smtp_user",
+          "smtp_from",
+          "smtp_secure",
+          "smtp_password_set"
+        ]
+      },
+      "ClubSmtpUpdate": {
+        "type": "object",
+        "properties": {
+          "smtp_host": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "smtp_port": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 65535
+          },
+          "smtp_user": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "smtp_from": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "smtp_secure": {
+            "type": "boolean"
+          },
+          "smtp_password": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
       },
       "ClubJoinResult": {
         "type": "object",
@@ -11819,6 +11969,168 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClubJoinCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/smtp": {
+      "get": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Vereins-SMTP lesen (is_club_admin) / Read a club SMTP config",
+        "description": "Liefert die SMTP-Konfiguration des Vereins (Host/Port/User/Absender/SSL). Das Passwort wird NIE im Klartext geliefert — nur smtp_password_set:boolean zeigt, ob eines hinterlegt ist. Erfordert is_club_admin (owner/admin/moderator). / Returns the club SMTP config; password masked.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Die SMTP-Konfiguration (Passwort maskiert)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubSmtp"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "clubs"
+        ],
+        "summary": "Vereins-SMTP aendern (is_club_admin) / Update a club SMTP config",
+        "description": "Schreibt nur die uebergebenen Felder; fehlende behalten ihren Wert. Das Passwort ist WRITE-ONLY: senden ersetzt (leerer String loescht), weglassen behaelt das gespeicherte. Der Response maskiert es zu smtp_password_set. Erfordert is_club_admin.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClubSmtpUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Die gespeicherte SMTP-Konfiguration (Passwort maskiert)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClubSmtp"
                 }
               }
             }

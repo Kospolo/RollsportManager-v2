@@ -717,6 +717,16 @@ public struct Club: Codable, Equatable, Sendable {
     public var city: String?
     public var discipline: String?
     public var foundedYear: Int?
+    public var contactEmail: String
+    public var contactPhone: String
+    public var street: String
+    public var postalCode: String
+    public var country: String
+    public var websiteUrl: String
+    public var description: String
+    public var publicProfileEnabled: Bool
+    public var publicDescription: String
+    public var publicImage: String
     public var settings: [String: JSONValue]
     /// Format: uuid
     public var logoAssetId: String?
@@ -730,6 +740,16 @@ public struct Club: Codable, Equatable, Sendable {
         case city
         case discipline
         case foundedYear = "founded_year"
+        case contactEmail = "contact_email"
+        case contactPhone = "contact_phone"
+        case street
+        case postalCode = "postal_code"
+        case country
+        case websiteUrl = "website_url"
+        case description
+        case publicProfileEnabled = "public_profile_enabled"
+        case publicDescription = "public_description"
+        case publicImage = "public_image"
         case settings
         case logoAssetId = "logo_asset_id"
         case createdAt = "created_at"
@@ -743,6 +763,16 @@ public struct Club: Codable, Equatable, Sendable {
         city: String? = nil,
         discipline: String? = nil,
         foundedYear: Int? = nil,
+        contactEmail: String,
+        contactPhone: String,
+        street: String,
+        postalCode: String,
+        country: String,
+        websiteUrl: String,
+        description: String,
+        publicProfileEnabled: Bool,
+        publicDescription: String,
+        publicImage: String,
         settings: [String: JSONValue],
         logoAssetId: String? = nil,
         createdAt: String,
@@ -754,6 +784,16 @@ public struct Club: Codable, Equatable, Sendable {
         self.city = city
         self.discipline = discipline
         self.foundedYear = foundedYear
+        self.contactEmail = contactEmail
+        self.contactPhone = contactPhone
+        self.street = street
+        self.postalCode = postalCode
+        self.country = country
+        self.websiteUrl = websiteUrl
+        self.description = description
+        self.publicProfileEnabled = publicProfileEnabled
+        self.publicDescription = publicDescription
+        self.publicImage = publicImage
         self.settings = settings
         self.logoAssetId = logoAssetId
         self.createdAt = createdAt
@@ -827,6 +867,17 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
     public var shortName: String?
     public var city: String?
     public var discipline: String?
+    public var foundedYear: Int?
+    public var contactEmail: String?
+    public var contactPhone: String?
+    public var street: String?
+    public var postalCode: String?
+    public var country: String?
+    public var websiteUrl: String?
+    public var description: String?
+    public var publicProfileEnabled: Bool?
+    public var publicDescription: String?
+    public var publicImage: String?
     public var settings: [String: JSONValue]?
 
     enum CodingKeys: String, CodingKey {
@@ -834,6 +885,17 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
         case shortName = "short_name"
         case city
         case discipline
+        case foundedYear = "founded_year"
+        case contactEmail = "contact_email"
+        case contactPhone = "contact_phone"
+        case street
+        case postalCode = "postal_code"
+        case country
+        case websiteUrl = "website_url"
+        case description
+        case publicProfileEnabled = "public_profile_enabled"
+        case publicDescription = "public_description"
+        case publicImage = "public_image"
         case settings
     }
 
@@ -842,12 +904,34 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
         shortName: String? = nil,
         city: String? = nil,
         discipline: String? = nil,
+        foundedYear: Int? = nil,
+        contactEmail: String? = nil,
+        contactPhone: String? = nil,
+        street: String? = nil,
+        postalCode: String? = nil,
+        country: String? = nil,
+        websiteUrl: String? = nil,
+        description: String? = nil,
+        publicProfileEnabled: Bool? = nil,
+        publicDescription: String? = nil,
+        publicImage: String? = nil,
         settings: [String: JSONValue]? = nil
     ) {
         self.name = name
         self.shortName = shortName
         self.city = city
         self.discipline = discipline
+        self.foundedYear = foundedYear
+        self.contactEmail = contactEmail
+        self.contactPhone = contactPhone
+        self.street = street
+        self.postalCode = postalCode
+        self.country = country
+        self.websiteUrl = websiteUrl
+        self.description = description
+        self.publicProfileEnabled = publicProfileEnabled
+        self.publicDescription = publicDescription
+        self.publicImage = publicImage
         self.settings = settings
     }
 }
@@ -1007,6 +1091,79 @@ public struct ClubRegistration: Codable, Equatable, Sendable {
         self.discipline = discipline
         self.acceptTerms = acceptTerms
         self.acceptPrivacy = acceptPrivacy
+    }
+}
+
+public struct ClubSmtp: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var smtpHost: String
+    public var smtpPort: Int
+    public var smtpUser: String
+    public var smtpFrom: String
+    public var smtpSecure: Bool
+    public var smtpPasswordSet: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case smtpHost = "smtp_host"
+        case smtpPort = "smtp_port"
+        case smtpUser = "smtp_user"
+        case smtpFrom = "smtp_from"
+        case smtpSecure = "smtp_secure"
+        case smtpPasswordSet = "smtp_password_set"
+    }
+
+    public init(
+        clubId: String,
+        smtpHost: String,
+        smtpPort: Int,
+        smtpUser: String,
+        smtpFrom: String,
+        smtpSecure: Bool,
+        smtpPasswordSet: Bool
+    ) {
+        self.clubId = clubId
+        self.smtpHost = smtpHost
+        self.smtpPort = smtpPort
+        self.smtpUser = smtpUser
+        self.smtpFrom = smtpFrom
+        self.smtpSecure = smtpSecure
+        self.smtpPasswordSet = smtpPasswordSet
+    }
+}
+
+public struct ClubSmtpUpdate: Codable, Equatable, Sendable {
+    public var smtpHost: String?
+    public var smtpPort: Int?
+    public var smtpUser: String?
+    public var smtpFrom: String?
+    public var smtpSecure: Bool?
+    public var smtpPassword: String?
+
+    enum CodingKeys: String, CodingKey {
+        case smtpHost = "smtp_host"
+        case smtpPort = "smtp_port"
+        case smtpUser = "smtp_user"
+        case smtpFrom = "smtp_from"
+        case smtpSecure = "smtp_secure"
+        case smtpPassword = "smtp_password"
+    }
+
+    public init(
+        smtpHost: String? = nil,
+        smtpPort: Int? = nil,
+        smtpUser: String? = nil,
+        smtpFrom: String? = nil,
+        smtpSecure: Bool? = nil,
+        smtpPassword: String? = nil
+    ) {
+        self.smtpHost = smtpHost
+        self.smtpPort = smtpPort
+        self.smtpUser = smtpUser
+        self.smtpFrom = smtpFrom
+        self.smtpSecure = smtpSecure
+        self.smtpPassword = smtpPassword
     }
 }
 

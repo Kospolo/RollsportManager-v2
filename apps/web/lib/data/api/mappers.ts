@@ -2,6 +2,7 @@ import type * as M from "@/lib/api/generated";
 import type {
   Attendance,
   Club,
+  ClubSmtpSettings,
   Competition,
   CompetitionStatus,
   DunningLevel,
@@ -58,12 +59,36 @@ export function mapClub(w: M.Club): Club {
     city: w.city ?? "",
     discipline: w.discipline ?? "",
     foundedYear: w.founded_year ?? 0,
+    // Stammdaten (0081) — der Wire liefert non-null Strings/Bool.
+    contactEmail: w.contact_email,
+    contactPhone: w.contact_phone,
+    street: w.street,
+    postalCode: w.postal_code,
+    country: w.country,
+    websiteUrl: w.website_url,
+    description: w.description,
+    publicProfileEnabled: w.public_profile_enabled,
+    publicDescription: w.public_description,
+    publicImage: w.public_image,
     // Logo (0060): die oeffentliche Serve-Route + Cache-Buster ueber die
     // Asset-Id, damit ein Wechsel (neue Asset-Id) nicht am Browser-Cache
     // haengenbleibt. Kein Logo -> null (Ansicht zeigt Initialen).
     logoUrl: w.logo_asset_id
       ? `${API_BASE_URL}/public/clubs/${w.id}/logo?v=${w.logo_asset_id}`
       : null,
+  };
+}
+
+/** Vereins-SMTP (0081). Der Wire trägt NUR smtp_password_set — nie den Klartext. */
+export function mapClubSmtp(w: M.ClubSmtp): ClubSmtpSettings {
+  return {
+    clubId: w.club_id,
+    host: w.smtp_host,
+    port: w.smtp_port,
+    user: w.smtp_user,
+    from: w.smtp_from,
+    secure: w.smtp_secure,
+    passwordSet: w.smtp_password_set,
   };
 }
 

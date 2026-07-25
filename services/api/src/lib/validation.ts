@@ -103,6 +103,23 @@ export const clubSchema = z
     city: z.string().nullable(),
     discipline: z.string().nullable(),
     founded_year: z.number().int().nullable(),
+    // Stammdaten (0081). Alle non-null (Default '') — "nicht gesetzt" = Leerstring.
+    contact_email: z.string(),
+    contact_phone: z.string(),
+    street: z.string(),
+    postal_code: z.string(),
+    country: z.string(),
+    website_url: z.string(),
+    /** Interner Freitext "Ueber den Verein" (das oeffentliche Pendant ist public_description). */
+    description: z.string(),
+    // Oeffentliches Profil (0081). public_profile_enabled = Opt-in-Schalter; die
+    // oeffentliche Slider-Seite selbst folgt separat (siehe Migration 0081).
+    public_profile_enabled: z.boolean(),
+    public_description: z.string(),
+    public_image: z.string(),
+    // WICHTIG: der SMTP-Block (smtp_*) steht bewusst NICHT hier. Er ist admin-only
+    // und laeuft ueber den eigenen, gesperrten Endpunkt /clubs/{id}/smtp; die
+    // allgemeine (mitglieds-lesbare) Vereinsansicht traegt ihn nicht mit.
     settings: z.record(z.unknown()),
     // Vereinslogo (0060): Referenz auf app.media_assets. Ist es gesetzt, zeigt
     // die Oberflaeche das Logo (GET /public/clubs/{id}/logo) statt der
@@ -139,10 +156,65 @@ export const clubUpdateSchema = z
     short_name: z.string().nullable().optional(),
     city: z.string().nullable().optional(),
     discipline: z.string().nullable().optional(),
+    // Gruendungsjahr (0002-Spalte) jetzt editierbar. nullable = "kein Jahr".
+    founded_year: z.number().int().min(1800).max(2100).nullable().optional(),
+    // Stammdaten (0081). Textlaengen wie beim Briefkopf grosszuegig gedeckelt.
+    contact_email: z.string().max(200).optional(),
+    contact_phone: z.string().max(100).optional(),
+    street: z.string().max(200).optional(),
+    postal_code: z.string().max(20).optional(),
+    country: z.string().max(100).optional(),
+    website_url: z.string().max(500).optional(),
+    description: z.string().max(4000).optional(),
+    // Oeffentliches Profil (0081) — Schalter + oeffentlich sichtbare Felder.
+    public_profile_enabled: z.boolean().optional(),
+    public_description: z.string().max(4000).optional(),
+    public_image: z.string().max(500000).optional(),
     settings: z.record(z.unknown()).optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('ClubUpdate');
+
+// ---------------------------------------------------------------------------
+// Vereins-SMTP (0081, app.clubs.smtp_*). Eigener Absender fuer Anmeldungs-/
+// Info-Mails. ADMIN-ONLY (GET/PATCH /clubs/{id}/smtp). DATENSCHUTZ: das
+// Passwort ist WRITE-ONLY — der Wire-Typ traegt NUR smtp_password_set:boolean,
+// nie den Klartext (exakt wie platform_settings.smtp).
+// ---------------------------------------------------------------------------
+export const clubSmtpSchema = z
+  .object({
+    club_id: uuid,
+    /** SMTP-Server, z. B. "smtp.strato.de". Leer = kein eigener Versand konfiguriert. */
+    smtp_host: z.string(),
+    /** Port (Default 587 = STARTTLS-Submission). */
+    smtp_port: z.number().int(),
+    smtp_user: z.string(),
+    /** Absender (From-Header), z. B. "RSV Neckarsulm <noreply@rsv.de>". */
+    smtp_from: z.string(),
+    /** SSL/TLS erzwingen. */
+    smtp_secure: z.boolean(),
+    /** true, wenn ein Passwort hinterlegt ist — der Klartext bleibt serverseitig. */
+    smtp_password_set: z.boolean(),
+  })
+  .openapi('ClubSmtp');
+
+/**
+ * SMTP-Patch. Alle Felder optional — nur die uebergebenen werden geschrieben.
+ * smtp_password ist WRITE-ONLY: senden ersetzt es, weglassen behaelt das
+ * gespeicherte; es wird nie zurueckgegeben.
+ */
+export const clubSmtpUpdateSchema = z
+  .object({
+    smtp_host: z.string().max(255).optional(),
+    smtp_port: z.number().int().min(1).max(65535).optional(),
+    smtp_user: z.string().max(255).optional(),
+    smtp_from: z.string().max(255).optional(),
+    smtp_secure: z.boolean().optional(),
+    /** WRITE-ONLY: setzen ersetzt, weglassen behaelt das gespeicherte Passwort. */
+    smtp_password: z.string().max(500).optional(),
+  })
+  .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
+  .openapi('ClubSmtpUpdate');
 
 export const memberSchema = z
   .object({

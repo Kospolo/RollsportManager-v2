@@ -1,6 +1,7 @@
 import * as mock from "@/lib/mock";
 import type {
   Club,
+  ClubSmtpSettings,
   Event,
   Member,
   PlatformClubSummary,
@@ -62,6 +63,21 @@ const teamStore: Team[] = mock.teams.map((t) => ({
   skaterIds: [...t.skaterIds],
 }));
 let clubStore: Club = { ...mock.club };
+
+/**
+ * Vereins-SMTP (0081) — im Mock ein einfacher lokaler Zustand. Das Passwort wird
+ * (wie im api-Modus) NIE ausgeliefert; nur `passwordSet` merkt sich, ob eines
+ * gesetzt wurde. `secret` bleibt rein lokal und verlässt die Facade nie.
+ */
+let clubSmtpStore: ClubSmtpSettings = {
+  clubId: clubStore.id,
+  host: "",
+  port: 587,
+  user: "",
+  from: "",
+  secure: true,
+  passwordSet: false,
+};
 
 let teamSeq = teamStore.length;
 let memberSeq = memberStore.length;
@@ -397,8 +413,40 @@ export const mockRepository: DataRepository = {
       ...(patch.shortName != null ? { shortName: patch.shortName } : {}),
       ...(patch.city != null ? { city: patch.city } : {}),
       ...(patch.discipline != null ? { discipline: patch.discipline } : {}),
+      ...(patch.foundedYear != null ? { foundedYear: patch.foundedYear } : {}),
+      ...(patch.contactEmail !== undefined ? { contactEmail: patch.contactEmail } : {}),
+      ...(patch.contactPhone !== undefined ? { contactPhone: patch.contactPhone } : {}),
+      ...(patch.street !== undefined ? { street: patch.street } : {}),
+      ...(patch.postalCode !== undefined ? { postalCode: patch.postalCode } : {}),
+      ...(patch.country !== undefined ? { country: patch.country } : {}),
+      ...(patch.websiteUrl !== undefined ? { websiteUrl: patch.websiteUrl } : {}),
+      ...(patch.description !== undefined ? { description: patch.description } : {}),
+      ...(patch.publicProfileEnabled !== undefined
+        ? { publicProfileEnabled: patch.publicProfileEnabled }
+        : {}),
+      ...(patch.publicDescription !== undefined
+        ? { publicDescription: patch.publicDescription }
+        : {}),
+      ...(patch.publicImage !== undefined ? { publicImage: patch.publicImage } : {}),
     };
     return clubStore;
+  },
+  async getClubSmtp(): Promise<ClubSmtpSettings> {
+    return clubSmtpStore;
+  },
+  async updateClubSmtp(patch): Promise<ClubSmtpSettings> {
+    clubSmtpStore = {
+      ...clubSmtpStore,
+      ...(patch.host !== undefined ? { host: patch.host } : {}),
+      ...(patch.port !== undefined ? { port: patch.port } : {}),
+      ...(patch.user !== undefined ? { user: patch.user } : {}),
+      ...(patch.from !== undefined ? { from: patch.from } : {}),
+      ...(patch.secure !== undefined ? { secure: patch.secure } : {}),
+      // WRITE-ONLY wie im api-Modus: senden setzt/löscht passwordSet, der Wert
+      // selbst wird nie gespeichert oder ausgeliefert.
+      ...(patch.password !== undefined ? { passwordSet: patch.password.length > 0 } : {}),
+    };
+    return clubSmtpStore;
   },
 
   /* ---------- Module: Neuigkeiten, Notizen, Übungen (Batch 1) ---------- */

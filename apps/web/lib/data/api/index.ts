@@ -27,6 +27,7 @@ import { moduleApiRepositoryWettkampf } from "./modules-wettkampf";
 import {
   mapAttendance,
   mapClub,
+  mapClubSmtp,
   mapCompetition,
   mapEvent,
   mapGuardianship,
@@ -462,9 +463,35 @@ export const apiRepository: DataRepository = {
       short_name: patch.shortName,
       city: patch.city,
       discipline: patch.discipline,
+      founded_year: patch.foundedYear,
+      contact_email: patch.contactEmail,
+      contact_phone: patch.contactPhone,
+      street: patch.street,
+      postal_code: patch.postalCode,
+      country: patch.country,
+      website_url: patch.websiteUrl,
+      description: patch.description,
+      public_profile_enabled: patch.publicProfileEnabled,
+      public_description: patch.publicDescription,
+      public_image: patch.publicImage,
       settings: patch.settings,
     });
     return mapClub(updated);
+  },
+  async getClubSmtp() {
+    return mapClubSmtp(await apiClient.getClubsByClubIdSmtp(activeClubId()));
+  },
+  async updateClubSmtp(patch) {
+    const updated = await apiClient.patchClubsByClubIdSmtp(activeClubId(), {
+      smtp_host: patch.host,
+      smtp_port: patch.port,
+      smtp_user: patch.user,
+      smtp_from: patch.from,
+      smtp_secure: patch.secure,
+      // WRITE-ONLY: nur mitsenden, wenn wirklich eines gesetzt wurde.
+      smtp_password: patch.password,
+    });
+    return mapClubSmtp(updated);
   },
 
   /* ---------- Module: Neuigkeiten, Notizen, Übungen (Batch 1) ---------- */

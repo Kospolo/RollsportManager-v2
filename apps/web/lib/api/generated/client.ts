@@ -150,6 +150,26 @@ export class ApiClient {
   }
 
   /**
+   * Vereins-SMTP lesen (is_club_admin) / Read a club SMTP config
+   * Liefert die SMTP-Konfiguration des Vereins (Host/Port/User/Absender/SSL). Das Passwort wird NIE im Klartext geliefert — nur smtp_password_set:boolean zeigt, ob eines hinterlegt ist. Erfordert is_club_admin (owner/admin/moderator). / Returns the club SMTP config; password masked.
+   * 
+   * `GET /clubs/{clubId}/smtp`
+   */
+  async getClubsByClubIdSmtp(clubId: string, options?: RequestOptions): Promise<M.ClubSmtp> {
+    return this.request<M.ClubSmtp>("GET", `/clubs/${encodeURIComponent(clubId)}/smtp`, { auth: true, options });
+  }
+
+  /**
+   * Vereins-SMTP aendern (is_club_admin) / Update a club SMTP config
+   * Schreibt nur die uebergebenen Felder; fehlende behalten ihren Wert. Das Passwort ist WRITE-ONLY: senden ersetzt (leerer String loescht), weglassen behaelt das gespeicherte. Der Response maskiert es zu smtp_password_set. Erfordert is_club_admin.
+   * 
+   * `PATCH /clubs/{clubId}/smtp`
+   */
+  async patchClubsByClubIdSmtp(clubId: string, body: M.ClubSmtpUpdate, options?: RequestOptions): Promise<M.ClubSmtp> {
+    return this.request<M.ClubSmtp>("PATCH", `/clubs/${encodeURIComponent(clubId)}/smtp`, { body, auth: true, options });
+  }
+
+  /**
    * Beitritt beantragen (Vereinscode) / Request to join a club (club code)
    * Ein RICHTIGER Code erzeugt einen ANTRAG (status=pending), keinen Zugang: app.member_role_keys (0025) filtert auf status=active, eine pending-Mitgliedschaft faellt damit durch jede Policy. Der Vorstand gibt frei (POST .../approve) - das wirkt sofort ohne Re-Login. Falscher/abgelaufener/widerrufener Code -> immer dieselbe 404 (keine Enumeration), zusaetzlich gedrosselt.
    * 

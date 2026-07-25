@@ -23,6 +23,16 @@ export interface Club {
   "city": string | null;
   "discipline": string | null;
   "founded_year": number | null;
+  "contact_email": string;
+  "contact_phone": string;
+  "street": string;
+  "postal_code": string;
+  "country": string;
+  "website_url": string;
+  "description": string;
+  "public_profile_enabled": boolean;
+  "public_description": string;
+  "public_image": string;
   "settings": Record<string, unknown>;
   "logo_asset_id": string | null;
   "created_at": string;
@@ -50,6 +60,17 @@ export interface ClubUpdate {
   "short_name"?: string | null;
   "city"?: string | null;
   "discipline"?: string | null;
+  "founded_year"?: number | null;
+  "contact_email"?: string;
+  "contact_phone"?: string;
+  "street"?: string;
+  "postal_code"?: string;
+  "country"?: string;
+  "website_url"?: string;
+  "description"?: string;
+  "public_profile_enabled"?: boolean;
+  "public_description"?: string;
+  "public_image"?: string;
   "settings"?: Record<string, unknown>;
 }
 
@@ -100,6 +121,25 @@ export interface ClubRegistration {
   "discipline"?: string;
   "accept_terms": boolean;
   "accept_privacy": boolean;
+}
+
+export interface ClubSmtp {
+  "club_id": string;
+  "smtp_host": string;
+  "smtp_port": number;
+  "smtp_user": string;
+  "smtp_from": string;
+  "smtp_secure": boolean;
+  "smtp_password_set": boolean;
+}
+
+export interface ClubSmtpUpdate {
+  "smtp_host"?: string;
+  "smtp_port"?: number;
+  "smtp_user"?: string;
+  "smtp_from"?: string;
+  "smtp_secure"?: boolean;
+  "smtp_password"?: string;
 }
 
 export interface ClubJoinResult {

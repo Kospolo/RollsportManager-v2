@@ -65,7 +65,14 @@ const TRIAL_DAYS = 30;
  * app.clubs ging, bekam den Code weiterhin. Ein Geheimnis wird nicht dort
  * verteidigt, wo es gelesen wird, sondern dort, wo es liegt (0035).
  */
+// Die neuen Stammdaten- und Oeffentlich-Profil-Spalten (0081) stehen hier drin —
+// sie sind mitglieds-lesbar (clubs_select). Der SMTP-Block (smtp_*) steht
+// BEWUSST NICHT hier: er ist admin-only und laeuft ueber /clubs/{id}/smtp; das
+// Passwort wuerde ein `select smtp_password` ausserdem im Klartext mitziehen.
 export const CLUB_COLUMNS = `id, name, short_name, city, discipline, founded_year,
+                      contact_email, contact_phone, street, postal_code, country,
+                      website_url, description, public_profile_enabled,
+                      public_description, public_image,
                       settings, logo_asset_id, created_at, updated_at`;
 
 clubsRouter.openapi(

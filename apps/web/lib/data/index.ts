@@ -31,6 +31,7 @@ export type {
   SetRsvpInput,
   SetTeamMembersInput,
   UpdateClubSettingsInput,
+  UpdateClubSmtpInput,
   UpdateMemberInput,
   UpdateTeamInput,
 } from "./types";
