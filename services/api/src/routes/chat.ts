@@ -24,14 +24,18 @@ import {
   chatChannelSchema,
   chatMessageCreateSchema,
   chatMessageSchema,
+  chatReportCreateSchema,
+  chatReportSchema,
+  chatReportUpdateSchema,
   deletedSchema,
   memberSchema,
   uuid,
 } from '../lib/validation.js';
 import { withUser } from '../db.js';
 import { problem } from '../middleware/error.js';
-import { requireClubMember } from '../lib/guards.js';
+import { ADMIN_ROLES, clubRoleHeld, isPlatformAdmin, requireClubMember } from '../lib/guards.js';
 import { ownMemberId } from '../lib/ownership.js';
+import { clientIp } from '../lib/rate-limit.js';
 import { avatarUrlFor } from '../lib/avatar.js';
 import {
   maySeeContactOf,
@@ -350,5 +354,218 @@ chatRouter.openapi(
       if (rows.length === 0) throw problem(403, 'Forbidden', 'Only the sender may delete a message');
     });
     return c.json({ status: 'deleted' as const, id: messageId }, 200);
+  },
+);
+
+// ============================================================================
+// MELDESYSTEM (migration 0082, app.chat_reports).
+// Jedes Mitglied kann eine FREMDE Nachricht als Verstoss MELDEN. Die Meldung
+// geht an den Vereinsvorstand (owner/admin/moderator) UND den Betreiber
+// (platform admin); RLS ist die Wahrheit. Der SERVER setzt reporter_ip aus der
+// Anfrage und baut den snapshot unter den Claims des Melders — nie der Client.
+// ============================================================================
+
+const reportIdParam = z.object({
+  reportId: uuid.openapi({ param: { name: 'reportId', in: 'path' } }),
+});
+
+/** A little context (same conversation, up to this message), newest first. */
+const CONTEXT_LIMIT = 12;
+
+chatRouter.openapi(
+  createRoute({
+    method: 'post',
+    path: '/chat/reports',
+    tags: ['chat'],
+    summary: 'Report a chat message as a violation (any club member)',
+    description:
+      'Files a report about a message the caller can see. The reporter_ip is set by the SERVER ' +
+      'from the request (never the client), and the snapshot (message text + a little context + ' +
+      'timestamp) is built server-side under the reporter\'s own RLS — so a report can only capture ' +
+      'what the reporter is actually allowed to see. reported_member_id is the sender of the ' +
+      'reported message. The report is visible to the club board, the platform operator, and the ' +
+      'reporter (their own report only). Reporting a message you cannot see is a 404.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      body: { content: { 'application/json': { schema: chatReportCreateSchema } }, required: true },
+    },
+    responses: {
+      201: jsonContent(chatReportSchema, 'Created report'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const body = c.req.valid('json');
+    const claims = c.get('claims');
+    requireClubMember(claims, body.club_id);
+    // Server-seitig, nie vom Client (Referenz: lib/rate-limit.ts clientIp).
+    const ip = clientIp(c) ?? null;
+
+    const created = await withUser(claims, async (tx) => {
+      const reporterId = await ownMemberId(tx, claims, body.club_id);
+      if (!reporterId) throw problem(403, 'Forbidden', 'No active membership row for the reporter in this club');
+
+      // Die gemeldete Nachricht UNTER RLS laden — das ist die eigentliche
+      // Autorisierung: man kann nur melden, was man sehen darf. Nicht sichtbar
+      // / weg -> 404, ununterscheidbar (die blosse Existenz einer fremden
+      // Nachricht darf so nicht abfragbar werden).
+      const msgRows = await tx`
+        select id, club_id, channel_type, team_id, sender_member_id, recipient_member_id,
+               body, image_url, created_at
+        from app.chat_messages
+        where id = ${body.message_id} and club_id = ${body.club_id} and deleted_at is null`;
+      const msg = msgRows[0];
+      if (msg === undefined) throw problem(404, 'Not Found', 'Message not found');
+
+      // created_at kommt als JS-Date zurueck; der Treiber ist in diesem Stack so
+      // konfiguriert, dass ein Date NICHT direkt als Parameter serialisiert wird
+      // (db.ts types.date erwartet Strings). Als ISO-String weiterreichen und in
+      // SQL wieder als timestamptz casten.
+      const reportedAtIso = new Date(msg['created_at'] as string | number | Date).toISOString();
+
+      // Ein paar Kontextnachrichten derselben Unterhaltung, ebenfalls unter RLS
+      // -> nur, was der Melder sehen darf, wandert in den snapshot. Damit bleibt
+      // die Meldung lesbar, auch wenn die Nachricht später gelöscht wird.
+      const context =
+        msg['channel_type'] === 'team'
+          ? await tx`
+              select id, sender_member_id, body, image_url, created_at
+              from app.chat_messages
+              where channel_type = 'team' and team_id = ${msg['team_id']}
+                and deleted_at is null and created_at <= ${reportedAtIso}::timestamptz
+              order by created_at desc, id desc
+              limit ${CONTEXT_LIMIT}`
+          : await tx`
+              select id, sender_member_id, body, image_url, created_at
+              from app.chat_messages
+              where channel_type = 'direct' and club_id = ${body.club_id}
+                and deleted_at is null and created_at <= ${reportedAtIso}::timestamptz
+                and (
+                  (sender_member_id = ${msg['sender_member_id']} and recipient_member_id = ${msg['recipient_member_id']})
+                  or
+                  (sender_member_id = ${msg['recipient_member_id']} and recipient_member_id = ${msg['sender_member_id']})
+                )
+              order by created_at desc, id desc
+              limit ${CONTEXT_LIMIT}`;
+
+      const snapshot = {
+        captured_at: new Date().toISOString(),
+        channel_type: msg['channel_type'],
+        team_id: msg['team_id'] ?? null,
+        message: {
+          id: msg['id'],
+          sender_member_id: msg['sender_member_id'],
+          recipient_member_id: msg['recipient_member_id'] ?? null,
+          body: msg['body'] ?? null,
+          image_url: msg['image_url'] ?? null,
+          created_at: msg['created_at'],
+        },
+        // Kontext chronologisch (die Abfrage liefert absteigend).
+        context: [...context].reverse().map((m) => ({
+          id: m['id'],
+          sender_member_id: m['sender_member_id'],
+          body: m['body'] ?? null,
+          image_url: m['image_url'] ?? null,
+          created_at: m['created_at'],
+        })),
+      };
+
+      // reported_member_id = Absender der gemeldeten Nachricht (Server, nie
+      // Client). RLS insert-Policy prüft reporter=eigene Zeile + Mandant.
+      const rows = await tx`
+        insert into app.chat_reports
+          (club_id, message_id, reported_member_id, reporter_member_id, reason, reporter_ip, snapshot)
+        values
+          (${body.club_id}, ${body.message_id}, ${msg['sender_member_id'] as string}, ${reporterId},
+           ${body.reason}, ${ip}, ${tx.json(snapshot)})
+        returning *`;
+      return rows[0];
+    });
+    return c.json(chatReportSchema.parse(created), 201);
+  },
+);
+
+chatRouter.openapi(
+  createRoute({
+    method: 'get',
+    path: '/chat/reports',
+    tags: ['chat'],
+    summary: 'Chat reports of one club (club board + platform operator)',
+    description:
+      'The board\'s queue of reported chat messages. Visible to owner/admin/moderator of the club ' +
+      'and to the platform operator; RLS enforces the same. A plain member (even the reporter) gets ' +
+      'an honest 403 here — this is the board\'s queue, not a self-view.',
+    security: [{ bearerAuth: [] }],
+    request: { query: z.object({ club_id: uuid }) },
+    responses: {
+      200: jsonContent(z.array(chatReportSchema), 'Reports of the club, newest first'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { club_id } = c.req.valid('query');
+    const claims = c.get('claims');
+    // Ehrliches 403 statt einer (durch RLS) auf die eigene Meldung geschrumpften
+    // Liste. RLS bleibt die zweite Linie.
+    if (!isPlatformAdmin(claims) && !clubRoleHeld(claims, club_id, ADMIN_ROLES)) {
+      throw problem(403, 'Forbidden', 'Requires club board (owner/admin/moderator) or platform admin');
+    }
+    const rows = await withUser(claims, (tx) =>
+      tx`select * from app.chat_reports where club_id = ${club_id} order by created_at desc, id desc`,
+    );
+    return c.json(z.array(chatReportSchema).parse(rows), 200);
+  },
+);
+
+chatRouter.openapi(
+  createRoute({
+    method: 'patch',
+    path: '/chat/reports/{reportId}',
+    tags: ['chat'],
+    summary: 'Set the processing state of a report (club board + platform operator)',
+    description:
+      'Changes only the processing state; handled_by (the handler\'s own member row, null for the ' +
+      'operator) and handled_at are set server-side. The report\'s core (reason, snapshot, who/whom, ' +
+      'ip, timestamp) is append-only (DB trigger). An invisible report is a 404.',
+    security: [{ bearerAuth: [] }],
+    request: {
+      params: reportIdParam,
+      body: { content: { 'application/json': { schema: chatReportUpdateSchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(chatReportSchema, 'The updated report'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { reportId } = c.req.valid('param');
+    const { status } = c.req.valid('json');
+    const claims = c.get('claims');
+
+    const updated = await withUser(claims, async (tx) => {
+      // Unter RLS laden: ein unsichtbares Ticket ist ein 404 (der Vorstand eines
+      // fremden Vereins darf Meldungs-IDs nicht abtasten). club_id wird für die
+      // eigene Mitgliedszeile des Bearbeiters gebraucht.
+      const existing = await tx`select id, club_id from app.chat_reports where id = ${reportId}`;
+      const report = existing[0];
+      if (report === undefined) throw problem(404, 'Not Found', 'Report not found');
+
+      // handled_by = die EIGENE Mitgliedszeile des Bearbeiters in diesem Verein
+      // (null für den Betreiber, der keine hat). Nie ein Client-Wert.
+      const handlerId = await ownMemberId(tx, claims, report['club_id'] as string);
+
+      const rows = await tx`
+        update app.chat_reports
+        set status = ${status}, handled_by_member_id = ${handlerId}, handled_at = now()
+        where id = ${reportId}
+        returning *`;
+      // RLS update-Policy filtert Nicht-Berechtigte auf 0 Zeilen (SELECT ist für
+      // den Melder erlaubt, UPDATE nicht) -> ehrliches 403.
+      if (rows.length === 0) {
+        throw problem(403, 'Forbidden', 'Only the club board or platform admin may update a report');
+      }
+      return rows[0];
+    });
+    return c.json(chatReportSchema.parse(updated), 200);
   },
 );

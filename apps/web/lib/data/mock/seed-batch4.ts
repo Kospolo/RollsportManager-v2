@@ -1,5 +1,5 @@
 import { club } from "@/lib/mock";
-import type { ChatMessage, Checkin, RegionalEvent } from "@/lib/types";
+import type { ChatMessage, ChatReport, Checkin, RegionalEvent } from "@/lib/types";
 
 /**
  * Start-Seed der Batch-4-Modul-Stores (Chat-Nachrichten, Check-ins,
@@ -64,6 +64,46 @@ export const chatMessageSeed: ChatMessage[] = [
     recipientMemberId: "m-06",
     body: "Fast – ich schicke sie dir heute Abend.",
     createdAt: minsAgo(30),
+  },
+];
+
+/**
+ * Eine gemeldete Nachricht für den Mock-Modus (Meldesystem 0082). Reporter =
+ * m-09 meldet msg-03 (von m-05) im Team-Kanal t-02. Der Snapshot ist bereits
+ * aufgenommen — er zeigt, dass die Meldung lesbar bleibt, auch wenn die
+ * Nachricht später gelöscht würde. Im Mock gibt es KEINE echte RLS; wer die
+ * Meldungen-Seite sehen darf, gatet die UI (Vorstand/Betreiber).
+ */
+export const chatReportSeed: ChatReport[] = [
+  {
+    id: "report-01",
+    clubId,
+    messageId: "msg-03",
+    reportedMemberId: "m-05",
+    reporterMemberId: "m-09",
+    reason: "Unangemessener Ton gegenüber den Kindern im Team-Kanal — bitte prüfen.",
+    reporterIp: "192.168.1.44",
+    snapshot: {
+      capturedAt: minsAgo(80),
+      channelType: "team",
+      teamId: "t-02",
+      message: {
+        id: "msg-03",
+        senderMemberId: "m-05",
+        body: "Training am Dienstag fällt wegen Hallenbelegung leider aus.",
+        createdAt: minsAgo(90),
+      },
+      context: [
+        {
+          id: "msg-03",
+          senderMemberId: "m-05",
+          body: "Training am Dienstag fällt wegen Hallenbelegung leider aus.",
+          createdAt: minsAgo(90),
+        },
+      ],
+    },
+    status: "open",
+    createdAt: minsAgo(80),
   },
 ];
 

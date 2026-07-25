@@ -44,6 +44,7 @@ const dict = {
     kind_news_new: "Neuigkeit",
     kind_task_open: "Aufgabe",
     kind_waitlist_new: "Warteliste",
+    kind_chat_report: "Verstoss gemeldet",
   },
   en: {
     open: "Notifications",
@@ -59,6 +60,7 @@ const dict = {
     kind_news_new: "News",
     kind_task_open: "Task",
     kind_waitlist_new: "Waitlist",
+    kind_chat_report: "Report filed",
   },
 } satisfies Dict;
 
@@ -73,6 +75,7 @@ const KIND_META: Record<NotificationKind, { icon: IconName; tone: IconTileTone; 
   news_new: { icon: "sparkle", tone: "brand", key: "kind_news_new" },
   task_open: { icon: "check", tone: "neutral", key: "kind_task_open" },
   waitlist_new: { icon: "clock", tone: "warn", key: "kind_waitlist_new" },
+  chat_report: { icon: "shield", tone: "danger", key: "kind_chat_report" },
 };
 
 /** Kompaktes Zeitlabel: heutige Einträge als Uhrzeit, sonst relativ in Tagen. */

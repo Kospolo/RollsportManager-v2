@@ -322,6 +322,14 @@ enum class ChatChannelType {
 }
 
 @Serializable
+enum class ChatReportStatus {
+    @SerialName("open") OPEN,
+    @SerialName("in_review") IN_REVIEW,
+    @SerialName("resolved") RESOLVED,
+    @SerialName("dismissed") DISMISSED;
+}
+
+@Serializable
 enum class AnniversaryKind {
     @SerialName("membership") MEMBERSHIP,
     @SerialName("birthday") BIRTHDAY;
@@ -2593,6 +2601,34 @@ data class ChatMessageCreate(
     @SerialName("recipient_member_id") val recipientMemberId: String? = null,
     val body: String? = null,
     @SerialName("image_url") val imageUrl: String? = null
+)
+
+@Serializable
+data class ChatReport(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("message_id") val messageId: String?,
+    @SerialName("reported_member_id") val reportedMemberId: String?,
+    @SerialName("reporter_member_id") val reporterMemberId: String,
+    val reason: String,
+    @SerialName("reporter_ip") val reporterIp: String?,
+    val snapshot: JsonObject,
+    val status: ChatReportStatus,
+    @SerialName("handled_by_member_id") val handledByMemberId: String?,
+    @SerialName("handled_at") val handledAt: String?,
+    @SerialName("created_at") val createdAt: String
+)
+
+@Serializable
+data class ChatReportCreate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("message_id") val messageId: String,
+    val reason: String
+)
+
+@Serializable
+data class ChatReportUpdate(
+    val status: ChatReportStatus
 )
 
 @Serializable

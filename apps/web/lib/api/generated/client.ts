@@ -1732,6 +1732,36 @@ export class ApiClient {
   }
 
   /**
+   * Report a chat message as a violation (any club member)
+   * Files a report about a message the caller can see. The reporter_ip is set by the SERVER from the request (never the client), and the snapshot (message text + a little context + timestamp) is built server-side under the reporter's own RLS — so a report can only capture what the reporter is actually allowed to see. reported_member_id is the sender of the reported message. The report is visible to the club board, the platform operator, and the reporter (their own report only). Reporting a message you cannot see is a 404.
+   * 
+   * `POST /chat/reports`
+   */
+  async postChatReports(body: M.ChatReportCreate, options?: RequestOptions): Promise<M.ChatReport> {
+    return this.request<M.ChatReport>("POST", "/chat/reports", { body, auth: true, options });
+  }
+
+  /**
+   * Chat reports of one club (club board + platform operator)
+   * The board's queue of reported chat messages. Visible to owner/admin/moderator of the club and to the platform operator; RLS enforces the same. A plain member (even the reporter) gets an honest 403 here — this is the board's queue, not a self-view.
+   * 
+   * `GET /chat/reports`
+   */
+  async getChatReports(query: { "club_id": string }, options?: RequestOptions): Promise<M.ChatReport[]> {
+    return this.request<M.ChatReport[]>("GET", "/chat/reports", { query, auth: true, options });
+  }
+
+  /**
+   * Set the processing state of a report (club board + platform operator)
+   * Changes only the processing state; handled_by (the handler's own member row, null for the operator) and handled_at are set server-side. The report's core (reason, snapshot, who/whom, ip, timestamp) is append-only (DB trigger). An invisible report is a 404.
+   * 
+   * `PATCH /chat/reports/{reportId}`
+   */
+  async patchChatReportsByReportId(reportId: string, body: M.ChatReportUpdate, options?: RequestOptions): Promise<M.ChatReport> {
+    return this.request<M.ChatReport>("PATCH", `/chat/reports/${encodeURIComponent(reportId)}`, { body, auth: true, options });
+  }
+
+  /**
    * List check-ins (own history, or the whole club for coaching staff)
    * 
    * `GET /checkins`

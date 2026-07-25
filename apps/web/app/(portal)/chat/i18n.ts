@@ -80,8 +80,21 @@ export const chatDict = {
     // Blase
     you: "Du",
     delete: "Löschen",
+    report: "Melden",
     imageAlt: "Bild in der Nachricht",
     imageFailed: "Bild nicht verfügbar",
+
+    // Melden (Verstoss im Chat melden)
+    reportEyebrow: "Verstoss melden",
+    reportTitle: "Nachricht melden?",
+    reportBody:
+      "Deine Meldung geht an den Vereinsvorstand. Wir halten den Nachrichtentext samt Zeitpunkt fest — auch dann, wenn die Nachricht später gelöscht wird.",
+    reportReasonLabel: "Grund der Meldung",
+    reportReasonPlaceholder: "Was ist an dieser Nachricht ein Verstoss?",
+    reportReasonRequired: "Bitte gib einen Grund an.",
+    reportSubmit: "Meldung senden",
+    reportedToast: "Meldung gesendet – der Vorstand kümmert sich darum.",
+    reportError: "Meldung konnte nicht gesendet werden — bitte erneut versuchen.",
 
     // Löschen (Bestätigung)
     deleteEyebrow: "Nachricht löschen",
@@ -155,8 +168,21 @@ export const chatDict = {
 
     you: "You",
     delete: "Delete",
+    report: "Report",
     imageAlt: "Image in message",
     imageFailed: "Image unavailable",
+
+    // Report (report a chat violation)
+    reportEyebrow: "Report violation",
+    reportTitle: "Report message?",
+    reportBody:
+      "Your report goes to the club board. We keep the message text and its timestamp on file — even if the message is deleted later.",
+    reportReasonLabel: "Reason for the report",
+    reportReasonPlaceholder: "What makes this message a violation?",
+    reportReasonRequired: "Please give a reason.",
+    reportSubmit: "Send report",
+    reportedToast: "Report sent — the board will look into it.",
+    reportError: "The report could not be sent — please try again.",
 
     deleteEyebrow: "Delete message",
     deleteTitle: "Delete message?",

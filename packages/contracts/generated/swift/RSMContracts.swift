@@ -317,6 +317,13 @@ public enum ChatChannelType: String, Codable, CaseIterable, Sendable, Equatable 
     case direct = "direct"
 }
 
+public enum ChatReportStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case open = "open"
+    case inReview = "in_review"
+    case resolved = "resolved"
+    case dismissed = "dismissed"
+}
+
 public enum AnniversaryKind: String, Codable, CaseIterable, Sendable, Equatable {
     case membership = "membership"
     case birthday = "birthday"
@@ -7799,6 +7806,108 @@ public struct ChatMessageCreate: Codable, Equatable, Sendable {
         self.recipientMemberId = recipientMemberId
         self.body = body
         self.imageUrl = imageUrl
+    }
+}
+
+public struct ChatReport: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var messageId: String?
+    /// Format: uuid
+    public var reportedMemberId: String?
+    /// Format: uuid
+    public var reporterMemberId: String
+    public var reason: String
+    public var reporterIp: String?
+    public var snapshot: [String: JSONValue]
+    public var status: ChatReportStatus
+    /// Format: uuid
+    public var handledByMemberId: String?
+    public var handledAt: String?
+    public var createdAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case messageId = "message_id"
+        case reportedMemberId = "reported_member_id"
+        case reporterMemberId = "reporter_member_id"
+        case reason
+        case reporterIp = "reporter_ip"
+        case snapshot
+        case status
+        case handledByMemberId = "handled_by_member_id"
+        case handledAt = "handled_at"
+        case createdAt = "created_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        messageId: String? = nil,
+        reportedMemberId: String? = nil,
+        reporterMemberId: String,
+        reason: String,
+        reporterIp: String? = nil,
+        snapshot: [String: JSONValue],
+        status: ChatReportStatus,
+        handledByMemberId: String? = nil,
+        handledAt: String? = nil,
+        createdAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.messageId = messageId
+        self.reportedMemberId = reportedMemberId
+        self.reporterMemberId = reporterMemberId
+        self.reason = reason
+        self.reporterIp = reporterIp
+        self.snapshot = snapshot
+        self.status = status
+        self.handledByMemberId = handledByMemberId
+        self.handledAt = handledAt
+        self.createdAt = createdAt
+    }
+}
+
+public struct ChatReportCreate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    /// Format: uuid
+    public var messageId: String
+    public var reason: String
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case messageId = "message_id"
+        case reason
+    }
+
+    public init(
+        clubId: String,
+        messageId: String,
+        reason: String
+    ) {
+        self.clubId = clubId
+        self.messageId = messageId
+        self.reason = reason
+    }
+}
+
+public struct ChatReportUpdate: Codable, Equatable, Sendable {
+    public var status: ChatReportStatus
+
+    enum CodingKeys: String, CodingKey {
+        case status
+    }
+
+    public init(
+        status: ChatReportStatus
+    ) {
+        self.status = status
     }
 }
 

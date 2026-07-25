@@ -20,6 +20,7 @@ export function MessageBubble({
   showSender,
   locale,
   onDelete,
+  onReport,
 }: {
   message: ChatMessage;
   isOwn: boolean;
@@ -27,6 +28,7 @@ export function MessageBubble({
   showSender: boolean;
   locale: Locale;
   onDelete?: () => void;
+  onReport?: () => void;
 }) {
   const t = useT(chatDict);
 
@@ -66,6 +68,15 @@ export function MessageBubble({
           className="mt-0.5 rounded px-1 text-[11px] font-semibold text-ink-faint transition-colors duration-150 hover:text-danger"
         >
           {t("delete")}
+        </button>
+      )}
+      {onReport && (
+        <button
+          type="button"
+          onClick={onReport}
+          className="mt-0.5 rounded px-1 text-[11px] font-semibold text-ink-faint transition-colors duration-150 hover:text-danger"
+        >
+          {t("report")}
         </button>
       )}
     </div>

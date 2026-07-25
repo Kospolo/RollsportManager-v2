@@ -1,5 +1,13 @@
 import type * as M from "@/lib/api/generated";
-import type { ChatChannel, ChatMessage, Checkin, RegionalEvent } from "@/lib/types";
+import type {
+  ChatChannel,
+  ChatMessage,
+  ChatReport,
+  ChatReportSnapshot,
+  ChatReportSnapshotMessage,
+  Checkin,
+  RegionalEvent,
+} from "@/lib/types";
 
 /**
  * Mapper der Batch-4-Module (Chat, Check-in, überregionale Events):
@@ -32,6 +40,67 @@ export function mapChatMessage(w: M.ChatMessage): ChatMessage {
     recipientMemberId: w.recipient_member_id ?? undefined,
     body: w.body ?? undefined,
     imageUrl: w.image_url ?? undefined,
+    createdAt: w.created_at,
+  };
+}
+
+/* ---------- Meldesystem (Migration 0082) ---------- */
+
+/** Freies JSON defensiv als String lesen (fehlend/falscher Typ -> undefined). */
+function str(v: unknown): string | undefined {
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
+/** Eine Snapshot-Nachricht (snake_case im jsonb) in die getypte Sicht bringen. */
+function mapSnapshotMessage(raw: unknown): ChatReportSnapshotMessage | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const o = raw as Record<string, unknown>;
+  const id = str(o["id"]);
+  const senderMemberId = str(o["sender_member_id"]);
+  const createdAt = str(o["created_at"]);
+  if (id === undefined || senderMemberId === undefined || createdAt === undefined) return undefined;
+  return {
+    id,
+    senderMemberId,
+    recipientMemberId: str(o["recipient_member_id"]),
+    body: str(o["body"]),
+    imageUrl: str(o["image_url"]),
+    createdAt,
+  };
+}
+
+/**
+ * Der Snapshot ist freies JSON (Record<string, unknown>) auf dem Draht — hier
+ * defensiv in die getypte ChatReportSnapshot-Form gebracht. Der Server baut ihn
+ * mit snake_case-Schlüsseln (message.sender_member_id, captured_at …).
+ */
+function mapReportSnapshot(raw: Record<string, unknown>): ChatReportSnapshot {
+  const channelType = raw["channel_type"];
+  const contextRaw = Array.isArray(raw["context"]) ? raw["context"] : [];
+  return {
+    capturedAt: str(raw["captured_at"]),
+    channelType: channelType === "team" || channelType === "direct" ? channelType : undefined,
+    teamId: str(raw["team_id"]),
+    message: mapSnapshotMessage(raw["message"]),
+    context: contextRaw
+      .map(mapSnapshotMessage)
+      .filter((m): m is ChatReportSnapshotMessage => m !== undefined),
+  };
+}
+
+export function mapChatReport(w: M.ChatReport): ChatReport {
+  return {
+    id: w.id,
+    clubId: w.club_id,
+    messageId: w.message_id ?? undefined,
+    reportedMemberId: w.reported_member_id ?? undefined,
+    reporterMemberId: w.reporter_member_id,
+    reason: w.reason,
+    reporterIp: w.reporter_ip ?? undefined,
+    snapshot: mapReportSnapshot(w.snapshot ?? {}),
+    status: w.status,
+    handledByMemberId: w.handled_by_member_id ?? undefined,
+    handledAt: w.handled_at ?? undefined,
     createdAt: w.created_at,
   };
 }

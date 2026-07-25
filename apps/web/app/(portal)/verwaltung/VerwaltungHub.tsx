@@ -32,6 +32,7 @@ const HREF = {
   teams: "/verwaltung/teams",
   sparten: "/sparten",
   settings: "/verwaltung/verein",
+  reports: "/verwaltung/meldungen",
   platform: "/super",
 } as const;
 
@@ -105,6 +106,18 @@ export function VerwaltungHub() {
       tone: "neutral",
       titleKey: "tileSettingsTitle",
       descKey: "tileSettingsDesc",
+    });
+  }
+  // Meldungen: Vereinsvorstand (owner/admin/moderator) ODER Betreiber —
+  // deckungsgleich mit der RLS auf app.chat_reports (0082) und dem 403-Gate der
+  // Route GET /chat/reports.
+  if (perms.isClubAdmin || perms.isPlatformAdmin) {
+    tiles.push({
+      href: HREF.reports,
+      icon: "shield",
+      tone: "danger",
+      titleKey: "tileReportsTitle",
+      descKey: "tileReportsDesc",
     });
   }
   if (perms.isPlatformAdmin) {

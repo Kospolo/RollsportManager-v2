@@ -15,6 +15,7 @@ import { channelKey, channelName, channelQuery } from "./helpers";
 import { MessageBubble } from "./MessageBubble";
 import { ChatComposer } from "./ChatComposer";
 import { DeleteMessageDialog } from "./DeleteMessageDialog";
+import { ReportMessageDialog } from "./ReportMessageDialog";
 
 /**
  * Nachrichten-Thread (rechte Spalte): Kopf mit Titel + Zurück (mobil), Verlauf
@@ -54,6 +55,7 @@ export function MessageThread({
 
   const [pending, setPending] = useState<ChatMessage[]>([]);
   const [toDelete, setToDelete] = useState<ChatMessage | null>(null);
+  const [toReport, setToReport] = useState<ChatMessage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   // Ob der Verlauf am Ende steht — steuert das Auto-Scrollen. So reißt ein
   // Polling-Neuladen den Blick nicht nach unten, während man oben mitliest.
@@ -214,6 +216,9 @@ export function MessageThread({
                     showSender={showSender}
                     locale={locale}
                     onDelete={isOwn ? () => setToDelete(m) : undefined}
+                    // Fremde Nachricht als Verstoss melden (nicht die eigene, und
+                    // nicht die noch nicht gesendete optimistische Blase).
+                    onReport={!isOwn && !m.id.startsWith("temp-") ? () => setToReport(m) : undefined}
                   />
                 </li>
               );
@@ -229,6 +234,8 @@ export function MessageThread({
         onClose={() => setToDelete(null)}
         onDeleted={handleDeleted}
       />
+
+      <ReportMessageDialog message={toReport} onClose={() => setToReport(null)} />
     </div>
   );
 }

@@ -33,7 +33,7 @@ export { dutyKindLabels, weekdayLabels } from "./types-batch3";
 // in lib/types-batch4.ts. Die Label-Maps (chatChannelTypeLabels/
 // checkinMethodLabels) sind Werte und werden zusätzlich als Werte re-exportiert.
 export type * from "./types-batch4";
-export { chatChannelTypeLabels, checkinMethodLabels } from "./types-batch4";
+export { chatChannelTypeLabels, checkinMethodLabels, chatReportStatusLabels } from "./types-batch4";
 
 // Batch-5-Modul-Typen (Galerie, Dokumente, Entitlement/PRO-Gate) leben
 // ausgelagert in lib/types-batch5.ts. Die Label-Map galleryKindLabels ist ein

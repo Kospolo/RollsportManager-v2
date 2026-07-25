@@ -8501,6 +8501,134 @@
           "channel_type"
         ]
       },
+      "ChatReportStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_review",
+          "resolved",
+          "dismissed"
+        ]
+      },
+      "ChatReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "reported_member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "reporter_member_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reporter_ip": {
+            "type": "string",
+            "nullable": true
+          },
+          "snapshot": {
+            "type": "object",
+            "additionalProperties": {
+              "nullable": true
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/ChatReportStatus"
+          },
+          "handled_by_member_id": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "handled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "nullable": true
+              }
+            ]
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "message_id",
+          "reported_member_id",
+          "reporter_member_id",
+          "reason",
+          "reporter_ip",
+          "snapshot",
+          "status",
+          "handled_by_member_id",
+          "handled_at",
+          "created_at"
+        ]
+      },
+      "ChatReportCreate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "message_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "club_id",
+          "message_id",
+          "reason"
+        ]
+      },
+      "ChatReportUpdate": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ChatReportStatus"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
       "CheckinCreate": {
         "type": "object",
         "properties": {
@@ -26002,6 +26130,247 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/reports": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Report a chat message as a violation (any club member)",
+        "description": "Files a report about a message the caller can see. The reporter_ip is set by the SERVER from the request (never the client), and the snapshot (message text + a little context + timestamp) is built server-side under the reporter's own RLS — so a report can only capture what the reporter is actually allowed to see. reported_member_id is the sender of the reported message. The report is visible to the club board, the platform operator, and the reporter (their own report only). Reporting a message you cannot see is a 404.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatReportCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReport"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Chat reports of one club (club board + platform operator)",
+        "description": "The board's queue of reported chat messages. Visible to owner/admin/moderator of the club and to the platform operator; RLS enforces the same. A plain member (even the reporter) gets an honest 403 here — this is the board's queue, not a self-view.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reports of the club, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChatReport"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/reports/{reportId}": {
+      "patch": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Set the processing state of a report (club board + platform operator)",
+        "description": "Changes only the processing state; handled_by (the handler's own member row, null for the operator) and handled_at are set server-side. The report's core (reason, snapshot, who/whom, ip, timestamp) is append-only (DB trigger). An invisible report is a 404.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "reportId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatReportUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatReport"
                 }
               }
             }

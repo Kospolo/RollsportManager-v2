@@ -70,6 +70,69 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+/* ---------- Meldesystem (Verstoss im Chat melden, Migration 0082) ---------- */
+
+/** Bearbeitungsstand einer Chat-Meldung. */
+export type ChatReportStatus = "open" | "in_review" | "resolved" | "dismissed";
+
+/**
+ * Eine Nachricht im Snapshot einer Meldung (serverseitig aufgenommen). Enthält
+ * nur, was der Melder zum Meldezeitpunkt sehen durfte.
+ */
+export interface ChatReportSnapshotMessage {
+  id: Id;
+  senderMemberId: Id;
+  recipientMemberId?: Id;
+  body?: string;
+  imageUrl?: string;
+  createdAt: string;
+}
+
+/**
+ * Der serverseitig gebaute Snapshot einer Meldung: die gemeldete Nachricht +
+ * ein paar Kontextnachrichten + Aufnahmezeit. Damit bleibt die Meldung lesbar,
+ * auch wenn die Nachricht später gelöscht wird. Freies JSON auf dem Draht
+ * (jsonb) — hier in eine getypte Form gebracht.
+ */
+export interface ChatReportSnapshot {
+  /** ISO-Zeitstempel der Aufnahme. */
+  capturedAt?: string;
+  channelType?: ChatChannelType;
+  teamId?: Id;
+  /** die gemeldete Nachricht. */
+  message?: ChatReportSnapshotMessage;
+  /** ein paar Kontextnachrichten derselben Unterhaltung, chronologisch. */
+  context: ChatReportSnapshotMessage[];
+}
+
+/**
+ * Eine Meldung eines Chat-Verstosses (GET /chat/reports, POST /chat/reports).
+ * Sichtbar für den Vereinsvorstand (owner/admin/moderator) + den Betreiber und
+ * den Melder (nur die eigene Meldung). reporterIp und snapshot setzt der SERVER
+ * (nie der Client); der Kern ist anhängend — änderbar ist nur status +
+ * handledBy/handledAt. reportedMemberId = Absender der gemeldeten Nachricht.
+ */
+export interface ChatReport {
+  id: Id;
+  clubId: Id;
+  /** die gemeldete Nachricht (fehlt, sobald sie hart gelöscht wurde). */
+  messageId?: Id;
+  /** wer gemeldet WURDE (fehlt nach Löschung der Person). */
+  reportedMemberId?: Id;
+  /** wer gemeldet HAT. */
+  reporterMemberId: Id;
+  reason: string;
+  /** IP des Melders, serverseitig gesetzt — ein Hinweis, kein Beweis. */
+  reporterIp?: string;
+  snapshot: ChatReportSnapshot;
+  status: ChatReportStatus;
+  /** wer die Meldung bearbeitet hat (fehlt beim Betreiber / unbearbeitet). */
+  handledByMemberId?: Id;
+  /** ISO-Zeitstempel der Bearbeitung. */
+  handledAt?: string;
+  createdAt: string;
+}
+
 /* ---------- Check-in (Anwesenheit per QR/manuell) ---------- */
 
 /** Erfassungsart eines Check-ins: QR-Scan oder manuell durch den Trainerstab. */
@@ -131,4 +194,12 @@ export const chatChannelTypeLabels: Record<ChatChannelType, { de: string; en: st
 export const checkinMethodLabels: Record<CheckinMethod, { de: string; en: string }> = {
   qr: { de: "QR-Code", en: "QR code" },
   manual: { de: "Manuell", en: "Manual" },
+};
+
+/** Anzeige-Labels für ChatReportStatus in beiden Sprachen. */
+export const chatReportStatusLabels: Record<ChatReportStatus, { de: string; en: string }> = {
+  open: { de: "Offen", en: "Open" },
+  in_review: { de: "In Bearbeitung", en: "In review" },
+  resolved: { de: "Erledigt", en: "Resolved" },
+  dismissed: { de: "Verworfen", en: "Dismissed" },
 };

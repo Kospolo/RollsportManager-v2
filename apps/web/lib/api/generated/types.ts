@@ -1928,6 +1928,34 @@ export interface ChatMessageCreate {
   "image_url"?: string;
 }
 
+export type ChatReportStatus = "open" | "in_review" | "resolved" | "dismissed";
+export const ChatReportStatusValues: readonly ChatReportStatus[] = ["open", "in_review", "resolved", "dismissed"] as const;
+
+export interface ChatReport {
+  "id": string;
+  "club_id": string;
+  "message_id": string | null;
+  "reported_member_id": string | null;
+  "reporter_member_id": string;
+  "reason": string;
+  "reporter_ip": string | null;
+  "snapshot": Record<string, unknown>;
+  "status": ChatReportStatus;
+  "handled_by_member_id": string | null;
+  "handled_at": string | null;
+  "created_at": string;
+}
+
+export interface ChatReportCreate {
+  "club_id": string;
+  "message_id": string;
+  "reason": string;
+}
+
+export interface ChatReportUpdate {
+  "status": ChatReportStatus;
+}
+
 export interface CheckinCreate {
   "club_id": string;
   "member_id": string;

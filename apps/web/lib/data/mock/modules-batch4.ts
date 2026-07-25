@@ -1,7 +1,15 @@
 import { club, currentUser, fullName, guardianships, members, onViewerChange, teams } from "@/lib/mock";
-import type { ChatChannel, ChatMessage, Checkin, Member, RegionalEvent } from "@/lib/types";
+import type {
+  ChatChannel,
+  ChatMessage,
+  ChatReport,
+  ChatReportSnapshotMessage,
+  Checkin,
+  Member,
+  RegionalEvent,
+} from "@/lib/types";
 import type { DataRepository } from "../types";
-import { chatMessageSeed, checkinSeed, regionalEventSeed } from "./seed-batch4";
+import { chatMessageSeed, chatReportSeed, checkinSeed, regionalEventSeed } from "./seed-batch4";
 
 /**
  * Mock-Implementierung der Batch-4-Module (Chat, Check-in, überregionale
@@ -20,10 +28,12 @@ onViewerChange(() => {
 });
 
 const messageStore: ChatMessage[] = chatMessageSeed.map((m) => ({ ...m }));
+const reportStore: ChatReport[] = chatReportSeed.map((r) => ({ ...r }));
 const checkinStore: Checkin[] = checkinSeed.map((c) => ({ ...c }));
 const eventStore: RegionalEvent[] = regionalEventSeed.map((e) => ({ ...e }));
 
 let msgSeq = messageStore.length;
+let reportSeq = reportStore.length;
 let checkinSeq = checkinStore.length;
 let eventSeq = eventStore.length;
 
@@ -36,6 +46,9 @@ type ModuleMethods = Pick<
   | "sendChatMessage"
   | "uploadChatImage"
   | "deleteChatMessage"
+  | "reportChatMessage"
+  | "listChatReports"
+  | "updateChatReport"
   | "listCheckins"
   | "createCheckin"
   | "deleteCheckin"
@@ -196,6 +209,73 @@ export const moduleRepositoryBatch4: ModuleMethods = {
     const idx = messageStore.findIndex((m) => m.id === messageId);
     if (idx >= 0) messageStore.splice(idx, 1);
     return { id: messageId };
+  },
+
+  /* ---------- Meldesystem (Migration 0082) ---------- */
+  async reportChatMessage(input): Promise<ChatReport> {
+    // Snapshot serverseitig gebaut — im Mock aus dem messageStore. Ist die
+    // Nachricht nicht (mehr) da, wirft die echte API 404; hier ebenso.
+    const msg = messageStore.find((m) => m.id === input.messageId);
+    if (!msg) throw new Error(`Nachricht ${input.messageId} nicht gefunden (mock)`);
+
+    const snap = (m: ChatMessage): ChatReportSnapshotMessage => ({
+      id: m.id,
+      senderMemberId: m.senderMemberId,
+      recipientMemberId: m.recipientMemberId,
+      body: m.body,
+      imageUrl: m.imageUrl,
+      createdAt: m.createdAt,
+    });
+    // Ein paar Kontextnachrichten derselben Unterhaltung, chronologisch.
+    const context = messageStore
+      .filter((m) => {
+        if (m.channelType !== msg.channelType) return false;
+        if (m.createdAt > msg.createdAt) return false;
+        if (msg.channelType === "team") return m.teamId === msg.teamId;
+        const involves = (a?: string, b?: string) =>
+          (m.senderMemberId === a && m.recipientMemberId === b) ||
+          (m.senderMemberId === b && m.recipientMemberId === a);
+        return involves(msg.senderMemberId, msg.recipientMemberId);
+      })
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+      .slice(-12)
+      .map(snap);
+
+    const created: ChatReport = {
+      id: `report-local-${++reportSeq}`,
+      clubId,
+      messageId: msg.id,
+      reportedMemberId: msg.senderMemberId,
+      reporterMemberId: currentMemberId,
+      reason: input.reason,
+      // Der Mock kennt keine echte Client-IP — bewusst leer (die Wahrheit setzt
+      // der Server im api-Modus).
+      reporterIp: undefined,
+      snapshot: {
+        capturedAt: nowIso(),
+        channelType: msg.channelType,
+        teamId: msg.channelType === "team" ? msg.teamId : undefined,
+        message: snap(msg),
+        context,
+      },
+      status: "open",
+      createdAt: nowIso(),
+    };
+    reportStore.unshift(created);
+    return created;
+  },
+  async listChatReports(): Promise<ChatReport[]> {
+    // Kein echter Rechtecheck (die Wahrheit ist im api-Modus die RLS). Neueste
+    // zuerst — wie die Warteschlange des Servers.
+    return [...reportStore].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+  async updateChatReport(reportId, patch): Promise<ChatReport> {
+    const item = reportStore.find((r) => r.id === reportId);
+    if (!item) throw new Error(`Meldung ${reportId} nicht gefunden (mock)`);
+    item.status = patch.status;
+    item.handledByMemberId = currentMemberId;
+    item.handledAt = nowIso();
+    return item;
   },
 
   /* ---------- Check-in ---------- */

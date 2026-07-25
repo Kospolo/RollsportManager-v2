@@ -7,6 +7,7 @@ import { mapMember } from "./mappers";
 import {
   mapChatChannel,
   mapChatMessage,
+  mapChatReport,
   mapCheckin,
   mapRegionalEvent,
 } from "./mappers-batch4";
@@ -33,6 +34,9 @@ type ModuleMethods = Pick<
   | "sendChatMessage"
   | "uploadChatImage"
   | "deleteChatMessage"
+  | "reportChatMessage"
+  | "listChatReports"
+  | "updateChatReport"
   | "listCheckins"
   | "createCheckin"
   | "deleteCheckin"
@@ -100,6 +104,27 @@ export const moduleApiRepositoryBatch4: ModuleMethods = {
   async deleteChatMessage(messageId) {
     const deleted = await apiClient.deleteChatMessagesByMessageId(messageId);
     return { id: deleted.id };
+  },
+
+  /* ---------- Meldesystem (Migration 0082) ---------- */
+  async reportChatMessage(input) {
+    // KEIN reporter_member_id / reporter_ip / snapshot — der Server leitet den
+    // Melder ab, setzt die IP aus der Anfrage und baut den Snapshot serverseitig.
+    const created = await apiClient.postChatReports({
+      club_id: activeClubId(),
+      message_id: input.messageId,
+      reason: input.reason,
+    });
+    return mapChatReport(created);
+  },
+  async listChatReports() {
+    const rows = await apiClient.getChatReports({ club_id: activeClubId() });
+    return rows.map(mapChatReport);
+  },
+  async updateChatReport(reportId, patch) {
+    // handled_by / handled_at setzt der Server aus den Claims des Bearbeiters.
+    const updated = await apiClient.patchChatReportsByReportId(reportId, { status: patch.status });
+    return mapChatReport(updated);
   },
 
   /* ---------- Check-in ---------- */

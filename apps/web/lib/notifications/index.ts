@@ -11,6 +11,7 @@ import type { NotificationPrefs } from "@/lib/types";
  *   • neue Neuigkeiten           (listNews, jünger als NEWS_WINDOW_DAYS)
  *   • offene eigene Aufgaben     (getTasks, assigneeId = self, nicht erledigt)
  *   • wartende Wartelisten-Einträge (listWaitlists, status=waiting) — NUR Trainer+
+ *   • offene Chat-Meldungen      (listChatReports, status=open) — NUR Vorstand/Betreiber
  *
  * Die Kategorien werden über die eigenen notifications-Präferenzen gefiltert
  * (getMyPreferences → Glocken-Flags). Der Gelesen-Zustand liegt lokal im
@@ -23,7 +24,8 @@ export type NotificationKind =
   | "rsvp_open"
   | "news_new"
   | "task_open"
-  | "waitlist_new";
+  | "waitlist_new"
+  | "chat_report";
 
 export interface NotificationItem {
   /** Stabile ID `${kind}:${entityId}` — Basis des Gelesen-Zustands. */
@@ -218,6 +220,29 @@ export async function deriveNotifications(opts?: {
           at: w.createdAt,
         });
       }
+    }
+  }
+
+  // Chat-Meldungen (Vorstand/Betreiber): jede OFFENE Meldung. Kein eigenes
+  // Präferenz-Flag (wie Aufgaben/Warteliste). Nur laden, wenn berechtigt — für
+  // ein einfaches Mitglied wäre GET /chat/reports ein sicheres 403 pro
+  // Ableitung. Titel = die gemeldete Person (Kategorie-Wort kommt aus der
+  // Glocke, KIND_META), Ziel = die Meldungen-Seite.
+  const perms = permissions(self);
+  if (perms.isClubAdmin || perms.isPlatformAdmin) {
+    const reports = await data.listChatReports().catch(() => []);
+    const memberName = new Map(members.map((m) => [m.id, fullName(m)] as const));
+    for (const r of reports) {
+      if (r.status !== "open") continue;
+      const concerns = r.reportedMemberId ? memberName.get(r.reportedMemberId) : undefined;
+      push({
+        id: `chat_report:${r.id}`,
+        kind: "chat_report",
+        title: concerns ?? r.reason,
+        detail: r.reason,
+        href: "/verwaltung/meldungen",
+        at: r.createdAt,
+      });
     }
   }
 

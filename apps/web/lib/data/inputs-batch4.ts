@@ -2,6 +2,8 @@ import type {
   ChatChannel,
   ChatChannelType,
   ChatMessage,
+  ChatReport,
+  ChatReportStatus,
   Checkin,
   CheckinMethod,
   Id,
@@ -49,6 +51,25 @@ export interface SendChatMessageInput {
   recipientMemberId?: Id;
   body?: string;
   imageUrl?: string;
+}
+
+/* ---------- Meldesystem (Verstoss im Chat melden, Migration 0082) ---------- */
+
+/**
+ * Eine Nachricht als Verstoss melden. KEIN reporterMemberId/reporterIp/snapshot
+ * — der Server leitet den Melder aus der eigenen Zeile ab, setzt die IP aus der
+ * Anfrage und baut den Snapshot serverseitig (unter der RLS des Melders). Man
+ * kann nur melden, was man sehen darf (sonst 404). reason ist Pflicht (Freitext,
+ * max 2000 Zeichen).
+ */
+export interface ReportChatMessageInput {
+  messageId: Id;
+  reason: string;
+}
+
+/** Bearbeitungsstand einer Meldung setzen (nur Vorstand/Betreiber). */
+export interface UpdateChatReportInput {
+  status: ChatReportStatus;
 }
 
 /* ---------- Check-in ---------- */
@@ -132,6 +153,19 @@ export interface Batch4Repository {
   uploadChatImage(file: File): Promise<string>;
   /** Nachricht soft-löschen — liefert die gelöschte ID zurück. */
   deleteChatMessage(messageId: Id): Promise<{ id: Id }>;
+
+  /* ---------- Meldesystem (Verstoss im Chat melden, Migration 0082) ---------- */
+  /**
+   * Eine Nachricht als Verstoss melden. Der Melder wird serverseitig abgeleitet,
+   * die IP serverseitig gesetzt, der Snapshot serverseitig gebaut. Die Meldung
+   * geht an den Vorstand (owner/admin/moderator) UND den Betreiber; RLS ist die
+   * Wahrheit. Man kann nur melden, was man sehen darf (sonst 404).
+   */
+  reportChatMessage(input: ReportChatMessageInput): Promise<ChatReport>;
+  /** Gemeldete Verstösse des Vereins, neueste zuerst — NUR Vorstand/Betreiber (sonst 403). */
+  listChatReports(): Promise<ChatReport[]>;
+  /** Bearbeitungsstand einer Meldung setzen (handledBy/At serverseitig) — NUR Vorstand/Betreiber. */
+  updateChatReport(reportId: Id, patch: UpdateChatReportInput): Promise<ChatReport>;
 
   /* ---------- Check-in ---------- */
   /** Check-ins des Vereins, optional nach Mitglied (RLS: Mitglied sieht nur eigene). */

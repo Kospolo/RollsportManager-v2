@@ -2645,6 +2645,59 @@ export const chatChannelSchema = z
   })
   .openapi('ChatChannel');
 
+// chat_reports (Meldesystem, migration 0082) ---------------------------------
+// Eine Meldung eines Chat-Verstosses. Sichtbar für den Vereinsvorstand + den
+// Betreiber (und den Melder für die eigene Meldung). reporter_ip und snapshot
+// setzt der SERVER (nie der Client); der Kern ist anhängend (Trigger).
+
+export const chatReportStatusSchema = z
+  .enum(['open', 'in_review', 'resolved', 'dismissed'])
+  .openapi('ChatReportStatus');
+
+export const chatReportSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** the reported message (null once the message is hard-deleted). */
+    message_id: uuid.nullable(),
+    /** author of the reported message (null after the person is deleted). */
+    reported_member_id: uuid.nullable(),
+    /** the member who filed the report. */
+    reporter_member_id: uuid,
+    reason: z.string(),
+    /** set by the SERVER from the request (never the client); may be null. */
+    reporter_ip: z.string().nullable(),
+    /**
+     * Server-built snapshot of the reported message + a little context +
+     * captured_at. Free-form JSON on the wire (jsonb) so it can evolve without
+     * a contract change; the clients give it a typed shape.
+     */
+    snapshot: z.record(z.unknown()),
+    status: chatReportStatusSchema,
+    /** who is handling the report (null for the platform operator). */
+    handled_by_member_id: uuid.nullable(),
+    handled_at: timestamp.nullable(),
+    created_at: timestamp,
+  })
+  .openapi('ChatReport');
+
+export const chatReportCreateSchema = z
+  .object({
+    club_id: uuid,
+    /** the message being reported. */
+    message_id: uuid,
+    /** why it is being reported (free text, required). */
+    reason: z.string().min(1).max(2000),
+  })
+  .openapi('ChatReportCreate');
+
+export const chatReportUpdateSchema = z
+  .object({
+    /** the new processing state (handled_by/handled_at are set server-side). */
+    status: chatReportStatusSchema,
+  })
+  .openapi('ChatReportUpdate');
+
 // checkins -------------------------------------------------------------------
 export const checkinSchema = z
   .object({
