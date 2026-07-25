@@ -9660,6 +9660,7 @@
           "status": {
             "type": "string",
             "enum": [
+              "open",
               "paid",
               "partially_paid",
               "cancelled"
@@ -9840,6 +9841,155 @@
             "maximum": 100
           }
         }
+      },
+      "InvoiceSettings": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sender_block": {
+            "type": "string"
+          },
+          "logo_url": {
+            "type": "string"
+          },
+          "tax_number": {
+            "type": "string"
+          },
+          "vat_id": {
+            "type": "string"
+          },
+          "board_members": {
+            "type": "string"
+          },
+          "footer_text": {
+            "type": "string"
+          },
+          "bank_name": {
+            "type": "string"
+          },
+          "iban": {
+            "type": "string"
+          },
+          "bic": {
+            "type": "string"
+          },
+          "account_holder": {
+            "type": "string"
+          },
+          "number_prefix": {
+            "type": "string"
+          },
+          "default_vat_rate": {
+            "type": "number",
+            "nullable": true
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "club_id",
+          "sender_block",
+          "logo_url",
+          "tax_number",
+          "vat_id",
+          "board_members",
+          "footer_text",
+          "bank_name",
+          "iban",
+          "bic",
+          "account_holder",
+          "number_prefix",
+          "default_vat_rate",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "InvoiceSettingsUpdate": {
+        "type": "object",
+        "properties": {
+          "club_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sender_block": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "logo_url": {
+            "type": "string",
+            "maxLength": 500000
+          },
+          "tax_number": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "vat_id": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "board_members": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "footer_text": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "bank_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "iban": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "bic": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "account_holder": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "number_prefix": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "default_vat_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "club_id"
+        ]
       },
       "CounterpartyKind": {
         "type": "string",
@@ -28679,8 +28829,8 @@
         "tags": [
           "invoices"
         ],
-        "summary": "Settle an invoice: paid, partially paid or cancelled (can_manage_finance)",
-        "description": "open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.",
+        "summary": "Invoice lifecycle: issue, paid, partially paid or cancelled (can_manage_finance)",
+        "description": "draft → open (ISSUE a finished draft, sets issued_on), open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. \"open\" is ONLY reachable from a draft — a paid/cancelled invoice is never re-opened (GoBD). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.",
         "security": [
           {
             "bearerAuth": []
@@ -29208,6 +29358,157 @@
                 "schema": {
                   "type": "object",
                   "properties": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invoice-settings": {
+      "get": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Invoice letterhead/settings of a club (any club member)",
+        "description": "Returns the single per-club letterhead row. 404 when the club has not configured one yet — the client treats that as \"use defaults\".",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "club_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The club letterhead/settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Create or update a club letterhead (is_club_admin)",
+        "description": "Upsert (one row per club, keyed by club_id). Only the fields sent are written; omitted fields keep their value (or the default on first creation).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceSettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stored letterhead",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
                 }
               }
             }

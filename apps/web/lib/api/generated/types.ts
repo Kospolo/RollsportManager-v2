@@ -2198,7 +2198,7 @@ export interface InvoiceCreate {
 }
 
 export interface InvoiceUpdate {
-  "status": "paid" | "partially_paid" | "cancelled";
+  "status": "open" | "paid" | "partially_paid" | "cancelled";
   "paid_via"?: string;
   "post_to_ledger"?: boolean;
   "ledger_category_id"?: string;
@@ -2237,6 +2237,41 @@ export interface InvoiceItemUpdate {
   "quantity"?: number;
   "unit_price_cents"?: number;
   "vat_rate"?: number;
+}
+
+export interface InvoiceSettings {
+  "id": string;
+  "club_id": string;
+  "sender_block": string;
+  "logo_url": string;
+  "tax_number": string;
+  "vat_id": string;
+  "board_members": string;
+  "footer_text": string;
+  "bank_name": string;
+  "iban": string;
+  "bic": string;
+  "account_holder": string;
+  "number_prefix": string;
+  "default_vat_rate": number | null;
+  "created_at": string;
+  "updated_at": string;
+}
+
+export interface InvoiceSettingsUpdate {
+  "club_id": string;
+  "sender_block"?: string;
+  "logo_url"?: string;
+  "tax_number"?: string;
+  "vat_id"?: string;
+  "board_members"?: string;
+  "footer_text"?: string;
+  "bank_name"?: string;
+  "iban"?: string;
+  "bic"?: string;
+  "account_holder"?: string;
+  "number_prefix"?: string;
+  "default_vat_rate"?: number;
 }
 
 export type CounterpartyKind = "person" | "org";

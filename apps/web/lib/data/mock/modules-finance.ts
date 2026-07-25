@@ -1,10 +1,13 @@
-import { currentUser, invoices, ledger, members, onViewerChange } from "@/lib/mock";
+import { currentUser, invoices, ledger, onViewerChange } from "@/lib/mock";
 import { ApiError } from "@/lib/api/generated";
 import type {
   DunningLevel,
   DunningLogAction,
   DunningLogEntry,
+  Id,
   InvoiceDetail,
+  InvoiceItem,
+  InvoiceSettings,
   LedgerCategory,
   LedgerEntry,
 } from "@/lib/types";
@@ -42,13 +45,63 @@ const ledgerStore: LedgerEntry[] = ledger.map((e) => {
   return { ...e, categoryId: cat?.id, categoryName: cat?.name, categoryKind: cat?.kind };
 });
 
-const invoiceStore: InvoiceDetail[] = invoices.map((i) => ({ ...i }));
+const invoiceStore: InvoiceDetail[] = invoices.map((i) => ({
+  ...i,
+  vatTotalCents: 0,
+  totalCents: i.amountCents,
+  paidCents: i.status === "paid" ? i.amountCents : 0,
+  openCents: i.status === "paid" ? 0 : i.amountCents,
+}));
 const dunningLogStore: DunningLogEntry[] = dunningLogSeed.map((d) => ({ ...d }));
+const invoiceItemStore: InvoiceItem[] = [];
+const invoiceSettingsStore: InvoiceSettings[] = [];
 
 let ledgerSeq = ledgerStore.length;
 let categorySeq = categoryStore.length;
 let invoiceSeq = invoiceStore.length;
 let dunningSeq = dunningLogStore.length;
+let invoiceItemSeq = 0;
+
+/** Zeilensummen mit der DB-Rundungsregel (0072): auf der ZEILE gerundet. */
+function lineCents(quantity: number, unitPriceCents: number, vatRate: number) {
+  const net = Math.round(quantity * unitPriceCents);
+  const vat = Math.round((net * vatRate) / 100);
+  return { net, vat, gross: net + vat };
+}
+
+/** Rechnung aus ihren Positionen fortschreiben (spiegelt app.invoice_items_recalc). */
+function recomputeInvoiceFromItems(invoiceId: Id): void {
+  const inv = invoiceStore.find((i) => i.id === invoiceId);
+  if (!inv) return;
+  const items = invoiceItemStore.filter((it) => it.invoiceId === invoiceId);
+  if (items.length === 0) return; // ohne Positionen bleibt der Handbetrag stehen
+  const gross = items.reduce((s, it) => s + it.grossCents, 0);
+  const vat = items.reduce((s, it) => s + it.vatCents, 0);
+  inv.amountCents = gross;
+  inv.vatTotalCents = vat;
+  inv.totalCents = gross;
+  inv.openCents = gross - (inv.paidCents ?? 0);
+}
+
+/** Default-Briefkopf (noch nichts gespeichert). */
+function defaultInvoiceSettings(clubId: Id): InvoiceSettings {
+  return {
+    clubId,
+    senderBlock: "",
+    logoUrl: "",
+    taxNumber: "",
+    vatId: "",
+    boardMembers: "",
+    footerText: "",
+    bankName: "",
+    iban: "",
+    bic: "",
+    accountHolder: "",
+    numberPrefix: "",
+    defaultVatRate: 0,
+    configured: false,
+  };
+}
 
 /** Die 11 Finanz-A-Modul-Methoden — wird in mockRepository gespreizt. */
 type ModuleMethods = Pick<
@@ -62,6 +115,13 @@ type ModuleMethods = Pick<
   | "getInvoice"
   | "createInvoice"
   | "settleInvoice"
+  | "issueInvoice"
+  | "listInvoiceItems"
+  | "createInvoiceItem"
+  | "updateInvoiceItem"
+  | "deleteInvoiceItem"
+  | "getInvoiceSettings"
+  | "updateInvoiceSettings"
   | "applyDunning"
   | "listDunningLog"
 >;
@@ -148,6 +208,7 @@ export const moduleRepositoryFinance: ModuleMethods = {
     return inv;
   },
   async createInvoice(input) {
+    const items = input.items ?? [];
     const inv: InvoiceDetail = {
       id: `i-local-${++invoiceSeq}`,
       clubId: input.clubId,
@@ -158,10 +219,35 @@ export const moduleRepositoryFinance: ModuleMethods = {
       currency: "EUR",
       issuedAt: today(),
       dueAt: input.dueOn ?? today(),
-      status: input.issue ? "open" : "draft",
+      // Mit Positionen ZWINGEND als Entwurf (Positionen nur am Entwurf).
+      status: items.length > 0 ? "draft" : input.issue ? "open" : "draft",
       dunningLevel: 0,
+      vatTotalCents: 0,
+      totalCents: input.amountCents,
+      paidCents: 0,
+      openCents: input.amountCents,
     };
     invoiceStore.push(inv);
+    if (items.length > 0) {
+      items.forEach((it, idx) => {
+        const line = lineCents(it.quantity, it.unitPriceCents, it.vatRate);
+        invoiceItemStore.push({
+          id: `ii-local-${++invoiceItemSeq}`,
+          clubId: input.clubId,
+          invoiceId: inv.id,
+          sortOrder: idx,
+          description: it.description,
+          quantity: it.quantity,
+          unitPriceCents: it.unitPriceCents,
+          vatRate: it.vatRate,
+          netCents: line.net,
+          vatCents: line.vat,
+          grossCents: line.gross,
+        });
+      });
+      recomputeInvoiceFromItems(inv.id);
+      if (input.issue) inv.status = "open";
+    }
     return inv;
   },
   async settleInvoice(invoiceId, input) {
@@ -199,6 +285,99 @@ export const moduleRepositoryFinance: ModuleMethods = {
       inv.status = "cancelled";
     }
     return inv;
+  },
+  async issueInvoice(invoiceId) {
+    const inv = invoiceStore.find((i) => i.id === invoiceId);
+    if (!inv) throw new ApiError(404, null, "invoice_not_found");
+    // Ausstellen nur aus 'draft' (GoBD — kein Re-Open).
+    if (inv.status !== "draft") throw new ApiError(409, null, "invoice_not_draft");
+    inv.status = "open";
+    inv.issuedAt = today();
+    return inv;
+  },
+
+  /* ---------- Rechnungspositionen (0072; nur am Entwurf) ---------- */
+  async listInvoiceItems(clubId, invoiceId) {
+    return invoiceItemStore
+      .filter((it) => it.clubId === clubId && it.invoiceId === invoiceId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  },
+  async createInvoiceItem(input) {
+    const inv = invoiceStore.find((i) => i.id === input.invoiceId);
+    if (!inv) throw new ApiError(404, null, "invoice_not_found");
+    if (inv.status !== "draft") throw new ApiError(409, null, "invoice_not_draft");
+    const line = lineCents(input.quantity, input.unitPriceCents, input.vatRate);
+    const item: InvoiceItem = {
+      id: `ii-local-${++invoiceItemSeq}`,
+      clubId: input.clubId,
+      invoiceId: input.invoiceId,
+      sortOrder:
+        input.sortOrder ??
+        invoiceItemStore.filter((x) => x.invoiceId === input.invoiceId).length,
+      description: input.description,
+      quantity: input.quantity,
+      unitPriceCents: input.unitPriceCents,
+      vatRate: input.vatRate,
+      netCents: line.net,
+      vatCents: line.vat,
+      grossCents: line.gross,
+    };
+    invoiceItemStore.push(item);
+    recomputeInvoiceFromItems(input.invoiceId);
+    return item;
+  },
+  async updateInvoiceItem(itemId, input) {
+    const item = invoiceItemStore.find((x) => x.id === itemId);
+    if (!item) throw new ApiError(404, null, "invoice_item_not_found");
+    const inv = invoiceStore.find((i) => i.id === item.invoiceId);
+    if (inv && inv.status !== "draft") throw new ApiError(409, null, "invoice_not_draft");
+    if (input.description !== undefined) item.description = input.description;
+    if (input.quantity !== undefined) item.quantity = input.quantity;
+    if (input.unitPriceCents !== undefined) item.unitPriceCents = input.unitPriceCents;
+    if (input.vatRate !== undefined) item.vatRate = input.vatRate;
+    if (input.sortOrder !== undefined) item.sortOrder = input.sortOrder;
+    const line = lineCents(item.quantity, item.unitPriceCents, item.vatRate);
+    item.netCents = line.net;
+    item.vatCents = line.vat;
+    item.grossCents = line.gross;
+    recomputeInvoiceFromItems(item.invoiceId);
+    return item;
+  },
+  async deleteInvoiceItem(itemId) {
+    const idx = invoiceItemStore.findIndex((x) => x.id === itemId);
+    if (idx === -1) throw new ApiError(404, null, "invoice_item_not_found");
+    const item = invoiceItemStore[idx];
+    const inv = invoiceStore.find((i) => i.id === item.invoiceId);
+    if (inv && inv.status !== "draft") throw new ApiError(409, null, "invoice_not_draft");
+    invoiceItemStore.splice(idx, 1);
+    recomputeInvoiceFromItems(item.invoiceId);
+  },
+
+  /* ---------- Rechnungs-Einstellungen / Briefkopf (0080) ---------- */
+  async getInvoiceSettings(clubId) {
+    const found = invoiceSettingsStore.find((s) => s.clubId === clubId);
+    return found ? { ...found } : defaultInvoiceSettings(clubId);
+  },
+  async updateInvoiceSettings(input) {
+    let s = invoiceSettingsStore.find((x) => x.clubId === input.clubId);
+    if (!s) {
+      s = defaultInvoiceSettings(input.clubId);
+      invoiceSettingsStore.push(s);
+    }
+    if (input.senderBlock !== undefined) s.senderBlock = input.senderBlock;
+    if (input.logoUrl !== undefined) s.logoUrl = input.logoUrl;
+    if (input.taxNumber !== undefined) s.taxNumber = input.taxNumber;
+    if (input.vatId !== undefined) s.vatId = input.vatId;
+    if (input.boardMembers !== undefined) s.boardMembers = input.boardMembers;
+    if (input.footerText !== undefined) s.footerText = input.footerText;
+    if (input.bankName !== undefined) s.bankName = input.bankName;
+    if (input.iban !== undefined) s.iban = input.iban;
+    if (input.bic !== undefined) s.bic = input.bic;
+    if (input.accountHolder !== undefined) s.accountHolder = input.accountHolder;
+    if (input.numberPrefix !== undefined) s.numberPrefix = input.numberPrefix;
+    if (input.defaultVatRate !== undefined) s.defaultVatRate = input.defaultVatRate;
+    s.configured = true;
+    return { ...s };
   },
 
   /* ---------- Mahnwesen ---------- */

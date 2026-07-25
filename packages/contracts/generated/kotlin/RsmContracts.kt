@@ -503,6 +503,7 @@ enum class LoginResponseTokenType {
 /** Inline enum of InvoiceUpdate.status (hoisted by codegen). */
 @Serializable
 enum class InvoiceUpdateStatus {
+    @SerialName("open") OPEN,
     @SerialName("paid") PAID,
     @SerialName("partially_paid") PARTIALLY_PAID,
     @SerialName("cancelled") CANCELLED;
@@ -2924,6 +2925,43 @@ data class InvoiceItemUpdate(
     val quantity: Double? = null,
     @SerialName("unit_price_cents") val unitPriceCents: Long? = null,
     @SerialName("vat_rate") val vatRate: Double? = null
+)
+
+@Serializable
+data class InvoiceSettings(
+    val id: String,
+    @SerialName("club_id") val clubId: String,
+    @SerialName("sender_block") val senderBlock: String,
+    @SerialName("logo_url") val logoUrl: String,
+    @SerialName("tax_number") val taxNumber: String,
+    @SerialName("vat_id") val vatId: String,
+    @SerialName("board_members") val boardMembers: String,
+    @SerialName("footer_text") val footerText: String,
+    @SerialName("bank_name") val bankName: String,
+    val iban: String,
+    val bic: String,
+    @SerialName("account_holder") val accountHolder: String,
+    @SerialName("number_prefix") val numberPrefix: String,
+    @SerialName("default_vat_rate") val defaultVatRate: Double?,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String
+)
+
+@Serializable
+data class InvoiceSettingsUpdate(
+    @SerialName("club_id") val clubId: String,
+    @SerialName("sender_block") val senderBlock: String? = null,
+    @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("tax_number") val taxNumber: String? = null,
+    @SerialName("vat_id") val vatId: String? = null,
+    @SerialName("board_members") val boardMembers: String? = null,
+    @SerialName("footer_text") val footerText: String? = null,
+    @SerialName("bank_name") val bankName: String? = null,
+    val iban: String? = null,
+    val bic: String? = null,
+    @SerialName("account_holder") val accountHolder: String? = null,
+    @SerialName("number_prefix") val numberPrefix: String? = null,
+    @SerialName("default_vat_rate") val defaultVatRate: Double? = null
 )
 
 @Serializable

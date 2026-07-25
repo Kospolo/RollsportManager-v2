@@ -2062,8 +2062,8 @@ export class ApiClient {
   }
 
   /**
-   * Settle an invoice: paid, partially paid or cancelled (can_manage_finance)
-   * open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.
+   * Invoice lifecycle: issue, paid, partially paid or cancelled (can_manage_finance)
+   * draft → open (ISSUE a finished draft, sets issued_on), open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot double-count), or draft/open/partially_paid → cancelled. "open" is ONLY reachable from a draft — a paid/cancelled invoice is never re-opened (GoBD). The impersonated UPDATE keeps the invoices_update RLS policy as the second gate.
    * 
    * `PATCH /invoices/{invoiceId}`
    */
@@ -2116,6 +2116,26 @@ export class ApiClient {
    */
   async deleteInvoiceItemsByItemId(itemId: string, options?: RequestOptions): Promise<M.Deleted> {
     return this.request<M.Deleted>("DELETE", `/invoice-items/${encodeURIComponent(itemId)}`, { auth: true, options });
+  }
+
+  /**
+   * Invoice letterhead/settings of a club (any club member)
+   * Returns the single per-club letterhead row. 404 when the club has not configured one yet — the client treats that as "use defaults".
+   * 
+   * `GET /invoice-settings`
+   */
+  async getInvoiceSettings(query: { "club_id": string }, options?: RequestOptions): Promise<M.InvoiceSettings> {
+    return this.request<M.InvoiceSettings>("GET", "/invoice-settings", { query, auth: true, options });
+  }
+
+  /**
+   * Create or update a club letterhead (is_club_admin)
+   * Upsert (one row per club, keyed by club_id). Only the fields sent are written; omitted fields keep their value (or the default on first creation).
+   * 
+   * `PATCH /invoice-settings`
+   */
+  async patchInvoiceSettings(body: M.InvoiceSettingsUpdate, options?: RequestOptions): Promise<M.InvoiceSettings> {
+    return this.request<M.InvoiceSettings>("PATCH", "/invoice-settings", { body, auth: true, options });
   }
 
   /**

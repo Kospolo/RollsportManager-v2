@@ -55,6 +55,39 @@ export function sumInvoiceCents(invoices: readonly InvoiceDetail[]): number {
 }
 
 /**
+ * MwSt-Vorschläge für die Positionseingabe. KEIN Katalog und kein Zwang (0072) —
+ * nur eine Bequemlichkeit; der Wert bleibt eine freie Zahl an der Position.
+ */
+export const VAT_RATE_OPTIONS = [0, 7, 19] as const;
+
+/**
+ * Zeilensummen einer Position mit der DB-Rundungsregel (0072): auf der ZEILE
+ * gerundet (net = round(menge·preis), vat = round(net·satz/100), gross = net+vat).
+ * Dient nur der Live-Vorschau/Anfangswerten im Client — die Wahrheit ist die DB.
+ */
+export function lineCents(
+  quantity: number,
+  unitPriceCents: number,
+  vatRate: number,
+): { net: number; vat: number; gross: number } {
+  const net = Math.round(quantity * unitPriceCents);
+  const vat = Math.round((net * vatRate) / 100);
+  return { net, vat, gross: net + vat };
+}
+
+/**
+ * Mengen-Eingabe („2", „1,5", „0.5") → Zahl. Akzeptiert Komma und Punkt als
+ * Dezimaltrenner. Rückgabe null bei leerer oder ungültiger Eingabe.
+ */
+export function parseQuantity(input: string): number | null {
+  const cleaned = input.trim().replace(",", ".").replace(/[^\d.]/g, "");
+  if (!cleaned) return null;
+  const value = Number(cleaned);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return value;
+}
+
+/**
  * Euro-Eingabe („86,00" / „86" / „1.234,50" / „86.50") → Cents. Akzeptiert
  * deutsche und englische Trennzeichen; das letzte Komma/Punkt gilt als
  * Dezimaltrenner. Rückgabe null bei leerer oder ungültiger Eingabe.

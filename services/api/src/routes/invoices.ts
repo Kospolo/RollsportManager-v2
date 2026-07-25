@@ -220,13 +220,14 @@ invoicesRouter.openapi(
     method: 'patch',
     path: '/invoices/{invoiceId}',
     tags: ['invoices'],
-    summary: 'Settle an invoice: paid, partially paid or cancelled (can_manage_finance)',
+    summary: 'Invoice lifecycle: issue, paid, partially paid or cancelled (can_manage_finance)',
     description:
-      'open → paid (optionally posts a matching Kassenbuch income row, post_to_ledger=true), ' +
-      'open/partially_paid → partially_paid (paid_cents is the CUMULATIVE amount received, so ' +
-      'reporting the same payment twice cannot double-count), or draft/open/partially_paid → ' +
-      'cancelled. Paid/cancelled invoices are terminal (GoBD: no re-open). The impersonated ' +
-      'UPDATE keeps the invoices_update RLS policy as the second gate.',
+      'draft → open (ISSUE a finished draft, sets issued_on), open → paid (optionally posts a ' +
+      'matching Kassenbuch income row, post_to_ledger=true), open/partially_paid → partially_paid ' +
+      '(paid_cents is the CUMULATIVE amount received, so reporting the same payment twice cannot ' +
+      'double-count), or draft/open/partially_paid → cancelled. "open" is ONLY reachable from a ' +
+      'draft — a paid/cancelled invoice is never re-opened (GoBD). The impersonated UPDATE keeps ' +
+      'the invoices_update RLS policy as the second gate.',
     security: [{ bearerAuth: [] }],
     request: {
       params: invoiceIdParam,
@@ -261,8 +262,13 @@ invoicesRouter.openapi(
       if (!invoice) throw problem(404, 'Not Found', 'Invoice not found');
       requireClubRole(claims, invoice.club_id, FINANCE_ROLES);
 
-      // GoBD-safe transitions. 'paid' erreicht man auch aus 'partially_paid' —
-      // die Restzahlung ist der Normalfall, nicht die Ausnahme.
+      // GoBD-safe transitions. 'open' (ausstellen) NUR aus einem Entwurf — ein
+      // bezahltes/storniertes Dokument wird hier nie wieder geoeffnet.
+      if (body.status === 'open' && invoice.status !== 'draft') {
+        throw problem(409, 'Conflict', `Only a draft can be issued as open (status: ${invoice.status})`);
+      }
+      // 'paid' erreicht man auch aus 'partially_paid' — die Restzahlung ist der
+      // Normalfall, nicht die Ausnahme.
       if (body.status === 'paid' && !['open', 'partially_paid'].includes(invoice.status)) {
         throw problem(409, 'Conflict', `Only open/partially paid invoices can be marked paid (status: ${invoice.status})`);
       }
@@ -304,7 +310,13 @@ invoicesRouter.openapi(
       }
 
       const result =
-        body.status === 'paid'
+        body.status === 'open'
+          ? await tx`
+              update app.invoices
+              set status = 'open', issued_on = coalesce(issued_on, current_date)
+              where id = ${invoiceId} and status = 'draft'
+              returning *`
+          : body.status === 'paid'
           ? await tx`
               update app.invoices
               set status = 'paid', paid_at = now(), paid_via = ${body.paid_via ?? null},

@@ -733,14 +733,16 @@ export const invoiceCreateSchema = z
   .openapi('InvoiceCreate');
 
 /**
- * PATCH an invoice's lifecycle: open → paid or open/draft → cancelled.
- * `paid` optionally posts a matching income row into the cash book
- * (post_to_ledger, default true) under ledger_category_id when given.
- * Corrections stay GoBD-safe: a cancelled/paid invoice is never re-opened here.
+ * PATCH an invoice's lifecycle: draft → open (issue), open → paid, or
+ * draft/open/partially_paid → cancelled. `paid` optionally posts a matching
+ * income row into the cash book (post_to_ledger, default true) under
+ * ledger_category_id when given. Corrections stay GoBD-safe: a cancelled/paid
+ * invoice is never re-opened here, and 'open' is ONLY reachable from a draft
+ * (never a re-open of a paid/cancelled invoice).
  */
 export const invoiceUpdateSchema = z
   .object({
-    status: z.enum(['paid', 'partially_paid', 'cancelled']),
+    status: z.enum(['open', 'paid', 'partially_paid', 'cancelled']),
     /** How it was settled (only meaningful for status=paid). */
     paid_via: z.string().min(1).optional(),
     /** status=paid: also append a Kassenbuch income entry (default true). */
@@ -808,6 +810,64 @@ export const invoiceItemUpdateSchema = z
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('InvoiceItemUpdate');
+
+// ---------------------------------------------------------------------------
+// Rechnungs-Einstellungen / Briefkopf (migration 0080, app.invoice_settings).
+// EIN Satz je Verein. Schreiben = is_club_admin, Lesen = Vereinsmitglied.
+// Alle Textfelder sind non-null (Default '') — der Wire-Typ bleibt dadurch frei
+// von Nullability-Jonglage; "nicht gesetzt" ist der Leerstring.
+// ---------------------------------------------------------------------------
+export const invoiceSettingsSchema = z
+  .object({
+    id: uuid,
+    club_id: uuid,
+    /** Absenderblock / Briefkopf (mehrzeilig). */
+    sender_block: z.string(),
+    /** Optionales Logo (Pfad oder Data-URL); leer = keins. */
+    logo_url: z.string(),
+    /** Steuernummer. */
+    tax_number: z.string(),
+    /** USt-IdNr. */
+    vat_id: z.string(),
+    /** Vertretungsberechtigung (Vorstand) fuer die Fusszeile. */
+    board_members: z.string(),
+    /** Fusszeile (Vereinsregister, Gemeinnuetzigkeit, Kontakt …). */
+    footer_text: z.string(),
+    bank_name: z.string(),
+    iban: z.string(),
+    bic: z.string(),
+    account_holder: z.string(),
+    /** Nummernkreis-Praefix — rein informativ (die Nummer kommt aus next_invoice_number). */
+    number_prefix: z.string(),
+    /** MwSt-Vorschlag fuer die Positionseingabe (kein Zwang). */
+    default_vat_rate: z.coerce.number(),
+    created_at: timestamp,
+    updated_at: timestamp,
+  })
+  .openapi('InvoiceSettings');
+
+/**
+ * Upsert des Briefkopfs. club_id waehlt den Verein (Singleton). Alle
+ * Inhaltsfelder optional — nur die uebergebenen werden geschrieben; fehlende
+ * behalten ihren Wert (bzw. den Default bei erstmaligem Anlegen).
+ */
+export const invoiceSettingsUpdateSchema = z
+  .object({
+    club_id: uuid,
+    sender_block: z.string().max(2000).optional(),
+    logo_url: z.string().max(500000).optional(),
+    tax_number: z.string().max(100).optional(),
+    vat_id: z.string().max(100).optional(),
+    board_members: z.string().max(1000).optional(),
+    footer_text: z.string().max(2000).optional(),
+    bank_name: z.string().max(200).optional(),
+    iban: z.string().max(40).optional(),
+    bic: z.string().max(20).optional(),
+    account_holder: z.string().max(200).optional(),
+    number_prefix: z.string().max(20).optional(),
+    default_vat_rate: z.number().min(0).max(100).optional(),
+  })
+  .openapi('InvoiceSettingsUpdate');
 
 export const teamSchema = z
   .object({

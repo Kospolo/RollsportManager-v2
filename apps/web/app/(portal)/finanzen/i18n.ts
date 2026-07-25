@@ -39,6 +39,8 @@ export const financeDict = {
     hubFeesDesc: "Zuordnung & Jahressumme",
     hubSepaTitle: "SEPA-Mandate",
     hubSepaDesc: "Lastschrift-Mandate",
+    hubInvoiceSettingsTitle: "Rechnungs-Einstellungen",
+    hubInvoiceSettingsDesc: "Briefkopf, Fußzeile, Bank",
 
     // Meine Rechnungen (schlanke Mitglieder-Ansicht — ohne Verwaltung)
     mineEyebrow: "Meine Finanzen",
@@ -260,6 +262,8 @@ export const financeDict = {
     hubFeesDesc: "Assignments & annual total",
     hubSepaTitle: "SEPA mandates",
     hubSepaDesc: "Direct-debit mandates",
+    hubInvoiceSettingsTitle: "Invoice settings",
+    hubInvoiceSettingsDesc: "Letterhead, footer, bank",
 
     // My invoices (lean member view — no management)
     mineEyebrow: "My finances",

@@ -473,6 +473,7 @@ public enum LoginResponseTokenType: String, Codable, CaseIterable, Sendable, Equ
 
 /// Inline enum of InvoiceUpdate.status (hoisted by codegen).
 public enum InvoiceUpdateStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case open = "open"
     case paid = "paid"
     case partiallyPaid = "partially_paid"
     case cancelled = "cancelled"
@@ -8997,6 +8998,145 @@ public struct InvoiceItemUpdate: Codable, Equatable, Sendable {
         self.quantity = quantity
         self.unitPriceCents = unitPriceCents
         self.vatRate = vatRate
+    }
+}
+
+public struct InvoiceSettings: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    /// Format: uuid
+    public var clubId: String
+    public var senderBlock: String
+    public var logoUrl: String
+    public var taxNumber: String
+    public var vatId: String
+    public var boardMembers: String
+    public var footerText: String
+    public var bankName: String
+    public var iban: String
+    public var bic: String
+    public var accountHolder: String
+    public var numberPrefix: String
+    public var defaultVatRate: Double?
+    public var createdAt: String
+    public var updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case clubId = "club_id"
+        case senderBlock = "sender_block"
+        case logoUrl = "logo_url"
+        case taxNumber = "tax_number"
+        case vatId = "vat_id"
+        case boardMembers = "board_members"
+        case footerText = "footer_text"
+        case bankName = "bank_name"
+        case iban
+        case bic
+        case accountHolder = "account_holder"
+        case numberPrefix = "number_prefix"
+        case defaultVatRate = "default_vat_rate"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+
+    public init(
+        id: String,
+        clubId: String,
+        senderBlock: String,
+        logoUrl: String,
+        taxNumber: String,
+        vatId: String,
+        boardMembers: String,
+        footerText: String,
+        bankName: String,
+        iban: String,
+        bic: String,
+        accountHolder: String,
+        numberPrefix: String,
+        defaultVatRate: Double? = nil,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.id = id
+        self.clubId = clubId
+        self.senderBlock = senderBlock
+        self.logoUrl = logoUrl
+        self.taxNumber = taxNumber
+        self.vatId = vatId
+        self.boardMembers = boardMembers
+        self.footerText = footerText
+        self.bankName = bankName
+        self.iban = iban
+        self.bic = bic
+        self.accountHolder = accountHolder
+        self.numberPrefix = numberPrefix
+        self.defaultVatRate = defaultVatRate
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct InvoiceSettingsUpdate: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var clubId: String
+    public var senderBlock: String?
+    public var logoUrl: String?
+    public var taxNumber: String?
+    public var vatId: String?
+    public var boardMembers: String?
+    public var footerText: String?
+    public var bankName: String?
+    public var iban: String?
+    public var bic: String?
+    public var accountHolder: String?
+    public var numberPrefix: String?
+    public var defaultVatRate: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case clubId = "club_id"
+        case senderBlock = "sender_block"
+        case logoUrl = "logo_url"
+        case taxNumber = "tax_number"
+        case vatId = "vat_id"
+        case boardMembers = "board_members"
+        case footerText = "footer_text"
+        case bankName = "bank_name"
+        case iban
+        case bic
+        case accountHolder = "account_holder"
+        case numberPrefix = "number_prefix"
+        case defaultVatRate = "default_vat_rate"
+    }
+
+    public init(
+        clubId: String,
+        senderBlock: String? = nil,
+        logoUrl: String? = nil,
+        taxNumber: String? = nil,
+        vatId: String? = nil,
+        boardMembers: String? = nil,
+        footerText: String? = nil,
+        bankName: String? = nil,
+        iban: String? = nil,
+        bic: String? = nil,
+        accountHolder: String? = nil,
+        numberPrefix: String? = nil,
+        defaultVatRate: Double? = nil
+    ) {
+        self.clubId = clubId
+        self.senderBlock = senderBlock
+        self.logoUrl = logoUrl
+        self.taxNumber = taxNumber
+        self.vatId = vatId
+        self.boardMembers = boardMembers
+        self.footerText = footerText
+        self.bankName = bankName
+        self.iban = iban
+        self.bic = bic
+        self.accountHolder = accountHolder
+        self.numberPrefix = numberPrefix
+        self.defaultVatRate = defaultVatRate
     }
 }
 

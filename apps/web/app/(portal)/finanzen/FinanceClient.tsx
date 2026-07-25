@@ -258,7 +258,7 @@ function FinanceContent({
 
       {/* Navigationsleiste zu den Finanz-Unterbereichen — FinanceContent
           rendert ausschließlich für can_manage_finance, also immer sichtbar. */}
-      <FinanceHubNav canManageFinance />
+      <FinanceHubNav canManageFinance isClubAdmin={permissions(currentUser).isClubAdmin} />
 
       {/* KPI-Zeile — Offene Posten identisch mit dem Tabellen-Footer */}
       <div className="grid gap-4 sm:grid-cols-3">

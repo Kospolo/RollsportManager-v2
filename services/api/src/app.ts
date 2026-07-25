@@ -66,6 +66,7 @@ import { lockersRouter } from './routes/lockers.js';
 import { lockerRentalsRouter } from './routes/locker-rentals.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { invoiceItemsRouter } from './routes/invoice-items.js';
+import { invoiceSettingsRouter } from './routes/invoice-settings.js';
 import { ledgerRouter } from './routes/ledger.js';
 import { bankTransactionsRouter } from './routes/bank-transactions.js';
 import { donationsRouter } from './routes/donations.js';
@@ -200,6 +201,7 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   app.route('/', lockerRentalsRouter);
   app.route('/', invoicesRouter);
   app.route('/', invoiceItemsRouter);
+  app.route('/', invoiceSettingsRouter);
   app.route('/', ledgerRouter);
   app.route('/', bankTransactionsRouter);
   app.route('/', donationsRouter);

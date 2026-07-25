@@ -1,14 +1,32 @@
 import type * as M from "@/lib/api/generated";
+import { ApiError } from "@/lib/api/generated";
 import type { DataRepository } from "../types";
-import type { CreateLedgerEntryInput } from "../inputs-finance";
+import type { CreateInvoiceInput, CreateLedgerEntryInput } from "../inputs-finance";
 import { apiClient } from "./client";
 import { mapLedgerEntry } from "./mappers";
 import {
+  emptyInvoiceSettings,
   mapDunningApplyResult,
   mapDunningLogEntry,
   mapInvoiceDetail,
+  mapInvoiceItem,
+  mapInvoiceSettings,
   mapLedgerCategory,
 } from "./mappers-finance";
+
+/**
+ * Bruttosumme einer Positionsliste mit derselben Rundungsregel wie die DB
+ * (0072): net = round(menge*preis), vat = round(net*satz/100), gross = net+vat.
+ * Dient NUR als Anfangswert für amount_cents beim Anlegen — die Wahrheit
+ * schreibt danach der DB-Trigger fort, und die Rechnung wird neu geladen.
+ */
+function grossSumCents(items: NonNullable<CreateInvoiceInput["items"]>): number {
+  return items.reduce((sum, it) => {
+    const net = Math.round(it.quantity * it.unitPriceCents);
+    const vat = Math.round((net * it.vatRate) / 100);
+    return sum + net + vat;
+  }, 0);
+}
 
 /**
  * API-Implementierung der Finanz-A-Module (Kassenbuch inkl. Kategorien,
@@ -33,6 +51,13 @@ type ModuleMethods = Pick<
   | "getInvoice"
   | "createInvoice"
   | "settleInvoice"
+  | "issueInvoice"
+  | "listInvoiceItems"
+  | "createInvoiceItem"
+  | "updateInvoiceItem"
+  | "deleteInvoiceItem"
+  | "getInvoiceSettings"
+  | "updateInvoiceSettings"
   | "applyDunning"
   | "listDunningLog"
 >;
@@ -100,15 +125,48 @@ export const moduleApiRepositoryFinance: ModuleMethods = {
     return mapInvoiceDetail(w);
   },
   async createInvoice(input) {
+    const items = input.items ?? [];
+    // Ohne Positionen: unverändertes Verhalten (Titel + Betrag, direkt offen/Entwurf).
+    if (items.length === 0) {
+      const created = await apiClient.postInvoices({
+        club_id: input.clubId,
+        member_id: input.memberId,
+        title: input.title,
+        amount_cents: input.amountCents,
+        due_on: input.dueOn,
+        issue: input.issue,
+      });
+      return mapInvoiceDetail(created);
+    }
+
+    // Mit Positionen: ZWINGEND als Entwurf anlegen (Positionen nur am Entwurf),
+    // Positionen anhängen (die DB schreibt amount_cents fort), dann bei issue=true
+    // ausstellen. Am Ende frisch laden -> DB-Wahrheit inkl. der Positionssummen.
     const created = await apiClient.postInvoices({
       club_id: input.clubId,
       member_id: input.memberId,
       title: input.title,
-      amount_cents: input.amountCents,
+      amount_cents: grossSumCents(items),
       due_on: input.dueOn,
-      issue: input.issue,
+      issue: false,
     });
-    return mapInvoiceDetail(created);
+    for (let idx = 0; idx < items.length; idx += 1) {
+      const it = items[idx];
+      await apiClient.postInvoiceItems({
+        club_id: input.clubId,
+        invoice_id: created.id,
+        sort_order: idx,
+        description: it.description,
+        quantity: it.quantity,
+        unit_price_cents: it.unitPriceCents,
+        vat_rate: it.vatRate,
+      });
+    }
+    if (input.issue) {
+      await apiClient.patchInvoicesByInvoiceId(created.id, { status: "open" });
+    }
+    const fresh = await apiClient.getInvoicesByInvoiceId(created.id);
+    return mapInvoiceDetail(fresh);
   },
   async settleInvoice(invoiceId, input) {
     const updated = await apiClient.patchInvoicesByInvoiceId(invoiceId, {
@@ -118,6 +176,73 @@ export const moduleApiRepositoryFinance: ModuleMethods = {
       ledger_category_id: input.ledgerCategoryId,
     });
     return mapInvoiceDetail(updated);
+  },
+  async issueInvoice(invoiceId) {
+    const updated = await apiClient.patchInvoicesByInvoiceId(invoiceId, { status: "open" });
+    return mapInvoiceDetail(updated);
+  },
+
+  /* ---------- Rechnungspositionen (0072) ---------- */
+  async listInvoiceItems(clubId, invoiceId) {
+    const rows = await apiClient.getInvoiceItems({ club_id: clubId, invoice_id: invoiceId });
+    return rows.map(mapInvoiceItem);
+  },
+  async createInvoiceItem(input) {
+    const created = await apiClient.postInvoiceItems({
+      club_id: input.clubId,
+      invoice_id: input.invoiceId,
+      sort_order: input.sortOrder,
+      description: input.description,
+      quantity: input.quantity,
+      unit_price_cents: input.unitPriceCents,
+      vat_rate: input.vatRate,
+    });
+    return mapInvoiceItem(created);
+  },
+  async updateInvoiceItem(itemId, input) {
+    const updated = await apiClient.patchInvoiceItemsByItemId(itemId, {
+      description: input.description,
+      quantity: input.quantity,
+      unit_price_cents: input.unitPriceCents,
+      vat_rate: input.vatRate,
+      sort_order: input.sortOrder,
+    });
+    return mapInvoiceItem(updated);
+  },
+  async deleteInvoiceItem(itemId) {
+    await apiClient.deleteInvoiceItemsByItemId(itemId);
+  },
+
+  /* ---------- Rechnungs-Einstellungen / Briefkopf (0080) ---------- */
+  async getInvoiceSettings(clubId) {
+    try {
+      const w = await apiClient.getInvoiceSettings({ club_id: clubId });
+      return mapInvoiceSettings(w);
+    } catch (caught) {
+      // 404 = noch kein Briefkopf gespeichert -> Default (kein Fehler).
+      if (caught instanceof ApiError && caught.status === 404) {
+        return emptyInvoiceSettings(clubId);
+      }
+      throw caught;
+    }
+  },
+  async updateInvoiceSettings(input) {
+    const saved = await apiClient.patchInvoiceSettings({
+      club_id: input.clubId,
+      sender_block: input.senderBlock,
+      logo_url: input.logoUrl,
+      tax_number: input.taxNumber,
+      vat_id: input.vatId,
+      board_members: input.boardMembers,
+      footer_text: input.footerText,
+      bank_name: input.bankName,
+      iban: input.iban,
+      bic: input.bic,
+      account_holder: input.accountHolder,
+      number_prefix: input.numberPrefix,
+      default_vat_rate: input.defaultVatRate,
+    });
+    return mapInvoiceSettings(saved);
   },
 
   /* ---------- Mahnwesen ---------- */

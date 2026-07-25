@@ -39,6 +39,8 @@ interface HubTile {
   tone: Tone;
   titleKey: FinanceKey;
   descKey: FinanceKey;
+  /** true = Kachel nur für is_club_admin (Vorstand/Admin/Moderation). */
+  adminOnly?: boolean;
 }
 
 /** Ziel-Routen — Koordinationspunkt mit den Fach-Teams (Unterbereiche). */
@@ -120,6 +122,14 @@ const TILES: HubTile[] = [
     titleKey: "hubSepaTitle",
     descKey: "hubSepaDesc",
   },
+  {
+    href: "/finanzen/einstellungen",
+    icon: { shell: "edit" },
+    tone: "info",
+    titleKey: "hubInvoiceSettingsTitle",
+    descKey: "hubInvoiceSettingsDesc",
+    adminOnly: true,
+  },
 ];
 
 function renderIcon(icon: TileIcon): ReactNode {
@@ -142,16 +152,24 @@ function TileGlyph({ tone, children }: { tone: Tone; children: ReactNode }) {
   );
 }
 
-export function FinanceHubNav({ canManageFinance }: { canManageFinance: boolean }) {
+export function FinanceHubNav({
+  canManageFinance,
+  isClubAdmin = false,
+}: {
+  canManageFinance: boolean;
+  /** Schaltet die reinen Verwaltungs-Kacheln (z. B. Rechnungs-Einstellungen) frei. */
+  isClubAdmin?: boolean;
+}) {
   const t = useT(financeDict);
   if (!canManageFinance) return null;
+  const tiles = TILES.filter((tile) => !tile.adminOnly || isClubAdmin);
 
   return (
     <nav
       aria-label={t("hubNavLabel")}
       className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
     >
-      {TILES.map((tile) => {
+      {tiles.map((tile) => {
         const title = t(tile.titleKey);
         return (
           <Link

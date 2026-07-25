@@ -3,6 +3,8 @@ import type {
   DunningLogEntry,
   Id,
   InvoiceDetail,
+  InvoiceItem,
+  InvoiceSettings,
   InvoiceStatus,
   LedgerCategory,
   LedgerCategoryKind,
@@ -73,9 +75,22 @@ export interface ListInvoicesFilter {
   memberId?: Id;
 }
 
+/** Eine Position beim Anlegen einer Rechnung (Menge x Einzelpreis + MwSt-Satz). */
+export interface CreateInvoiceItemDraft {
+  description: string;
+  quantity: number;
+  unitPriceCents: number;
+  /** Umsatzsteuersatz in Prozent (0 / 7 / 19 …). */
+  vatRate: number;
+}
+
 /**
  * Neue Rechnung (can_manage_finance). issue=true stellt direkt „offen"
- * (statt Entwurf).
+ * (statt Entwurf). Sind `items` gesetzt, entsteht die Rechnung ZWINGEND als
+ * Entwurf (Positionen sind nur am Entwurf erlaubt, GoBD 0072), die Positionen
+ * werden angehängt (der Betrag ergibt sich aus ihnen) und mit issue=true wird
+ * sie anschließend ausgestellt (Entwurf → offen). Ohne `items` bleibt das
+ * bisherige Verhalten: Titel + Betrag, direkt offen oder als Entwurf.
  */
 export interface CreateInvoiceInput {
   clubId: Id;
@@ -86,6 +101,45 @@ export interface CreateInvoiceInput {
   dueOn?: string;
   /** true = sofort „offen" stellen statt Entwurf. */
   issue?: boolean;
+  /** Optionale Positionen (mit MwSt). Vorhanden → Rechnung entsteht als Entwurf. */
+  items?: CreateInvoiceItemDraft[];
+}
+
+/** Neue Position an einer bestehenden ENTWURF-Rechnung (can_manage_finance). */
+export interface CreateInvoiceItemInput extends CreateInvoiceItemDraft {
+  clubId: Id;
+  invoiceId: Id;
+  /** Sortier-Reihenfolge (Default serverseitig 0). */
+  sortOrder?: number;
+}
+
+/** Position einer ENTWURF-Rechnung ändern (nur die gesetzten Felder). */
+export interface UpdateInvoiceItemInput {
+  description?: string;
+  quantity?: number;
+  unitPriceCents?: number;
+  vatRate?: number;
+  sortOrder?: number;
+}
+
+/**
+ * Briefkopf/Rechnungs-Einstellungen speichern (Upsert, is_club_admin). clubId
+ * wählt den Verein; nur die gesetzten Felder werden geschrieben.
+ */
+export interface UpdateInvoiceSettingsInput {
+  clubId: Id;
+  senderBlock?: string;
+  logoUrl?: string;
+  taxNumber?: string;
+  vatId?: string;
+  boardMembers?: string;
+  footerText?: string;
+  bankName?: string;
+  iban?: string;
+  bic?: string;
+  accountHolder?: string;
+  numberPrefix?: string;
+  defaultVatRate?: number;
 }
 
 /**
@@ -163,6 +217,30 @@ export interface FinanceRepository {
    * eine Kassenbuch-Einnahme. Ungültige Übergänge → 409 (terminal, kein Re-Open).
    */
   settleInvoice(invoiceId: Id, input: SettleInvoiceInput): Promise<InvoiceDetail>;
+  /**
+   * Einen fertigen ENTWURF ausstellen (Entwurf → offen, setzt issued_on).
+   * Nur aus 'draft' (sonst 409). Kein Re-Open bezahlter/stornierter Rechnungen.
+   */
+  issueInvoice(invoiceId: Id): Promise<InvoiceDetail>;
+
+  /* ---------- Rechnungspositionen (0072; nur am Entwurf, GoBD) ---------- */
+  /** Positionen einer Rechnung (sichtbar, wem die Rechnung sichtbar ist). */
+  listInvoiceItems(clubId: Id, invoiceId: Id): Promise<InvoiceItem[]>;
+  /** Position an einen ENTWURF anhängen — net/vat/gross rechnet die DB. */
+  createInvoiceItem(input: CreateInvoiceItemInput): Promise<InvoiceItem>;
+  /** Position eines ENTWURFS ändern (nur die gesetzten Felder). */
+  updateInvoiceItem(itemId: Id, input: UpdateInvoiceItemInput): Promise<InvoiceItem>;
+  /** Position eines ENTWURFS entfernen (Hard-Delete — ein Entwurf ist keine Buchung). */
+  deleteInvoiceItem(itemId: Id): Promise<void>;
+
+  /* ---------- Rechnungs-Einstellungen / Briefkopf (0080) ---------- */
+  /**
+   * Briefkopf des Vereins. Ist noch keiner gespeichert, kommt ein Default mit
+   * Leerfeldern zurück (configured=false) — nie ein Fehler.
+   */
+  getInvoiceSettings(clubId: Id): Promise<InvoiceSettings>;
+  /** Briefkopf speichern (Upsert, is_club_admin). */
+  updateInvoiceSettings(input: UpdateInvoiceSettingsInput): Promise<InvoiceSettings>;
 
   /* ---------- Mahnwesen (can_manage_finance) ---------- */
   /**
