@@ -260,6 +260,16 @@ export class ApiClient {
   }
 
   /**
+   * Soft-delete a membership (can_manage_members; never the last active owner)
+   * Setzt deleted_at auf der Mitgliedszeile (Soft-Delete/Tombstone, 0003) und loest die Team-Verknuepfungen, damit die Person aus den Team-Rostern verschwindet. can_manage_members (owner/admin/moderator/treasurer). SICHERHEIT: das LETZTE aktive owner-Mitglied ist nie loeschbar (sonst sperrt sich der Verein aus) -> 409.
+   * 
+   * `DELETE /clubs/{clubId}/members/{memberId}`
+   */
+  async deleteClubsByClubIdMembersByMemberId(clubId: string, memberId: string, options?: RequestOptions): Promise<M.Deleted> {
+    return this.request<M.Deleted>("DELETE", `/clubs/${encodeURIComponent(clubId)}/members/${encodeURIComponent(memberId)}`, { auth: true, options });
+  }
+
+  /**
    * Change a member role (owner/admin; never self; last owner protected)
    * 
    * `PATCH /clubs/{clubId}/members/{memberId}/role`

@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
 import { Icon } from "@/components/shell/icons";
 import { InviteSheet } from "../../mitglieder/InviteSheet";
+import { CreateMemberSheet } from "./CreateMemberSheet";
 import { EditMemberSheet } from "./EditMemberSheet";
 import { JoinRequestsCard } from "./JoinRequestsCard";
 import { mitgliederVerwaltungDict, roleKey, statusKey, type MitgliederVerwaltungKey } from "./i18n";
@@ -70,6 +71,7 @@ export function MembersAdminClient() {
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<Id | null>(null);
   /** Optimistische Overrides (Stammdaten/Rolle) bis zum nächsten Reload. */
   const [patched, setPatched] = useState<Record<Id, Member>>({});
@@ -368,9 +370,17 @@ export function MembersAdminClient() {
         sub={t("sub")}
         action={
           canManageMembers ? (
-            <Button icon="plus" onClick={() => setInviteOpen(true)}>
-              {t("invite")}
-            </Button>
+            <div className="flex flex-wrap gap-2.5">
+              {/* Einladen (E-Mail) und manuelles Anlegen (auch ohne E-Mail/
+                  Online-Zugang) stehen nebeneinander — zwei Wege, eine Person in
+                  den Verein zu bekommen. */}
+              <Button variant="secondary" icon="mail" onClick={() => setInviteOpen(true)}>
+                {t("invite")}
+              </Button>
+              <Button icon="plus" onClick={() => setCreateOpen(true)}>
+                {t("createBtn")}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -383,6 +393,14 @@ export function MembersAdminClient() {
 
       {canManageMembers && <InviteSheet open={inviteOpen} onClose={() => setInviteOpen(false)} />}
 
+      {canManageMembers && (
+        <CreateMemberSheet
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={state.reload}
+        />
+      )}
+
       {canManageMembers && currentUser && editing && (
         <EditMemberSheet
           key={editing.id}
@@ -391,6 +409,10 @@ export function MembersAdminClient() {
           currentUserId={currentUser.id}
           onClose={() => setEditingId(null)}
           onPatched={applyPatched}
+          onDeleted={() => {
+            setEditingId(null);
+            state.reload();
+          }}
         />
       )}
     </div>

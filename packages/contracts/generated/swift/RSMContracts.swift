@@ -375,6 +375,11 @@ public enum InviteQueuedStatus: String, Codable, CaseIterable, Sendable, Equatab
     case queued = "queued"
 }
 
+/// Inline enum of Deleted.status (hoisted by codegen).
+public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
+    case deleted = "deleted"
+}
+
 /// Inline enum of EffectiveConsent.state (hoisted by codegen).
 public enum EffectiveConsentState: String, Codable, CaseIterable, Sendable, Equatable {
     case valid = "valid"
@@ -394,11 +399,6 @@ public enum GuardianshipCreateRelation: String, Codable, CaseIterable, Sendable,
     case parent = "parent"
     case guardian = "guardian"
     case other = "other"
-}
-
-/// Inline enum of Deleted.status (hoisted by codegen).
-public enum DeletedStatus: String, Codable, CaseIterable, Sendable, Equatable {
-    case deleted = "deleted"
 }
 
 /// Inline enum of ClubModuleState.enforcement (hoisted by codegen).
@@ -1290,6 +1290,25 @@ public struct ClubMemberUpdate: Codable, Equatable, Sendable {
         self.postalAddress = postalAddress
         self.status = status
         self.validUntil = validUntil
+    }
+}
+
+public struct Deleted: Codable, Equatable, Sendable {
+    public var status: DeletedStatus
+    /// Format: uuid
+    public var id: String
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case id
+    }
+
+    public init(
+        status: DeletedStatus,
+        id: String
+    ) {
+        self.status = status
+        self.id = id
     }
 }
 
@@ -2658,25 +2677,6 @@ public struct GuardianshipCreate: Codable, Equatable, Sendable {
         self.childMemberId = childMemberId
         self.guardianMemberId = guardianMemberId
         self.relation = relation
-    }
-}
-
-public struct Deleted: Codable, Equatable, Sendable {
-    public var status: DeletedStatus
-    /// Format: uuid
-    public var id: String
-
-    enum CodingKeys: String, CodingKey {
-        case status
-        case id
-    }
-
-    public init(
-        status: DeletedStatus,
-        id: String
-    ) {
-        self.status = status
-        self.id = id
     }
 }
 

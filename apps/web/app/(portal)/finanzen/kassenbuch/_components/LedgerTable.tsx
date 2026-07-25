@@ -30,11 +30,14 @@ export function LedgerTable({
   rows,
   invoices,
   onReverse,
+  onCorrect,
   empty,
 }: {
   rows: LedgerRow[];
   invoices: Invoice[];
   onReverse: (entry: LedgerEntry) => void;
+  /** Ein-Klick-Korrektur (GoBD): Storno + vorbefülltes Neu-Erfassen. */
+  onCorrect: (entry: LedgerEntry) => void;
   empty?: ReactNode;
 }) {
   const t = useT(kassenbuchDict);
@@ -107,9 +110,14 @@ export function LedgerTable({
     if (row.isReversal) return <Badge tone="info">{t("badgeReversal")}</Badge>;
     if (row.reversed) return <Badge tone="neutral">{t("badgeReversed")}</Badge>;
     return (
-      <Button variant="ghost" size="sm" icon="edit" onClick={() => onReverse(row.entry)}>
-        {t("reverseAction")}
-      </Button>
+      <span className="flex items-center justify-end gap-1">
+        <Button variant="ghost" size="sm" icon="edit" onClick={() => onCorrect(row.entry)}>
+          {t("correctAction")}
+        </Button>
+        <Button variant="ghost" size="sm" icon="close" onClick={() => onReverse(row.entry)}>
+          {t("reverseAction")}
+        </Button>
+      </span>
     );
   };
 

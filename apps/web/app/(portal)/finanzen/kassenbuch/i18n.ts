@@ -54,6 +54,7 @@ export const kassenbuchDict = {
     badgeReversed: "storniert",
     badgeReversal: "Storno",
     reverseAction: "Stornieren",
+    correctAction: "Korrigieren",
 
     // Summenzeile
     footCount: "{n} Buchungen",
@@ -74,6 +75,8 @@ export const kassenbuchDict = {
 
     // Toasts
     entryCreatedToast: "Buchung erfasst — {desc} über {amount}.",
+    correctedToast:
+      "Buchung korrigiert — {desc} über {amount}. Die ursprüngliche Buchung wurde storniert.",
     reverseToast: "Buchung storniert — Gegenbuchung über {amount} erzeugt.",
     categoryCreatedToast: "Kategorie „{name}“ angelegt.",
     forbidden: "Dafür fehlt dir die Berechtigung.",
@@ -107,6 +110,13 @@ export const kassenbuchDict = {
     sheetGobd: "Buchungen werden append-only gespeichert — korrigieren nur per Storno.",
     cancel: "Abbrechen",
     create: "Buchung speichern",
+
+    // Korrektur (GoBD-konform = Storno + neue Buchung, kein Überschreiben)
+    correctEyebrow: "Korrektur",
+    correctTitle: "Buchung korrigieren",
+    correctHint:
+      "Die ursprüngliche Buchung wird storniert und durch diese ersetzt (GoBD). Die alte Buchung bleibt als storniert sichtbar.",
+    correctSave: "Korrektur speichern",
 
     // Kategorien-Dialog
     catsEyebrow: "Kassenbuch",
@@ -178,6 +188,7 @@ export const kassenbuchDict = {
     badgeReversed: "reversed",
     badgeReversal: "Reversal",
     reverseAction: "Reverse",
+    correctAction: "Correct",
 
     // Sum row
     footCount: "{n} entries",
@@ -197,6 +208,8 @@ export const kassenbuchDict = {
 
     // Toasts
     entryCreatedToast: "Entry recorded — {desc} for {amount}.",
+    correctedToast:
+      "Entry corrected — {desc} for {amount}. The original entry was reversed.",
     reverseToast: "Entry reversed — counter-entry for {amount} created.",
     categoryCreatedToast: "Category “{name}” created.",
     forbidden: "You do not have permission for this.",
@@ -230,6 +243,13 @@ export const kassenbuchDict = {
     sheetGobd: "Entries are stored append-only — correct only via reversal.",
     cancel: "Cancel",
     create: "Save entry",
+
+    // Correction (GoBD-compliant = reversal + new entry, never overwrite)
+    correctEyebrow: "Correction",
+    correctTitle: "Correct entry",
+    correctHint:
+      "The original entry will be reversed and replaced by this one (GoBD). The old entry stays visible as reversed.",
+    correctSave: "Save correction",
 
     // Categories dialog
     catsEyebrow: "Cash book",

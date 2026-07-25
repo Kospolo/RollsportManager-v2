@@ -161,6 +161,27 @@ export interface InviteMemberInput {
   role?: AssignableRole;
 }
 
+/**
+ * Eingabe zum MANUELLEN Anlegen eines Mitglieds (can_manage_members) — auch OHNE
+ * E-Mail und ohne Online-Zugang (z. B. Menschen ohne eigenen Internetzugang). Die
+ * Person landet als Stammdatensatz im Verein, ganz ohne Einladung/Konto.
+ * owner ist nie anlegbar; die Zielrolle muss der Aufrufer vergeben dürfen
+ * (server: canAssignRole). validUntil ist nur für guest_coach nötig (Pflicht laut
+ * DB-Check).
+ */
+export interface CreateMemberInput {
+  firstName: string;
+  lastName: string;
+  email?: string;
+  /** ISO-Datum (YYYY-MM-DD) */
+  birthDate?: string;
+  role: AssignableRole;
+  /** ISO-Datum des Vereinsbeitritts (YYYY-MM-DD) */
+  joinedOn?: string;
+  /** Nur guest_coach: befristeter Zugang bis (ISO-Datum/Zeit) */
+  validUntil?: string;
+}
+
 /** Eingabe für einen neuen Kür-Marker (Trainerstab inkl. Gasttrainer). */
 export interface AddMarkerInput {
   timeMs: number;
@@ -178,6 +199,10 @@ export interface UpdateMemberInput {
   email?: string | null;
   /** ISO-Datum (YYYY-MM-DD) */
   birthDate?: string | null;
+  /** Telefonnummer (max. 40); null/"" leert die Angabe (0054). */
+  phone?: string | null;
+  /** Anschrift (max. 300); null/"" leert die Angabe (0054). */
+  postalAddress?: string | null;
   status?: MemberStatus;
   /** Nur guest_coach: befristeter Zugang bis (ISO-Datum) */
   validUntil?: string | null;
@@ -308,8 +333,18 @@ export interface DataRepository
   addRoutineMarker(routineId: Id, input: AddMarkerInput): Promise<RoutineMarker>;
 
   /* ---------- Verwaltung: Mitglieder-Stammdaten ---------- */
+  /**
+   * Mitglied MANUELL anlegen (can_manage_members) — auch ohne E-Mail/Online-Zugang.
+   * Liefert das erzeugte Mitglied zurück.
+   */
+  createMember(input: CreateMemberInput): Promise<Member>;
   /** Stammdaten eines Mitglieds ändern (OHNE Rolle; can_manage_members). */
   updateMember(memberId: Id, patch: UpdateMemberInput): Promise<Member>;
+  /**
+   * Mitglied soft-löschen (can_manage_members) — der letzte aktive Vorstand
+   * (owner) ist serverseitig geschützt (409). Liefert die gelöschte ID zurück.
+   */
+  deleteMember(memberId: Id): Promise<{ id: Id }>;
 
   /* ---------- Verwaltung: Teams ---------- */
   /** Team anlegen (is_club_admin) — liefert das erzeugte Team zurück. */

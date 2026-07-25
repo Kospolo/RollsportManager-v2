@@ -83,6 +83,10 @@ export function mapMember(w: M.ClubMember): Member {
     status: mapMemberStatus(w.status),
     birthDate: w.birth_date ?? undefined,
     email: w.email ?? undefined,
+    // Kontaktdaten (0054): der Server redigiert sie für Unberechtigte auf null →
+    // undefined, damit „nicht sichtbar" nicht als „leer eingetragen" gilt.
+    phone: w.phone ?? undefined,
+    postalAddress: w.postal_address ?? undefined,
     teamIds: w.team_ids,
     joinedAt: w.joined_on ?? w.created_at.slice(0, 10),
     guestAccessUntil: w.role === "guest_coach" ? (w.valid_until ?? undefined) : undefined,

@@ -14,10 +14,11 @@ import {
 import type { Id, Member, MemberRole, MemberStatus } from "@/lib/types";
 import { useToast } from "@/components/ui/Toast";
 import { Sheet } from "@/components/ui/Modal";
-import { Input, Select } from "@/components/ui/Field";
+import { Input, Select, Textarea } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { mitgliederVerwaltungDict, roleKey, statusKey } from "./i18n";
 import { ASSIGNABLE_ROLES, EMAIL_PATTERN, STATUS_OPTIONS } from "./derive";
+import { DeleteMemberDialog } from "./DeleteMemberDialog";
 
 /**
  * Bearbeiten-Sheet eines Mitglieds. Zwei getrennte Speicherpfade der Facade:
@@ -36,12 +37,15 @@ export function EditMemberSheet({
   currentUserId,
   onClose,
   onPatched,
+  onDeleted,
 }: {
   member: Member;
   perms: Permissions;
   currentUserId: Id;
   onClose: () => void;
   onPatched: (member: Member) => void;
+  /** Nach erfolgreichem Löschen: Sheet schließen + Liste neu laden (Parent). */
+  onDeleted: () => void;
 }) {
   const t = useT(mitgliederVerwaltungDict);
   const { showToast } = useToast();
@@ -50,6 +54,8 @@ export function EditMemberSheet({
   const [lastName, setLastName] = useState(member.lastName);
   const [email, setEmail] = useState(member.email ?? "");
   const [birthDate, setBirthDate] = useState(member.birthDate ?? "");
+  const [phone, setPhone] = useState(member.phone ?? "");
+  const [postalAddress, setPostalAddress] = useState(member.postalAddress ?? "");
   const [status, setStatus] = useState<MemberStatus>(member.status);
   const [validUntil, setValidUntil] = useState(member.guestAccessUntil ?? "");
   const [role, setRole] = useState<MemberRole>(member.role);
@@ -57,6 +63,7 @@ export function EditMemberSheet({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
   const [savingRole, setSavingRole] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   /* ---------- Rolle (sofortiger Speicherpfad) ---------- */
   const isOwnerRow = member.role === "owner";
@@ -109,11 +116,16 @@ export function EditMemberSheet({
     const ln = lastName.trim();
     const em = email.trim();
     const bd = birthDate.trim();
+    const ph = phone.trim();
+    const pa = postalAddress.trim();
     const vu = validUntil.trim();
     if (fn !== member.firstName) patch.firstName = fn;
     if (ln !== member.lastName) patch.lastName = ln;
     if (em !== (member.email ?? "")) patch.email = em === "" ? null : em;
     if (bd !== (member.birthDate ?? "")) patch.birthDate = bd === "" ? null : bd;
+    // Kontaktdaten (0054): leerer Wert → null löscht die Angabe.
+    if (ph !== (member.phone ?? "")) patch.phone = ph === "" ? null : ph;
+    if (pa !== (member.postalAddress ?? "")) patch.postalAddress = pa === "" ? null : pa;
     if (status !== member.status) patch.status = status;
     // valid_until nur für Gasttrainer (befristeter Zugang) mitschicken.
     if (role === "guest_coach" && vu !== (member.guestAccessUntil ?? "")) {
@@ -145,6 +157,7 @@ export function EditMemberSheet({
   };
 
   return (
+    <>
     <Sheet
       open
       onClose={onClose}
@@ -152,6 +165,20 @@ export function EditMemberSheet({
       title={fullName(member)}
       footer={
         <>
+          {/* Löschen nur für is_club_admin (Anzeige-Mirror); der Server ist die
+              Grenze. mr-auto schiebt den destruktiven Knopf klar nach links,
+              abgesetzt von Abbrechen/Speichern. */}
+          {perms.isClubAdmin && (
+            <Button
+              variant="ghost"
+              icon="trash"
+              className="mr-auto text-danger hover:bg-danger/10"
+              onClick={() => setConfirmDelete(true)}
+              disabled={saving}
+            >
+              {t("deleteBtn")}
+            </Button>
+          )}
           <Button variant="ghost" onClick={onClose} disabled={saving}>
             {t("cancel")}
           </Button>
@@ -242,6 +269,29 @@ export function EditMemberSheet({
           )}
         </section>
 
+        <section className="grid gap-4 border-t border-line pt-5">
+          <h3 className="eyebrow">{t("secContact")}</h3>
+          <Input
+            label={t("fldPhone")}
+            type="tel"
+            inputMode="tel"
+            autoComplete="off"
+            maxLength={40}
+            hint={t("phoneHint")}
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+          />
+          <Textarea
+            label={t("fldPostalAddress")}
+            autoComplete="off"
+            maxLength={300}
+            rows={3}
+            hint={t("addressHint")}
+            value={postalAddress}
+            onChange={(event) => setPostalAddress(event.target.value)}
+          />
+        </section>
+
         <section className="grid gap-3 border-t border-line pt-5">
           <h3 className="eyebrow">{t("secRole")}</h3>
           <Select
@@ -270,5 +320,11 @@ export function EditMemberSheet({
         </button>
       </form>
     </Sheet>
+    <DeleteMemberDialog
+      member={confirmDelete ? member : null}
+      onClose={() => setConfirmDelete(false)}
+      onDeleted={onDeleted}
+    />
+    </>
   );
 }

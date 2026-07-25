@@ -13,6 +13,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter, errorResponses, jsonContent } from '../lib/openapi.js';
 import {
+  deletedSchema,
   guardianshipSchema,
   inviteQueuedSchema,
   inviteSchema,
@@ -24,7 +25,7 @@ import {
   roleChangeSchema,
   uuid,
 } from '../lib/validation.js';
-import { withUser } from '../db.js';
+import { withServiceRole, withUser } from '../db.js';
 import type { Tx } from '../db.js';
 import { getConfig } from '../config.js';
 import { problem } from '../middleware/error.js';
@@ -689,6 +690,92 @@ membersRouter.openapi(
     // internes Profil sehen, das ihm der Roster verwehrt.
     const redacted = redactSelfProfile(updated, maySeeInternalSelfProfile(claims, clubId));
     return c.json(memberSchema.parse(redacted), 200);
+  },
+);
+
+// ============================================================================
+// DELETE /clubs/{clubId}/members/{memberId} — Mitglied soft-loeschen.
+//
+// Soft-Delete = deleted_at setzen (kein Hard-DELETE; PowerSync-Tombstone, 0003),
+// genau wie deleteTeam. Gate: can_manage_members (MANAGE_MEMBER_ROLES) — der
+// API-Guard ist die erste Linie, club_members_update (has_cap members:manage,
+// 0026) die zweite.
+//
+// ### SICHERHEIT: der LETZTE aktive owner ist nie loeschbar ###
+// Verschwaende der Verein seine einzige Inhaber:in, koennte niemand mehr Rollen
+// vergeben oder Owner nachziehen — der Verein saesse sich selbst aus. Diese
+// Regel kennt nur die API zeilenweise (dieselbe Bauart wie checkRoleChange, das
+// die letzte owner-DEGRADIERUNG verhindert); der Trigger protect_club_membership
+// schuetzt zwar owner-Rollen, kann „letzter seiner Art" aber nicht wissen. -> 409.
+// ============================================================================
+membersRouter.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/clubs/{clubId}/members/{memberId}',
+    tags: ['members'],
+    summary: 'Soft-delete a membership (can_manage_members; never the last active owner)',
+    description:
+      'Setzt deleted_at auf der Mitgliedszeile (Soft-Delete/Tombstone, 0003) und loest die ' +
+      'Team-Verknuepfungen, damit die Person aus den Team-Rostern verschwindet. can_manage_members ' +
+      '(owner/admin/moderator/treasurer). SICHERHEIT: das LETZTE aktive owner-Mitglied ist nie ' +
+      'loeschbar (sonst sperrt sich der Verein aus) -> 409.',
+    security: [{ bearerAuth: [] }],
+    request: { params: memberParams },
+    responses: {
+      200: jsonContent(deletedSchema, 'Membership soft-deleted'),
+      409: jsonContent(z.object({}).passthrough(), 'Would remove the last active owner'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { clubId, memberId } = c.req.valid('param');
+    const claims = c.get('claims');
+    requireClubRole(claims, clubId, MANAGE_MEMBER_ROLES);
+
+    // Existenz + letzter-Owner-Schutz + Soft-Delete unter RLS (impersoniert):
+    // club_members_update erzwingt can_manage_members noch einmal, der Trigger
+    // protect_club_membership ist die dritte Linie.
+    await withUser(claims, async (tx) => {
+      const targets = await tx`
+        select id, role from app.club_members
+        where id = ${memberId} and club_id = ${clubId} and deleted_at is null`;
+      const target = targets[0];
+      if (!target) throw problem(404, 'Not Found', 'Membership not found');
+
+      if (target['role'] === 'owner') {
+        const owners = await tx`
+          select count(*)::int as n from app.club_members
+          where club_id = ${clubId} and role = 'owner'
+            and status = 'active' and deleted_at is null`;
+        const activeOwners = (owners[0]?.['n'] as number | undefined) ?? 0;
+        if (activeOwners <= 1) {
+          throw problem(409, 'Conflict', 'Cannot delete the last active owner of the club');
+        }
+      }
+
+      // KEIN `returning` auf der eben getilgten Zeile (RETURNING-Fallstrick wie
+      // beim Event-Soft-Delete): Existenz ist oben belegt, die Autorisierung
+      // steht (requireClubRole == club_members_update-Policy).
+      await tx`
+        update app.club_members set deleted_at = now()
+        where id = ${memberId} and club_id = ${clubId} and deleted_at is null`;
+    });
+
+    // Roster-Verknuepfungen als FOLGE der (bereits abschliessend autorisierten)
+    // Entfernung loesen — wie deleteTeam die team_members tilgt. Bewusst als
+    // SERVICE-Operation: ein Kassenwart hat can_manage_members, aber KEIN
+    // team_members-Schreibrecht (RLS 0031 verlangt owner/admin/moderator/coach
+    // bzw. team_coaches:manage) — unter Impersonation scheiterte genau dieses
+    // Detachment mit 42501 und liesse die Person als tote Referenz im Team-Roster
+    // stehen. Die Berechtigung, das Mitglied zu entfernen, ist oben geprueft.
+    await withServiceRole(
+      `member ${memberId} soft-deleted in club ${clubId}: detach team links (caller ${claims.sub})`,
+      (tx) =>
+        tx`update app.team_members set deleted_at = now()
+           where member_id = ${memberId} and club_id = ${clubId} and deleted_at is null`,
+    );
+
+    return c.json({ status: 'deleted' as const, id: memberId }, 200);
   },
 );
 

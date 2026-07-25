@@ -124,6 +124,10 @@ export interface Member {
   /** ISO-Datum (YYYY-MM-DD) — bei Kindern relevant für Altersklassen */
   birthDate?: string;
   email?: string;
+  /** Telefonnummer (0054) — nur für can_manage_members/eigene Zeile sichtbar; sonst redigiert (undefined). */
+  phone?: string;
+  /** Anschrift (0054) — wie phone: nur can_manage_members/eigene Zeile, sonst redigiert (undefined). */
+  postalAddress?: string;
   teamIds: Id[];
   /** ISO-Datum des Vereinsbeitritts */
   joinedAt: string;

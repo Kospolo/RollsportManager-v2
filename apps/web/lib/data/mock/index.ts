@@ -64,6 +64,7 @@ const teamStore: Team[] = mock.teams.map((t) => ({
 let clubStore: Club = { ...mock.club };
 
 let teamSeq = teamStore.length;
+let memberSeq = memberStore.length;
 
 /**
  * Seed- + lokal angelegte Termine, mit Overrides gemerged und Löschungen
@@ -299,6 +300,26 @@ export const mockRepository: DataRepository = {
   },
 
   /* ---------- Verwaltung: Mitglieder-Stammdaten ---------- */
+  async createMember(input): Promise<Member> {
+    // Neues Member in den EINEN Store pushen — getMembers() gibt eine Kopie
+    // zurück (neue Referenz → Liste rendert nach dem Anlegen neu).
+    const created: Member = {
+      id: `mem-local-${++memberSeq}`,
+      clubId: clubStore.id,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      role: input.role,
+      status: "active",
+      birthDate: input.birthDate,
+      email: input.email,
+      teamIds: [],
+      joinedAt: input.joinedOn ?? new Date().toISOString().slice(0, 10),
+      // Befristung nur für Gasttrainer (sonst kein Zugangsablauf).
+      guestAccessUntil: input.role === "guest_coach" ? input.validUntil : undefined,
+    };
+    memberStore.push(created);
+    return created;
+  },
   async updateMember(memberId, patch): Promise<Member> {
     const member = memberStore.find((m) => m.id === memberId);
     if (!member) throw new Error(`Mitglied ${memberId} nicht gefunden (mock)`);
@@ -306,9 +327,17 @@ export const mockRepository: DataRepository = {
     if (patch.lastName !== undefined) member.lastName = patch.lastName;
     if (patch.email !== undefined) member.email = patch.email ?? undefined;
     if (patch.birthDate !== undefined) member.birthDate = patch.birthDate ?? undefined;
+    if (patch.phone !== undefined) member.phone = patch.phone ?? undefined;
+    if (patch.postalAddress !== undefined) member.postalAddress = patch.postalAddress ?? undefined;
     if (patch.status !== undefined) member.status = patch.status;
     if (patch.validUntil !== undefined) member.guestAccessUntil = patch.validUntil ?? undefined;
     return member;
+  },
+  async deleteMember(memberId): Promise<{ id: string }> {
+    // Aus dem Store entfernen (Referenz ändert sich → Liste rechnet neu).
+    const idx = memberStore.findIndex((m) => m.id === memberId);
+    if (idx >= 0) memberStore.splice(idx, 1);
+    return { id: memberId };
   },
 
   /* ---------- Verwaltung: Teams ---------- */

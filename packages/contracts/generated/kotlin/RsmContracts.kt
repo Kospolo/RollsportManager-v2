@@ -389,6 +389,12 @@ enum class InviteQueuedStatus {
     @SerialName("queued") QUEUED;
 }
 
+/** Inline enum of Deleted.status (hoisted by codegen). */
+@Serializable
+enum class DeletedStatus {
+    @SerialName("deleted") DELETED;
+}
+
 /** Inline enum of EffectiveConsent.state (hoisted by codegen). */
 @Serializable
 enum class EffectiveConsentState {
@@ -411,12 +417,6 @@ enum class GuardianshipCreateRelation {
     @SerialName("parent") PARENT,
     @SerialName("guardian") GUARDIAN,
     @SerialName("other") OTHER;
-}
-
-/** Inline enum of Deleted.status (hoisted by codegen). */
-@Serializable
-enum class DeletedStatus {
-    @SerialName("deleted") DELETED;
 }
 
 /** Inline enum of ClubModuleState.enforcement (hoisted by codegen). */
@@ -778,6 +778,12 @@ data class ClubMemberUpdate(
     @SerialName("postal_address") val postalAddress: String? = null,
     val status: MemberStatus? = null,
     @SerialName("valid_until") val validUntil: String? = null
+)
+
+@Serializable
+data class Deleted(
+    val status: DeletedStatus,
+    val id: String
 )
 
 @Serializable
@@ -1148,12 +1154,6 @@ data class GuardianshipCreate(
     @SerialName("child_member_id") val childMemberId: String,
     @SerialName("guardian_member_id") val guardianMemberId: String? = null,
     val relation: GuardianshipCreateRelation? = GuardianshipCreateRelation.PARENT
-)
-
-@Serializable
-data class Deleted(
-    val status: DeletedStatus,
-    val id: String
 )
 
 @Serializable

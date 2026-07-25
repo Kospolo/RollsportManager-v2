@@ -1,9 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { data, errorMessage, fullName, isForbidden } from "@/lib/data";
 import type { CreateLedgerEntryInput } from "@/lib/data";
-import type { Id, LedgerCategory, LedgerCounterparty, Member } from "@/lib/types";
+import type {
+  Id,
+  LedgerCategory,
+  LedgerCounterparty,
+  LedgerEntry,
+  Member,
+} from "@/lib/types";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR } from "@/lib/format";
 import { useToast } from "@/components/ui/Toast";
@@ -17,6 +23,21 @@ const FORM_ID = "ledger-entry-form";
 
 type Direction = "income" | "expense";
 type Cp = "person" | "org";
+
+/**
+ * Optionale Vorbefüllung des Sheets (rein additiv — Default = leer wie bisher).
+ * Wird für die GoBD-Korrektur genutzt: die Felder der zu ersetzenden Buchung
+ * werden vorbefüllt, der Betrag als vorzeichenlose Euro-Zeichenkette (die
+ * Richtung setzt das Vorzeichen).
+ */
+export type BookingInitial = {
+  date?: string;
+  categoryId?: string;
+  direction?: Direction;
+  amount?: string;
+  purpose?: string;
+  counterparty?: LedgerCounterparty;
+};
 
 function todayISODate(): string {
   const d = new Date();
@@ -38,6 +59,12 @@ function parseAmountCents(raw: string): number | null {
  * (Mitglied ODER Organisation). Schreibt über data.createLedgerEntry
  * (GoBD-Append, amountCents SIGNED). Erfolg → Toast + onSaved() + schließen;
  * 403 → Klartext-Toast, Sheet bleibt offen.
+ *
+ * Korrektur-Modus (correctionOf gesetzt): GoBD-konformes „Bearbeiten“ ohne
+ * Überschreiben — beim Speichern wird ERST die Originalbuchung storniert
+ * (data.reverseLedgerEntry) und DANN die korrigierte Fassung als neue Buchung
+ * angelegt. Vorbefüllung erfolgt über `initial`; storniert wird ausschließlich
+ * beim Speichern (nicht beim Öffnen), also nie ungefragt.
  */
 export function BookingSheet({
   clubId,
@@ -45,12 +72,18 @@ export function BookingSheet({
   members,
   onClose,
   onSaved,
+  initial,
+  correctionOf,
 }: {
   clubId: Id;
   categories: LedgerCategory[];
   members: Member[];
   onClose: () => void;
   onSaved: () => void;
+  /** Optionale Vorbefüllung der Felder (Default = leer wie bisher). */
+  initial?: BookingInitial;
+  /** Wenn gesetzt: diese Buchung beim Speichern zuerst stornieren (Korrektur). */
+  correctionOf?: LedgerEntry;
 }) {
   const t = useT(kassenbuchDict);
   const { locale } = useLocale();
@@ -62,17 +95,24 @@ export function BookingSheet({
     [members],
   );
 
-  const [date, setDate] = useState(today);
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [direction, setDirection] = useState<Direction>("expense");
-  const [amount, setAmount] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [cpKind, setCpKind] = useState<Cp>("person");
-  const [memberId, setMemberId] = useState<string>("");
-  const [orgName, setOrgName] = useState("");
+  const [date, setDate] = useState(initial?.date ?? today);
+  const [categoryId, setCategoryId] = useState<string>(initial?.categoryId ?? "");
+  const [direction, setDirection] = useState<Direction>(initial?.direction ?? "expense");
+  const [amount, setAmount] = useState(initial?.amount ?? "");
+  const [purpose, setPurpose] = useState(initial?.purpose ?? "");
+  const [cpKind, setCpKind] = useState<Cp>(initial?.counterparty?.kind ?? "person");
+  const [memberId, setMemberId] = useState<string>(
+    initial?.counterparty?.kind === "person" ? initial.counterparty.memberId : "",
+  );
+  const [orgName, setOrgName] = useState(
+    initial?.counterparty?.kind === "org" ? initial.counterparty.name : "",
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  // Verhindert doppeltes Storno, falls createLedgerEntry scheitert und der
+  // Nutzer erneut auf Speichern tippt: der Reverse ist dann schon gebucht.
+  const reversalDone = useRef(false);
 
   const clearError = (key: string) =>
     setErrors((current) => {
@@ -124,9 +164,16 @@ export function BookingSheet({
 
     setSubmitting(true);
     try {
+      // GoBD-Korrektur: erst die Originalbuchung stornieren (Gegenbuchung),
+      // dann die korrigierte Fassung als NEUE Buchung anlegen. Der Reverse
+      // passiert NUR hier beim Speichern — nie ungefragt beim Öffnen.
+      if (correctionOf && !reversalDone.current) {
+        await data.reverseLedgerEntry(correctionOf.id);
+        reversalDone.current = true;
+      }
       await data.createLedgerEntry(input);
       showToast(
-        t("entryCreatedToast", {
+        t(correctionOf ? "correctedToast" : "entryCreatedToast", {
           desc: input.description,
           amount: formatEUR(signedCents, locale),
         }),
@@ -145,15 +192,15 @@ export function BookingSheet({
     <Sheet
       open
       onClose={onClose}
-      eyebrow={t("sheetEyebrow")}
-      title={t("sheetTitle")}
+      eyebrow={correctionOf ? t("correctEyebrow") : t("sheetEyebrow")}
+      title={correctionOf ? t("correctTitle") : t("sheetTitle")}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             {t("cancel")}
           </Button>
           <Button type="submit" form={FORM_ID} icon="check" disabled={submitting}>
-            {t("create")}
+            {correctionOf ? t("correctSave") : t("create")}
           </Button>
         </>
       }
@@ -167,6 +214,12 @@ export function BookingSheet({
           void submit();
         }}
       >
+        {correctionOf && (
+          <p className="rounded-md border border-line bg-sunken px-4 py-3 text-caption text-ink-soft">
+            {t("correctHint")}
+          </p>
+        )}
+
         <Input
           label={t("fDate")}
           type="date"

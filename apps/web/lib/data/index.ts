@@ -22,6 +22,7 @@ export type {
   AddMarkerInput,
   AssignableRole,
   CreateEventInput,
+  CreateMemberInput,
   CreateTeamInput,
   DataRepository,
   DunningRunOutcome,

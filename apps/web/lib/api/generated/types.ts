@@ -177,6 +177,11 @@ export interface ClubMemberUpdate {
   "valid_until"?: string | null;
 }
 
+export interface Deleted {
+  "status": "deleted";
+  "id": string;
+}
+
 export interface ClubMemberRoleChange {
   "role": AssignableClubRole;
 }
@@ -553,11 +558,6 @@ export interface GuardianshipCreate {
   "child_member_id": string;
   "guardian_member_id"?: string;
   "relation"?: "parent" | "guardian" | "other";
-}
-
-export interface Deleted {
-  "status": "deleted";
-  "id": string;
 }
 
 export type RealConsentPurpose = "photos_internal" | "photos_public" | "chat" | "newsletter";

@@ -387,6 +387,18 @@ export const apiRepository: DataRepository = {
   },
 
   /* ---------- Verwaltung: Mitglieder-Stammdaten ---------- */
+  async createMember(input) {
+    const created = await apiClient.postClubsByClubIdMembers(activeClubId(), {
+      first_name: input.firstName,
+      last_name: input.lastName,
+      email: input.email,
+      birth_date: input.birthDate,
+      role: input.role,
+      joined_on: input.joinedOn,
+      valid_until: input.validUntil,
+    });
+    return mapMember(created);
+  },
   async updateMember(memberId, patch) {
     const updated = await apiClient.patchClubsByClubIdMembersByMemberId(
       activeClubId(),
@@ -396,11 +408,20 @@ export const apiRepository: DataRepository = {
         last_name: patch.lastName,
         email: patch.email,
         birth_date: patch.birthDate,
+        phone: patch.phone,
+        postal_address: patch.postalAddress,
         status: patch.status,
         valid_until: patch.validUntil,
       },
     );
     return mapMember(updated);
+  },
+  async deleteMember(memberId) {
+    const deleted = await apiClient.deleteClubsByClubIdMembersByMemberId(
+      activeClubId(),
+      memberId,
+    );
+    return { id: deleted.id };
   },
 
   /* ---------- Verwaltung: Teams ---------- */

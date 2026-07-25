@@ -110,6 +110,38 @@ export const mitgliederVerwaltungDict = {
     roleToast: "Rolle geändert zu „{role}“",
     forbidden: "Keine Berechtigung — die Änderung wurde nicht gespeichert.",
     roleForbidden: "Keine Berechtigung — die Rolle wurde nicht geändert.",
+
+    /* ---------- Kontaktdaten (0054) ---------- */
+    secContact: "Kontakt",
+    fldPhone: "Telefon",
+    phoneHint: "Optional — leer lassen entfernt die Nummer.",
+    fldPostalAddress: "Anschrift",
+    addressHint: "Optional — Straße, PLZ, Ort. Leer lassen entfernt die Anschrift.",
+
+    /* ---------- Mitglied anlegen (ohne Online-Zugang) ---------- */
+    createBtn: "Mitglied anlegen",
+    createEyebrow: "Mitglied anlegen",
+    createTitle: "Neues Mitglied",
+    createNote:
+      "Ohne Online-Zugang — z. B. Mitglieder ohne eigenen Internetzugang. Die E-Mail ist optional; die Person landet ohne Einladung direkt im Verein.",
+    cmEmailOptionalHint: "Optional — ohne E-Mail bekommt die Person keinen Online-Zugang.",
+    fldJoined: "Beitrittsdatum",
+    joinedHint: "Optional — Standard ist heute.",
+    createSubmit: "Anlegen",
+    createdToast: "{name} angelegt",
+    createForbidden: "Keine Berechtigung — das Mitglied wurde nicht angelegt.",
+    valGuestValidUntil: "Für einen Gasttrainer bitte ein Ablaufdatum angeben.",
+
+    /* ---------- Mitglied löschen (Soft-Delete) ---------- */
+    deleteBtn: "Löschen",
+    deleteEyebrow: "Mitglied entfernen",
+    deleteTitle: "{name} löschen?",
+    deleteBody:
+      "Das Mitglied wird aus dem Verein entfernt und erscheint nicht mehr in Listen und Teams. Rückgängig machen lässt sich das nur durch erneutes Anlegen.",
+    deleteConfirm: "Mitglied löschen",
+    deletedToast: "{name} gelöscht",
+    deleteForbidden: "Keine Berechtigung — das Mitglied wurde nicht gelöscht.",
+    deleteLastOwner: "Das letzte aktive Vorstandsmitglied (Owner) kann nicht gelöscht werden.",
   },
   en: {
     eyebrow: "Club administration",
@@ -213,6 +245,38 @@ export const mitgliederVerwaltungDict = {
     roleToast: "Role changed to “{role}”",
     forbidden: "No permission — the change was not saved.",
     roleForbidden: "No permission — the role was not changed.",
+
+    /* ---------- Contact data (0054) ---------- */
+    secContact: "Contact",
+    fldPhone: "Phone",
+    phoneHint: "Optional — leaving it empty removes the number.",
+    fldPostalAddress: "Postal address",
+    addressHint: "Optional — street, ZIP, city. Leaving it empty removes the address.",
+
+    /* ---------- Add member (no online access) ---------- */
+    createBtn: "Add member",
+    createEyebrow: "Add member",
+    createTitle: "New member",
+    createNote:
+      "No online access needed — e.g. members without their own internet access. Email is optional; the person is added to the club directly, without an invitation.",
+    cmEmailOptionalHint: "Optional — without an email the person gets no online access.",
+    fldJoined: "Joined on",
+    joinedHint: "Optional — defaults to today.",
+    createSubmit: "Add",
+    createdToast: "{name} added",
+    createForbidden: "No permission — the member was not created.",
+    valGuestValidUntil: "Please provide an expiry date for a guest coach.",
+
+    /* ---------- Delete member (soft delete) ---------- */
+    deleteBtn: "Delete",
+    deleteEyebrow: "Remove member",
+    deleteTitle: "Delete {name}?",
+    deleteBody:
+      "The member is removed from the club and will no longer appear in lists and teams. This can only be undone by adding them again.",
+    deleteConfirm: "Delete member",
+    deletedToast: "{name} deleted",
+    deleteForbidden: "No permission — the member was not deleted.",
+    deleteLastOwner: "The last active board member (owner) cannot be deleted.",
   },
 } satisfies Dict;
 

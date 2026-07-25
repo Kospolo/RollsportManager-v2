@@ -27,9 +27,26 @@ import {
   type PeriodKey,
 } from "./derive";
 import { LedgerTable } from "./_components/LedgerTable";
-import { BookingSheet } from "./_components/BookingSheet";
+import { BookingSheet, type BookingInitial } from "./_components/BookingSheet";
 import { CategoriesModal } from "./_components/CategoriesModal";
 import { ReverseModal } from "./_components/ReverseModal";
+
+/**
+ * Vorbefüllung des Buchungs-Sheets aus einer bestehenden Buchung (GoBD-Korrektur).
+ * Betrag vorzeichenlos als Euro-Zeichenkette (die Richtung trägt das Vorzeichen);
+ * eine soft-gelöschte Kategorie erscheint nicht im Dropdown → Nutzer wählt neu.
+ */
+function bookingInitialFromEntry(entry: LedgerEntry): BookingInitial {
+  const euros = (Math.abs(entry.amountCents) / 100).toFixed(2).replace(".", ",");
+  return {
+    date: entry.date,
+    categoryId: entry.categoryId ?? "",
+    direction: entry.amountCents >= 0 ? "income" : "expense",
+    amount: euros,
+    purpose: entry.description,
+    counterparty: entry.counterparty,
+  };
+}
 
 /**
  * Kassenbuch /finanzen/kassenbuch (Seriositätszone) — vollwertiges Kassenbuch
@@ -130,6 +147,7 @@ function KassenbuchContent({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [reverseEntry, setReverseEntry] = useState<LedgerEntry | null>(null);
+  const [correctEntry, setCorrectEntry] = useState<LedgerEntry | null>(null);
 
   const allRows = useMemo(() => buildLedgerRows(ledger, members), [ledger, members]);
   const rows = useMemo(() => filterLedgerRows(allRows, filter), [allRows, filter]);
@@ -223,6 +241,7 @@ function KassenbuchContent({
               rows={rows}
               invoices={invoices}
               onReverse={setReverseEntry}
+              onCorrect={setCorrectEntry}
               empty={
                 <EmptyState
                   icon="search"
@@ -261,6 +280,17 @@ function KassenbuchContent({
           categories={categories}
           members={members}
           onClose={() => setSheetOpen(false)}
+          onSaved={onChanged}
+        />
+      )}
+      {correctEntry && (
+        <BookingSheet
+          clubId={clubId}
+          categories={categories}
+          members={members}
+          initial={bookingInitialFromEntry(correctEntry)}
+          correctionOf={correctEntry}
+          onClose={() => setCorrectEntry(null)}
           onSaved={onChanged}
         />
       )}
