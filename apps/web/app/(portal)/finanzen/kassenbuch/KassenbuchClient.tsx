@@ -2,13 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  data,
-  dataSource,
-  errorMessage,
-  ledgerBalanceCents,
-  permissions,
-} from "@/lib/data";
+import { data, errorMessage, ledgerBalanceCents, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR } from "@/lib/format";
@@ -79,7 +73,7 @@ export function KassenbuchClient() {
   }
 
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

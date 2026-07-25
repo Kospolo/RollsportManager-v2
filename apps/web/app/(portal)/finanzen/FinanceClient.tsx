@@ -3,14 +3,7 @@
 import { useMemo, useState } from "react";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDate } from "@/lib/format";
-import {
-  data,
-  dataSource,
-  memberById,
-  permissions,
-  isNotImplemented,
-  errorMessage,
-} from "@/lib/data";
+import { data, memberById, permissions, isNotImplemented, errorMessage } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { DunningLevel, Invoice, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -93,7 +86,7 @@ export function FinanceClient() {
    * gilt (wie in allen Finanz-Screens) die Verwaltungssicht, um die Demo zu
    * zeigen; die Mitglieder-Sicht greift real im api-Modus. */
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { dataSource, errorMessage, permissions } from "@/lib/data";
+import { errorMessage, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import type { BankTransaction, Invoice, LedgerCategory, Member } from "@/lib/types";
@@ -47,7 +47,7 @@ export function BankReconClient() {
     // Rechte VOR den geschützten Umsatz-/Rechnungs-Fetches prüfen: ein Mitglied
     // bekäme sonst 403 (RLS/can_manage_finance) und landete im Lade-Fehler statt
     // in der freundlichen „Kein Zugriff"-Ansicht (wie Spenden/Jahresabschluss).
-    const canManage = permissions(currentUser).canManageFinance || dataSource === "mock";
+    const canManage = permissions(currentUser).canManageFinance;
     if (!canManage) {
       return {
         currentUser,
@@ -84,7 +84,7 @@ export function BankReconClient() {
   }
 
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

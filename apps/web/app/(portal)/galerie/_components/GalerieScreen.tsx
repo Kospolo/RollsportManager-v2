@@ -7,15 +7,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChips, type FilterChipOption } from "@/components/ui/FilterChips";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
-import {
-  dataSource,
-  errorMessage,
-  isClubModuleDisabled,
-  isClubProRequired,
-  isNotImplemented,
-  memberById,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, isClubModuleDisabled, isClubProRequired, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useCapabilities } from "@/lib/capabilities";
 import { useT } from "@/lib/i18n";
@@ -81,7 +73,7 @@ export function GalerieScreen() {
   // Markieren = Staff (Trainer/Vorstand/Moderator, OHNE Kassenwart) — deckt sich
   // mit COACH_ROLES der API (photo-tags.ts). Nur Sichtbarkeit; der Server (403)
   // ist die verbindliche Grenze. isTrainer schließt treasurer bereits aus.
-  const canTag = perms.isTrainer || dataSource === "mock";
+  const canTag = perms.isTrainer;
 
   const { options, effectiveAlbum, filtered } = useMemo(() => {
     const albums = Array.from(

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Checkin, Event, Id, Member } from "@/lib/types";
-import { dataSource, errorMessage, fullName, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, fullName, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -53,7 +53,7 @@ export function CheckinScreen() {
   const checkins = state.data?.[3] ?? NO_CHECKINS;
 
   const isTrainer =
-    (currentUser != null && permissions(currentUser).isTrainer) || dataSource === "mock";
+    (currentUser != null && permissions(currentUser).isTrainer);
 
   const [toDelete, setToDelete] = useState<Checkin | null>(null);
 

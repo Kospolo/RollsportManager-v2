@@ -3,13 +3,7 @@
 import { useMemo, useState } from "react";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatEUR } from "@/lib/format";
-import {
-  dataSource,
-  errorMessage,
-  fullName,
-  isNotImplemented,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, fullName, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Id, Member, MemberFee } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -83,7 +77,7 @@ export function MemberFeesClient() {
   }
 
   const canManage =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManage) {
     return (

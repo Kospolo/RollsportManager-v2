@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { dataSource, errorMessage, permissions } from "@/lib/data";
+import { errorMessage, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
@@ -66,7 +66,7 @@ export function SepaClient() {
   }
 
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

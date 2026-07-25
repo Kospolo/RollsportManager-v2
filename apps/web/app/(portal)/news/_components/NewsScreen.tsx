@@ -5,13 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
-import {
-  dataSource,
-  errorMessage,
-  isNotImplemented,
-  memberById,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import type { Member, News } from "@/lib/types";
@@ -53,7 +47,7 @@ export function NewsScreen() {
   const news = core.status === "ready" ? core.data.news : NO_NEWS;
   const members: Member[] = core.status === "ready" ? core.data.members : [];
   const currentUser = core.status === "ready" ? core.data.currentUser : null;
-  const canWrite = permissions(currentUser).isTrainer || dataSource === "mock";
+  const canWrite = permissions(currentUser).isTrainer;
 
   const { pinned, rest } = useMemo(
     () => ({

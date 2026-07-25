@@ -12,14 +12,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { Icon } from "@/components/shell/icons";
-import {
-  data,
-  dataSource,
-  errorMessage,
-  fullName,
-  isForbidden,
-  permissions,
-} from "@/lib/data";
+import { data, errorMessage, fullName, isForbidden, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { dayDiff, formatDate, relativeDays } from "@/lib/format";
@@ -101,7 +94,7 @@ export function ExportTab({
     );
   }
 
-  const isTrainer = permissions(core.data).isTrainer || dataSource === "mock";
+  const isTrainer = permissions(core.data).isTrainer;
 
   if (!isTrainer) {
     return <EmptyState icon="lock" title={t("fedLockTitle")} body={t("fedLockBody")} />;

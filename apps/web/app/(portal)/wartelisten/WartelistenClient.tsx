@@ -1,12 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  dataSource,
-  errorMessage,
-  isNotImplemented,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
@@ -78,8 +73,7 @@ export function WartelistenClient() {
 
   const entries = state.data?.[0] ?? [];
   const perms = permissions(me);
-  const isMock = dataSource === "mock";
-  const canManage = perms.isTrainer || isMock;
+  const canManage = perms.isTrainer;
   const myEntries = useMemo(
     () => (me ? sortEntries(entries.filter((e) => e.memberId === me.id)) : []),
     [entries, me],
@@ -235,7 +229,7 @@ function MyEntryCard({
       </div>
 
       {entry.note && (
-        <p className="rounded-lg bg-sunken px-3 py-2 text-caption text-ink-soft">„{entry.note}"</p>
+        <p className="rounded-lg bg-sunken px-3 py-2 text-caption text-ink-soft">„{entry.note}“</p>
       )}
 
       <div className="flex items-center justify-between gap-2">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { dataSource, errorMessage, permissions } from "@/lib/data";
+import { errorMessage, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import type { Id } from "@/lib/types";
@@ -46,7 +46,7 @@ export function BeitragskategorienClient() {
   }
 
   const canManageFinance =
-    permissions(core.data).canManageFinance || dataSource === "mock";
+    permissions(core.data).canManageFinance;
 
   if (!canManageFinance) {
     return (

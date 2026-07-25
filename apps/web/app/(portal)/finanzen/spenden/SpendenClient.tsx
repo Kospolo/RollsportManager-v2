@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { dataSource, errorMessage, fullName, permissions } from "@/lib/data";
+import { errorMessage, fullName, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDateShort } from "@/lib/format";
@@ -60,7 +60,7 @@ export function SpendenClient() {
   }
 
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { dataSource, errorMessage, permissions } from "@/lib/data";
+import { errorMessage, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { Icon } from "@/components/shell/icons";
@@ -46,7 +46,7 @@ export function BudgetClient() {
     );
   }
 
-  const canManageFinance = permissions(core.data).canManageFinance || dataSource === "mock";
+  const canManageFinance = permissions(core.data).canManageFinance;
 
   if (!canManageFinance) {
     return (

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Equipment, EquipmentReservation, Member } from "@/lib/types";
-import { dataSource, errorMessage, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -51,7 +51,7 @@ export function EquipmentScreen() {
   const members = state.data?.[2] ?? NO_MEMBERS;
   const currentUser = state.data?.[3] ?? null;
 
-  const canManage = (currentUser && permissions(currentUser).isTrainer) || dataSource === "mock";
+  const canManage = currentUser != null && permissions(currentUser).isTrainer;
 
   const [filter, setFilter] = useState<string>("all");
   const [reserveTarget, setReserveTarget] = useState<Equipment | null>(null);

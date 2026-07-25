@@ -4,13 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR, formatDate } from "@/lib/format";
-import {
-  dataSource,
-  errorMessage,
-  isNotImplemented,
-  memberById,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Id, InvoiceDetail, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -67,7 +61,7 @@ export function MahnungenClient() {
   }
 
   const canManageFinance =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManageFinance) {
     return (

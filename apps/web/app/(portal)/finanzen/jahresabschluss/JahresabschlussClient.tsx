@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  data,
-  dataSource,
-  errorMessage,
-  isForbidden,
-  permissions,
-} from "@/lib/data";
+import { data, errorMessage, isForbidden, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatEUR } from "@/lib/format";
@@ -56,7 +50,7 @@ export function JahresabschlussClient() {
     );
   }
 
-  const canManageFinance = permissions(core.data).canManageFinance || dataSource === "mock";
+  const canManageFinance = permissions(core.data).canManageFinance;
 
   if (!canManageFinance) {
     return (

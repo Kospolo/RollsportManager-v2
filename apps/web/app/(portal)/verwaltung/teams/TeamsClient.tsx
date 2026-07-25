@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { dataSource, errorMessage, permissions } from "@/lib/data";
+import { errorMessage, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Member, Team } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -44,7 +44,7 @@ export function TeamsClient() {
   const currentUser = state.data?.[2] ?? null;
 
   const perms = permissions(currentUser);
-  const canManage = perms.isClubAdmin || dataSource === "mock";
+  const canManage = perms.isClubAdmin;
 
   const sorted = useMemo(() => sortTeams(teams), [teams]);
 

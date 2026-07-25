@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Department, Member } from "@/lib/types";
-import { dataSource, errorMessage, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -41,8 +41,8 @@ export function DepartmentsScreen() {
   const currentUser = state.data?.[2] ?? null;
 
   const perms = currentUser ? permissions(currentUser) : null;
-  const canManage = (perms?.isClubAdmin ?? false) || dataSource === "mock";
-  const canAssign = (perms?.isTrainer ?? false) || dataSource === "mock";
+  const canManage = (perms?.isClubAdmin ?? false);
+  const canAssign = (perms?.isTrainer ?? false);
 
   const [form, setForm] = useState<DepartmentFormValue | null>(null);
   const [toDelete, setToDelete] = useState<Department | null>(null);

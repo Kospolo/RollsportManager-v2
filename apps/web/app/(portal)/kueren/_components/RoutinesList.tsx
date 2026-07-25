@@ -3,7 +3,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { Member, Routine, RoutineStatus } from "@/lib/types";
-import { dataSource, errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
+import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
@@ -75,7 +75,7 @@ export function RoutinesList() {
 
   // Anlegen = is_club_trainer; im mock-Modus (Demo-Persona Trainerin) sichtbar.
   const isTrainer =
-    permissions(state.data?.[2] ?? null).isTrainer || dataSource === "mock";
+    permissions(state.data?.[2] ?? null).isTrainer;
 
   if (state.status === "loading") {
     return (

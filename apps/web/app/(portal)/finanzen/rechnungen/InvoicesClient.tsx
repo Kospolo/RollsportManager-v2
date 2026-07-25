@@ -4,15 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort, formatEUR } from "@/lib/format";
-import {
-  dataSource,
-  errorMessage,
-  fullName,
-  isForbidden,
-  isNotImplemented,
-  memberById,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, fullName, isForbidden, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Id, InvoiceDetail, LedgerCategory, Member } from "@/lib/types";
 import { Icon } from "@/components/shell/icons";
@@ -76,7 +68,7 @@ export function InvoicesClient() {
   }
 
   const canManage =
-    permissions(core.data.currentUser).canManageFinance || dataSource === "mock";
+    permissions(core.data.currentUser).canManageFinance;
 
   if (!canManage) {
     return (

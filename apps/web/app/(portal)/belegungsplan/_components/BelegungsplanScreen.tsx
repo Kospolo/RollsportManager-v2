@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Facility, FacilityBooking, FacilityKind, Member, Team } from "@/lib/types";
-import { dataSource, errorMessage, isNotImplemented, permissions } from "@/lib/data";
+import { errorMessage, isNotImplemented, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -69,7 +69,7 @@ export function BelegungsplanScreen() {
   // (coach/moderator/admin/owner). Mitglieder + treasurer sehen den Plan rein
   // lesend (POST liefert sonst 403). Der mock-Bypass hält die Demo-Schreibpfade
   // erlebbar (Demo-Persona ist Trainerin).
-  const isTrainer = permissions(currentUser).isTrainer || dataSource === "mock";
+  const isTrainer = permissions(currentUser).isTrainer;
   const canBook = isTrainer;
   const canDeleteBooking = (booking: FacilityBooking) =>
     isTrainer || booking.bookedByMemberId === currentUser?.id;

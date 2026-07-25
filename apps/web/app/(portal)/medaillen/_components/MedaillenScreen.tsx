@@ -6,13 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterChips, type FilterChipOption } from "@/components/ui/FilterChips";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Skeleton, SkeletonCard } from "@/components/ui/Skeleton";
-import {
-  dataSource,
-  errorMessage,
-  isNotImplemented,
-  memberById,
-  permissions,
-} from "@/lib/data";
+import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import { useT } from "@/lib/i18n";
 import type { Achievement, Medal, Member } from "@/lib/types";
@@ -54,7 +48,7 @@ export function MedaillenScreen() {
   const achievements = core.status === "ready" ? core.data.achievements : NO_ACHIEVEMENTS;
   const members = core.status === "ready" ? core.data.members : NO_MEMBERS;
   const currentUser = core.status === "ready" ? core.data.currentUser : null;
-  const canManage = permissions(currentUser).isTrainer || dataSource === "mock";
+  const canManage = permissions(currentUser).isTrainer;
 
   const mine = useMemo(
     () => (currentUser ? achievements.filter((a) => a.memberId === currentUser.id) : []),
