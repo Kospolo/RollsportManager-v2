@@ -11,30 +11,32 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ## ⏩ WIEDEREINSTIEG 2026-07-25 (nach Claude-Neustart ZUERST lesen)
 
-**Sicher committet + auf der Beta live: Commit `e218fe6`. Arbeitsbaum sauber, nichts offen liegen.**
-Alles geprüft: Rechte-Gate systemweit (30 Seiten), Teams, Termine bearb./löschen, Trainer-Notiz Kür,
-Mitglieder-CRUD (inkl. anlegen ohne E-Mail), Kassenbuch-Korrigieren (GoBD), Wettkampf-CRUD,
-Wartelisten-Badges+Glocke, **Rechnungen (Positionen/MwSt, Rechnungs-Einstellungen/Briefkopf,
-PDF-Druckansicht, Entwurf via Positions-CRUD)**. Migration bis **0080** in Dev-DB + Buch.
+**Sicher committet + auf der Beta live: Commit `09a42a9`. Arbeitsbaum sauber.** Die Vorstand-Liste vom
+25.07. ist im Kern ABGEARBEITET. Alles geprüft (Gates + Browser als Rolle): Rechte-Gate systemweit
+(30 Seiten), Teams, Termine bearb./löschen, Trainer-Notiz Kür, Mitglieder-CRUD (inkl. anlegen ohne E-Mail),
+Kassenbuch-Korrigieren (GoBD), Wettkampf-CRUD, Wartelisten-Badges+Glocke, Rechnungen (Positionen/MwSt,
+Einstellungen/Briefkopf, PDF-Druckansicht), Vereins-Einstellungen (Stammdaten, Club-SMTP write-only,
+öffentliches Profil), **Chat-Meldesystem** (Nachricht melden → Vereinsadmin+Superadmin, Snapshot+IP,
+Druckansicht, Benachrichtigung; live: Admin sieht /verwaltung/meldungen, Mitglied „Kein Zugriff").
+Migrationen bis **0082** in Dev-DB + Buch.
 
-**Noch OFFEN aus der Vorstand-Liste (25.07.), beides GROSS:**
-1. **Chat**: Gruppenchat + Broadcast an alle; Nachrichten löschen; **Meldesystem** — „Nachricht melden" →
-   an Vereinsadmin UND Superadmin; Admin öffnet/bearbeitet/druckt/speichert die Meldung, kann an gemeldete
-   Person oder Melder schreiben; Meldung mit Chatverlauf im Anhang, wann/wo, möglichst IP+Kontakt, an den
-   Vorstand.
-2. **Vereins-Einstellungen** erweitern: mehr Felder, SMTP für Anmeldung/Info-Mails, Vereins-Infos + Bilder
-   für die spätere Website (kleiner Slider aller Vereine mit Logo+Name, anklickbar → Verein ansehen, nur wenn
-   aktiviert).
-
-Kleinere Reste: Spenden-„Zuwendungsbescheinigung"-Button (nur falls noch zu lang), Rechnungs-E-Mail-Versand
-(braucht SMTP), reines Feld-Editieren positionsloser Entwurfsrechnungen.
+**BEWUSST OFFEN / FOLGESCHRITTE (jeweils mit Grund weggelassen):**
+1. **Chat Broadcast/Gruppenchat** — heute nur team+direct; ein dritter Kanaltyp bricht
+   `chat_messages_shape_check` + RLS 0011/0043 + SQL-Tests auf → eigener P1-Baustein.
+2. **Admin löscht FREMDE Chat-Nachrichten** — RLS `chat_messages_update` = nur Absender; bräuchte
+   Policy-/Migrations-Änderung mit Test-Auswirkung.
+3. **SMTP-abhängig**: Rechnungs-E-Mail-Versand + E-Mail-Weiterleitung einer Meldung an den Vorstand.
+4. **Öffentliche Website-Slider-Seite** (alle Vereine als Kachel mit Logo+Name, login-frei) — die Felder +
+   der Aktivieren-Schalter existieren bereits (0081), es fehlt die login-freie Read-Policy + die public Route.
+5. Klein: reines Feld-Editieren positionsloser Entwurfsrechnungen.
 
 **Arbeitsweise (Marcel, 25.07.): „mach es doch und bleib nicht stehen".** Pro Bereich einen Agenten
-(getrennte Dateien, kein Konflikt auf shared facade/contract → shared-file-Features NACHEINANDER), gegen die
-alte Seite (`/Apps/RollsportManager`) abgleichen, selbst im Browser als Rolle prüfen (localStorage
-`rsm.mock.viewer`=m-02 Vorstand / m-07 Kind), pro fertigem Stück committen + `./infra/beta/deploy.sh`.
-Nicht raten, Ist-Zustand vor dem Handeln prüfen, keine Riesen-Texte. Bestandsaufnahme-Audit-Ergebnis lag in
-`tasks/w1yo0dq8l.output` (Scratchpad, evtl. nach Neustart weg — dann neu gegen v1 abgleichen).
+(getrennte Dateien; shared facade/contract-Features NACHEINANDER, sonst Konflikt), gegen die alte Seite
+(`/Apps/RollsportManager`) abgleichen, selbst im Browser als Rolle prüfen (localStorage `rsm.mock.viewer`
+=m-02 Vorstand / m-07 Kind), pro fertigem Stück committen + `./infra/beta/deploy.sh`. **FALLE:** beim
+Committen ALLE vom Agenten geänderten Dateien stagen (`git status` prüfen!) — sonst bricht der Deploy-Build,
+weil `git archive HEAD` referenzierte, aber nicht committete Dateien nicht kennt (am 25.07. mit
+types-batch4.ts passiert). Nicht raten, Ist-Zustand vor dem Handeln prüfen, keine Riesen-Texte.
 
 ---
 
