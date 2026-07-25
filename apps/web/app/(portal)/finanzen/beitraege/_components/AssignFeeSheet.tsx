@@ -153,6 +153,33 @@ export function AssignFeeSheet({
       title={isEdit ? t("assignTitleEdit") : t("assignTitleNew")}
       footer={
         <>
+          {/* Entfernen gehört in die Fußzeile: dort ist es IMMER sichtbar. Vorher
+              stand es unten im Sheet-Body und war unter der Falz — der Vorstand
+              dachte, Löschen fehle ganz. Der Bestätigungsschritt bleibt (nie
+              ohne Rückfrage löschen). */}
+          {isEdit &&
+            (confirmRemove ? (
+              <div className="mr-auto flex items-center gap-2">
+                <span className="text-[13px] font-bold text-ink">{t("removeConfirmQ")}</span>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmRemove(false)} disabled={submitting}>
+                  {t("removeConfirmNo")}
+                </Button>
+                <Button variant="danger" size="sm" onClick={remove} disabled={submitting}>
+                  {t("removeConfirmYes")}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon="trash"
+                className="mr-auto text-danger"
+                onClick={() => setConfirmRemove(true)}
+                disabled={submitting}
+              >
+                {t("removeAction")}
+              </Button>
+            ))}
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             {t("cancel")}
           </Button>
@@ -257,38 +284,6 @@ export function AssignFeeSheet({
         </button>
       </form>
 
-      {isEdit && (
-        <div className="mt-6 border-t border-line pt-4">
-          {confirmRemove ? (
-            <div className="grid gap-2.5">
-              <span className="text-[13px] font-bold text-ink">{t("removeConfirmQ")}</span>
-              <div className="flex flex-wrap gap-2.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setConfirmRemove(false)}
-                  disabled={submitting}
-                >
-                  {t("removeConfirmNo")}
-                </Button>
-                <Button variant="danger" size="sm" onClick={remove} disabled={submitting}>
-                  {t("removeConfirmYes")}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              icon="close"
-              onClick={() => setConfirmRemove(true)}
-              disabled={submitting}
-            >
-              {t("removeAction")}
-            </Button>
-          )}
-        </div>
-      )}
     </Sheet>
   );
 }

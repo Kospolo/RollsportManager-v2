@@ -84,7 +84,7 @@ export const spendenDict = {
       "Erst das Ausstellen macht die Bescheinigung gültig — danach ist die Spende eingefroren (GoBD).",
 
     // Bescheinigungs-Modal
-    receiptEyebrow: "Zuwendungsbescheinigung",
+    receiptEyebrow: "Spendenquittung",
     receiptTitle: "Bescheinigung {number}",
     receiptLoadError: "Die Bescheinigung konnte nicht geladen werden.",
     receiptIssuer: "Aussteller",
