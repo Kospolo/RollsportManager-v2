@@ -17,6 +17,13 @@ Fach-Agenten + Angreifer-Gegenprüfung vor dem „fertig". Genutzte Skills: data
 senior-backend/-frontend, api-design-reviewer, ui-ux-pro-max, frontend-design, gdpr-dsgvo-expert,
 code-reviewer, web-design-guidelines (via `find-skills` / `~/.claude/skills/`).
 
+**🟢 VORSTAND-CRUD 25.07. (Abgleich mit alter Seite → gebaut, live geprüft):**
+- **Teams** anlegen/löschen erscheint sofort — Wurzel-Bug: Mock gab Store-Referenz direkt zurück, `useMemo` rechnete nie neu; jetzt `[...store]` (`a438ce9`).
+- **Termine bearbeiten/löschen** — fehlte auf allen Schichten; Full-Stack ergänzt (Backend patch/delete `/events/{id}`, Contract, Facade, Mock-Overrides, UI mit echter Rückfrage). Live: Vorstand löscht → 16→15 (`49b9d67`).
+- **Trainer-Notiz zurück in die Kür** — member_coach_notes im Kür-Kontext, nur Trainer+Vorstand, neben „Meine Notiz". Live: Vorstand sieht beide, Mitglied nur „Meine Notiz" (`49b9d67`).
+- **Beitrags-Löschen** in die Sheet-Fußzeile (war unter der Falz); **Spenden** „Spendenquittung" (Text lief raus) (`5e59421`).
+- **OFFEN (Vorstand-Liste 25.07., priorisiert im Audit):** Mitglieder-CRUD + manuell ohne E-Mail (P1) · Wettkampf-CRUD · Rechnungen PDF+Einstellungen (P1, L) · Kassenbuch „Korrigieren" · Wartelisten-Benachrichtigung + Dashboard-Zähler · Chat Gruppenchat+Meldesystem · Vereins-Einstellungen erweitern+SMTP+Website-Slider. **Mahnung/Kassenbuch „löschen" gibt es bewusst NICHT (GoBD, nur stornieren/korrigieren).**
+
 **🔴→🟢 RECHTE-GATE WAR SYSTEMWEIT OFFEN (25.07.2026, behoben).** Marcel fand als Mitglied „Lina" (Kind)
 auf vielen Seiten Anlegen/Bearbeiten/Löschen/Genehmigen/Hochladen + fremde Daten. Ursache auf **30 Seiten**:
 das Gate stand als `<echter Check> || dataSource === "mock"` — der `|| mock`-Zweig öffnete auf der Beta JEDES
