@@ -17,6 +17,21 @@ Fach-Agenten + Angreifer-Gegenprüfung vor dem „fertig". Genutzte Skills: data
 senior-backend/-frontend, api-design-reviewer, ui-ux-pro-max, frontend-design, gdpr-dsgvo-expert,
 code-reviewer, web-design-guidelines (via `find-skills` / `~/.claude/skills/`).
 
+**🔴→🟢 RECHTE-GATE WAR SYSTEMWEIT OFFEN (25.07.2026, behoben).** Marcel fand als Mitglied „Lina" (Kind)
+auf vielen Seiten Anlegen/Bearbeiten/Löschen/Genehmigen/Hochladen + fremde Daten. Ursache auf **30 Seiten**:
+das Gate stand als `<echter Check> || dataSource === "mock"` — der `|| mock`-Zweig öffnete auf der Beta JEDES
+Gate für jeden Betrachter, Rolle egal.
+- **8 Seiten** (Workflow, `bc78c94`): auf `hasCap(<cap>,"edit")` umgestellt — pflichtstunden(duty_hours),
+  trainingsplan(training_slots), events(regional_events), galerie(gallery), dokumente(documents),
+  uebungen(exercises), kueren(routines_edit, NICHT routines), familie(finance:read_all fürs Mahn-Badge).
+- **22 Seiten** (`3b67df0`): den `|| dataSource === "mock"`-Öffner entfernt — ALLE Finanzseiten, Belegungsplan,
+  Teams, Abteilungen, News, Ausrüstung, Check-in, Medaillen, Wartelisten, Wettkampf-Export, Küren-Liste.
+- **Zwei echte Daten-Leaks:** Mitglied sah Pflichtstunden ALLER Mitglieder; Kind sah Mahnstatus des Elternteils.
+- Live als Lina geprüft: Belegungsplan „Halle anlegen" weg, Mahnungen blockt („nur Kassenwart+Vorstand"),
+  Genehmigen/Vereins-Übersicht/Anlegen weg. Küren-Notiz im Web heißt jetzt „Meine Notiz" (war „Trainingsnotizen").
+- **NOCH OFFEN (Marcel 25.07.):** Kür-Anzahl-Limit pro Stufe, Notizen-Limit ohne Pro, Dokumente/Galerie als
+  Pro-Modul echt entitlement-gaten (v1: `get_user_limits()`, Stufen Premium/Unbegrenzt).
+
 **🟢 BETA ÖFFENTLICH — `beta.rollsportmanager.de` (24.07.2026).** Das Web-Portal läuft als
 Docker-Container `rollsportmanager-beta` auf **Port 8095** mit `restart: unless-stopped`
 (Autostart nach Neustart). Ausrollen: **`./infra/beta/deploy.sh`** — rollt immer den letzten
