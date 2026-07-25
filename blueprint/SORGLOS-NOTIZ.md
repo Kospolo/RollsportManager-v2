@@ -9,6 +9,26 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ---
 
+## ⏩ WIEDEREINSTIEG 2026-07-25 (nach Claude-Neustart ZUERST lesen)
+
+**Sicher committet + auf der Beta live: Commit `c7552bf`.** Alles bis dahin ist geprüft (Rechte-Gate
+systemweit, Teams, Termine bearb./löschen, Trainer-Notiz Kür, Mitglieder-CRUD inkl. anlegen ohne E-Mail,
+Kassenbuch-Korrigieren, Wettkampf-CRUD, Wartelisten-Badges+Glocke).
+
+**⚠️ UNCOMMITTET im Arbeitsbaum: die halbfertige Rechnungen-Arbeit eines Agenten** (Migration
+`0080_rechnungseinstellungen.sql`, `services/api/src/routes/invoice-settings.ts`, `finanzen/einstellungen/`,
+`finanzen/rechnungen/[id]/` Druckansicht, `InvoiceItemsEditor.tsx`, viele finance-Dateien + Contract). **NICHT
+gate-geprüft**, Agent war beim Neustart evtl. noch nicht fertig. VORGEHEN in der neuen Sitzung:
+1. `git status` ansehen. Migration 0080 in Dev-DB? `docker exec rsm2-pg-dev psql -U postgres -d rsm2 -c "\dt app.invoice_settings"` — falls fehlt: `docker exec -i rsm2-pg-dev psql -U postgres -d rsm2 < supabase/migrations/0080_*.sql` + ins Buch `public.rsm_schema_migrations` eintragen.
+2. Gates fahren: `cd services/api && npx tsc --noEmit && npx vitest run`; `cd packages/contracts && node codegen/check.mjs`; `cd apps/web && npx tsc --noEmit`.
+3. Grün → committen + `./infra/beta/deploy.sh` + Browser-Gegenprobe (Rechnung erstellen mit Positionen, Druckansicht öffnen, Rechnungs-Einstellungen speichern). Rot → betroffene finance-Dateien mit `git checkout --` verwerfen oder gezielt reparieren.
+
+**Danach OFFEN (Vorstand-Liste 25.07., Rest):** Chat Gruppenchat + Meldesystem (GROSS) · Vereins-Einstellungen
+erweitern + SMTP + Website-Slider (GROSS). **Arbeitsweise: mach es doch und bleib nicht stehen** — Agenten je
+Bereich (getrennte Dateien), gegen die alte Seite abgleichen, selbst im Browser prüfen, pro Stück committen+deployen.
+
+---
+
 ## 0. AKTUELLER STAND — 2026-07-18 (zuerst lesen; überschreibt ältere Prozentangaben unten)
 
 **Arbeitsweise (nie mehr sagen müssen):** RICHTIG LESEN, NICHT RATEN — erst echten Code lesen + im
