@@ -89,13 +89,18 @@ export const mockRepository: DataRepository = {
     return clubStore;
   },
   async getMembers() {
-    return memberStore;
+    // KOPIE, nicht die Store-Referenz: sonst ändert sich die Referenz beim
+    // Anlegen/Löschen nie, ein useMemo(..., [members]) rechnet nicht neu und
+    // ein neues Mitglied erscheint erst nach hartem Reload (25.07. gefunden).
+    return [...memberStore];
   },
   async getMemberById(id) {
     return memberStore.find((m) => m.id === id);
   },
   async getTeams() {
-    return teamStore;
+    // KOPIE (siehe getMembers): sonst erscheinen neu angelegte/gelöschte Teams
+    // nicht — genau der Bug, den Jürgen als Vorstand gesehen hat.
+    return [...teamStore];
   },
   async getGuardianships() {
     return mock.guardianships;
