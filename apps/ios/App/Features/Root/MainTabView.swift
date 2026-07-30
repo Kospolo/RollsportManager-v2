@@ -44,8 +44,13 @@ struct MainTabView: View {
         case platSystem = "plat-system"
     }
 
+    @EnvironmentObject private var session: SessionStore
     @State private var selection: Tab
     @State private var mehrPath: [MehrDeepLink] = []
+    /// Der Operator-Start-Redirect (siehe `body`) darf nur EINMAL feuern —
+    /// sonst käme der Betreiber nie aus der Konsole heraus, wenn er einen
+    /// Verein betreten will.
+    @State private var didRouteOperator = false
 
     init() {
         var initial = Tab.dashboard
@@ -143,6 +148,16 @@ struct MainTabView: View {
             }
                 .tabItem { Label("tab.mehr", systemImage: "ellipsis") }
                 .tag(Tab.mehr)
+        }
+        .task {
+            // Plattform-Admin (Betreiber) startet in der Betreiber-Konsole,
+            // NICHT in einem Verein: er will die Vereine überblicken und bei
+            // Problemen hineingehen. Genau EINMAL — danach navigiert er frei
+            // (didRouteOperator verhindert, dass der Redirect zurückzieht).
+            guard !didRouteOperator, session.isPlatformAdmin else { return }
+            didRouteOperator = true
+            selection = .mehr
+            mehrPath = [.platform]
         }
     }
 }

@@ -36,11 +36,18 @@ export function DevLoginCard() {
     setPendingKey(key);
     setError(null);
     try {
-      await signIn(key);
-      // Ziel nach Rolle: der Plattform-Admin hat keinen Verein und gehoert in
-      // die Betreiber-Konsole (/dashboard verlangt einen Verein und wies ihn ab
-      // -> "Kein Zugriff"). Ein vereinsloser Neuling legt einen an / tritt bei.
-      const dest = key === "platform" ? "/super" : key === "neuling" ? "/registrieren" : "/dashboard";
+      const session = await signIn(key);
+      // Ziel nach Rolle: JEDER Plattform-Admin gehoert in die Betreiber-Konsole
+      // /super — auch der Super-Admin, der ZUSAETZLICH eine Vereinsrolle hat.
+      // Er will die Vereine ueberblicken und bei Problemen hineingehen, nicht in
+      // einem Verein starten. Frueher landete nur die reine "platform"-Persona
+      // dort; die "superadmin"-Persona (mit Owner-Rolle) fiel auf /dashboard.
+      // Ein vereinsloser Neuling legt einen Verein an / tritt bei.
+      const dest = session.profile.is_platform_admin
+        ? "/super"
+        : key === "neuling"
+          ? "/registrieren"
+          : "/dashboard";
       router.push(dest);
     } catch (e) {
       setPendingKey(null);
