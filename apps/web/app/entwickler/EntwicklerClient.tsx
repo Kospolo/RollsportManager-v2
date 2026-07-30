@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as mock from "@/lib/mock";
 import { MOCK_VIEWER_KEY } from "@/lib/data/mock/viewer";
+import { DEFAULT_TIER, MOCK_TIER_KEY } from "@/lib/data/mock/tier";
+import type { EntitlementTier } from "@/lib/types";
 
 /**
  * Auswahl der Demo-Person für die Beta.
@@ -37,9 +39,33 @@ const ROLLEN_NAME: Record<string, string> = {
   member: "Mitglied",
 };
 
+/**
+ * Vereins-Stufen für die Beta. Der Demo-Verein ist von Haus aus „Pro". Über
+ * diese Auswahl lässt sich sehen, was ein Verein OHNE Pro sieht: Kür-Limit
+ * greift, Galerie/Dokumente/Notizen sind als Pro-Module gesperrt.
+ */
+const STUFEN: Array<{ id: EntitlementTier; name: string; hinweis: string }> = [
+  {
+    id: "free",
+    name: "Kostenlos",
+    hinweis: "Ohne Pro: höchstens 1 Kür, Galerie/Dokumente/Notizen gesperrt (Upgrade-Hinweis).",
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    hinweis: "Pro-Module frei, bis zu 10 Küren. (Vorgabe des Demo-Vereins)",
+  },
+  {
+    id: "premium",
+    name: "Premium",
+    hinweis: "Alles frei, Küren unbegrenzt.",
+  },
+];
+
 export function EntwicklerClient() {
   const router = useRouter();
   const [aktiv, setAktiv] = useState<string | null>(null);
+  const [aktiveStufe, setAktiveStufe] = useState<EntitlementTier | null>(null);
 
   // Erst nach dem Mounten lesen: Diese Seite wird ebenfalls statisch
   // vorgerendert, und localStorage gibt es dort nicht. Bis dahin ist `aktiv`
@@ -56,7 +82,28 @@ export function EntwicklerClient() {
     // Preis dafür, dass der erste zum vorgerenderten HTML passt.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setAktiv(gespeichert ?? mock.currentUser.id);
+
+    let stufe: string | null = null;
+    try {
+      stufe = window.localStorage.getItem(MOCK_TIER_KEY);
+    } catch {
+      stufe = null;
+    }
+    setAktiveStufe((stufe as EntitlementTier) ?? DEFAULT_TIER);
   }, []);
+
+  function waehleStufe(tier: EntitlementTier) {
+    try {
+      if (tier === DEFAULT_TIER) window.localStorage.removeItem(MOCK_TIER_KEY);
+      else window.localStorage.setItem(MOCK_TIER_KEY, tier);
+    } catch {
+      // Ohne Speicher kein Wechsel — dann bleibt es bei der Vorgabe.
+    }
+    setAktiveStufe(tier);
+    // Harte Navigation: getClubEntitlement wird beim Laden gelesen; ein
+    // Neuaufbau stellt sicher, dass alle Seiten die neue Stufe sehen.
+    window.location.assign("/dashboard");
+  }
 
   function waehle(id: string) {
     try {
@@ -71,6 +118,7 @@ export function EntwicklerClient() {
   function zuruecksetzen() {
     try {
       window.localStorage.removeItem(MOCK_VIEWER_KEY);
+      window.localStorage.removeItem(MOCK_TIER_KEY);
     } catch {
       /* egal */
     }
@@ -145,6 +193,44 @@ export function EntwicklerClient() {
             );
           })}
         </ul>
+
+        <section className="grid gap-3 border-t border-line pt-6">
+          <div className="grid gap-1">
+            <h2 className="font-display text-h4 tracking-[-0.01em] text-ink">Vereins-Stufe</h2>
+            <p className="max-w-prose text-caption text-ink-soft">
+              Der Demo-Verein ist &bdquo;Pro&ldquo;. Stell hier auf &bdquo;Kostenlos&ldquo;, um zu
+              sehen, was ein Verein ohne Pro sieht: das Kür-Limit greift, und Galerie, Dokumente und
+              Notizen sind gesperrt.
+            </p>
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {STUFEN.map(({ id, name, hinweis }) => {
+              const istAktiv = aktiveStufe === id;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => waehleStufe(id)}
+                    aria-current={istAktiv ? "true" : undefined}
+                    className={`flex h-full w-full flex-col gap-1 rounded-xl border px-4 py-3.5 text-left transition ${
+                      istAktiv
+                        ? "border-brand bg-brand-soft"
+                        : "border-line bg-surface hover:border-line-strong"
+                    }`}
+                  >
+                    <span className="flex items-baseline gap-x-2">
+                      <span className="font-semibold text-ink">{name}</span>
+                      {istAktiv ? (
+                        <span className="ml-auto text-caption font-semibold text-brand">aktiv</span>
+                      ) : null}
+                    </span>
+                    <span className="text-caption text-ink-soft">{hinweis}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
 
         <div className="flex flex-wrap items-center gap-4 border-t border-line pt-5">
           <button

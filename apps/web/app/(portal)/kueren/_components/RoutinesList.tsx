@@ -2,8 +2,9 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import type { Member, Routine, RoutineStatus } from "@/lib/types";
+import type { ClubEntitlement, Member, Routine, RoutineStatus } from "@/lib/types";
 import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
+import { routineLimit, tierName } from "@/lib/entitlement";
 import { useData } from "@/lib/data/useData";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDurationMs } from "@/lib/format";
@@ -36,14 +37,66 @@ const STATUS_ORDER: Record<RoutineStatus, number> = {
 };
 
 /**
+ * Kür-Kontingent im Blick: verbraucht / erlaubt je Vereins-Stufe. `max` null =
+ * unbegrenzt. `reached` = Kontingent ausgeschöpft (nur bei endlichem max).
+ */
+type LimitInfo = {
+  used: number;
+  max: number | null;
+  tierLabel: string;
+  reached: boolean;
+};
+
+/**
  * Kopf (Titel + „Neue Kür") — identisch über Lade-, Fehler- und Datenzustand.
  * Die Liste ist RLS-gescoped: Mitglieder sehen nur ihre EIGENEN Küren, Coaches
  * die ihrer Teams. Anlegen ist is_club_trainer vorbehalten — der „Neue Kür"-
  * Button erscheint deshalb nur für Trainer:innen (canCreate).
+ *
+ * `limit` (nur wenn vorhanden) zeigt neben dem Button das Kür-Kontingent der
+ * Vereins-Stufe und sperrt „Neue Kür", sobald es ausgeschöpft ist — ein
+ * Upgrade-Hinweis statt des generischen Demo-Hinweises. Nur Anzeige: die
+ * verbindliche Grenze zieht der Server (wie v1 get_user_limits).
  */
-function ListShell({ canCreate, children }: { canCreate: boolean; children: ReactNode }) {
+function ListShell({
+  canCreate,
+  limit,
+  children,
+}: {
+  canCreate: boolean;
+  limit?: LimitInfo;
+  children: ReactNode;
+}) {
   const t = useT(kuerenDict);
+  const { locale } = useLocale();
   const { showToast } = useToast();
+
+  const counterText =
+    limit == null
+      ? null
+      : limit.max == null
+        ? locale === "de"
+          ? `${limit.used} Küren · unbegrenzt`
+          : `${limit.used} routines · unlimited`
+        : `${limit.used} / ${limit.max}`;
+
+  const handleCreate = () => {
+    if (limit?.reached && limit.max != null) {
+      const kuer =
+        locale === "de"
+          ? `${limit.max} ${limit.max === 1 ? "Kür" : "Küren"}`
+          : `${limit.max} ${limit.max === 1 ? "routine" : "routines"}`;
+      showToast(
+        locale === "de"
+          ? `Kür-Limit erreicht — Stufe ${limit.tierLabel} erlaubt höchstens ${kuer}. Höhere Stufe für mehr.`
+          : `Routine limit reached — the ${limit.tierLabel} plan allows at most ${kuer}. Upgrade for more.`,
+        { tone: "info" },
+      );
+      return;
+    }
+    showToast(t("demoUnavailable"), { tone: "info" });
+  };
+
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-5">
       <SectionHeader
@@ -52,12 +105,14 @@ function ListShell({ canCreate, children }: { canCreate: boolean; children: Reac
         sub={t("pageSub")}
         action={
           canCreate ? (
-            <Button
-              icon="plus"
-              onClick={() => showToast(t("demoUnavailable"), { tone: "info" })}
-            >
-              {t("newRoutine")}
-            </Button>
+            <div className="flex items-center gap-2.5">
+              {counterText ? (
+                <Badge tone={limit?.reached ? "danger" : "neutral"}>{counterText}</Badge>
+              ) : null}
+              <Button icon="plus" onClick={handleCreate}>
+                {t("newRoutine")}
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -72,6 +127,11 @@ export function RoutinesList() {
   const state = useData((repo) =>
     Promise.all([repo.getRoutines(), repo.getMembers(), repo.getCurrentUser()]),
   );
+  // Entitlement SEPARAT laden: das Kür-Kontingent ist Beiwerk. Scheitert der
+  // Abruf (z. B. api-Modus ohne Endpoint), bleibt die Liste trotzdem stehen —
+  // dann nur ohne Zähler. Kein Grund, die ganze Seite zu blockieren.
+  const entState = useData((repo) => repo.getClubEntitlement(), []);
+  const entitlement = entState.data ?? null;
 
   // Anlegen = is_club_trainer; im mock-Modus (Demo-Persona Trainerin) sichtbar.
   const isTrainer =
@@ -116,20 +176,42 @@ export function RoutinesList() {
   }
 
   const [routines, members] = state.data;
-  return <LoadedList routines={routines} members={members} isTrainer={isTrainer} />;
+  return (
+    <LoadedList
+      routines={routines}
+      members={members}
+      isTrainer={isTrainer}
+      entitlement={entitlement}
+    />
+  );
 }
 
 function LoadedList({
   routines,
   members,
   isTrainer,
+  entitlement,
 }: {
   routines: Routine[];
   members: Member[];
   isTrainer: boolean;
+  entitlement: ClubEntitlement | null;
 }) {
   const t = useT(kuerenDict);
+  const { locale } = useLocale();
   const [filter, setFilter] = useState<StatusFilter>("all");
+
+  // Kür-Kontingent der Vereins-Stufe (Anzeige; Durchsetzung ist serverseitig).
+  // Nur wenn das Entitlement geladen ist — sonst kein Zähler, keine Sperre.
+  const max = entitlement ? routineLimit(entitlement.tier) : null;
+  const limit: LimitInfo | undefined = entitlement
+    ? {
+        used: routines.length,
+        max,
+        tierLabel: tierName(entitlement.tier, locale),
+        reached: max != null && routines.length >= max,
+      }
+    : undefined;
 
   const sorted = useMemo(
     () => [...routines].sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]),
@@ -150,7 +232,7 @@ function LoadedList({
   // Trainer:in hat noch keine angelegt — kein „Filter zurücksetzen" anbieten.
   if (routines.length === 0) {
     return (
-      <ListShell canCreate={isTrainer}>
+      <ListShell canCreate={isTrainer} limit={limit}>
         <EmptyState
           icon="routines"
           title={t("noRoutinesTitle")}
@@ -161,7 +243,7 @@ function LoadedList({
   }
 
   return (
-    <ListShell canCreate={isTrainer}>
+    <ListShell canCreate={isTrainer} limit={limit}>
       <FilterChips
         options={filterOptions}
         value={filter}

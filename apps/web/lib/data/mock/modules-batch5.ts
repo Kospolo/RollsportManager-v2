@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types";
 import type { DataRepository } from "../types";
 import { documentSeed, gallerySeed } from "./seed-batch5";
+import { mockTier } from "./tier";
 
 /**
  * Mock-Implementierung der Batch-5-Module (Galerie, Dokumente, Entitlement).
@@ -63,8 +64,16 @@ let gallerySeq = galleryStore.length;
 let docSeq = documentStore.length;
 let photoTagSeq = photoTagStore.length;
 
-/** Demo-Entitlement: Club A ist im Seed 'pro' (unbefristet). */
-const entitlement: ClubEntitlement = { clubId, pro: true, tier: "pro" };
+/**
+ * Demo-Entitlement: Club A ist von Haus aus 'pro' (unbefristet). Die Stufe ist
+ * über /entwickler umschaltbar (localStorage rsm.mock.tier) — damit die
+ * PRO-Staffelung auf der Beta sichtbar wird. `pro` ist true bei pro ODER
+ * premium (genau app.is_club_pro). Nur Anzeige; Durchsetzung ist serverseitig.
+ */
+function currentEntitlement(): ClubEntitlement {
+  const tier = mockTier();
+  return { clubId, pro: tier !== "free", tier };
+}
 
 /** Die 8 Batch-5-Modul-Methoden — wird in mockRepository gespreizt. */
 type ModuleMethods = Pick<
@@ -93,7 +102,7 @@ function localUrl(file: File): string {
 export const moduleRepositoryBatch5: ModuleMethods = {
   /* ---------- Entitlement / PRO-Gate ---------- */
   async getClubEntitlement(): Promise<ClubEntitlement> {
-    return entitlement;
+    return currentEntitlement();
   },
 
   /* ---------- Galerie ---------- */
