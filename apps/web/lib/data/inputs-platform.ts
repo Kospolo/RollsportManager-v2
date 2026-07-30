@@ -9,6 +9,7 @@ import type {
   PlatformSettings,
   PlatformSystemInfo,
   PlatformTier,
+  PublicClub,
   PublicLegal,
 } from "@/lib/types";
 
@@ -151,6 +152,12 @@ export interface PlatformConsoleRepository {
    * platformGetSettings: die ist Betreiber-only und enthält Geheimnisse.
    */
   getPublicLegal(): Promise<PublicLegal>;
+  /**
+   * ÖFFENTLICHES Vereinsverzeichnis (GET /public/clubs) — OHNE Auth, für die
+   * login-freie Vereins-Seite. Nur Opt-in-Vereine, nur nicht-personenbezogene
+   * Felder (Name/Stadt/Sparte/Beschreibung/Logo). Keine Mitgliedsdaten.
+   */
+  listPublicClubs(): Promise<PublicClub[]>;
 
   /* ---------- Lizenzen (Lesen im Service-Mode hinter Guard, Schreiben Service-only) ---------- */
   /** Alle Vereine mit Mitgliederzahl + aktueller Lizenz. */

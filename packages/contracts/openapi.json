@@ -6384,6 +6384,40 @@
           "agb"
         ]
       },
+      "PublicClub": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "discipline": {
+            "type": "string",
+            "nullable": true
+          },
+          "public_description": {
+            "type": "string"
+          },
+          "public_image": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "city",
+          "discipline",
+          "public_description",
+          "public_image"
+        ]
+      },
       "LoginResponse": {
         "type": "object",
         "properties": {
@@ -20849,6 +20883,30 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PublicLegal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/clubs": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Public, login-free directory of clubs that opted in",
+        "description": "Unauthenticated. Returns ONLY clubs with public_profile_enabled=true, and for each ONLY non-personal fields (name, city, discipline, public description, public image). No member data whatsoever. Ordered by name.",
+        "responses": {
+          "200": {
+            "description": "Clubs that made their profile public",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicClub"
+                  }
                 }
               }
             }

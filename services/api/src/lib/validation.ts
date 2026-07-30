@@ -2582,6 +2582,20 @@ export const platformStatsSchema = z
 // wire contract stays typed.
 // ---------------------------------------------------------------------------
 
+// Öffentliches Vereins-Profil (login-frei, Migration 0081). NUR die vom Verein
+// ausdrücklich freigegebenen, nicht personenbezogenen Felder — keine Mitglieds-
+// oder Kinderdaten. Nur Vereine mit public_profile_enabled=true.
+export const publicClubSchema = z
+  .object({
+    id: uuid,
+    name: z.string(),
+    city: z.string().nullable(),
+    discipline: z.string().nullable(),
+    public_description: z.string(),
+    public_image: z.string(),
+  })
+  .openapi('PublicClub');
+
 export const chatChannelTypeSchema = z.enum(['team', 'direct', 'broadcast']).openapi('ChatChannelType');
 export const checkinMethodSchema = z.enum(['qr', 'manual']).openapi('CheckinMethod');
 

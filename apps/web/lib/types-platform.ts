@@ -216,6 +216,20 @@ export interface PublicLegal {
   agb: LegalDocText;
 }
 
+/**
+ * Ein Verein im ÖFFENTLICHEN Verzeichnis (GET /public/clubs, login-frei) — nur
+ * die vom Verein freigegebenen, NICHT personenbezogenen Felder. Keine
+ * Mitglieds-/Kinderdaten. Nur Vereine mit public_profile_enabled=true.
+ */
+export interface PublicClub {
+  id: Id;
+  name: string;
+  city?: string;
+  discipline?: string;
+  publicDescription: string;
+  publicImage: string;
+}
+
 /** Website-Inhalte + SEO-Metadaten der Plattform. */
 export interface PlatformContentSettings {
   websiteTitle: string;

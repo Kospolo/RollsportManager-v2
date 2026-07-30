@@ -116,6 +116,19 @@ export const moduleApiRepositoryPlatform: PlatformConsoleRepository = {
       agb: { de: w.agb.de, en: w.agb.en },
     };
   },
+  async listPublicClubs() {
+    // Öffentlich, ohne Auth. Der Server liefert nur Opt-in-Vereine + nur
+    // nicht-personenbezogene Felder (routes/public-clubs.ts).
+    const rows = await apiClient.getPublicClubs();
+    return rows.map((c) => ({
+      id: c.id,
+      name: c.name,
+      city: c.city ?? undefined,
+      discipline: c.discipline ?? undefined,
+      publicDescription: c.public_description,
+      publicImage: c.public_image,
+    }));
+  },
 
   /* ---------- Lizenzen ---------- */
   async platformListEntitlements() {

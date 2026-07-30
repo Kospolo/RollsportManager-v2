@@ -359,6 +359,39 @@ export const moduleRepositoryPlatform: PlatformConsoleRepository = {
       agb: { de: l.agb, en: l.agbEn },
     };
   },
+  async listPublicClubs() {
+    // Demo-Verzeichnis für die login-freie Vereins-Seite (mock/Beta). Nur
+    // nicht-personenbezogene Felder — genau wie GET /public/clubs.
+    return [
+      {
+        id: "c-neckarsulm",
+        name: "RSV Neckarsulm",
+        city: "Neckarsulm",
+        discipline: "Rollkunstlauf",
+        publicDescription:
+          "Rollkunstlauf für Kinder und Jugendliche in Neckarsulm — vom ersten Rollschuh bis zur Wettkampfkür. Schnuppertraining jederzeit möglich.",
+        publicImage: "",
+      },
+      {
+        id: "c-heilbronn",
+        name: "ESC Heilbronn",
+        city: "Heilbronn",
+        discipline: "Eiskunstlauf",
+        publicDescription:
+          "Eiskunstlauf-Verein mit Nachwuchs- und Leistungsgruppen. Training ganzjährig in der Eishalle Heilbronn.",
+        publicImage: "",
+      },
+      {
+        id: "c-stuttgart",
+        name: "RRC Stuttgart",
+        city: "Stuttgart",
+        discipline: "Rollkunstlauf",
+        publicDescription:
+          "Traditionsverein für Rollkunstlauf im Herzen Stuttgarts — Breitensport und Wettkampf unter einem Dach.",
+        publicImage: "",
+      },
+    ];
+  },
   async platformUpdateSettings(patch) {
     if (patch.smtp) {
       const s = patch.smtp;

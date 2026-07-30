@@ -5944,6 +5944,41 @@ public struct PublicLegal: Codable, Equatable, Sendable {
     }
 }
 
+public struct PublicClub: Codable, Equatable, Sendable {
+    /// Format: uuid
+    public var id: String
+    public var name: String
+    public var city: String?
+    public var discipline: String?
+    public var publicDescription: String
+    public var publicImage: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case city
+        case discipline
+        case publicDescription = "public_description"
+        case publicImage = "public_image"
+    }
+
+    public init(
+        id: String,
+        name: String,
+        city: String? = nil,
+        discipline: String? = nil,
+        publicDescription: String,
+        publicImage: String
+    ) {
+        self.id = id
+        self.name = name
+        self.city = city
+        self.discipline = discipline
+        self.publicDescription = publicDescription
+        self.publicImage = publicImage
+    }
+}
+
 public struct LoginResponse: Codable, Equatable, Sendable {
     public var tokenType: LoginResponseTokenType
     public var accessToken: String

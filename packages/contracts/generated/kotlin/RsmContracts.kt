@@ -2095,6 +2095,16 @@ data class PublicLegal(
 )
 
 @Serializable
+data class PublicClub(
+    val id: String,
+    val name: String,
+    val city: String?,
+    val discipline: String?,
+    @SerialName("public_description") val publicDescription: String,
+    @SerialName("public_image") val publicImage: String
+)
+
+@Serializable
 data class LoginResponse(
     @SerialName("token_type") val tokenType: LoginResponseTokenType,
     @SerialName("access_token") val accessToken: String,

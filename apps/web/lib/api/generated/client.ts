@@ -1126,6 +1126,16 @@ export class ApiClient {
   }
 
   /**
+   * Public, login-free directory of clubs that opted in
+   * Unauthenticated. Returns ONLY clubs with public_profile_enabled=true, and for each ONLY non-personal fields (name, city, discipline, public description, public image). No member data whatsoever. Ordered by name.
+   * 
+   * `GET /public/clubs`
+   */
+  async getPublicClubs(options?: RequestOptions): Promise<M.PublicClub[]> {
+    return this.request<M.PublicClub[]>("GET", "/public/clubs", { auth: false, options });
+  }
+
+  /**
    * Email/password login — issues an access token
    * Unauthenticated. Verifies email + password and returns a signed access token with the same claims as the dev persona login. Unknown email and wrong password are indistinguishable.
    * 

@@ -1440,6 +1440,15 @@ export interface PublicLegal {
   "agb": { "de": string; "en": string };
 }
 
+export interface PublicClub {
+  "id": string;
+  "name": string;
+  "city": string | null;
+  "discipline": string | null;
+  "public_description": string;
+  "public_image": string;
+}
+
 export interface LoginResponse {
   "token_type": "Bearer";
   "access_token": string;
