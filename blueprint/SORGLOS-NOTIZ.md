@@ -54,10 +54,12 @@ gegen Dev-DB (2021 SQL-Tests) + Dev-API (curl) + Web-Mock (Browser als Rolle) ve
 & Pro-Sperre sind ANZEIGE + Demo-Schalter; die Chat-Durchsetzung ist echt (Server), aber die Beta
 zeigt sie nur mock-getrieben. Als Mitglied ohne Trainerrecht erscheint kein Kür-Zähler/Button — korrekt.
 
-**WEITER OFFEN (Server-Features):** Gruppenchat (eigener Baustein, s.o.) · SMTP-Versand (Rechnung +
-Meldung an Vorstand) · öffentliche Website-Slider-Seite (Felder aus 0081 da, fehlt login-freie
-Read-Policy + public Route; Mock hat nur 1 volles Vereinsprofil) · Feld-Editieren positionsloser
-Entwurfsrechnungen.
+**WEITER OFFEN (Server-Features):** Gruppenchat (eigener Baustein, s.o.) · SMTP-Versand (nodemailer ist
+inzwischen da — prüfen ob verdrahtet) · Feld-Editieren positionsloser Entwurfsrechnungen.
+
+**✅ ERLEDIGT (2026-07-30, `da1c94f`, live):** Öffentliches Vereinsverzeichnis **/entdecken** (login-frei).
+API `GET /public/clubs` (withServiceRole, PUBLIC_ROUTES) liefert NUR Opt-in-Vereine + NUR nicht-
+personenbezogene Felder (curl-verifiziert, kein Leck). Web-Seite als Kachel-Grid (bilingual), Mock mit 3 Demo-Vereinen.
 
 **✅ KORREKTUR (2026-07-30):** Das „Art.-9-Leck" (Krankmeldungen von Kindern) ist NICHT offen — es ist
 seit **Migration `0040_rsvp_gesundheitsdaten.sql`** geschlossen. Selbst gemessen: `authenticated` hat
