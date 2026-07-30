@@ -315,6 +315,7 @@ public enum EquipmentCondition: String, Codable, CaseIterable, Sendable, Equatab
 public enum ChatChannelType: String, Codable, CaseIterable, Sendable, Equatable {
     case team = "team"
     case direct = "direct"
+    case broadcast = "broadcast"
 }
 
 public enum ChatReportStatus: String, Codable, CaseIterable, Sendable, Equatable {

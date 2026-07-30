@@ -21,6 +21,7 @@ export function MessageBubble({
   locale,
   onDelete,
   onReport,
+  moderation = false,
 }: {
   message: ChatMessage;
   isOwn: boolean;
@@ -29,6 +30,8 @@ export function MessageBubble({
   locale: Locale;
   onDelete?: () => void;
   onReport?: () => void;
+  /** true = onDelete ist eine Moderations-Entfernung einer FREMDEN Nachricht. */
+  moderation?: boolean;
 }) {
   const t = useT(chatDict);
 
@@ -67,7 +70,7 @@ export function MessageBubble({
           onClick={onDelete}
           className="mt-0.5 rounded px-1 text-[11px] font-semibold text-ink-faint transition-colors duration-150 hover:text-danger"
         >
-          {t("delete")}
+          {t(moderation ? "moderate" : "delete")}
         </button>
       )}
       {onReport && (

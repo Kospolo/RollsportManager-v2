@@ -318,7 +318,8 @@ enum class EquipmentCondition {
 @Serializable
 enum class ChatChannelType {
     @SerialName("team") TEAM,
-    @SerialName("direct") DIRECT;
+    @SerialName("direct") DIRECT,
+    @SerialName("broadcast") BROADCAST;
 }
 
 @Serializable

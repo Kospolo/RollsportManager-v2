@@ -155,6 +155,24 @@ function buildChannels(): ChatChannel[] {
     });
   }
 
+  // (c) Vereinsweite Ansagen: EIN Kanal, sobald es mindestens eine gibt.
+  //     (Für Admins bietet die UI zusätzlich „Neue Ansage" an, um die erste
+  //     zu schreiben — analog zum Entwurfs-Thread bei Direktnachrichten.)
+  const broadcastMsgs = messageStore
+    .filter((m) => m.channelType === "broadcast")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const lastBroadcast = broadcastMsgs.at(-1);
+  if (lastBroadcast) {
+    channels.push({
+      channelType: "broadcast",
+      lastMessageId: lastBroadcast.id,
+      lastBody: lastBroadcast.body,
+      lastImageUrl: lastBroadcast.imageUrl,
+      lastSenderMemberId: lastBroadcast.senderMemberId,
+      lastMessageAt: lastBroadcast.createdAt,
+    });
+  }
+
   // Serverseitige Sortierung: lastMessageAt desc, nulls last.
   return channels.sort((a, b) => {
     if (!a.lastMessageAt && !b.lastMessageAt) return 0;
@@ -178,6 +196,8 @@ export const moduleRepositoryBatch4: ModuleMethods = {
     const list = messageStore.filter((m) => {
       if (m.channelType !== query.channelType) return false;
       if (query.channelType === "team") return m.teamId === query.teamId;
+      // broadcast: alle vereinsweiten Ansagen (RLS: jedes Mitglied sieht sie).
+      if (query.channelType === "broadcast") return true;
       // direct: Thread zwischen aktueller Person und peerMemberId.
       const involves = (id?: string) =>
         m.senderMemberId === id || m.recipientMemberId === id;

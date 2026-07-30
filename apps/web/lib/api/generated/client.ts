@@ -1705,16 +1705,17 @@ export class ApiClient {
   }
 
   /**
-   * List messages of one channel (team by team_id, direct by peer_member_id)
+   * List messages of one channel (team by team_id, direct by peer_member_id, or broadcast)
    * 
    * `GET /chat/messages`
    */
-  async getChatMessages(query: { "club_id": string; "channel_type": "team" | "direct"; "team_id"?: string; "peer_member_id"?: string }, options?: RequestOptions): Promise<M.ChatMessage[]> {
+  async getChatMessages(query: { "club_id": string; "channel_type": "team" | "direct" | "broadcast"; "team_id"?: string; "peer_member_id"?: string }, options?: RequestOptions): Promise<M.ChatMessage[]> {
     return this.request<M.ChatMessage[]>("GET", "/chat/messages", { query, auth: true, options });
   }
 
   /**
-   * Send a message (team channel or direct); sender is always the caller
+   * Send a message (team, direct or broadcast); sender is always the caller
+   * Team messages need team membership, direct messages pass the child-protection rule (0043), and broadcast (club-wide announcement) requires a club admin role (owner/admin/moderator). All three are enforced by the RLS with-check policy chat_messages_insert.
    * 
    * `POST /chat/messages`
    */
@@ -1723,7 +1724,8 @@ export class ApiClient {
   }
 
   /**
-   * Soft-delete a message (only the sender)
+   * Soft-delete a message (its sender, or a club admin as moderation)
+   * The sender may delete their own message; a club admin (owner/admin/moderator) may delete ANY message they can see, as moderation (migration 0083). For a moderation delete deleted_by_member_id records the admin; a self-delete leaves it null. A non-sender, non-admin is filtered to 0 rows by RLS -> 403. The moderation guard forbids changing anything but the delete fields, so a moderator can never rewrite a foreign message.
    * 
    * `DELETE /chat/messages/{messageId}`
    */

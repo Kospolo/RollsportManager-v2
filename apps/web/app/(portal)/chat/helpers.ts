@@ -11,19 +11,24 @@ import { dayDiff, formatDateShort, formatTime } from "@/lib/format";
 
 /** Stabiler Schlüssel eines Kanals (für React-key, Auswahl-Vergleich). */
 export function channelKey(ch: ChatChannel): string {
-  return ch.channelType === "team" ? `team:${ch.teamId ?? ""}` : `direct:${ch.peerMemberId ?? ""}`;
+  if (ch.channelType === "team") return `team:${ch.teamId ?? ""}`;
+  if (ch.channelType === "broadcast") return "broadcast";
+  return `direct:${ch.peerMemberId ?? ""}`;
 }
 
 /** Selektor für listChatMessages aus einem Kanal. */
 export function channelQuery(ch: ChatChannel): ChatMessageQuery {
-  return ch.channelType === "team"
-    ? { channelType: "team", teamId: ch.teamId }
-    : { channelType: "direct", peerMemberId: ch.peerMemberId };
+  if (ch.channelType === "team") return { channelType: "team", teamId: ch.teamId };
+  if (ch.channelType === "broadcast") return { channelType: "broadcast" };
+  return { channelType: "direct", peerMemberId: ch.peerMemberId };
 }
 
-/** Anzeigename eines Kanals (Team-Name bzw. Peer-Name), leer als Fallback. */
+/** Anzeigename eines Kanals (Team-Name bzw. Peer-Name), leer als Fallback.
+ *  Broadcast trägt keinen Namen — der Titel „Ansagen" kommt aus der i18n. */
 export function channelName(ch: ChatChannel): string {
-  return (ch.channelType === "team" ? ch.teamName : ch.peerName) ?? "";
+  if (ch.channelType === "team") return ch.teamName ?? "";
+  if (ch.channelType === "broadcast") return "";
+  return ch.peerName ?? "";
 }
 
 /** Vollen Namen in Vor-/Nachnamen für Avatar-Initialen aufteilen. */

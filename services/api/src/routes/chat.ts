@@ -125,7 +125,25 @@ chatRouter.openapi(
         ) th
         join app.club_members p on p.id = th.peer_id`;
 
-      const merged = [...teams, ...directs];
+      // Broadcast: EIN vereinsweiter Ansage-Kanal, sobald es mindestens eine
+      // (sichtbare) Ansage gibt. RLS gibt sie jedem realen Mitglied frei.
+      const broadcast = await tx`
+        select 'broadcast'::text as channel_type,
+               null::uuid as team_id,
+               null::text as team_name,
+               null::uuid as peer_member_id,
+               null::text as peer_name,
+               m.id   as last_message_id,
+               m.body as last_body,
+               m.image_url as last_image_url,
+               m.sender_member_id as last_sender_member_id,
+               m.created_at as last_message_at
+        from app.chat_messages m
+        where m.channel_type = 'broadcast' and m.club_id = ${club_id} and m.deleted_at is null
+        order by m.created_at desc
+        limit 1`;
+
+      const merged = [...teams, ...broadcast, ...directs];
       merged.sort((a, b) => {
         const ta = a['last_message_at'] ? new Date(a['last_message_at'] as string).getTime() : -Infinity;
         const tb = b['last_message_at'] ? new Date(b['last_message_at'] as string).getTime() : -Infinity;
@@ -220,12 +238,12 @@ chatRouter.openapi(
     method: 'get',
     path: '/chat/messages',
     tags: ['chat'],
-    summary: 'List messages of one channel (team by team_id, direct by peer_member_id)',
+    summary: 'List messages of one channel (team by team_id, direct by peer_member_id, or broadcast)',
     security: [{ bearerAuth: [] }],
     request: {
       query: z.object({
         club_id: uuid,
-        channel_type: z.enum(['team', 'direct']),
+        channel_type: z.enum(['team', 'direct', 'broadcast']),
         team_id: uuid.optional(),
         peer_member_id: uuid.optional(),
       }),
@@ -255,6 +273,14 @@ chatRouter.openapi(
           where channel_type = 'team' and team_id = ${team_id ?? null} and deleted_at is null
           order by created_at asc`;
       }
+      if (channel_type === 'broadcast') {
+        // Vereinsweite Ansagen: RLS (chat_messages_select, 0083) gibt sie jedem
+        // realen Vereinsmitglied frei; geschrieben hat sie ein Vereins-Admin.
+        return tx`
+          select * from app.chat_messages
+          where channel_type = 'broadcast' and club_id = ${club_id} and deleted_at is null
+          order by created_at asc`;
+      }
       const meId = await ownMemberId(tx, claims, club_id);
       if (!meId) return [];
       // both directions of the 1:1 thread; RLS additionally guards visibility.
@@ -277,7 +303,11 @@ chatRouter.openapi(
     method: 'post',
     path: '/chat/messages',
     tags: ['chat'],
-    summary: 'Send a message (team channel or direct); sender is always the caller',
+    summary: 'Send a message (team, direct or broadcast); sender is always the caller',
+    description:
+      'Team messages need team membership, direct messages pass the child-protection rule (0043), ' +
+      'and broadcast (club-wide announcement) requires a club admin role (owner/admin/moderator). ' +
+      'All three are enforced by the RLS with-check policy chat_messages_insert.',
     security: [{ bearerAuth: [] }],
     request: {
       body: { content: { 'application/json': { schema: chatMessageCreateSchema } }, required: true },
@@ -330,7 +360,13 @@ chatRouter.openapi(
     method: 'delete',
     path: '/chat/messages/{messageId}',
     tags: ['chat'],
-    summary: 'Soft-delete a message (only the sender)',
+    summary: 'Soft-delete a message (its sender, or a club admin as moderation)',
+    description:
+      'The sender may delete their own message; a club admin (owner/admin/moderator) may delete ' +
+      'ANY message they can see, as moderation (migration 0083). For a moderation delete ' +
+      'deleted_by_member_id records the admin; a self-delete leaves it null. A non-sender, ' +
+      'non-admin is filtered to 0 rows by RLS -> 403. The moderation guard forbids changing ' +
+      'anything but the delete fields, so a moderator can never rewrite a foreign message.',
     security: [{ bearerAuth: [] }],
     request: { params: messageIdParam },
     responses: {
@@ -344,14 +380,24 @@ chatRouter.openapi(
 
     await withUser(claims, async (tx) => {
       const existing = await tx`
-        select id from app.chat_messages where id = ${messageId} and deleted_at is null`;
+        select id, club_id, sender_member_id
+        from app.chat_messages where id = ${messageId} and deleted_at is null`;
       if (existing.length === 0) throw problem(404, 'Not Found', 'Message not found');
-      // RLS update policy (is_own_member(sender)) filters non-senders to 0 rows.
+      const clubId = existing[0]!['club_id'] as string;
+      const senderId = existing[0]!['sender_member_id'] as string;
+      // Wer löscht? Für eine Moderation (Löschende ≠ Absender) halten wir das
+      // fest; bei der Selbstlöschung bleibt deleted_by_member_id null.
+      const deleterId = await ownMemberId(tx, claims, clubId);
+      const moderatedBy = deleterId && deleterId !== senderId ? deleterId : null;
+      // RLS update policy (0083): Absender ODER Vereins-Admin. Andere -> 0 Zeilen.
       const rows = await tx`
-        update app.chat_messages set deleted_at = now()
-        where id = ${messageId} and deleted_at is null
+        update app.chat_messages
+           set deleted_at = now(), deleted_by_member_id = ${moderatedBy}
+         where id = ${messageId} and deleted_at is null
         returning id`;
-      if (rows.length === 0) throw problem(403, 'Forbidden', 'Only the sender may delete a message');
+      if (rows.length === 0) {
+        throw problem(403, 'Forbidden', 'Only the sender or a club admin may delete a message');
+      }
     });
     return c.json({ status: 'deleted' as const, id: messageId }, 200);
   },

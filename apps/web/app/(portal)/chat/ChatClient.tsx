@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import { useT } from "@/lib/i18n";
-import { errorMessage, fullName } from "@/lib/data";
+import { errorMessage, fullName, permissions } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { ChatChannel, Id, Member } from "@/lib/types";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -50,6 +50,9 @@ export function ChatClient() {
   }, [members.data]);
 
   const currentMemberId: Id = me.data?.id ?? "";
+  // Vereins-Admin (owner/admin/moderator): darf Ansagen posten und fremde
+  // Nachrichten moderieren. Durchgesetzt wird beides serverseitig (0083).
+  const isClubAdmin = permissions(me.data ?? null).isClubAdmin;
 
   const [selected, setSelected] = useState<ChatChannel | null>(null);
   const [composing, setComposing] = useState(false);
@@ -140,13 +143,24 @@ export function ChatClient() {
             selected ? "hidden lg:flex" : "flex w-full"
           }`}
         >
-          <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3">
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
             <b className="font-display text-[14px] font-bold tracking-[-0.01em] text-ink">
               {t("channelsHeading")}
             </b>
-            <Button size="sm" onClick={() => setComposing(true)}>
-              {t("newMessage")}
-            </Button>
+            <div className="flex items-center gap-1.5">
+              {isClubAdmin && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setSelected({ channelType: "broadcast" })}
+                >
+                  {t("newBroadcast")}
+                </Button>
+              )}
+              <Button size="sm" onClick={() => setComposing(true)}>
+                {t("newMessage")}
+              </Button>
+            </div>
           </header>
           <div className="min-h-0 flex-1 overflow-y-auto p-2">{listBody}</div>
         </aside>
@@ -162,6 +176,7 @@ export function ChatClient() {
               nameOf={nameOf}
               onBack={() => setSelected(null)}
               onActivity={channels.reload}
+              canModerate={isClubAdmin}
             />
           ) : (
             <div className="grid flex-1 place-items-center p-6">

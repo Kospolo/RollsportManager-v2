@@ -38,12 +38,15 @@ export function MessageThread({
   nameOf,
   onBack,
   onActivity,
+  canModerate = false,
 }: {
   channel: ChatChannel;
   currentMemberId: Id;
   nameOf: (id: Id) => string;
   onBack: () => void;
   onActivity: () => void;
+  /** Vereins-Admin: darf Broadcasts posten UND fremde Nachrichten entfernen (0083). */
+  canModerate?: boolean;
 }) {
   const t = useT(chatDict);
   const { locale } = useLocale();
@@ -102,9 +105,20 @@ export function MessageThread({
     if (el && atBottomRef.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  const title =
-    channelName(channel) || (channel.channelType === "team" ? t("teamChannel") : t("directMessage"));
-  const subtitle = channel.channelType === "team" ? t("teamChannel") : t("directMessage");
+  const isBroadcast = channel.channelType === "broadcast";
+  // Broadcast schreiben = Admin. Moderation (fremde Nachricht entfernen) = Admin,
+  // aber NICHT in privaten Direktnachrichten (die sieht ein Admin ohnehin nicht).
+  const canPostBroadcast = isBroadcast && canModerate;
+  const canModerateHere = canModerate && channel.channelType !== "direct";
+
+  const title = isBroadcast
+    ? t("announcements")
+    : channelName(channel) || (channel.channelType === "team" ? t("teamChannel") : t("directMessage"));
+  const subtitle = isBroadcast
+    ? t("broadcastChannel")
+    : channel.channelType === "team"
+      ? t("teamChannel")
+      : t("directMessage");
 
   const handleSend = async ({ body, imageUrl }: { body?: string; imageUrl?: string }) => {
     const tempId = `temp-${Date.now()}`;
@@ -122,7 +136,9 @@ export function MessageThread({
     const input: SendChatMessageInput =
       channel.channelType === "team"
         ? { channelType: "team", teamId: channel.teamId, body, imageUrl }
-        : { channelType: "direct", recipientMemberId: channel.peerMemberId, body, imageUrl };
+        : channel.channelType === "broadcast"
+          ? { channelType: "broadcast", body, imageUrl }
+          : { channelType: "direct", recipientMemberId: channel.peerMemberId, body, imageUrl };
 
     // Eigene Nachricht → dem Verlauf ans Ende folgen.
     atBottomRef.current = true;
@@ -196,7 +212,9 @@ export function MessageThread({
               body={
                 channel.channelType === "team"
                   ? t("threadEmptyBodyTeam")
-                  : t("threadEmptyBodyDirect", { name: title })
+                  : channel.channelType === "broadcast"
+                    ? t("threadEmptyBodyBroadcast")
+                    : t("threadEmptyBodyDirect", { name: title })
               }
             />
           </div>
@@ -206,7 +224,12 @@ export function MessageThread({
               const isOwn = m.senderMemberId === currentMemberId;
               const prev = messages[i - 1];
               const showSender =
-                channel.channelType === "team" && !isOwn && prev?.senderMemberId !== m.senderMemberId;
+                (channel.channelType === "team" || channel.channelType === "broadcast") &&
+                !isOwn &&
+                prev?.senderMemberId !== m.senderMemberId;
+              // Entfernen darf: der Absender (eigene) ODER ein Admin per Moderation
+              // (fremde, sichtbare Nachricht — nicht in privaten Direktnachrichten).
+              const canRemove = isOwn || (canModerateHere && !m.id.startsWith("temp-"));
               return (
                 <li key={m.id}>
                   <MessageBubble
@@ -215,7 +238,8 @@ export function MessageThread({
                     senderName={isOwn ? t("you") : nameOf(m.senderMemberId)}
                     showSender={showSender}
                     locale={locale}
-                    onDelete={isOwn ? () => setToDelete(m) : undefined}
+                    onDelete={canRemove ? () => setToDelete(m) : undefined}
+                    moderation={!isOwn && canModerateHere}
                     // Fremde Nachricht als Verstoss melden (nicht die eigene, und
                     // nicht die noch nicht gesendete optimistische Blase).
                     onReport={!isOwn && !m.id.startsWith("temp-") ? () => setToReport(m) : undefined}
@@ -227,10 +251,19 @@ export function MessageThread({
         )}
       </div>
 
-      {state.status !== "error" && <ChatComposer onSend={handleSend} />}
+      {state.status !== "error" &&
+        (isBroadcast && !canPostBroadcast ? (
+          // Ansage-Kanal: Mitglieder lesen nur — schreiben darf die Vereinsleitung.
+          <div className="border-t border-line px-4 py-3 text-center text-[12.5px] text-ink-faint">
+            {t("broadcastReadOnly")}
+          </div>
+        ) : (
+          <ChatComposer onSend={handleSend} />
+        ))}
 
       <DeleteMessageDialog
         message={toDelete}
+        moderation={toDelete != null && toDelete.senderMemberId !== currentMemberId}
         onClose={() => setToDelete(null)}
         onDeleted={handleDeleted}
       />

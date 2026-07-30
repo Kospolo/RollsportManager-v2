@@ -1891,8 +1891,8 @@ export interface DutyEntryUpdate {
   "approved"?: boolean;
 }
 
-export type ChatChannelType = "team" | "direct";
-export const ChatChannelTypeValues: readonly ChatChannelType[] = ["team", "direct"] as const;
+export type ChatChannelType = "team" | "direct" | "broadcast";
+export const ChatChannelTypeValues: readonly ChatChannelType[] = ["team", "direct", "broadcast"] as const;
 
 export interface ChatChannel {
   "channel_type": ChatChannelType;

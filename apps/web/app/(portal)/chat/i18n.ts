@@ -103,6 +103,22 @@ export const chatDict = {
     deleteConfirm: "Nachricht löschen",
     cancel: "Abbrechen",
     deletedToast: "Nachricht gelöscht",
+
+    // Broadcast / Ansagen (0083): vereinsweiter Ansage-Kanal, nur Vorstand schreibt.
+    announcements: "Ansagen",
+    broadcastChannel: "Vereinsweite Ansage",
+    newBroadcast: "Neue Ansage",
+    broadcastReadOnly: "Nur die Vereinsleitung schreibt hier — Ansagen erreichen alle Mitglieder.",
+    threadEmptyBodyBroadcast: "Noch keine Ansage. Schreib die erste vereinsweite Mitteilung.",
+    // Moderation: der Vorstand entfernt eine fremde Nachricht.
+    moderate: "Entfernen",
+    moderationDeleteEyebrow: "Moderation",
+    moderationDeleteTitle: "Fremde Nachricht entfernen?",
+    moderationDeleteBody:
+      "Als Vereinsvorstand entfernst du diese Nachricht für alle. Der Wortlaut bleibt für eine bestehende Meldung erhalten — ändern kannst du ihn nicht.",
+    moderationDeleteConfirm: "Nachricht entfernen",
+    moderatedToast: "Nachricht entfernt",
+
     genericError: "Etwas ist schiefgelaufen — bitte erneut versuchen.",
   },
   en: {
@@ -190,6 +206,22 @@ export const chatDict = {
     deleteConfirm: "Delete message",
     cancel: "Cancel",
     deletedToast: "Message deleted",
+
+    // Broadcast / announcements (0083): club-wide channel, only the board posts.
+    announcements: "Announcements",
+    broadcastChannel: "Club-wide announcement",
+    newBroadcast: "New announcement",
+    broadcastReadOnly: "Only the club board posts here — announcements reach every member.",
+    threadEmptyBodyBroadcast: "No announcement yet. Post the first club-wide message.",
+    // Moderation: the board removes a foreign message.
+    moderate: "Remove",
+    moderationDeleteEyebrow: "Moderation",
+    moderationDeleteTitle: "Remove this message?",
+    moderationDeleteBody:
+      "As a board member you remove this message for everyone. Its wording is preserved for any existing report — you cannot change it.",
+    moderationDeleteConfirm: "Remove message",
+    moderatedToast: "Message removed",
+
     genericError: "Something went wrong — please try again.",
   },
 } satisfies Dict;

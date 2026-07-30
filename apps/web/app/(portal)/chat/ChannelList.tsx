@@ -34,7 +34,10 @@ export function ChannelList({
       {channels.map((ch) => {
         const key = channelKey(ch);
         const active = key === selectedKey;
-        const title = channelName(ch) || (ch.channelType === "team" ? t("teamChannel") : t("directMessage"));
+        const title =
+          ch.channelType === "broadcast"
+            ? t("announcements")
+            : channelName(ch) || (ch.channelType === "team" ? t("teamChannel") : t("directMessage"));
         const preview = previewText();
         const time = ch.lastMessageAt ? chatTimeShort(ch.lastMessageAt, locale) : "";
 
@@ -43,7 +46,7 @@ export function ChannelList({
           const text = ch.lastBody ?? t("imageMessage");
           const own = ch.lastSenderMemberId === currentMemberId;
           if (own) return t("previewYou", { text });
-          if (ch.channelType === "team")
+          if (ch.channelType === "team" || ch.channelType === "broadcast")
             return t("previewOther", { name: nameOf(ch.lastSenderMemberId ?? ""), text });
           return text;
         }
@@ -85,6 +88,16 @@ function ChannelGlyph({ channel }: { channel: ChatChannel }) {
         aria-hidden="true"
       >
         <Icon name="teams" className="ic h-[18px] w-[18px]" />
+      </span>
+    );
+  }
+  if (channel.channelType === "broadcast") {
+    return (
+      <span
+        className="grid h-9 w-9 flex-none place-items-center rounded-full bg-brand-soft text-brand"
+        aria-hidden="true"
+      >
+        <Icon name="bell" className="ic h-[18px] w-[18px]" />
       </span>
     );
   }

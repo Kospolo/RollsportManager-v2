@@ -19,8 +19,8 @@ import type { Id } from "./types";
 
 /* ---------- Chat (Kanäle & Nachrichten) ---------- */
 
-/** Art eines Chat-Kanals: Team-Kanal oder 1:1-Direktnachricht. */
-export type ChatChannelType = "team" | "direct";
+/** Art eines Chat-Kanals: Team-Kanal, 1:1-Direktnachricht oder vereinsweite Ansage. */
+export type ChatChannelType = "team" | "direct" | "broadcast";
 
 /**
  * Read-Model eines Chat-Kanals (GET /chat/channels). Enthält
@@ -188,6 +188,7 @@ export interface RegionalEvent {
 export const chatChannelTypeLabels: Record<ChatChannelType, { de: string; en: string }> = {
   team: { de: "Team-Kanal", en: "Team channel" },
   direct: { de: "Direktnachricht", en: "Direct message" },
+  broadcast: { de: "Ansagen", en: "Announcements" },
 };
 
 /** Anzeige-Labels für CheckinMethod in beiden Sprachen. */

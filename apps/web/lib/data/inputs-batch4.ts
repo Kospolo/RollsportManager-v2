@@ -26,7 +26,8 @@ import type {
 
 /**
  * Kanal-Selektor für listChatMessages. channelType='team' braucht teamId,
- * channelType='direct' braucht peerMemberId (jeweils das andere Feld leer).
+ * channelType='direct' braucht peerMemberId (jeweils das andere Feld leer);
+ * channelType='broadcast' (vereinsweite Ansage) braucht keines von beiden.
  */
 export interface ChatMessageQuery {
   channelType: ChatChannelType;
@@ -40,8 +41,9 @@ export interface ChatMessageQuery {
  * Nachricht senden. KEIN senderMemberId — der Server leitet den Sender aus der
  * eigenen club_members-Zeile ab (Spoofing-Schutz). Validierung serverseitig:
  * team → teamId (recipientMemberId muss fehlen); direct → recipientMemberId
- * (teamId muss fehlen); body UND/ODER imageUrl Pflicht (mind. eines,
- * body max 4000 Zeichen, imageUrl muss eine URL sein).
+ * (teamId muss fehlen); broadcast → weder teamId noch recipientMemberId (nur
+ * Vereins-Admins dürfen; serverseitig erzwungen). body UND/ODER imageUrl Pflicht
+ * (mind. eines, body max 4000 Zeichen, imageUrl muss eine URL sein).
  */
 export interface SendChatMessageInput {
   channelType: ChatChannelType;

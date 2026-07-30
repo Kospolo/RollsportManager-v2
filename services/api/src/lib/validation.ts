@@ -2582,7 +2582,7 @@ export const platformStatsSchema = z
 // wire contract stays typed.
 // ---------------------------------------------------------------------------
 
-export const chatChannelTypeSchema = z.enum(['team', 'direct']).openapi('ChatChannelType');
+export const chatChannelTypeSchema = z.enum(['team', 'direct', 'broadcast']).openapi('ChatChannelType');
 export const checkinMethodSchema = z.enum(['qr', 'manual']).openapi('CheckinMethod');
 
 // chat_messages --------------------------------------------------------------
@@ -2615,12 +2615,24 @@ export const chatMessageCreateSchema = z
     body: z.string().min(1).max(4000).optional(),
     image_url: z.string().url().optional(),
   })
-  .refine((v) => (v.channel_type === 'team' ? v.team_id !== undefined : v.recipient_member_id !== undefined), {
-    message: "team messages need team_id, direct messages need recipient_member_id",
-  })
-  .refine((v) => (v.channel_type === 'team' ? v.recipient_member_id === undefined : v.team_id === undefined), {
-    message: 'team_id and recipient_member_id are mutually exclusive per channel_type',
-  })
+  .refine(
+    (v) =>
+      v.channel_type === 'team'
+        ? v.team_id !== undefined
+        : v.channel_type === 'direct'
+          ? v.recipient_member_id !== undefined
+          : true, // broadcast: club-wide, carries neither
+    { message: "team messages need team_id, direct messages need recipient_member_id" },
+  )
+  .refine(
+    (v) =>
+      v.channel_type === 'team'
+        ? v.recipient_member_id === undefined
+        : v.channel_type === 'direct'
+          ? v.team_id === undefined
+          : v.team_id === undefined && v.recipient_member_id === undefined, // broadcast: neither
+    { message: 'team_id and recipient_member_id must match the channel_type (broadcast carries neither)' },
+  )
   .refine((v) => (v.body !== undefined && v.body.trim().length > 0) || v.image_url !== undefined, {
     message: 'a message must carry body text and/or an image_url',
   })

@@ -18,10 +18,13 @@ import { chatDict } from "./i18n";
  */
 export function DeleteMessageDialog({
   message,
+  moderation = false,
   onClose,
   onDeleted,
 }: {
   message: ChatMessage | null;
+  /** true = der Vorstand entfernt eine FREMDE Nachricht (Moderation, 0083). */
+  moderation?: boolean;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -34,7 +37,7 @@ export function DeleteMessageDialog({
     setSubmitting(true);
     try {
       await data.deleteChatMessage(message.id);
-      showToast(t("deletedToast"), { tone: "success" });
+      showToast(t(moderation ? "moderatedToast" : "deletedToast"), { tone: "success" });
       onDeleted();
       onClose();
     } catch (caught) {
@@ -48,20 +51,20 @@ export function DeleteMessageDialog({
     <Modal
       open={message !== null}
       onClose={onClose}
-      eyebrow={t("deleteEyebrow")}
-      title={t("deleteTitle")}
+      eyebrow={t(moderation ? "moderationDeleteEyebrow" : "deleteEyebrow")}
+      title={t(moderation ? "moderationDeleteTitle" : "deleteTitle")}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={submitting}>
             {t("cancel")}
           </Button>
           <Button variant="danger" onClick={confirm} disabled={submitting}>
-            {t("deleteConfirm")}
+            {t(moderation ? "moderationDeleteConfirm" : "deleteConfirm")}
           </Button>
         </>
       }
     >
-      <p className="text-body text-ink-soft">{t("deleteBody")}</p>
+      <p className="text-body text-ink-soft">{t(moderation ? "moderationDeleteBody" : "deleteBody")}</p>
     </Modal>
   );
 }

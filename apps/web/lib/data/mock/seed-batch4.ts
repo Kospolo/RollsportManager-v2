@@ -65,6 +65,16 @@ export const chatMessageSeed: ChatMessage[] = [
     body: "Fast – ich schicke sie dir heute Abend.",
     createdAt: minsAgo(30),
   },
+  // Vereinsweite Ansage (Broadcast) — vom Vorstand (m-02); alle Mitglieder lesen
+  // sie, schreiben darf nur die Vereinsleitung (serverseitig erzwungen, 0083).
+  {
+    id: "msg-broadcast-01",
+    clubId,
+    channelType: "broadcast",
+    senderMemberId: "m-02",
+    body: "Liebe Vereinsmitglieder: Am 12. Juli feiern wir unser Sommerfest — bitte bis zum 5. Juli anmelden. Wir freuen uns auf euch!",
+    createdAt: minsAgo(120),
+  },
 ];
 
 /**

@@ -8337,7 +8337,8 @@
         "type": "string",
         "enum": [
           "team",
-          "direct"
+          "direct",
+          "broadcast"
         ]
       },
       "ChatChannel": {
@@ -25924,7 +25925,7 @@
         "tags": [
           "chat"
         ],
-        "summary": "List messages of one channel (team by team_id, direct by peer_member_id)",
+        "summary": "List messages of one channel (team by team_id, direct by peer_member_id, or broadcast)",
         "security": [
           {
             "bearerAuth": []
@@ -25945,7 +25946,8 @@
               "type": "string",
               "enum": [
                 "team",
-                "direct"
+                "direct",
+                "broadcast"
               ]
             },
             "required": true,
@@ -26031,7 +26033,8 @@
         "tags": [
           "chat"
         ],
-        "summary": "Send a message (team channel or direct); sender is always the caller",
+        "summary": "Send a message (team, direct or broadcast); sender is always the caller",
+        "description": "Team messages need team membership, direct messages pass the child-protection rule (0043), and broadcast (club-wide announcement) requires a club admin role (owner/admin/moderator). All three are enforced by the RLS with-check policy chat_messages_insert.",
         "security": [
           {
             "bearerAuth": []
@@ -26106,7 +26109,8 @@
         "tags": [
           "chat"
         ],
-        "summary": "Soft-delete a message (only the sender)",
+        "summary": "Soft-delete a message (its sender, or a club admin as moderation)",
+        "description": "The sender may delete their own message; a club admin (owner/admin/moderator) may delete ANY message they can see, as moderation (migration 0083). For a moderation delete deleted_by_member_id records the admin; a self-delete leaves it null. A non-sender, non-admin is filtered to 0 rows by RLS -> 403. The moderation guard forbids changing anything but the delete fields, so a moderator can never rewrite a foreign message.",
         "security": [
           {
             "bearerAuth": []
