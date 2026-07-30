@@ -38,11 +38,13 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
   direkte Küren-Moderations-Aktion (heute nur Ansehen; Ändern/Löschen via „Im Verein").
 
 **FAHRPLAN (Reihenfolge — alles innerhalb der SICHEREN Grenze, braucht die Entscheidung unten NICHT):**
-1. **iOS handlungsfähig:** „Verein betreten" + Lizenz-Edit + Support-Antwort. **[läuft, Team]**
+1. **iOS handlungsfähig:** „Verein betreten" + Lizenz-Edit + Support-Antwort. **[✅ Commit `2c92c5e`, Simulator-verifiziert]**
 2. **Plattform-Nachrichten** (Ziel: alle / bestimmte Vereine / nur Vorstände / nur Trainer).
 3. **Abmahnen/rauswerfen:** Verein sperren (Flag + Login-Block) + Mitglied entfernen — protokolliert.
 4. **Übergreifende Übersichten** (alle Mitglieder/Küren/Meldungen) + Küren-Moderations-Aktionen direkt.
-5. **Rechteabhängige FAQ** + fehlende Betreiber-Einstellungen.
+5. **Modul-Aktivierung** (Marcel 30.07.: „fehlt auch") — Module pro Verein ein-/ausschalten; erst MESSEN, ob
+   web/API (`club_modules` 0044) es schon kann und nur die UI/der Betreiber-Weg fehlt.
+6. **Rechteabhängige FAQ** + fehlende Betreiber-Einstellungen.
 
 **OFFENE ENTSCHEIDUNG (nur für „wirklich ALLES inkl. Kinderdaten"):** Zweckbindung behalten (empfohlen) /
 Break-Glass-Notfallzugriff / voller Override (braucht AVV + wahrscheinlich DPIA). Für den Fahrplan oben NICHT nötig.
