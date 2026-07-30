@@ -102,6 +102,7 @@ start_api() {
     AUTH_MODE=dev \
     AUTH_JWT_SECRET="$AUTH_JWT_SECRET" \
     AUTH_AUDIENCE=authenticated \
+    API_HOST="${API_HOST:-127.0.0.1}" \
     nohup npx tsx src/index.ts >> "$API_LOG_FILE" 2>&1 &
     echo $! > "$API_PID_FILE"
   )
