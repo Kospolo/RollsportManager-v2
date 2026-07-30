@@ -57,8 +57,13 @@ zeigt sie nur mock-getrieben. Als Mitglied ohne Trainerrecht erscheint kein Kür
 **WEITER OFFEN (Server-Features):** Gruppenchat (eigener Baustein, s.o.) · SMTP-Versand (Rechnung +
 Meldung an Vorstand) · öffentliche Website-Slider-Seite (Felder aus 0081 da, fehlt login-freie
 Read-Policy + public Route; Mock hat nur 1 volles Vereinsprofil) · Feld-Editieren positionsloser
-Entwurfsrechnungen · **⚠️ offenes Art.-9-Leck** (`rsvp_status='sick'` + Freitext, `event_rsvps_select`
-blank `is_club_member` → jedes Mitglied liest, dass Kind X krank ist — Gesundheitsdaten Minderjähriger).
+Entwurfsrechnungen.
+
+**✅ KORREKTUR (2026-07-30):** Das „Art.-9-Leck" (Krankmeldungen von Kindern) ist NICHT offen — es ist
+seit **Migration `0040_rsvp_gesundheitsdaten.sql`** geschlossen. Selbst gemessen: `authenticated` hat
+KEIN SELECT mehr auf `event_rsvps.status/comment` (permission denied), die API liest die maskierende
+View `event_rsvps_visible` (`sick`→`declined`, Kommentar→NULL, außer Selbst/Eltern/owner/admin/Team-
+Trainer:in). Sektion 2 unten führte es fälschlich als offen — Notiz war veraltet, hier berichtigt.
 
 ---
 
@@ -465,9 +470,11 @@ wird geblockt). Dev-Stack läuft: Web :3021 (eigener `next dev`, hängt an diese
      zugestimmt hat → jeder Einwilligungsnachweis wertlos (braucht append-only `legal_documents` + `policy_version`).
    - **⚠️ Landing-FAQ behauptet Unwahres** (`_landing/i18n.ts:115`): „AVV liegt bei" + „Daten jederzeit exportieren" —
      beides gibt es nicht. Nicht live (v2 ist nirgends deployt), aber vor dem Start streichen oder einlösen.
-   - **⚠️ Art.-9-Leck, unabhängig von der Registrierung:** `rsvp_status` kennt `'sick'` (0003:23) + Freitext-Kommentar,
-     `event_rsvps_select` ist blank `is_club_member` (0003:231-233) → **jedes Mitglied liest, dass Kind X krank ist.**
-     Gesundheitsdaten Minderjähriger. Braucht keinen Contract-Bruch. Gehört in den nächsten Lauf.
+   - **✅ ERLEDIGT (Migration `0040_rsvp_gesundheitsdaten.sql`, am 2026-07-30 selbst nachgemessen):** Das Art.-9-Leck
+     (`rsvp_status='sick'` + Freitext = Gesundheitsdatum, meist eines Kindes) ist geschlossen. `authenticated` hat KEIN
+     SELECT mehr auf `event_rsvps.status/comment` (Rohwert entzogen); gelesen wird die maskierende View
+     `event_rsvps_visible` (`sick`→`declined`, Kommentar→NULL), voll nur für Selbst/Eltern/owner/admin/Team-Trainer:in
+     (`app.can_read_rsvp_reason`). Kein Contract-Bruch. **Nicht erneut als offen führen.**
    - Kinder-Modell ist **schon richtig gebaut**: `club_members.profile_id` nullable („NULL = child without account",
      0002:72) + `guardianships`. Für Art. 8 heißt das: unter 16 kein Selbst-Signup, sondern Profil ohne Login,
      angelegt vom Elternteil. Lücken: `family.ts:105-106` setzt hart `'active'` statt `pending`; `birth_date` wird
