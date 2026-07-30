@@ -11,8 +11,8 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ## ⏩ WIEDEREINSTIEG 2026-07-30 (nach Claude-Neustart ZUERST lesen)
 
-**Live auf der Beta: Commit `62d569b`. Arbeitsbaum sauber.** In dieser Sitzung abgearbeitet
-(alles selbst im Browser AUF DER BETA :8095 als Rolle/Stufe verifiziert):
+**Live auf der Beta: Commit `2a1d8cc`. Arbeitsbaum sauber.** In dieser Sitzung abgearbeitet
+(alles selbst verifiziert — Web im Browser, Server gegen Dev-DB/API):
 - **Kür-Begrenzung sichtbar** — Küren-Liste zeigt Kontingent „verbraucht / erlaubt" der Vereins-Stufe
   und sperrt „Neue Kür" bei ausgeschöpftem Limit mit Upgrade-Hinweis. Werte 1:1 aus v1
   (`RollsportManager/rollsportmanager-backend/migrations/20260109_monetization.sql:93/98`):
@@ -32,16 +32,33 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
   Zahlen-Limit für Notizen. Deshalb NICHT als Pro gegatet — Marcels „notiz begrenzung ohne pro"
   hat in v2 keine Code-Grundlage; bei Bedarf ist das eine neue Produktentscheidung (Zahl fehlt).
 
-**Grenze dieser Arbeit (ehrlich):** Die Beta ist bewusst mock-only (keine API/DB/Login). Kür-Limit
-& Pro-Sperre sind hier ANZEIGE + Demo-Schalter; die verbindliche Durchsetzung ist Server-Arbeit
-(API+DB+Contracts, gegen Dev-API prüfbar, aber nicht auf der Beta sichtbar). Als Mitglied ohne
-Trainerrecht erscheint kein Kür-Zähler/Button — korrekt, kein Overexposure.
+**🟢 CHAT: Broadcast + Moderation END-TO-END (Server+Web, Commit `2a1d8cc`).** Echtes Server-Feature,
+gegen Dev-DB (2021 SQL-Tests) + Dev-API (curl) + Web-Mock (Browser als Rolle) verifiziert:
+- **Broadcast** = vereinsweiter Ansage-Kanal (neuer `channel_type='broadcast'`, Migration **0083**).
+  Schreiben nur Vereins-Admins (owner/admin/moderator), lesen ALLE Mitglieder (read-only). Voller Stack:
+  RLS + shape_check, API (`POST/GET /chat/messages` broadcast-Zweig, `GET /chat/channels`), Contracts
+  neu generiert (TS/Swift/Kotlin, Gate grün), Web-UI (Kanal „Ansagen", Composer nur Admin, „Neue Ansage").
+- **Moderation** = Vereins-Admin darf fremde Nachricht soft-löschen (`deleted_by`-Audit), über den
+  bestehenden `DELETE /chat/messages/{id}` + erweiterte UPDATE-RLS. Web zeigt „Entfernen" nur Admins.
+- **⚠️ KINDERSCHUTZ-HÄRTUNG (adversariale Prüfung fand es, SELBST reproduziert):** Der DM-Kinderschutz
+  (0043) prüfte nur beim INSERT. Ein Erwachsener konnte seine erlaubte Erwachsenen-DM per UPDATE auf ein
+  KIND umbiegen (`recipient_member_id`) — Lücke seit 0011 latent. Jetzt: `chat_messages` ist
+  **unveränderlich außer Soft-Löschen, für alle** (`chat_messages_immutable_guard`, 0083). Deckt auch
+  Tenancy (club_id-Wechsel) + Broadcast-Rechteausweitung (channel_type-Morph) + Wiederbeleben +
+  Audit-Fälschung ab. 9 Morph-Regressionstests in `98b`. Kinderschutz (98a) + Zweckbindung (99q) grün.
+- **iOS:** Contract mitgeneriert (kompiliert, dekodiert broadcast); die iOS-Broadcast-UI ist ein Folgeschritt.
+- **Bewusst NICHT gebaut: Gruppenchat** — braucht eine eigene Teilnehmer-Tabelle + ein sicherheits-
+  geprüftes Kinderschutz-Design (ein 2-Personen-„Gruppen"-Kanal darf nicht zur 0043-Umgehung werden).
 
-**WEITER OFFEN (Server-Features, nicht auf der Mock-Beta verifizierbar):** Chat Broadcast/Gruppenchat
-(3. Kanaltyp bricht `chat_messages_shape_check` + RLS 0011/0043) · Admin löscht FREMDE Chat-Nachrichten
-(RLS `chat_messages_update`) · SMTP-Versand (Rechnung + Meldung an Vorstand) · öffentliche
-Website-Slider-Seite (Felder+Schalter aus 0081 da, fehlt login-freie Read-Policy + public Route;
-Mock hat nur 1 vollständiges Vereinsprofil) · Feld-Editieren positionsloser Entwurfsrechnungen.
+**Grenze dieser Arbeit (ehrlich):** Die Beta ist bewusst mock-only (keine API/DB/Login). Kür-Limit
+& Pro-Sperre sind ANZEIGE + Demo-Schalter; die Chat-Durchsetzung ist echt (Server), aber die Beta
+zeigt sie nur mock-getrieben. Als Mitglied ohne Trainerrecht erscheint kein Kür-Zähler/Button — korrekt.
+
+**WEITER OFFEN (Server-Features):** Gruppenchat (eigener Baustein, s.o.) · SMTP-Versand (Rechnung +
+Meldung an Vorstand) · öffentliche Website-Slider-Seite (Felder aus 0081 da, fehlt login-freie
+Read-Policy + public Route; Mock hat nur 1 volles Vereinsprofil) · Feld-Editieren positionsloser
+Entwurfsrechnungen · **⚠️ offenes Art.-9-Leck** (`rsvp_status='sick'` + Freitext, `event_rsvps_select`
+blank `is_club_member` → jedes Mitglied liest, dass Kind X krank ist — Gesundheitsdaten Minderjähriger).
 
 ---
 
