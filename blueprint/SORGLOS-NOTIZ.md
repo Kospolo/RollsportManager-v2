@@ -9,6 +9,49 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ---
 
+## ⏩ BETREIBER-/SUPERADMIN-VISION & FAHRPLAN (Marcel 2026-07-30 — FESTGEHALTEN, NICHT erneut ansagen lassen)
+
+**Marcels Wunsch (über mehrere Nachrichten, hier gebündelt — er hasst es, sich zu wiederholen):**
+- Betreiber landet beim Start im **Betreiber-Dashboard**, NICHT im Verein. **[✅ erledigt, Commit `58ca7d3`, Web+iOS]**
+- Er will KEIN Verein sein — nur Vereine überblicken und bei Problemen hineingehen (Support).
+- **Support + Vereinsübernahme:** bei Einrichtung/Support zugreifen; wenn ein Vereins-Admin ausgesperrt ist
+  (Hacker o. Ä.), volle Verwaltung/Wiederherstellung. Alles protokolliert. Über allem stehen.
+- **Übergreifend:** alle Mitglieder, alle Vereine, alle Küren, Chat-Meldungen untersuchen.
+- **Betreiber-Nachrichten:** an alle / bestimmte Vereine, oder nur Vorstände / nur Trainer (Wartung, Events).
+- **Rechteabhängige FAQ** (jeder sieht sie nach seinen Rechten) + Zusatz.
+- **Superadmin am iPhone:** Vereine sperren/löschen/bearbeiten (bisher nur sehen).
+- Alle **Küren** aller Vereine sehen + sperren/bearbeiten/löschen (Moderation bei Unsinn).
+- **„Abmahnen" / rauswerfen** (Verein sperren, Mitglied entfernen).
+- „Viele Einstellungen fehlen noch."
+- Endziel: „alles funktioniert, alle Bilder erstellt, alle Rechte stimmen, alle Funktionen wie gewünscht."
+  (Bilder = noch zu klären WELCHE: App-Icons? App-Store-Screenshots? Vereins-Logos? Illustrationen?)
+
+**Gemessener Ist-Zustand (3 Aufklärer, 2026-07-30):**
+- Betreiber wirkt über **„Ansehen"/Verein betreten (NUR Web)** mit Owner-Vollmacht in **9 zweckgebundenen
+  Fähigkeiten**: members, roles, club_settings, departments, teams, team_coaches, routines, routines_edit,
+  anniversaries. Append-only protokolliert (0051), fail-closed (503 ohne Protokoll). Ausgesperrten Verein
+  retten: geht (Rolle via `roles` neu vergeben, notfalls erst Mitglied anlegen).
+- **BEWUSST GESPERRT (0074/0075, DSGVO Art. 25):** coach_notes, finance, member_contact, lockers, attendance,
+  checkins, chat, documents, media, gallery, events … = **Gesundheits-/Notiz-/Finanz-/Kontaktdaten der Kinder.**
+- **NICHT gebaut:** Plattform-Messaging · rechteabhängige FAQ · Verein sperren/löschen (kein Flag, kein
+  Endpoint — auch im Web nicht) · iOS-Schreibwege (nur-Lesen, dokumentiert) · gebündelte Übersichten ·
+  direkte Küren-Moderations-Aktion (heute nur Ansehen; Ändern/Löschen via „Im Verein").
+
+**FAHRPLAN (Reihenfolge — alles innerhalb der SICHEREN Grenze, braucht die Entscheidung unten NICHT):**
+1. **iOS handlungsfähig:** „Verein betreten" + Lizenz-Edit + Support-Antwort. **[läuft, Team]**
+2. **Plattform-Nachrichten** (Ziel: alle / bestimmte Vereine / nur Vorstände / nur Trainer).
+3. **Abmahnen/rauswerfen:** Verein sperren (Flag + Login-Block) + Mitglied entfernen — protokolliert.
+4. **Übergreifende Übersichten** (alle Mitglieder/Küren/Meldungen) + Küren-Moderations-Aktionen direkt.
+5. **Rechteabhängige FAQ** + fehlende Betreiber-Einstellungen.
+
+**OFFENE ENTSCHEIDUNG (nur für „wirklich ALLES inkl. Kinderdaten"):** Zweckbindung behalten (empfohlen) /
+Break-Glass-Notfallzugriff / voller Override (braucht AVV + wahrscheinlich DPIA). Für den Fahrplan oben NICHT nötig.
+
+**ARBEITSWEISE (Marcel, mehrfach eingefordert):** bauen statt fragen · nicht auf „los" warten · nicht
+wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team von Fach-Agenten nutzen.
+
+---
+
 ## ⏩ WIEDEREINSTIEG 2026-07-30 (nach Claude-Neustart ZUERST lesen)
 
 **Live auf der Beta: Commit `2a1d8cc`. Arbeitsbaum sauber.** In dieser Sitzung abgearbeitet
