@@ -13,15 +13,14 @@ import Foundation
 // bekommt 403 — auch aus dieser App heraus. Das Client-Gate (`PlatformGate`)
 // spart nur den sinnlosen Fetch und die hässliche Fehlermeldung.
 //
-// ### NUR LESEND ###
-// Die Konsole ist in iOS bewusst eine LESE-Konsole. Schreibende
-// Betreiber-Eingriffe (Lizenz umstellen, Produktpreis ändern,
-// Plattform-Einstellungen/SMTP) bleiben im Web: sie sind selten, folgenschwer
-// und brauchen eine breite Ansicht. `PATCH /platform/entitlements/{clubId}`
-// und `PATCH /platform/settings` sind hier absichtlich NICHT abgebildet — wer
-// sie ergänzt, muss zuerst eine Bestätigungs- und Begründungsführung bauen
-// (das `reason`-Feld des Contracts ist nicht dekorativ, es landet im
-// operator_audit_log).
+// ### LESEND + EIN GEZIELTER SCHREIB-EINGRIFF ###
+// Die Konsole ist überwiegend eine LESE-Konsole. EINE folgenschwere Schreib-
+// Aktion ist bewusst freigeschaltet — die Lizenz eines Vereins umstellen
+// (`patchPlatformEntitlement`) — weil sie mit klarer Begründungsführung auch
+// unterwegs sicher ist: Das `reason`-Feld ist NICHT dekorativ, es landet im
+// operator_audit_log, deshalb gibt die UI (`EditEntitlementSheet`) das Speichern
+// erst frei, wenn es gefüllt ist. Produktpreise und Plattform-Einstellungen/SMTP
+// (`PATCH /platform/settings`) bleiben dagegen im Web: breiter Blick nötig.
 // ============================================================================
 
 extension APIClient {
@@ -54,6 +53,53 @@ extension APIClient {
     /// das ist der Normalfall „kostenlos“, kein Fehler.
     func listPlatformEntitlements() async throws -> [PlatformEntitlementRow] {
         try await get("/platform/entitlements")
+    }
+
+    /// PATCH /platform/entitlements/{clubId} — Lizenz eines Vereins setzen/ändern
+    /// (Stufe, Status, Laufzeit/Testtage). Jede Änderung setzt die Quelle auf
+    /// „manuell" und wird mit `reason` im operator_audit_log protokolliert. Web-
+    /// Referenz: apps/web/lib/data/modules-platform.ts (platformSetEntitlement).
+    /// 409 = illegaler Übergang, 422 = unbekanntes Produkt, 403 = keine Berechtigung.
+    func patchPlatformEntitlement(
+        clubId: String,
+        _ patch: PlatformEntitlementPatch
+    ) async throws -> PlatformEntitlementRow {
+        // valid_until MUSS explizit gesendet werden — auch als null (= unbefristet).
+        // Der generierte PlatformEntitlementPatch lässt nil-Optionals weg
+        // (JSONEncoder), dann behielte der Server (platform-licenses.ts) die ALTE
+        // Frist statt sie zu leeren. Nur bei Trial-Tagen wird valid_until
+        // weggelassen (der Server rechnet den Term aus den Tagen). Spiegel
+        // EditEntitlementModal.submit() im Web.
+        struct Wire: Encodable {
+            let tier: PlatformTier
+            let status: PlatformEntitlementStatus
+            let validUntil: String?
+            let trialDays: Int?
+            let reason: String?
+            let sendValidUntil: Bool
+            enum CodingKeys: String, CodingKey {
+                case tier, status, reason
+                case validUntil = "valid_until"
+                case trialDays = "trial_days"
+            }
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(tier, forKey: .tier)
+                try c.encode(status, forKey: .status)
+                try c.encodeIfPresent(reason, forKey: .reason)
+                try c.encodeIfPresent(trialDays, forKey: .trialDays)
+                if sendValidUntil {
+                    if let validUntil { try c.encode(validUntil, forKey: .validUntil) }
+                    else { try c.encodeNil(forKey: .validUntil) }
+                }
+            }
+        }
+        let wire = Wire(
+            tier: patch.tier, status: patch.status, validUntil: patch.validUntil,
+            trialDays: patch.trialDays, reason: patch.reason,
+            sendValidUntil: patch.trialDays == nil
+        )
+        return try await self.patch("/platform/entitlements/\(clubId)", body: wire)
     }
 
     // MARK: - Support

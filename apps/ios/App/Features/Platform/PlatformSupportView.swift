@@ -7,9 +7,11 @@ import SwiftUI
 /// Betreiber wartende Tickets zuerst, geschlossene zuletzt. Wer unterwegs in
 /// die Konsole schaut, will genau eine Antwort — „muss ich jetzt ran?".
 ///
-/// LESEND: Antworten (`POST /support/tickets/{id}/messages`) und Statuswechsel
-/// bleiben im Web. Eine Support-Antwort ist geschriebene Kommunikation im Namen
-/// des Betreibers; die tippt niemand versehentlich zwischen zwei Terminen.
+/// Ein Tipp auf eine Karte öffnet den Verlauf (`PlatformSupportThreadView`) — dort
+/// kann der Betreiber ANTWORTEN (`POST /support/tickets/{id}/messages`) und
+/// Status/Dringlichkeit setzen (`PATCH /support/tickets/{id}`), club-scoped und ohne
+/// „Verein betreten" (Spiegel TicketThread.tsx unter /super). Diese Liste selbst
+/// bleibt reine Übersicht.
 struct PlatformSupportView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = PlatformSectionModel<[SupportTicket]>()
@@ -29,7 +31,13 @@ struct PlatformSupportView: View {
                 let waiting = sorted.filter { Self.needsOperator($0) }.count
                 banner(waiting: waiting, total: tickets.count)
                 ForEach(sorted, id: \.id) { ticket in
-                    ticketCard(ticket)
+                    NavigationLink {
+                        PlatformSupportThreadView(ticketId: ticket.id)
+                    } label: {
+                        ticketCard(ticket)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("platform.support.open.a11y"))
                 }
             }
         }

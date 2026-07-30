@@ -15,6 +15,8 @@ import SwiftUI
 struct PlatformLicensesView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = PlatformSectionModel<[PlatformEntitlementRow]>()
+    /// Die Zeile, deren Lizenz gerade bearbeitet wird (Sheet offen ⇔ != nil).
+    @State private var editing: PlatformEntitlementRow?
 
     var body: some View {
         PlatformSectionScreen(
@@ -32,6 +34,16 @@ struct PlatformLicensesView: View {
                     licenseCard(row)
                 }
             }
+        }
+        .sheet(item: $editing) { row in
+            EditEntitlementSheet(row: row) {
+                // Nach dem Speichern die Liste frisch ziehen, damit Stufe/Status
+                // sofort stimmen.
+                _Concurrency.Task {
+                    await model.load { try await session.api.listPlatformEntitlements() }
+                }
+            }
+            .environmentObject(session)
         }
     }
 
@@ -106,8 +118,28 @@ struct PlatformLicensesView: View {
                         .foregroundStyle(Theme.Colors.inkSoft)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+
+                editButton(row)
             }
         }
+    }
+
+    /// „Lizenz verwalten" — öffnet das Bearbeiten-Sheet für genau diese Zeile.
+    /// Der Server erzwingt Begründung + Protokoll (operator_audit_log); die UI
+    /// führt nur dorthin.
+    private func editButton(_ row: PlatformEntitlementRow) -> some View {
+        Button {
+            editing = row
+        } label: {
+            Label("platform.licenses.edit.open", systemImage: "slider.horizontal.3")
+                .font(Theme.Fonts.bodyStrong)
+                .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
+                .foregroundStyle(Theme.Colors.brandInk)
+                .background(Theme.Colors.brandSoft)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(RSMPressableButtonStyle())
+        .accessibilityLabel(Text("platform.licenses.edit.open.a11y \(row.clubName)"))
     }
 
     @ViewBuilder
@@ -140,4 +172,10 @@ struct PlatformLicensesView: View {
         case nil: return Text(verbatim: "–")
         }
     }
+}
+
+/// `Identifiable` für `.sheet(item:)` — die `clubId` ist je Zeile eindeutig.
+/// (Der generierte Contract-Typ bleibt unangetastet; Konformanz per Extension.)
+extension PlatformEntitlementRow: Identifiable {
+    public var id: String { clubId }
 }

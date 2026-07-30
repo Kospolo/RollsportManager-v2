@@ -23,6 +23,16 @@ final class SessionStore: ObservableObject {
     @Published private(set) var isLoggingIn = false
     @Published var loginError: String?
 
+    /// Der Verein, den der Betreiber gerade BETRETEN hat — oder `nil`.
+    ///
+    /// Reiner Anzeige-/Kontext-Zustand (Spiegel `operator-club.ts`): er entscheidet
+    /// nur, welche `club_id` die Portal-Aufrufe tragen (siehe `clubId`-Getter). Es ist
+    /// KEIN Rechte-Trick — das Token bleibt Byte für Byte unverändert. Ob der Zugriff
+    /// erlaubt ist, entscheidet allein der Server (`requirePlatformAdmin` +
+    /// operator-access-Middleware, Migration 0051), und er PROTOKOLLIERT dabei jeden
+    /// Zugriff append-only. Wer die id ohne Betreiber-Claim setzt, bekommt 403/leer.
+    @Published private(set) var operatorClub: OperatorClub?
+
     private static let defaultsKey = "rsm.dev.session"
 
     /// API-Client mit Bearer-Token aus der aktuellen Session.
@@ -51,8 +61,20 @@ final class SessionStore: ObservableObject {
     }
 
     /// Die Vereins-ID für alle club-gebundenen Calls.
+    ///
+    /// EIN Choke-Point (Spiegel `activeClubId()` in client.ts): Hat der Betreiber
+    /// einen Verein betreten, tragen ALLE ~42 Portal-Views automatisch dessen id —
+    /// ohne eine einzige View-Änderung, weil sie alle hier lesen.
+    ///
+    /// FAIL-CLOSED: Der Override wird NUR bei Betreiber-Claim honoriert (Spiegel
+    /// `readOperatorClub`, operator-club.ts:101-110). Ohne Claim wird er ignoriert —
+    /// sonst sähe eine Nicht-Admin-Persona nach einem Wechsel am selben Gerät einen
+    /// fremden „aktiven Verein" und bekäme unerklärliche 403.
     var clubId: String {
-        session?.profile.clubId ?? DevConfig.seedClubID
+        if isPlatformAdmin, let operatorClub {
+            return operatorClub.id
+        }
+        return session?.profile.clubId ?? DevConfig.seedClubID
     }
 
     /// Trägt das Token den Betreiber-Claim (`app_metadata.is_platform_admin`)?
@@ -70,6 +92,21 @@ final class SessionStore: ObservableObject {
     /// das ist kein Defekt, sondern die Datenlage.
     var hasClubMembership: Bool {
         session?.profile.clubId != nil
+    }
+
+    // MARK: - Betreiber-Kontext („Verein betreten" / „Einsicht beenden")
+
+    /// „Verein betreten" — ab jetzt tragen die Portal-Aufrufe dessen `club_id`.
+    /// Guard auf den Betreiber-Claim (fail-closed): eine Nicht-Admin-Persona kann
+    /// diesen Zustand gar nicht erst setzen.
+    func enterOperatorClub(_ club: OperatorClub) {
+        guard isPlatformAdmin else { return }
+        operatorClub = club
+    }
+
+    /// „Einsicht beenden" — zurück auf die reine Betreiber-Ebene.
+    func leaveOperatorClub() {
+        operatorClub = nil
     }
 
     // MARK: - Aktionen
@@ -112,6 +149,10 @@ final class SessionStore: ObservableObject {
     func logout() {
         session = nil
         currentToken = nil
+        // Betreiber-Kontext mit abräumen: sonst stünde die nächste Persona am
+        // selben Gerät mit einem fremden „aktiven Verein" da (der clubId-Getter
+        // ist zwar fail-closed, aber sauber ist sauber).
+        operatorClub = nil
         UserDefaults.standard.removeObject(forKey: Self.defaultsKey)
     }
 

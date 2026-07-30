@@ -79,19 +79,24 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            NavigationStack { DashboardView() }
+            // `.id(session.clubId)` baut die Vereins-Daten-Views bei einem
+            // Vereinswechsel (Betreiber: A verlassen → B betreten) NEU auf, damit
+            // kein zwischengespeicherter Stand von Verein A unter dem Band von
+            // Verein B stehen bleibt. Für ein protokollpflichtiges Feature ist
+            // die richtige Zuordnung Pflicht.
+            NavigationStack { DashboardView().id(session.clubId) }
                 .tabItem { Label("tab.dashboard", systemImage: "house.fill") }
                 .tag(Tab.dashboard)
 
-            NavigationStack { EventsRootView() }
+            NavigationStack { EventsRootView().id(session.clubId) }
                 .tabItem { Label("tab.events", systemImage: "calendar") }
                 .tag(Tab.events)
 
-            NavigationStack { MembersListView() }
+            NavigationStack { MembersListView().id(session.clubId) }
                 .tabItem { Label("tab.members", systemImage: "person.2.fill") }
                 .tag(Tab.members)
 
-            NavigationStack { RoutinesRootView() }
+            NavigationStack { RoutinesRootView().id(session.clubId) }
                 .tabItem { Label("tab.routines", systemImage: "music.note" ) }
                 .tag(Tab.routines)
 
@@ -148,6 +153,35 @@ struct MainTabView: View {
             }
                 .tabItem { Label("tab.mehr", systemImage: "ellipsis") }
                 .tag(Tab.mehr)
+        }
+        // DAS BETREIBER-BAND über ALLEN Tabs (Spiegel des sticky top-0 im Web).
+        // Bewusst hier als safeAreaInset auf der TabView — nicht in einer einzelnen
+        // NavigationStack-View, sonst verschwände es beim Tab-Wechsel. Von hier aus
+        // steuert es zugleich die Navigation (selection/mehrPath), was es in der
+        // App-Hülle nicht könnte.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            OperatorBannerView(
+                onConsole: {
+                    // In die Konsole schauen, OHNE die Einsicht zu beenden.
+                    mehrPath = [.platform]
+                    selection = .mehr
+                },
+                onEnd: { session.leaveOperatorClub() }
+            )
+        }
+        // Betreten/Verlassen → Navigation. Der Einmal-Redirect oben (didRouteOperator)
+        // bleibt unangetastet; dieser Handler wirkt danach frei.
+        .onChange(of: session.operatorClub) { _, club in
+            if club != nil {
+                // Betreten: raus aus der Konsole, hinein in den Verein. Ziel .members
+                // spiegelt ViewClubButton (target='/mitglieder').
+                mehrPath = []
+                selection = .members
+            } else {
+                // Verlassen: zurück in die Betreiber-Konsole (Spiegel endAccess → /super).
+                mehrPath = [.platform]
+                selection = .mehr
+            }
         }
         .task {
             // Plattform-Admin (Betreiber) startet in der Betreiber-Konsole,

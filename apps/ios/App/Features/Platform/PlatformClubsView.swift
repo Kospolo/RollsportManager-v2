@@ -90,7 +90,29 @@ struct PlatformClubsView: View {
                         value: PlatformFormat.day(club.createdAt)
                     )
                 }
+
+                enterButton(club)
             }
         }
+    }
+
+    /// „Verein betreten" (Spiegel ViewClubButton.tsx). Ein Tipp setzt den
+    /// Betreiber-Kontext (`SessionStore.enterOperatorClub`) — ab da tragen alle
+    /// Portal-Aufrufe dessen `club_id`, die App springt in die Mitgliederliste
+    /// und das dauerhafte Band oben erscheint. Kein Bestätigungsdialog: der
+    /// Betreiber hat ja gerade geklickt — die Ehrlichkeit sitzt im Band.
+    private func enterButton(_ club: PlatformClub) -> some View {
+        Button {
+            session.enterOperatorClub(OperatorClub(club: club))
+        } label: {
+            Label("platform.clubs.enter", systemImage: "arrow.right.circle.fill")
+                .font(Theme.Fonts.bodyStrong)
+                .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
+                .foregroundStyle(Theme.Colors.brandInk)
+                .background(Theme.Colors.brandSoft)
+                .clipShape(Capsule())
+        }
+        .buttonStyle(RSMPressableButtonStyle())
+        .accessibilityLabel(Text("platform.clubs.enter.a11y \(club.name)"))
     }
 }
