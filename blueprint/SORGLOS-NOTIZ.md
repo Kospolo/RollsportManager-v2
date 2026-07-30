@@ -9,6 +9,42 @@ Projekt: `/Users/marcelgoldfuss/Apps/RollsportManager-v2` · alles committet auf
 
 ---
 
+## ⏩ WIEDEREINSTIEG 2026-07-30 (nach Claude-Neustart ZUERST lesen)
+
+**Live auf der Beta: Commit `62d569b`. Arbeitsbaum sauber.** In dieser Sitzung abgearbeitet
+(alles selbst im Browser AUF DER BETA :8095 als Rolle/Stufe verifiziert):
+- **Kür-Begrenzung sichtbar** — Küren-Liste zeigt Kontingent „verbraucht / erlaubt" der Vereins-Stufe
+  und sperrt „Neue Kür" bei ausgeschöpftem Limit mit Upgrade-Hinweis. Werte 1:1 aus v1
+  (`RollsportManager/rollsportmanager-backend/migrations/20260109_monetization.sql:93/98`):
+  **free=1, pro=10, premium=unbegrenzt**. Nur ANZEIGE (Anlegen ist im Mock ohnehin No-op);
+  verbindliche Durchsetzung gehört wie v1 auf den Server, sobald v2 echten Login hat.
+  Neu: `lib/entitlement.ts` (Limit-Tabelle + Stufen-Namen), Entitlement SEPARAT geladen
+  (scheitert der Abruf im api-Modus → Liste bleibt, nur ohne Zähler).
+- **Stufen-Umschalter auf /entwickler** — `rsm.mock.tier` = free|pro|premium (spiegelt
+  `rsm.mock.viewer`; `lib/data/mock/tier.ts`). Damit wird die PRO-Staffelung auf der Mock-Beta
+  überhaupt sicht-/testbar (der Demo-Verein ist sonst dauerhaft `pro`). `getClubEntitlement()`
+  liest jetzt die Stufe → `pro = tier != free`.
+- **Dokumente + Galerie = Pro** — war schon halb da: beide Screens gaten auf `entitlement.pro` und
+  zeigen die vorhandene `ProUpgradeCard`. Durch die stufenabhängige `getClubEntitlement()` sperren
+  sie bei „Kostenlos" jetzt tatsächlich (live geprüft: free = „PRO-Funktion", pro = Inhalt/Upload).
+- **BEFUND, nicht erfunden:** **Notizen ist in v2 KEIN Pro-Modul** (`seed-clubmodules.ts`:
+  `notes` hat `requiresPro:false`, nur `defaultEnabled:false` = zubuchbar). v1 hatte auch KEIN
+  Zahlen-Limit für Notizen. Deshalb NICHT als Pro gegatet — Marcels „notiz begrenzung ohne pro"
+  hat in v2 keine Code-Grundlage; bei Bedarf ist das eine neue Produktentscheidung (Zahl fehlt).
+
+**Grenze dieser Arbeit (ehrlich):** Die Beta ist bewusst mock-only (keine API/DB/Login). Kür-Limit
+& Pro-Sperre sind hier ANZEIGE + Demo-Schalter; die verbindliche Durchsetzung ist Server-Arbeit
+(API+DB+Contracts, gegen Dev-API prüfbar, aber nicht auf der Beta sichtbar). Als Mitglied ohne
+Trainerrecht erscheint kein Kür-Zähler/Button — korrekt, kein Overexposure.
+
+**WEITER OFFEN (Server-Features, nicht auf der Mock-Beta verifizierbar):** Chat Broadcast/Gruppenchat
+(3. Kanaltyp bricht `chat_messages_shape_check` + RLS 0011/0043) · Admin löscht FREMDE Chat-Nachrichten
+(RLS `chat_messages_update`) · SMTP-Versand (Rechnung + Meldung an Vorstand) · öffentliche
+Website-Slider-Seite (Felder+Schalter aus 0081 da, fehlt login-freie Read-Policy + public Route;
+Mock hat nur 1 vollständiges Vereinsprofil) · Feld-Editieren positionsloser Entwurfsrechnungen.
+
+---
+
 ## ⏩ WIEDEREINSTIEG 2026-07-25 (nach Claude-Neustart ZUERST lesen)
 
 **Sicher committet + auf der Beta live: Commit `09a42a9`. Arbeitsbaum sauber.** Die Vorstand-Liste vom
