@@ -13,12 +13,18 @@ extension ChatChannel {
 
     /// Stabiler Schlüssel eines Kanals — Kanäle haben KEINE eigene id:
     /// Team-Kanäle identifiziert `teamId`, Direkt-Kanäle `peerMemberId`
-    /// (siehe ChatChannel-Read-Model). Dient als `ForEach`-Identität und
-    /// zum Auswahl-Vergleich.
+    /// (siehe ChatChannel-Read-Model). Der Broadcast-Kanal ist pro Verein
+    /// genau EINER, deshalb ein fester Schlüssel. Dient als `ForEach`-Identität
+    /// und zum Auswahl-Vergleich.
     var rsmKey: String {
-        channelType == .team
-            ? "team:\(teamId ?? "")"
-            : "direct:\(peerMemberId ?? "")"
+        switch channelType {
+        case .team:
+            return "team:\(teamId ?? "")"
+        case .direct:
+            return "direct:\(peerMemberId ?? "")"
+        case .broadcast:
+            return "broadcast:"
+        }
     }
 
     /// Anzeigename (Team-Name bzw. Peer-Name); leer, wenn der Server nichts

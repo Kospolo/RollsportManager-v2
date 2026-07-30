@@ -93,9 +93,11 @@ struct ChatChannelRow: View {
     private var title: String {
         let name = channel.rsmDisplayName
         if !name.isEmpty { return name }
-        return channel.channelType == .team
-            ? String(localized: "chat.channel.team")
-            : String(localized: "chat.channel.direct")
+        switch channel.channelType {
+        case .team:      return String(localized: "chat.channel.team")
+        case .direct:    return String(localized: "chat.channel.direct")
+        case .broadcast: return String(localized: "chat.channel.broadcast")
+        }
     }
 
     private var timestamp: String? {
@@ -115,7 +117,10 @@ struct ChatChannelRow: View {
         if own {
             return Text("chat.preview.you \(body)")
         }
-        if channel.channelType == .team {
+        // Team- UND Broadcast-Kanäle stellen den Absendernamen voran (Spiegel
+        // von ChannelList.tsx: channelType === "team" || "broadcast"); Direkt-
+        // Kanäle zeigen nur den reinen Text.
+        if channel.channelType == .team || channel.channelType == .broadcast {
             let sender = nameFor(channel.lastSenderMemberId) ?? String(localized: "chat.member")
             return Text("chat.preview.other \(sender) \(body)")
         }
@@ -134,6 +139,17 @@ private struct ChatChannelGlyph: View {
                 Image(systemName: "person.3.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Theme.Colors.info)
+            }
+            .frame(width: 36, height: 36)
+            .accessibilityHidden(true)
+        } else if channel.channelType == .broadcast {
+            // Ansage-Kanal: getönte Glocken-Kachel (Spiegel des Web-`bell`-Icons
+            // auf bg-brand-soft/text-brand).
+            ZStack {
+                Circle().fill(Theme.Colors.brandSoft)
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.brand)
             }
             .frame(width: 36, height: 36)
             .accessibilityHidden(true)

@@ -31,6 +31,21 @@ struct ChatView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("chat.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            // „Neue Ansage" nur für Vereins-Admins (Spiegel des Web-Buttons im
+            // Listen-Header). Nicht-Admins sehen den Kanal read-only, sobald
+            // Ansagen existieren. Die Berechtigung erzwingt der Server (RLS).
+            if session.permissions.isClubAdmin {
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink {
+                        broadcastThread
+                    } label: {
+                        Label("chat.broadcast.new", systemImage: "bell.badge")
+                    }
+                    .accessibilityHint(Text("chat.broadcast.new.a11y"))
+                }
+            }
+        }
 #if DEBUG
         .navigationDestination(item: $devThreadKey) { key in
             if let channel = model.channels.first(where: { $0.rsmKey == key }) {
@@ -39,7 +54,8 @@ struct ChatView: View {
                     api: session.api,
                     clubId: session.clubId,
                     myMemberId: model.myMemberId,
-                    namesById: model.namesById
+                    namesById: model.namesById,
+                    isClubAdmin: session.permissions.isClubAdmin
                 )
             }
         }
@@ -144,7 +160,8 @@ struct ChatView: View {
                 api: session.api,
                 clubId: session.clubId,
                 myMemberId: model.myMemberId,
-                namesById: model.namesById
+                namesById: model.namesById,
+                isClubAdmin: session.permissions.isClubAdmin
             )
         } label: {
             ChatChannelRow(
@@ -155,6 +172,20 @@ struct ChatView: View {
             .padding(.horizontal, Theme.Spacing.s4)
         }
         .buttonStyle(.plain)
+    }
+
+    /// Synthetischer Ansage-Kanal für den „Neue Ansage"-Einstieg (Spiegel des
+    /// Web-`{channelType:'broadcast'}`). Erscheint zusätzlich regulär in der
+    /// Liste, sobald der Server Ansagen liefert.
+    private var broadcastThread: some View {
+        ChatThreadView(
+            channel: ChatChannel(channelType: .broadcast),
+            api: session.api,
+            clubId: session.clubId,
+            myMemberId: model.myMemberId,
+            namesById: model.namesById,
+            isClubAdmin: session.permissions.isClubAdmin
+        )
     }
 
     private var refreshErrorBinding: Binding<Bool> {

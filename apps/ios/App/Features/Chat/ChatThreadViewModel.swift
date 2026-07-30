@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Thread-ViewModel: lädt die Nachrichten EINES Kanals (chronologisch
 /// aufsteigend vom Server) und sendet neue Nachrichten optimistisch.
@@ -30,6 +31,9 @@ final class ChatThreadViewModel: ObservableObject {
     @Published var refreshErrorMessage: String?
     @Published var sendFailure: SendFailure?
     @Published private(set) var isSending = false
+    /// Fehler beim moderierten Entfernen (Admin löscht fremde Nachricht) — die
+    /// View zeigt ihn als Alert. Das Recht selbst ist serverseitig (RLS).
+    @Published var moderationErrorMessage: String?
 
     private var api: APIClient?
     private var clubId: String?
@@ -138,6 +142,32 @@ final class ChatThreadViewModel: ObservableObject {
         } catch {
             messages.removeAll { $0.id == tempId }
             sendFailure = error.isForbiddenAPIError ? .forbidden : .other(Self.friendlyMessage(error))
+            return false
+        }
+    }
+
+    // MARK: - Moderation (Admin entfernt fremde Nachricht)
+
+    /// Entfernt eine FREMDE Nachricht per Moderation (DELETE /chat/messages/{id}).
+    /// Sichtbar/aufrufbar nur für Admins in team/broadcast — die eigentliche
+    /// Berechtigung erzwingt der Server (RLS). Optimistische Blasen (`temp-`)
+    /// haben serverseitig keine ID und werden nie moderiert.
+    /// Rückgabe `false` ⇒ fehlgeschlagen (`moderationErrorMessage` trägt den Grund).
+    @discardableResult
+    func moderate(_ message: ChatMessage?) async -> Bool {
+        guard let message, let api,
+              !message.id.hasPrefix("temp-")
+        else { return false }
+        do {
+            _ = try await api.deleteChatMessage(id: message.id)
+            // Blase animiert entfernen; die `.transition` an der Blase spielt die
+            // Bewegung. Reduce Motion dämpft `.snappy` systemseitig.
+            withAnimation(.snappy) {
+                messages.removeAll { $0.id == message.id }
+            }
+            return true
+        } catch {
+            moderationErrorMessage = Self.friendlyMessage(error)
             return false
         }
     }

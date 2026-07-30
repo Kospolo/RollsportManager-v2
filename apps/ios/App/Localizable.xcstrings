@@ -3123,6 +3123,22 @@
         }
       }
     },
+    "chat.alert.cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
     "chat.alert.ok": {
       "localizations": {
         "de": {
@@ -3135,6 +3151,86 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "chat.broadcast.new": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Ansage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New announcement"
+          }
+        }
+      }
+    },
+    "chat.broadcast.new.a11y": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnet den vereinsweiten Ansage-Kanal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens the club-wide announcement channel."
+          }
+        }
+      }
+    },
+    "chat.broadcast.readonly": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur die Vereinsleitung schreibt hier — Ansagen erreichen alle Mitglieder."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only the club board posts here — announcements reach every member."
+          }
+        }
+      }
+    },
+    "chat.broadcast.subtitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vereinsweite Ansage"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Club-wide announcement"
+          }
+        }
+      }
+    },
+    "chat.channel.broadcast": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ansagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Announcements"
           }
         }
       }
@@ -3315,6 +3411,86 @@
         }
       }
     },
+    "chat.moderate": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "chat.moderate.confirm.action": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachricht entfernen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove message"
+          }
+        }
+      }
+    },
+    "chat.moderate.confirm.body": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Vereinsvorstand entfernst du diese Nachricht für alle. Der Wortlaut bleibt für eine bestehende Meldung erhalten — ändern kannst du ihn nicht."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As a board member you remove this message for everyone. Its wording is preserved for any existing report — you cannot change it."
+          }
+        }
+      }
+    },
+    "chat.moderate.confirm.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fremde Nachricht entfernen?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove this message?"
+          }
+        }
+      }
+    },
+    "chat.moderate.error.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entfernen fehlgeschlagen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removal failed"
+          }
+        }
+      }
+    },
     "chat.preview.image": {
       "localizations": {
         "de": {
@@ -3439,6 +3615,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Message not sent"
+          }
+        }
+      }
+    },
+    "chat.thread.empty.broadcast": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Ansage. Schreib die erste vereinsweite Mitteilung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No announcement yet. Post the first club-wide message."
           }
         }
       }

@@ -14,16 +14,29 @@ struct ChatThreadView: View {
     let myMemberId: String
     /// member_id → Name (für Absender in Team-Kanälen).
     let namesById: [String: String]
+    /// Vereins-Admin (owner/admin/moderator)? Steuert NUR die Anzeige: Composer
+    /// im Ansage-Kanal + „Entfernen" an fremden Nachrichten. Die echte
+    /// Berechtigung erzwingt der Server (RLS) — die UI ist nie die Grenze.
+    /// Default `false`, damit bestehende Aufrufer read-only bleiben.
+    var isClubAdmin: Bool = false
 
     @StateObject private var model = ChatThreadViewModel()
     @State private var draft = ""
+    /// Fremde Nachricht, die der Admin gerade zu entfernen bestätigt (nil = kein
+    /// Dialog). Nie automatisch bestätigt — Löschen nur über den Dialog-Button.
+    @State private var toModerate: ChatMessage?
 
     private static let bottomAnchor = "chat.thread.bottom"
 
     var body: some View {
         VStack(spacing: 0) {
+            if channel.channelType == .broadcast { broadcastSubheader }
             content
-            if showComposer { composer }
+            if showComposer {
+                composer
+            } else if broadcastReadOnly {
+                readOnlyBar
+            }
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text(verbatim: title))
@@ -97,12 +110,39 @@ struct ChatThreadView: View {
                 } else {
                     LazyVStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                         ForEach(Array(model.messages.enumerated()), id: \.element.id) { index, message in
-                            ChatMessageBubble(
+                            let isOwn = message.senderMemberId == model.myMemberId
+                            let bubble = ChatMessageBubble(
                                 message: message,
-                                isOwn: message.senderMemberId == model.myMemberId,
+                                isOwn: isOwn,
                                 senderName: senderName(for: message.senderMemberId),
                                 showSender: showSender(at: index)
                             )
+                            // Entfernt der Admin die Blase, gleitet sie zur
+                            // eigenen Seite aus (fremde Nachricht = links).
+                            .transition(
+                                .opacity.combined(with: .move(edge: isOwn ? .trailing : .leading))
+                            )
+                            // Moderation NUR anbieten, wenn der Admin diese fremde
+                            // Nachricht auch entfernen darf — sonst KEIN leeres
+                            // Kontextmenü und KEINE No-op-VoiceOver-Aktion
+                            // (irreführend, gerade im Kinderschutz-Kontext).
+                            if canModerate(message) {
+                                bubble
+                                    // Long-Press (iOS-Standardgeste für Nachrichten)…
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            toModerate = message
+                                        } label: {
+                                            Label("chat.moderate", systemImage: "trash")
+                                        }
+                                    }
+                                    // …UND als benannte VoiceOver-/Switch-Control-Aktion.
+                                    .accessibilityAction(named: Text("chat.moderate")) {
+                                        toModerate = message
+                                    }
+                            } else {
+                                bubble
+                            }
                         }
                         Color.clear
                             .frame(height: 1)
@@ -129,17 +169,78 @@ struct ChatThreadView: View {
         } message: {
             Text(verbatim: model.refreshErrorMessage ?? "")
         }
+        .confirmationDialog(
+            "chat.moderate.confirm.title",
+            isPresented: moderateBinding,
+            titleVisibility: .visible
+        ) {
+            Button("chat.moderate.confirm.action", role: .destructive) {
+                let target = toModerate
+                toModerate = nil
+                _Concurrency.Task { await model.moderate(target) }
+            }
+            Button("chat.alert.cancel", role: .cancel) { toModerate = nil }
+        } message: {
+            Text("chat.moderate.confirm.body")
+        }
+        .alert("chat.moderate.error.title", isPresented: moderationErrorBinding) {
+            Button("chat.alert.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: model.moderationErrorMessage ?? "")
+        }
     }
 
     private var emptyThread: some View {
         RSMEmptyState(
             systemImage: "bubble.left.and.bubble.right",
             title: "chat.thread.empty.title",
-            message: channel.channelType == .team
-                ? "chat.thread.empty.team"
-                : "chat.thread.empty.direct \(title)"
+            message: emptyThreadMessage
         )
         .frame(maxWidth: .infinity, minHeight: 360)
+    }
+
+    private var emptyThreadMessage: LocalizedStringKey {
+        switch channel.channelType {
+        case .team:      return "chat.thread.empty.team"
+        case .broadcast: return "chat.thread.empty.broadcast"
+        case .direct:    return "chat.thread.empty.direct \(title)"
+        }
+    }
+
+    // MARK: - Broadcast (Ansage-Kanal)
+
+    /// Kontextzeile über der Nachrichtenliste (nur Broadcast): trägt den
+    /// Web-Untertitel „Vereinsweite Ansage", den die NavigationBar nicht zeigt.
+    private var broadcastSubheader: some View {
+        HStack(spacing: Theme.Spacing.s2) {
+            Image(systemName: "bell.fill")
+                .imageScale(.medium)
+                .accessibilityHidden(true)
+            Text("chat.broadcast.subtitle")
+        }
+        .font(Theme.Fonts.caption)
+        .foregroundStyle(Theme.Colors.inkFaint)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Theme.Spacing.s2)
+        .background(Theme.Colors.bgSurface)
+        .overlay(alignment: .bottom) {
+            Divider().overlay(Theme.Colors.line)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    /// Read-only-Leiste statt Composer: Mitglieder lesen Ansagen nur.
+    private var readOnlyBar: some View {
+        VStack(spacing: 0) {
+            Divider().overlay(Theme.Colors.line)
+            Text("chat.broadcast.readonly")
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkFaint)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(Theme.Spacing.s3)
+        }
+        .background(Theme.Colors.bgSurface)
     }
 
     // MARK: - Eingabe
@@ -198,17 +299,44 @@ struct ChatThreadView: View {
         !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !model.isSending
     }
 
+    /// Darf im Ansage-Kanal geschrieben werden? Nur Admins — sonst read-only.
+    private var canPostBroadcast: Bool {
+        channel.channelType == .broadcast && isClubAdmin
+    }
+
     private var showComposer: Bool {
         if case .error = model.state { return false }
+        if channel.channelType == .broadcast { return canPostBroadcast }
         return true
+    }
+
+    /// Broadcast-Kanal ohne Schreibrecht (und kein Fehler) ⇒ Read-only-Leiste.
+    private var broadcastReadOnly: Bool {
+        if case .error = model.state { return false }
+        return channel.channelType == .broadcast && !canPostBroadcast
+    }
+
+    /// Darf hier überhaupt moderiert werden? Admin in team/broadcast — nie in
+    /// privaten Direktnachrichten (Spiegel MessageThread.tsx: canModerateHere).
+    private var canModerateHere: Bool {
+        isClubAdmin && channel.channelType != .direct
+    }
+
+    /// „Entfernen" nur an FREMDER, bereits gesendeter Nachricht.
+    private func canModerate(_ message: ChatMessage) -> Bool {
+        canModerateHere
+            && message.senderMemberId != model.myMemberId
+            && !message.id.hasPrefix("temp-")
     }
 
     private var title: String {
         let name = channel.rsmDisplayName
         if !name.isEmpty { return name }
-        return channel.channelType == .team
-            ? String(localized: "chat.channel.team")
-            : String(localized: "chat.channel.direct")
+        switch channel.channelType {
+        case .team:      return String(localized: "chat.channel.team")
+        case .direct:    return String(localized: "chat.channel.direct")
+        case .broadcast: return String(localized: "chat.channel.broadcast")
+        }
     }
 
     private func senderName(for memberId: String) -> String {
@@ -216,11 +344,13 @@ struct ChatThreadView: View {
         return name.isEmpty ? String(localized: "chat.member") : name
     }
 
-    /// Team-Kanal: Absendername über der ERSTEN Blase einer Folge desselben
-    /// Absenders (nie bei eigenen Nachrichten).
+    /// Team- ODER Ansage-Kanal: Absendername über der ERSTEN Blase einer Folge
+    /// desselben Absenders (nie bei eigenen Nachrichten). In Ansagen zeigt das,
+    /// welches Vorstandsmitglied die Mitteilung verfasst hat (Web-Parität).
     private func showSender(at index: Int) -> Bool {
         let message = model.messages[index]
-        guard channel.channelType == .team, message.senderMemberId != model.myMemberId else {
+        let groupChannel = channel.channelType == .team || channel.channelType == .broadcast
+        guard groupChannel, message.senderMemberId != model.myMemberId else {
             return false
         }
         if index == 0 { return true }
@@ -240,6 +370,20 @@ struct ChatThreadView: View {
         Binding(
             get: { model.sendFailure != nil },
             set: { if !$0 { model.sendFailure = nil } }
+        )
+    }
+
+    private var moderateBinding: Binding<Bool> {
+        Binding(
+            get: { toModerate != nil },
+            set: { if !$0 { toModerate = nil } }
+        )
+    }
+
+    private var moderationErrorBinding: Binding<Bool> {
+        Binding(
+            get: { model.moderationErrorMessage != nil },
+            set: { if !$0 { model.moderationErrorMessage = nil } }
         )
     }
 

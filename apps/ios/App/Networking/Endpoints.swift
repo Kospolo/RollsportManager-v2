@@ -221,10 +221,18 @@ extension APIClient {
         return try await get("/chat/messages", query: query)
     }
 
-    /// POST /chat/messages — Nachricht senden (Team-Kanal oder Direkt).
-    /// `clubId`/`channelType`/Ziel stecken im `ChatMessageCreate`.
+    /// POST /chat/messages — Nachricht senden (Team-Kanal, Direkt oder
+    /// Broadcast). `clubId`/`channelType`/Ziel stecken im `ChatMessageCreate`;
+    /// Broadcast erlaubt nur der Server für Admins (RLS), sonst 403.
     func sendChatMessage(_ create: ChatMessageCreate) async throws -> ChatMessage {
         try await post("/chat/messages", body: create)
+    }
+
+    /// DELETE /chat/messages/{id} — Nachricht entfernen. Der Absender darf die
+    /// eigene löschen, ein Vereins-Admin moderiert fremde (team/broadcast). Das
+    /// Recht erzwingt der Server (RLS); Antwort ist `Deleted` (gelöschte ID).
+    func deleteChatMessage(id: String) async throws -> Deleted {
+        try await delete("/chat/messages/\(id)")
     }
 
     // MARK: - Medaillen (Achievements)
