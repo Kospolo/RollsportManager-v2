@@ -1,0 +1,60 @@
+# ============================================================================
+# RollsportManager v2 — Prod-Stack (schlank): Postgres + Hono-API.
+# KEIN GoTrue, KEIN volles Supabase (v2 hostet Auth selbst, AUTH_MODE=selfhosted).
+#
+# Laeuft auf dem Mac Studio (.220) NEBEN dem alten v1-Supabase — deshalb strikt
+# getrennt: eigene Container-Namen (rsm2-prod-*), eigene Ports, eigene
+# Bind-Mounts (KEINE named volumes, Marcels Regel). v1 wird NICHT angefasst.
+#
+# Reverse-Proxy (NPM) terminiert TLS fuer api.rollsportmanager.de und leitet auf
+# 127.0.0.1:${API_PORT} — deshalb bindet die API nur an localhost des Hosts.
+# ============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: rsm2-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rsm2}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+    volumes:
+      - ./data/pg:/var/lib/postgresql/data
+    # Nur lokal erreichbar (Migrate-Skript + Debug); nie oeffentlich.
+    ports:
+      - "127.0.0.1:${DB_PORT:-55434}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-rsm2}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ../services/api
+    container_name: rsm2-prod-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Server im Container an ALLE Interfaces binden (sonst kein Proxy-Zugriff).
+      API_HOST: "0.0.0.0"
+      PORT: "3022"
+      DATABASE_URL: "postgres://postgres:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-rsm2}"
+      AUTH_MODE: "selfhosted"
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET fehlt in .env}
+      RATE_LIMIT_PEPPER: ${RATE_LIMIT_PEPPER:?RATE_LIMIT_PEPPER fehlt in .env}
+      AUTH_AUDIENCE: "authenticated"
+      # Reset-/Verify-Links zeigen auf die WEB-App (nicht die API).
+      APP_BASE_URL: ${APP_BASE_URL:-https://app.rollsportmanager.de}
+      # SMTP-Zugangsdaten liegen NICHT hier, sondern in internal.platform_settings
+      # (per Betreiber-Admin/SQL gesetzt) — der Mailer liest sie aus der DB.
+      # MAIL_TRANSPORT=smtp ist Pflicht (selfhosted verweigert dry-run).
+      MAIL_TRANSPORT: "smtp"
+      MEDIA_DIR: "/data/media"
+    volumes:
+      - ./data/media:/data/media
+    ports:
+      - "127.0.0.1:${API_PORT:-3023}:3022"
