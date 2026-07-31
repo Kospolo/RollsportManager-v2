@@ -27,6 +27,11 @@ export const club: Club = {
     "Willkommen beim RSV Neckarsulm! Rollkunstlauf für alle Altersgruppen, vom ersten Rollschuh bis zur Kür.",
   publicImage: "",
   logoUrl: null,
+  // Standard „Beere" (tokens.css). Der Verein kann eine eigene Marken-/Akzentfarbe
+  // wählen (Verwaltung → Verein). Im Mock persistiert die Auswahl über den
+  // localStorage-Spiegel (lib/brand), damit sie auf der Beta erhalten bleibt.
+  brandColor: null,
+  brandPreset: null,
 };
 
 const c = club.id;

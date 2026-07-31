@@ -428,6 +428,10 @@ export const mockRepository: DataRepository = {
         ? { publicDescription: patch.publicDescription }
         : {}),
       ...(patch.publicImage !== undefined ? { publicImage: patch.publicImage } : {}),
+      // Marken-/Akzentfarbe: null (Standard) ist ein bewusster Wert → per
+      // `!== undefined` durchreichen, damit „auf Standard zurück" wirkt.
+      ...(patch.brandColor !== undefined ? { brandColor: patch.brandColor } : {}),
+      ...(patch.brandPreset !== undefined ? { brandPreset: patch.brandPreset } : {}),
     };
     return clubStore;
   },

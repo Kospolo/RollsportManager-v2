@@ -251,6 +251,10 @@ export interface UpdateClubSettingsInput {
   publicProfileEnabled?: boolean;
   publicDescription?: string;
   publicImage?: string;
+  /** Marken-/Akzentfarbe (Seed-Hex `#RRGGBB`) oder null = Standard „Beere". */
+  brandColor?: string | null;
+  /** Preset-Schlüssel (z. B. "petrol") oder null bei freier Farbe/Standard. */
+  brandPreset?: string | null;
   /** Freies Settings-Objekt (Modulschalter etc.) — im View-Modell nicht gespiegelt. */
   settings?: Record<string, unknown>;
 }

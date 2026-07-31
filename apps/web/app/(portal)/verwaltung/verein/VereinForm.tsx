@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { data, dataSource, errorMessage, isForbidden } from "@/lib/data";
 import type { UpdateClubSettingsInput, UpdateClubSmtpInput } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { Club, ClubSmtpSettings } from "@/lib/types";
+import {
+  applyBrandCss,
+  BRAND_PRESETS,
+  commitBrand,
+  deriveBrandTheme,
+  isDefaultBrand,
+  isHex,
+  readBrandSelection,
+  renderBrandCss,
+  resolveBrandTheme,
+} from "@/lib/brand";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Input, Textarea } from "@/components/ui/Field";
 import { Switch } from "@/components/ui/Switch";
@@ -13,6 +24,7 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
+import { Icon } from "@/components/shell/icons";
 import { useT } from "@/lib/i18n";
 import { vereinDict } from "./i18n";
 
@@ -33,6 +45,9 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const IBAN_PATTERN = /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/;
 
 type FormState = {
+  /** Marken-/Akzentfarbe: Seed-Hex ("" = keiner) + Preset-Schlüssel ("" = frei/Standard). */
+  brandColor: string;
+  brandPreset: string;
   name: string;
   shortName: string;
   foundedYear: string;
@@ -56,10 +71,26 @@ type FormState = {
   notifyNews: boolean;
 };
 
-type FieldErrors = { name?: string; email?: string; iban?: string; foundedYear?: string };
+type FieldErrors = { name?: string; email?: string; iban?: string; foundedYear?: string; brand?: string };
+
+/**
+ * Anfangs-Auswahl der Markenfarbe. Im Mock-Modus ist der localStorage-Spiegel
+ * die dauerhafte Persistenz (der In-Memory-Store startet nach jedem Reload leer),
+ * darum hat er hier Vorrang. Im api-Modus zählt der Verein (getClub).
+ */
+function initialBrand(club: Club): { brandColor: string; brandPreset: string } {
+  if (dataSource !== "api") {
+    const stored = readBrandSelection();
+    if (stored && (stored.color || stored.preset)) {
+      return { brandColor: stored.color ?? "", brandPreset: stored.preset ?? "" };
+    }
+  }
+  return { brandColor: club.brandColor ?? "", brandPreset: club.brandPreset ?? "" };
+}
 
 function initialForm(club: Club): FormState {
   return {
+    ...initialBrand(club),
     name: club.name,
     shortName: club.shortName,
     // 0 (kein Jahr) als leeres Feld zeigen.
@@ -103,6 +134,31 @@ export function VereinForm({ club }: { club: Club }) {
     if (key in errors) setErrors((e) => ({ ...e, [key]: undefined }));
   };
 
+  // Live-Vorschau: die gewählte Marke sofort auf die GANZE App anwenden (nur
+  // visuell, ohne Speichern). Standard/Beere ⇒ Override weg; eine ungültige freie
+  // Farbe lässt die bestehende Vorschau stehen (kein hartes Zurücksetzen).
+  useEffect(() => {
+    if (isDefaultBrand(form.brandColor || null, form.brandPreset || null)) {
+      applyBrandCss(null);
+      return;
+    }
+    const theme = resolveBrandTheme(form.brandColor || null, form.brandPreset || null);
+    if (theme) applyBrandCss(renderBrandCss(theme));
+  }, [form.brandColor, form.brandPreset]);
+
+  // Verlässt man die Seite mit einer NICHT gespeicherten Vorschau, den zuletzt
+  // persistierten Stand (baseline) wiederherstellen — kein „hängender" Look.
+  const baselineRef = useRef(baseline);
+  baselineRef.current = baseline;
+  useEffect(
+    () => () => {
+      const b = baselineRef.current;
+      if (isDefaultBrand(b.brandColor || null, b.brandPreset || null)) applyBrandCss(null);
+      else applyBrandCss(renderBrandCss(resolveBrandTheme(b.brandColor || null, b.brandPreset || null)));
+    },
+    [],
+  );
+
   const validate = (): FieldErrors => {
     const next: FieldErrors = {};
     if (!form.name.trim()) next.name = t("errNameRequired");
@@ -116,6 +172,12 @@ export function VereinForm({ club }: { club: Club }) {
     }
     const iban = form.iban.replace(/\s+/g, "").toUpperCase();
     if (iban && !IBAN_PATTERN.test(iban)) next.iban = t("errIbanInvalid");
+    // Freie Farbe (kein Preset): hartes AA-Gate — nicht ableitbar ⇒ ablehnen.
+    if (!form.brandPreset && form.brandColor) {
+      if (!isHex(form.brandColor) || !deriveBrandTheme(form.brandColor)) {
+        next.brand = t("brandUnreadable");
+      }
+    }
     return next;
   };
 
@@ -123,10 +185,17 @@ export function VereinForm({ club }: { club: Club }) {
     if (saving) return;
     const found = validate();
     setErrors(found);
-    if (found.name || found.email || found.iban || found.foundedYear) return;
+    if (found.name || found.email || found.iban || found.foundedYear || found.brand) return;
+
+    // Marke: Beere/leer = Standard (Override entfernen), sonst gewählte Farbe.
+    const brandDefault = isDefaultBrand(form.brandColor || null, form.brandPreset || null);
+    const brandColor = brandDefault ? null : form.brandColor || null;
+    const brandPreset = brandDefault ? null : form.brandPreset || null;
 
     const yearTrim = form.foundedYear.trim();
     const patch: UpdateClubSettingsInput = {
+      brandColor,
+      brandPreset,
       name: form.name.trim(),
       shortName: form.shortName.trim() || null,
       city: form.city.trim() || null,
@@ -161,6 +230,10 @@ export function VereinForm({ club }: { club: Club }) {
     setSaving(true);
     try {
       const updated = await data.updateClubSettings(patch);
+      // Marke dauerhaft festschreiben: Style + localStorage-Spiegel (No-Flash-Boot).
+      // Bewusst aus den GESENDETEN Werten — im api-Modus liefert der Wire die Farbe
+      // (nachgelagert) noch nicht zurück.
+      commitBrand(brandColor, brandPreset);
       // Baseline neu aus der Server-Antwort (Stammdaten/Kontakt/Öffentlich sind
       // echte Spalten und kommen zurück); Bank/Benachrichtigungen lokal halten.
       const next: FormState = {
@@ -209,6 +282,21 @@ export function VereinForm({ club }: { club: Club }) {
         void save();
       }}
     >
+      {/* Marken-/Akzentfarbe — direkt unter der Logo-Karte, über den Stammdaten */}
+      <BrandColorCard
+        color={form.brandColor}
+        preset={form.brandPreset}
+        error={errors.brand}
+        onSelectPreset={(hex, key) => {
+          setForm((f) => ({ ...f, brandColor: hex, brandPreset: key }));
+          setErrors((e) => ({ ...e, brand: undefined }));
+        }}
+        onCustomColor={(hex) => {
+          setForm((f) => ({ ...f, brandColor: hex, brandPreset: "" }));
+          setErrors((e) => ({ ...e, brand: undefined }));
+        }}
+      />
+
       {/* Kern-Stammdaten */}
       <Card>
         <CardHeader eyebrow={t("coreEyebrow")} title={t("coreTitle")} />
@@ -602,6 +690,154 @@ function ClubSmtpForm({ initial }: { initial: ClubSmtpSettings }) {
           {saving ? t("smtpSaving") : t("smtpSave")}
         </Button>
       </div>
+    </Card>
+  );
+}
+
+/**
+ * Marken-/Akzentfarbe: kuratierte Presets (Standard) + optional freie Farbe mit
+ * AA-Ampel. Die Wort-Labels machen die Auswahl auch ohne Farbwahrnehmung
+ * eindeutig. Die eigentliche Live-Wirkung + Persistenz liegt in VereinForm
+ * (Vorschau-Effekt + Speichern); diese Karte ist reine Auswahl.
+ */
+function BrandColorCard({
+  color,
+  preset,
+  error,
+  onSelectPreset,
+  onCustomColor,
+}: {
+  color: string;
+  preset: string;
+  error?: string;
+  onSelectPreset: (hex: string, key: string) => void;
+  onCustomColor: (hex: string) => void;
+}) {
+  const t = useT(vereinDict);
+  const isCustom = !preset && color.length > 0;
+  const [customOpen, setCustomOpen] = useState(isCustom);
+
+  // Hervorhebung: gewähltes Preset, sonst (nichts gewählt) „Beere" = Standard.
+  const activePreset = preset || (color ? "" : "beere");
+
+  const customHex = isCustom ? color : "";
+  const customValid = isHex(customHex) && deriveBrandTheme(customHex) != null;
+  const pickerValue = isHex(customHex) ? customHex : "#B23A5C";
+  const previewTheme = customValid ? deriveBrandTheme(customHex) : null;
+
+  return (
+    <Card>
+      <CardHeader eyebrow={t("brandEyebrow")} title={t("brandTitle")} />
+      <p className="-mt-2 mb-5 max-w-prose text-caption text-ink-faint">{t("brandDesc")}</p>
+
+      <div
+        role="radiogroup"
+        aria-label={t("brandPresetsLabel")}
+        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+      >
+        {BRAND_PRESETS.map((p) => {
+          const active = activePreset === p.key;
+          return (
+            <button
+              key={p.key}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => onSelectPreset(p.hex, p.key)}
+              className={`flex items-center gap-2.5 rounded-md border px-3 py-2.5 text-left transition-colors duration-150 ${
+                active
+                  ? "border-brand bg-brand-soft"
+                  : "border-line bg-sunken hover:border-line-strong"
+              }`}
+            >
+              <span
+                className="h-6 w-6 flex-none rounded-full border border-black/10"
+                style={{ background: p.hex }}
+                aria-hidden="true"
+              />
+              <span className="grid min-w-0 flex-1 gap-0.5">
+                <span className="truncate text-[13px] font-bold text-ink">{t(p.labelKey)}</span>
+                {p.key === "beere" && (
+                  <span className="text-[11px] font-semibold text-ink-faint">{t("brandDefaultTag")}</span>
+                )}
+              </span>
+              {active && <Icon name="check" className="ic h-4 w-4 flex-none text-brand" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Eigene Farbe (aufklappbar) */}
+      <div className="mt-4 border-t border-line pt-4">
+        <button
+          type="button"
+          aria-expanded={customOpen}
+          onClick={() => setCustomOpen((o) => !o)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <span className="text-[14px] font-bold text-ink">{t("brandCustomToggle")}</span>
+          <Icon
+            name={customOpen ? "chevronDown" : "chevronRight"}
+            className="ic h-4 w-4 flex-none text-ink-faint"
+          />
+        </button>
+
+        {customOpen && (
+          <div className="mt-3 grid gap-3">
+            <p className="text-caption text-ink-faint">{t("brandCustomHint")}</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <input
+                type="color"
+                aria-label={t("brandPickerLabel")}
+                value={pickerValue}
+                onChange={(e) => onCustomColor(e.target.value.toUpperCase())}
+                className="h-11 w-14 flex-none cursor-pointer rounded-md border border-line bg-sunken p-1"
+              />
+              <div className="min-w-[10rem] flex-1">
+                <Input
+                  label={t("brandHexLabel")}
+                  value={isCustom ? color : ""}
+                  onChange={(e) => onCustomColor(e.target.value.toUpperCase())}
+                  placeholder={t("brandHexPlaceholder")}
+                  error={error}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+
+            {isCustom && (
+              <p
+                className={`flex items-center gap-1.5 text-caption font-semibold ${
+                  customValid ? "text-success" : "text-danger"
+                }`}
+              >
+                <Icon name={customValid ? "check" : "zap"} className="ic h-4 w-4 flex-none" />
+                {customValid ? t("brandReadable") : t("brandUnreadable")}
+              </p>
+            )}
+
+            {previewTheme && (
+              <div className="flex flex-wrap items-center gap-2" aria-label={t("brandPreviewLabel")}>
+                <span
+                  className="rounded-full px-3 py-1 text-[12px] font-bold"
+                  style={{ background: previewTheme.light.brand, color: previewTheme.light.brandContrast }}
+                >
+                  {t("brandSwatchBrand")}
+                </span>
+                <span
+                  className="rounded-full px-3 py-1 text-[12px] font-bold"
+                  style={{ background: previewTheme.light.brandSoft, color: previewTheme.light.brandInk }}
+                >
+                  {t("brandSwatchInk")}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <p className="mt-4 text-caption text-ink-faint">{t("brandPreviewNote")}</p>
     </Card>
   );
 }

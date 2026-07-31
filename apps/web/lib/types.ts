@@ -108,6 +108,18 @@ export interface Club {
    * die Asset-Id; im mock-Modus eine data-URL. Die Ansicht kennt nur die URL.
    */
   logoUrl: string | null;
+  /**
+   * Marken-/Akzentfarbe des Vereins (einstellbar). Seed-Hex `#RRGGBB` (identische
+   * Regel wie Sparten, 0062) oder null = Standard „Beere" (tokens.css). Aus dieser
+   * Farbe wird zur Laufzeit die abgeleitete, AA-abgesicherte Palette berechnet und
+   * über --brand & Co. angewandt (lib/brand).
+   */
+  brandColor: string | null;
+  /**
+   * Schlüssel des gewählten Presets (z. B. "petrol") oder null bei freier Farbe
+   * bzw. Standard. Reine Anzeige-/Auswahlhilfe — die Wirkung kommt aus brandColor.
+   */
+  brandPreset: string | null;
 }
 
 /**

@@ -151,6 +151,36 @@ export const vereinDict = {
     logoTypeError: "Bitte eine Bilddatei wählen (PNG, JPG, GIF, WebP oder SVG).",
     logoError: "Das Logo konnte nicht gespeichert werden.",
     logoAlt: "Vereinslogo",
+
+    // Marken-/Akzentfarbe (einstellbar)
+    brandEyebrow: "Marke",
+    brandTitle: "Marken-/Akzentfarbe",
+    brandDesc:
+      "Die Akzentfarbe der App — für Schaltflächen, Links, Fokus und Hervorhebungen. Wählt ein abgestimmtes Preset oder gebt eine eigene Farbe an. Aus jeder Farbe wird automatisch eine lesbare Palette für Hell und Dunkel berechnet.",
+    brandPresetsLabel: "Presets",
+    brandDefaultTag: "Standard",
+    brandCustomToggle: "Eigene Farbe",
+    brandCustomHint:
+      "Freie Farbe als Hex-Wert. Erreicht sie den Lesbarkeits-Standard nicht, lässt sie sich nicht speichern.",
+    brandHexLabel: "Farbwert (Hex)",
+    brandHexPlaceholder: "#B23A5C",
+    brandPickerLabel: "Farbwähler",
+    brandReadable: "Diese Farbe erfüllt den Lesbarkeits-Standard (AA).",
+    brandUnreadable: "Diese Farbe erreicht den Lesbarkeits-Standard nicht.",
+    brandPreviewLabel: "Vorschau",
+    brandPreviewNote:
+      "Die Vorschau wirkt sofort in der ganzen App. Erst „Änderungen speichern“ behält sie dauerhaft.",
+    brandSwatchBrand: "Marke",
+    brandSwatchSoft: "Fläche",
+    brandSwatchInk: "Text",
+    // Preset-Wort-Labels (Status nie nur über Farbe)
+    pBeere: "Beere",
+    pPetrol: "Petrol",
+    pIndigo: "Indigo",
+    pWald: "Waldgrün",
+    pTerra: "Terrakotta",
+    pPflaume: "Pflaume",
+    pOzean: "Ozean",
   },
   en: {
     title: "Club settings",
@@ -286,6 +316,36 @@ export const vereinDict = {
     logoTypeError: "Please choose an image file (PNG, JPG, GIF, WebP or SVG).",
     logoError: "The logo could not be saved.",
     logoAlt: "Club logo",
+
+    // Brand/accent colour (configurable)
+    brandEyebrow: "Brand",
+    brandTitle: "Brand/accent colour",
+    brandDesc:
+      "The app's accent colour — for buttons, links, focus and highlights. Pick a tuned preset or enter your own colour. Every colour is turned into a readable palette for light and dark automatically.",
+    brandPresetsLabel: "Presets",
+    brandDefaultTag: "Default",
+    brandCustomToggle: "Custom colour",
+    brandCustomHint:
+      "A free colour as a hex value. If it doesn't meet the readability standard, it can't be saved.",
+    brandHexLabel: "Colour value (hex)",
+    brandHexPlaceholder: "#B23A5C",
+    brandPickerLabel: "Colour picker",
+    brandReadable: "This colour meets the readability standard (AA).",
+    brandUnreadable: "This colour doesn't meet the readability standard.",
+    brandPreviewLabel: "Preview",
+    brandPreviewNote:
+      "The preview applies instantly across the app. Only “Save changes” keeps it for good.",
+    brandSwatchBrand: "Brand",
+    brandSwatchSoft: "Surface",
+    brandSwatchInk: "Text",
+    // Preset word labels (never rely on colour alone)
+    pBeere: "Berry",
+    pPetrol: "Teal",
+    pIndigo: "Indigo",
+    pWald: "Forest green",
+    pTerra: "Terracotta",
+    pPflaume: "Plum",
+    pOzean: "Ocean",
   },
 } satisfies Dict;
 

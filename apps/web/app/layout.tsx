@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/lib/auth";
 import { OperatorBanner } from "@/components/shell/OperatorBanner";
 import { PreferencesBoot } from "@/lib/boot/PreferencesBoot";
+import { BrandBoot, brandInitScript } from "@/lib/brand";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemeProvider } from "@/lib/theme";
 import { themeInitScript } from "@/lib/theme/script";
@@ -29,12 +30,16 @@ export default function RootLayout({
       <body className="min-h-dvh">
         {/* Läuft synchron vor dem ersten Paint — kein Theme-Flash. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Ebenso synchron: Marken-/Akzentfarbe aus localStorage — kein Farb-Flash. */}
+        <script dangerouslySetInnerHTML={{ __html: brandInitScript }} />
         <ThemeProvider>
           <I18nProvider>
             {/* Dev-Auth-Session (rsm.dev.auth) — im mock-Modus wirkungslos. */}
             <AuthProvider>
               {/* Zieht nach dem Login Theme/Locale aus /me/preferences (api). */}
               <PreferencesBoot />
+              {/* Gleicht die Marken-/Akzentfarbe gegen den Verein ab (Boot). */}
+              <BrandBoot />
               {/* DAS BETREIBER-BAND — bewusst im ROOT-Layout, nicht in der
                   Portal-Shell: die Betreiber-Einsicht gilt für JEDE Seite, die
                   der Betreiber danach aufruft, und sie muss überall sichtbar
