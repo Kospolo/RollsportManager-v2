@@ -9,7 +9,12 @@
 // process.env anywhere else.
 // ============================================================================
 
-export type AuthMode = 'dev' | 'prod';
+// dev      = HS256 shared secret + /dev/login persona login (local harness).
+// selfhosted = HS256 self-issued tokens (auth-login.ts), /dev/login DISABLED,
+//              strong secrets enforced — kein GoTrue noetig (RSM v2 hostet Auth
+//              selbst: API + Postgres, siehe routes/auth-login.ts).
+// prod     = ES256 via GoTrue JWKS (falls doch ein GoTrue davorsteht).
+export type AuthMode = 'dev' | 'selfhosted' | 'prod';
 
 /**
  * Wie der Mailversand die Nachricht loswird.
@@ -122,8 +127,8 @@ function env(name: string, fallback = ''): string {
 
 export function loadConfig(): ApiConfig {
   const mode = env('AUTH_MODE', 'dev');
-  if (mode !== 'dev' && mode !== 'prod') {
-    throw new Error(`AUTH_MODE must be 'dev' or 'prod', got '${mode}'`);
+  if (mode !== 'dev' && mode !== 'selfhosted' && mode !== 'prod') {
+    throw new Error(`AUTH_MODE must be 'dev', 'selfhosted' or 'prod', got '${mode}'`);
   }
   const mailTransport = env('MAIL_TRANSPORT', 'smtp');
   if (mailTransport !== 'smtp' && mailTransport !== 'dry-run') {
@@ -183,28 +188,42 @@ export function loadConfig(): ApiConfig {
       ),
     },
   };
+  // Beide gehaerteten Modi (prod, selfhosted) sind KEIN Dev — die Vorgabe-
+  // Geheimnisse duerfen dort niemals durchrutschen.
+  const hardened = config.auth.mode === 'prod' || config.auth.mode === 'selfhosted';
+
   if (config.auth.mode === 'prod' && config.auth.jwksUrl === '') {
     throw new Error('AUTH_MODE=prod requires AUTH_JWKS_URL');
+  }
+  // selfhosted stellt die Token SELBST aus (HS256) — der geteilte Schluessel IST
+  // die ganze Sicherheit. Der oeffentliche Dev-Platzhalter waere ein
+  // Universal-Login fuer jeden, der den Quelltext kennt.
+  if (
+    config.auth.mode === 'selfhosted' &&
+    config.auth.jwtSecret === 'dev-only-placeholder-secret-please-change'
+  ) {
+    throw new Error(
+      'AUTH_MODE=selfhosted requires a strong AUTH_JWT_SECRET (the dev placeholder is public)',
+    );
   }
   // Ein Pfeffer, den jeder aus dem Quelltext lesen kann, ist kein Pfeffer: er
   // macht hmac(ip) wieder auf 2^32 Adressen durchprobierbar und die
   // Pseudonymisierung (Art. 32 Abs. 1 lit. a DSGVO) zur Behauptung. Lieber
   // startet die API nicht, als dass die Vorgabe still nach Produktion
   // durchrutscht - genau so ist der JWT-Demo-Schluessel dort gelandet.
-  if (
-    config.auth.mode === 'prod' &&
-    config.rateLimit.ipPepper === 'dev-only-throttle-pepper-please-change'
-  ) {
-    throw new Error('AUTH_MODE=prod requires RATE_LIMIT_PEPPER (the dev placeholder is public)');
+  if (hardened && config.rateLimit.ipPepper === 'dev-only-throttle-pepper-please-change') {
+    throw new Error(
+      `AUTH_MODE=${config.auth.mode} requires RATE_LIMIT_PEPPER (the dev placeholder is public)`,
+    );
   }
   // Dieselbe Begruendung wie beim Pfeffer, nur ist der Schaden hier leiser und
   // deshalb schlimmer: MAIL_TRANSPORT=dry-run in Produktion faehrt jede Mail
   // fehlerfrei in den Speicher. Verifikation, Einladung, Passwort-Reset melden
   // ERFOLG, es kommt nur nie etwas an - und niemand merkt es, weil nichts
   // scheitert. Ein Trockenlauf ist ein Werkzeug fuer Tests, kein Betriebsmodus.
-  if (config.auth.mode === 'prod' && config.mail.transport === 'dry-run') {
+  if (hardened && config.mail.transport === 'dry-run') {
     throw new Error(
-      "AUTH_MODE=prod refuses MAIL_TRANSPORT=dry-run: mail would be silently discarded",
+      `AUTH_MODE=${config.auth.mode} refuses MAIL_TRANSPORT=dry-run: mail would be silently discarded`,
     );
   }
   return config;
