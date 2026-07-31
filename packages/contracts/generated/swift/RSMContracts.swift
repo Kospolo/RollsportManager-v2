@@ -378,6 +378,17 @@ public enum HealthStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case ok = "ok"
 }
 
+/// Inline enum of ClubUpdate.brand_preset (hoisted by codegen).
+public enum ClubUpdateBrandPreset: String, Codable, CaseIterable, Sendable, Equatable {
+    case beere = "beere"
+    case petrol = "petrol"
+    case indigo = "indigo"
+    case wald = "wald"
+    case terra = "terra"
+    case pflaume = "pflaume"
+    case ozean = "ozean"
+}
+
 /// Inline enum of InviteQueued.status (hoisted by codegen).
 public enum InviteQueuedStatus: String, Codable, CaseIterable, Sendable, Equatable {
     case queued = "queued"
@@ -738,6 +749,8 @@ public struct Club: Codable, Equatable, Sendable {
     public var settings: [String: JSONValue]
     /// Format: uuid
     public var logoAssetId: String?
+    public var brandColor: String?
+    public var brandPreset: String?
     public var createdAt: String
     public var updatedAt: String
 
@@ -760,6 +773,8 @@ public struct Club: Codable, Equatable, Sendable {
         case publicImage = "public_image"
         case settings
         case logoAssetId = "logo_asset_id"
+        case brandColor = "brand_color"
+        case brandPreset = "brand_preset"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -783,6 +798,8 @@ public struct Club: Codable, Equatable, Sendable {
         publicImage: String,
         settings: [String: JSONValue],
         logoAssetId: String? = nil,
+        brandColor: String? = nil,
+        brandPreset: String? = nil,
         createdAt: String,
         updatedAt: String
     ) {
@@ -804,6 +821,8 @@ public struct Club: Codable, Equatable, Sendable {
         self.publicImage = publicImage
         self.settings = settings
         self.logoAssetId = logoAssetId
+        self.brandColor = brandColor
+        self.brandPreset = brandPreset
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -887,6 +906,8 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
     public var publicDescription: String?
     public var publicImage: String?
     public var settings: [String: JSONValue]?
+    public var brandColor: String?
+    public var brandPreset: ClubUpdateBrandPreset?
 
     enum CodingKeys: String, CodingKey {
         case name
@@ -905,6 +926,8 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
         case publicDescription = "public_description"
         case publicImage = "public_image"
         case settings
+        case brandColor = "brand_color"
+        case brandPreset = "brand_preset"
     }
 
     public init(
@@ -923,7 +946,9 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
         publicProfileEnabled: Bool? = nil,
         publicDescription: String? = nil,
         publicImage: String? = nil,
-        settings: [String: JSONValue]? = nil
+        settings: [String: JSONValue]? = nil,
+        brandColor: String? = nil,
+        brandPreset: ClubUpdateBrandPreset? = nil
     ) {
         self.name = name
         self.shortName = shortName
@@ -941,6 +966,8 @@ public struct ClubUpdate: Codable, Equatable, Sendable {
         self.publicDescription = publicDescription
         self.publicImage = publicImage
         self.settings = settings
+        self.brandColor = brandColor
+        self.brandPreset = brandPreset
     }
 }
 

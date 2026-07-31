@@ -76,11 +76,11 @@ export function mapClub(w: M.Club): Club {
     logoUrl: w.logo_asset_id
       ? `${API_BASE_URL}/public/clubs/${w.id}/logo?v=${w.logo_asset_id}`
       : null,
-    // Marken-/Akzentfarbe (einstellbar): der Wire kennt sie serverseitig noch
-    // nicht (echte DB-Persistenz ist nachgelagert). Bis dahin null = Standard;
-    // im api-Dev-Modus trägt der localStorage-Spiegel die Auswahl.
-    brandColor: null,
-    brandPreset: null,
+    // Marken-/Akzentfarbe (0084): serverseitig persistiert. brand_preset
+    // (kuratierter Schluessel) hat Vorrang vor brand_color (freier Hex); beide
+    // null = Standard (Beere). Der Client leitet daraus das AA-Fuenferpaket ab.
+    brandColor: w.brand_color,
+    brandPreset: w.brand_preset,
   };
 }
 

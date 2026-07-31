@@ -1,5 +1,6 @@
 import type { Member, Routine } from "@/lib/types";
 import { ApiError } from "@/lib/api/generated";
+import type * as M from "@/lib/api/generated";
 import { readSession } from "@/lib/auth/storage";
 import { readOperatorClub } from "../operator-club";
 import type { DataRepository, DunningRunOutcome } from "../types";
@@ -475,6 +476,16 @@ export const apiRepository: DataRepository = {
       public_description: patch.publicDescription,
       public_image: patch.publicImage,
       settings: patch.settings,
+      // Marken-/Akzentfarbe (0084). EXPLIZIT mitsenden — auch als null: der
+      // Nutzer, der auf den Standard zurueckstellt, schickt brandColor/-Preset
+      // = null, und die Spalte MUSS geleert werden (waere sie undefined,
+      // liesse der Server sie stehen). Nur ganz weglassen, wenn der Aufrufer
+      // das Feld gar nicht angefasst hat (undefined). brand_preset ist der
+      // 7er-Enum des Wire; VereinForm setzt nur gueltige Schluessel oder null.
+      ...(patch.brandColor !== undefined ? { brand_color: patch.brandColor } : {}),
+      ...(patch.brandPreset !== undefined
+        ? { brand_preset: patch.brandPreset as M.ClubUpdate["brand_preset"] }
+        : {}),
     });
     return mapClub(updated);
   },

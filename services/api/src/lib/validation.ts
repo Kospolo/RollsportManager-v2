@@ -126,6 +126,11 @@ export const clubSchema = z
     // Initialen; ist es null, der schoene Normalfall (Initialen, kein kaputtes
     // Bild). Gesetzt/entfernt wird es NUR ueber POST/DELETE /clubs/{id}/logo.
     logo_asset_id: uuid.nullable(),
+    // Marken-/Akzentfarbe (0084): rohe Auswahl, der Client leitet das
+    // AA-abgesicherte Fuenferpaket ab (lib/brand). brand_preset (kuratierter
+    // Schluessel) hat Vorrang vor brand_color (freier Hex); beide null = Standard.
+    brand_color: z.string().nullable(),
+    brand_preset: z.string().nullable(),
     created_at: timestamp,
     updated_at: timestamp,
   })
@@ -171,6 +176,19 @@ export const clubUpdateSchema = z
     public_description: z.string().max(4000).optional(),
     public_image: z.string().max(500000).optional(),
     settings: z.record(z.unknown()).optional(),
+    // Marken-/Akzentfarbe (0084). Format wie der DB-CHECK: brand_color = #RRGGBB
+    // (oder null = zuruecksetzen), brand_preset = einer der 7 Schluessel (oder null).
+    // Der Server prueft nur die FORM; die Lesbarkeit (AA) sichert der Client
+    // (derive.ts) und faellt auf den Standard zurueck, falls ein Hex sie verfehlt.
+    brand_color: z
+      .string()
+      .regex(/^#[0-9A-Fa-f]{6}$/, 'farbe muss das Format #RRGGBB haben')
+      .nullable()
+      .optional(),
+    brand_preset: z
+      .enum(['beere', 'petrol', 'indigo', 'wald', 'terra', 'pflaume', 'ozean'])
+      .nullable()
+      .optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('ClubUpdate');

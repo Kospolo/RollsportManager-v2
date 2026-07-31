@@ -392,6 +392,18 @@ enum class HealthStatus {
     @SerialName("ok") OK;
 }
 
+/** Inline enum of ClubUpdate.brand_preset (hoisted by codegen). */
+@Serializable
+enum class ClubUpdateBrandPreset {
+    @SerialName("beere") BEERE,
+    @SerialName("petrol") PETROL,
+    @SerialName("indigo") INDIGO,
+    @SerialName("wald") WALD,
+    @SerialName("terra") TERRA,
+    @SerialName("pflaume") PFLAUME,
+    @SerialName("ozean") OZEAN;
+}
+
 /** Inline enum of InviteQueued.status (hoisted by codegen). */
 @Serializable
 enum class InviteQueuedStatus {
@@ -644,6 +656,8 @@ data class Club(
     @SerialName("public_image") val publicImage: String,
     val settings: JsonObject,
     @SerialName("logo_asset_id") val logoAssetId: String?,
+    @SerialName("brand_color") val brandColor: String?,
+    @SerialName("brand_preset") val brandPreset: String?,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String
 )
@@ -683,7 +697,9 @@ data class ClubUpdate(
     @SerialName("public_profile_enabled") val publicProfileEnabled: Boolean? = null,
     @SerialName("public_description") val publicDescription: String? = null,
     @SerialName("public_image") val publicImage: String? = null,
-    val settings: JsonObject? = null
+    val settings: JsonObject? = null,
+    @SerialName("brand_color") val brandColor: String? = null,
+    @SerialName("brand_preset") val brandPreset: ClubUpdateBrandPreset? = null
 )
 
 @Serializable

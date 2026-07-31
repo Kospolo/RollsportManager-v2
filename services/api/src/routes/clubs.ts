@@ -73,7 +73,8 @@ export const CLUB_COLUMNS = `id, name, short_name, city, discipline, founded_yea
                       contact_email, contact_phone, street, postal_code, country,
                       website_url, description, public_profile_enabled,
                       public_description, public_image,
-                      settings, logo_asset_id, created_at, updated_at`;
+                      settings, logo_asset_id, brand_color, brand_preset,
+                      created_at, updated_at`;
 
 clubsRouter.openapi(
   createRoute({

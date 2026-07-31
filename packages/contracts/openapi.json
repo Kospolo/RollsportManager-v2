@@ -222,6 +222,14 @@
             "nullable": true,
             "format": "uuid"
           },
+          "brand_color": {
+            "type": "string",
+            "nullable": true
+          },
+          "brand_preset": {
+            "type": "string",
+            "nullable": true
+          },
           "created_at": {
             "anyOf": [
               {
@@ -262,6 +270,8 @@
           "public_image",
           "settings",
           "logo_asset_id",
+          "brand_color",
+          "brand_preset",
           "created_at",
           "updated_at"
         ]
@@ -408,6 +418,24 @@
             "additionalProperties": {
               "nullable": true
             }
+          },
+          "brand_color": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "brand_preset": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "beere",
+              "petrol",
+              "indigo",
+              "wald",
+              "terra",
+              "pflaume",
+              "ozean"
+            ]
           }
         }
       },

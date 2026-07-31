@@ -35,6 +35,8 @@ export interface Club {
   "public_image": string;
   "settings": Record<string, unknown>;
   "logo_asset_id": string | null;
+  "brand_color": string | null;
+  "brand_preset": string | null;
   "created_at": string;
   "updated_at": string;
 }
@@ -72,6 +74,8 @@ export interface ClubUpdate {
   "public_description"?: string;
   "public_image"?: string;
   "settings"?: Record<string, unknown>;
+  "brand_color"?: string | null;
+  "brand_preset"?: "beere" | "petrol" | "indigo" | "wald" | "terra" | "pflaume" | "ozean" | null;
 }
 
 export type ClubRole = "owner" | "admin" | "moderator" | "treasurer" | "coach" | "member" | "guest_coach";
