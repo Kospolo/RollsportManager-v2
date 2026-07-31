@@ -87,6 +87,10 @@ const PUBLIC_ROUTES = new Set([
   // Self-service account registration. Also token-issuing, so no token needed
   // (routes/auth-login.ts).
   "POST /auth/register",
+  // Password reset: request a link + confirm a new password. Both must be
+  // reachable without a token (routes/auth-login.ts).
+  "POST /auth/password-reset/request",
+  "POST /auth/password-reset/confirm",
 ]);
 
 let failures = 0;

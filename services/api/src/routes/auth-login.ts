@@ -29,6 +29,9 @@ import { problem } from '../middleware/error.js';
 import { withServiceRole } from '../db.js';
 import { clientIp, enforceRateLimits } from '../lib/rate-limit.js';
 import { verifyPassword, hashPassword, DUMMY_PASSWORD_HASH } from '../lib/password.js';
+import { createHash, randomBytes } from 'node:crypto';
+import { sendMail } from '../lib/mailer.js';
+import { renderPasswordReset } from '../lib/mail-templates/password-reset.js';
 
 export const authLoginRouter = createRouter();
 
@@ -269,5 +272,141 @@ authLoginRouter.openapi(
       },
       200,
     );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Passwort vergessen — Anfordern (Mail mit Einmal-Link) + Bestaetigen (neues
+// Passwort setzen). Muster wie app.invitations (0065): gespeichert wird nur der
+// SHA-256 des Tokens; der Klartext lebt in der Mail (0086).
+// ---------------------------------------------------------------------------
+const okSchema = z.object({ ok: z.literal(true) }).openapi('OkResponse');
+
+function hashResetToken(token: string): string {
+  return createHash('sha256').update(token).digest('base64url');
+}
+
+const resetRequestBodySchema = z
+  .object({ email: z.string().email() })
+  .openapi('PasswordResetRequest');
+
+authLoginRouter.openapi(
+  createRoute({
+    method: 'post',
+    path: '/auth/password-reset/request',
+    tags: ['auth'],
+    summary: 'Request a password reset email',
+    description:
+      'Unauthenticated. ALWAYS returns 200 and never reveals whether the email exists (no account ' +
+      'enumeration). If an account exists, a one-time reset link is emailed; older open tokens are invalidated.',
+    request: {
+      body: { content: { 'application/json': { schema: resetRequestBodySchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(okSchema, 'Accepted — no account disclosure'),
+      429: jsonContent(problemSchema, 'Too many attempts'),
+    },
+  }),
+  async (c) => {
+    const cfg = getConfig();
+    const raw: unknown = await c.req.json().catch(() => undefined);
+    const parsed = resetRequestBodySchema.safeParse(raw);
+    // Selbst bei Murks NEUTRAL bleiben (keine Existenz-/Formauskunft ueber diese
+    // sensible Route): 200 und fertig.
+    if (!parsed.success) return c.json({ ok: true as const }, 200);
+    const email = parsed.data.email.trim().toLowerCase();
+
+    await enforceRateLimits(c, [
+      { scope: 'ip', identifier: clientIp(c), limit: 20, window: '15 minutes' },
+      { scope: 'account', identifier: email, limit: 5, window: '1 hour' },
+    ]);
+
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = hashResetToken(token);
+
+    const user = await withServiceRole('password reset request', async (tx) => {
+      const rows = (await tx`
+        select id, email from auth.users where lower(email) = ${email} limit 1`) as {
+        id: string;
+        email: string;
+      }[];
+      const u = rows[0];
+      if (!u) return undefined;
+      // Nur der neueste Link soll gelten: aeltere offene Token entwerten.
+      await tx`update internal.password_reset_tokens set used_at = now()
+                 where user_id = ${u.id} and used_at is null`;
+      await tx`insert into internal.password_reset_tokens (user_id, token_hash, expires_at)
+               values (${u.id}, ${tokenHash}, now() + interval '1 hour')`;
+      return u;
+    });
+
+    if (user) {
+      const resetUrl = `${cfg.appBaseUrl}/passwort-neu?token=${token}`;
+      try {
+        await sendMail(user.email, renderPasswordReset({ resetUrl, validityDe: '1 Stunde', validityEn: '1 hour' }));
+      } catch (e) {
+        // KEIN Leck in die Antwort: ein Versandfehler (z. B. SMTP in dev nicht
+        // konfiguriert) darf nichts verraten. Loggen, trotzdem 200. Der Link
+        // steht im dev-Log, damit der Flow lokal testbar bleibt.
+        console.warn(
+          `[auth] Passwort-Reset-Mail nicht versendet (${(e as Error).message}). Dev-Link: ${resetUrl}`,
+        );
+      }
+    }
+
+    return c.json({ ok: true as const }, 200);
+  },
+);
+
+const resetConfirmBodySchema = z
+  .object({
+    token: z.string().min(1).max(400),
+    new_password: z.string().min(8, 'Mindestens 8 Zeichen.').max(200),
+  })
+  .openapi('PasswordResetConfirm');
+
+authLoginRouter.openapi(
+  createRoute({
+    method: 'post',
+    path: '/auth/password-reset/confirm',
+    tags: ['auth'],
+    summary: 'Set a new password with a reset token',
+    description:
+      'Unauthenticated. Consumes a one-time reset token and sets a new password. Invalid or expired ' +
+      'tokens return 400. On success ALL open reset tokens of the account are invalidated.',
+    request: {
+      body: { content: { 'application/json': { schema: resetConfirmBodySchema } }, required: true },
+    },
+    responses: {
+      200: jsonContent(okSchema, 'Password changed'),
+      400: jsonContent(problemSchema, 'Invalid or expired token'),
+      429: jsonContent(problemSchema, 'Too many attempts'),
+    },
+  }),
+  async (c) => {
+    const body = c.req.valid('json');
+    await enforceRateLimits(c, [{ scope: 'ip', identifier: clientIp(c), limit: 20, window: '15 minutes' }]);
+
+    const tokenHash = hashResetToken(body.token);
+    const newHash = hashPassword(body.new_password);
+
+    const ok = await withServiceRole('password reset confirm', async (tx) => {
+      const rows = (await tx`
+        select id, user_id from internal.password_reset_tokens
+         where token_hash = ${tokenHash} and used_at is null and expires_at > now()
+         limit 1`) as { id: string; user_id: string }[];
+      const t = rows[0];
+      if (!t) return false;
+      await tx`update auth.users set password_hash = ${newHash} where id = ${t.user_id}`;
+      // Der benutzte Token UND alle anderen offenen Token dieses Kontos: verbraucht.
+      await tx`update internal.password_reset_tokens set used_at = now()
+                 where user_id = ${t.user_id} and used_at is null`;
+      return true;
+    });
+
+    if (!ok) {
+      throw problem(400, 'Bad Request', 'Ungültiger oder abgelaufener Link. / Invalid or expired link.');
+    }
+    return c.json({ ok: true as const }, 200);
   },
 );

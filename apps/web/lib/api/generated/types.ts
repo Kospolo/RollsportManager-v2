@@ -1471,6 +1471,19 @@ export interface RegisterRequest {
   "display_name": string;
 }
 
+export interface OkResponse {
+  "ok": boolean;
+}
+
+export interface PasswordResetRequest {
+  "email": string;
+}
+
+export interface PasswordResetConfirm {
+  "token": string;
+  "new_password": string;
+}
+
 export interface Task {
   "id": string;
   "club_id": string;

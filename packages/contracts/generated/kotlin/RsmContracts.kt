@@ -2142,6 +2142,22 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class OkResponse(
+    val ok: Boolean
+)
+
+@Serializable
+data class PasswordResetRequest(
+    val email: String
+)
+
+@Serializable
+data class PasswordResetConfirm(
+    val token: String,
+    @SerialName("new_password") val newPassword: String
+)
+
+@Serializable
 data class Task(
     val id: String,
     @SerialName("club_id") val clubId: String,

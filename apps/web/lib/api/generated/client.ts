@@ -1156,6 +1156,26 @@ export class ApiClient {
   }
 
   /**
+   * Request a password reset email
+   * Unauthenticated. ALWAYS returns 200 and never reveals whether the email exists (no account enumeration). If an account exists, a one-time reset link is emailed; older open tokens are invalidated.
+   * 
+   * `POST /auth/password-reset/request`
+   */
+  async postAuthPasswordResetRequest(body: M.PasswordResetRequest, options?: RequestOptions): Promise<M.OkResponse> {
+    return this.request<M.OkResponse>("POST", "/auth/password-reset/request", { body, auth: false, options });
+  }
+
+  /**
+   * Set a new password with a reset token
+   * Unauthenticated. Consumes a one-time reset token and sets a new password. Invalid or expired tokens return 400. On success ALL open reset tokens of the account are invalidated.
+   * 
+   * `POST /auth/password-reset/confirm`
+   */
+  async postAuthPasswordResetConfirm(body: M.PasswordResetConfirm, options?: RequestOptions): Promise<M.OkResponse> {
+    return this.request<M.OkResponse>("POST", "/auth/password-reset/confirm", { body, auth: false, options });
+  }
+
+  /**
    * List tasks of a club (open first, then by due date)
    * 
    * `GET /tasks`

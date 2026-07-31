@@ -6074,6 +6074,53 @@ public struct RegisterRequest: Codable, Equatable, Sendable {
     }
 }
 
+public struct OkResponse: Codable, Equatable, Sendable {
+    public var ok: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case ok
+    }
+
+    public init(
+        ok: Bool
+    ) {
+        self.ok = ok
+    }
+}
+
+public struct PasswordResetRequest: Codable, Equatable, Sendable {
+    /// Format: email
+    public var email: String
+
+    enum CodingKeys: String, CodingKey {
+        case email
+    }
+
+    public init(
+        email: String
+    ) {
+        self.email = email
+    }
+}
+
+public struct PasswordResetConfirm: Codable, Equatable, Sendable {
+    public var token: String
+    public var newPassword: String
+
+    enum CodingKeys: String, CodingKey {
+        case token
+        case newPassword = "new_password"
+    }
+
+    public init(
+        token: String,
+        newPassword: String
+    ) {
+        self.token = token
+        self.newPassword = newPassword
+    }
+}
+
 public struct Task: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String

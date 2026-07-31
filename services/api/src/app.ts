@@ -108,6 +108,8 @@ const PUBLIC_PATHS = new Set([
   '/dev/login',
   '/auth/login',
   '/auth/register',
+  '/auth/password-reset/request',
+  '/auth/password-reset/confirm',
 ]);
 
 /** Path prefixes that are public (auth skipped). Kept explicit and narrow. */
