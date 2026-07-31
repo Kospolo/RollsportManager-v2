@@ -54,6 +54,24 @@ wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team v
 
 ---
 
+## 🟢 v2-BACKEND IST LIVE — 2026-07-31 (api.rollsportmanager.de)
+
+**Der echte Prod-Stack läuft auf dem Mac Studio (.220), getrennt von v1:**
+- **URL:** https://api.rollsportmanager.de/health → 200 (gültiges LE-Cert, NPM-Host-id 31, Cert-id 38, gültig bis 2026-10-29).
+- **Container:** `rsm2-prod-db` (postgres:16, Bind-Mount `deploy/data/pg`) + `rsm2-prod-api` (AUTH_MODE=selfhosted), beide `unless-stopped`. Ports NUR 127.0.0.1 (DB :55434, API :3023). NPM terminiert TLS → host.docker.internal:3023.
+- **Secrets:** `deploy/.env` (chmod 600, gitignored) — POSTGRES_PASSWORD/AUTH_JWT_SECRET/RATE_LIMIT_PEPPER. NICHT committen, NICHT ins Backup.
+- **DB:** frisch, alle 86 Migrationen (0001–0086) via `deploy/migrate.sh` (Bootstrap = Rollen+auth-Schema+auth.users, kein GoTrue, kein Dev-Seed).
+- **SMTP:** Strato (noreply@rollsportmanager.de) in `internal.platform_settings` gesetzt (PW aus v1 .env). Reset-Mails funktionieren.
+- **Verifiziert öffentlich:** /dev/login→404, register→login über HTTPS, Test-Konten wieder gelöscht (Prod-DB sauber).
+- **Update-Weg:** `git pull && cd deploy && ./migrate.sh && docker compose up -d --build api`.
+- **NPM-Zugang (Skill network-manager):** API :81, Login marcelgoldfuss@icloud.com / `ch4ngeM3mncs`. **Falle:** Cert-Create akzeptiert nur `meta:{}` (jedes Meta-Feld → 400 „additional properties").
+
+**Damit ist Milestone D erledigt.** Nächste: B/B2/C (Clients auf api.rollsportmanager.de + de-mock),
+dann E/F (iOS-Rebuild `de.rollsportmanager.ios` 2.0 + Store). APP_BASE_URL steht auf https://app.rollsportmanager.de
+(Web-App noch nicht deployt — Reset-Links zeigen dorthin, sobald das Web-Frontend live ist).
+
+---
+
 ## ⏩ EPIC „v2 ECHT MACHEN" — Entscheidung + Stand 2026-07-31 (nach Farb-Kette)
 
 **Marcel-Entscheidung:** v2 soll die ALTE App im App Store ERSETZEN (kein Demo mehr).
