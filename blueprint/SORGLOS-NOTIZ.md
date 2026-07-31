@@ -54,6 +54,41 @@ wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team v
 
 ---
 
+## ⏩ EPIC „v2 ECHT MACHEN" — Entscheidung + Stand 2026-07-31 (nach Farb-Kette)
+
+**Marcel-Entscheidung:** v2 soll die ALTE App im App Store ERSETZEN (kein Demo mehr).
+Weg: echter Login + Backend/Hosting + Rebuild als `de.rollsportmanager.ios` 2.0, dann neue Store-Präsentation.
+
+**App-Store-Fakten (ASC-API, Key 265W6SN5M7 / Issuer 2edfff74-2dfe-4cc8-97d3-a026537ec4a8):**
+- Live-App = `de.rollsportmanager.ios`, App-id **6758109320**, **v1.8 READY_FOR_SALE**, echte Abos (2€/5€), 6 alte Mac-Screenshots.
+- v2-Bundle ist `de.rollsportmanager.v2` (ANDERE) → zum Ersetzen MUSS v2 als 2.0 unter `de.rollsportmanager.ios` neu gebaut werden.
+
+**🔑 HOSTING IST DA (Marcels Hinweis „hol's aus der alten Seite"):** v1-Backend läuft auf DIESEM Mac Studio (.220)
+als Docker-Compose (`/Apps/RollsportManager/rollsportmanager-backend`, VOLLES self-hosted Supabase: gotrue/kong/rest/
+realtime/db — Container `supabase-*` Up). `rollsportmanager.de` zeigt via NPM-Proxy hierher. **SMTP: Strato,
+noreply@rollsportmanager.de, smtp.strato.de:587** (in v1 .env). v2 braucht NUR Postgres+Hono-API (kein GoTrue) →
+schlankes eigenes Compose, v1 NICHT anfassen.
+
+**Auth-Architektur v2 = self-contained (KEIN GoTrue):** `/auth/login` stellt selbst HS256-Token aus, liest
+`auth.users.password_hash` (scrypt). In PROD muss `auth.users` per Deploy-Bootstrap angelegt werden (in dev/test macht
+das der Harness-Shim), BEVOR Migrationen laufen (sonst bricht 0079).
+
+**GEBAUT + verifiziert (Commits fbbb0e7, a8ffb03):**
+- ✅ **A1 Registrierung** `POST /auth/register` (Migr. 0085): Konto+Profil in 1 Tx, scrypt, sofort Token, 409 bei Doppel.
+- ✅ **A2 Passwort-Reset** `POST /auth/password-reset/{request,confirm}` (Migr. 0086, `internal.password_reset_tokens`,
+  nur SHA-256 gespeichert, 1h, one-time, keine Enumeration). Nutzt config.appBaseUrl + Reset-Mail-Template.
+- Schon vorher da: echter `/auth/login`, `lib/password.ts`, Web-`LoginCard`.
+
+**OFFEN (Reihenfolge, alle außer evtl. DNS von mir baubar):**
+- **B** Web echten Login/Registrieren verdrahten (page.tsx zeigt in api-Modus noch DevLoginCard/Personas; Reset-Screen `/passwort-neu`).
+- **B2** iOS echter Login-Screen (SessionStore nur `devLogin`) → /auth/login + /auth/register; Personas nur DEBUG.
+- **C** De-Mock: DATA_SOURCE=api als Prod erlauben (config.ts erzwingt heute mock in prod!), Persona-Umschalter/Dev-Modus/entwickler nur DEBUG. iOS DevConfig 127.0.0.1 → reale URL.
+- **A3** (Härtung) E-Mail-Verify (email_confirmed_at vorbereitet), Konto-Löschen (Apple 5.1.1v), Token-Invalidierung bei Reset (JWT stateless).
+- **D** Deploy auf .220: schlankes Compose (PG+API, Bind-Mounts), auth.users-Bootstrap, Strato-SMTP in platform_settings, NPM `api.rollsportmanager.de`+LE. Evtl. DNS-A-Record = Marcel.
+- **E/F** iOS/macOS Rebuild `de.rollsportmanager.ios` 2.0 + reale API-URL; neue Screenshots+Texte → ersetzt Live-1.8.
+
+---
+
 ## ⏩ WIEDEREINSTIEG 2026-07-31 (nach Claude-Neustart ZUERST lesen)
 
 **Alles selbst verifiziert (Web-Browser, Dev-API/DB per curl, iOS-Simulator per Screenshot), 4 Commits.**
