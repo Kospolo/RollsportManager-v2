@@ -6051,6 +6051,29 @@ public struct LoginRequest: Codable, Equatable, Sendable {
     }
 }
 
+public struct RegisterRequest: Codable, Equatable, Sendable {
+    /// Format: email
+    public var email: String
+    public var password: String
+    public var displayName: String
+
+    enum CodingKeys: String, CodingKey {
+        case email
+        case password
+        case displayName = "display_name"
+    }
+
+    public init(
+        email: String,
+        password: String,
+        displayName: String
+    ) {
+        self.email = email
+        self.password = password
+        self.displayName = displayName
+    }
+}
+
 public struct Task: Codable, Equatable, Sendable {
     /// Format: uuid
     public var id: String

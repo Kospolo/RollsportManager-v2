@@ -2135,6 +2135,13 @@ data class LoginRequest(
 )
 
 @Serializable
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    @SerialName("display_name") val displayName: String
+)
+
+@Serializable
 data class Task(
     val id: String,
     @SerialName("club_id") val clubId: String,

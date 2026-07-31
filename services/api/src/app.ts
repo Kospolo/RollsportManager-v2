@@ -107,6 +107,7 @@ const PUBLIC_PATHS = new Set([
   '/webhooks/revenuecat',
   '/dev/login',
   '/auth/login',
+  '/auth/register',
 ]);
 
 /** Path prefixes that are public (auth skipped). Kept explicit and narrow. */

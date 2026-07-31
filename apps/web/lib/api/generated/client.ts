@@ -1146,6 +1146,16 @@ export class ApiClient {
   }
 
   /**
+   * Register a new account with email + password
+   * Unauthenticated. Creates an account (auth.users + profile) and returns an access token with the same shape as /auth/login. The caller is signed in immediately and can then create or join a club. Fails with 409 if the email is already registered.
+   * 
+   * `POST /auth/register`
+   */
+  async postAuthRegister(body: M.RegisterRequest, options?: RequestOptions): Promise<M.LoginResponse> {
+    return this.request<M.LoginResponse>("POST", "/auth/register", { body, auth: false, options });
+  }
+
+  /**
    * List tasks of a club (open first, then by due date)
    * 
    * `GET /tasks`

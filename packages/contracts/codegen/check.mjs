@@ -84,6 +84,9 @@ const PUBLIC_ROUTES = new Set([
   // The real email/password login. Must be reachable without a token — it is
   // what issues the token (routes/auth-login.ts).
   "POST /auth/login",
+  // Self-service account registration. Also token-issuing, so no token needed
+  // (routes/auth-login.ts).
+  "POST /auth/register",
 ]);
 
 let failures = 0;
