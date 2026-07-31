@@ -77,9 +77,25 @@ function colorLines() {
     }
     const name = swiftName(path);
     if (comment) lines.push(`        /// ${comment}`);
-    lines.push(
-      `        public static let ${name} = rsmDynamic(${uiColor(value)}, ${uiColor(darkValue)})`,
-    );
+    // Die FUENF Marken-Token (Pfad-Praefix "brand": brand, brandStrong,
+    // brandSoft, brandInk, brandContrast) sind zur LAUFZEIT uebersteuerbar —
+    // der Verein waehlt seine Akzentfarbe (0084). Sie werden deshalb `static
+    // var`, die zuerst BrandRuntime befragen und sonst auf den generierten
+    // Standard (`…Default`) zurueckfallen. So aendert sich KEINE Aufrufstelle
+    // (`Theme.Colors.brand` bleibt gleich), und ohne Vereinsauswahl gilt exakt
+    // die Design-Vorgabe. Alle uebrigen Farben bleiben feste `static let`.
+    if (path[0] === "brand") {
+      lines.push(
+        `        private static let ${name}Default = rsmDynamic(${uiColor(value)}, ${uiColor(darkValue)})`,
+      );
+      lines.push(
+        `        public static var ${name}: Color { BrandRuntime.shared.color(forToken: "${name}") ?? ${name}Default }`,
+      );
+    } else {
+      lines.push(
+        `        public static let ${name} = rsmDynamic(${uiColor(value)}, ${uiColor(darkValue)})`,
+      );
+    }
   }
   return lines.join("\n");
 }

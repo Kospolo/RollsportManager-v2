@@ -45,6 +45,11 @@ struct MainTabView: View {
     }
 
     @EnvironmentObject private var session: SessionStore
+    /// Beobachtet den Marken-Runtime: aendert der Verein seine Akzentfarbe
+    /// (bzw. beim Betreten eines anderen Vereins), rendert die Shell neu und
+    /// liest die generierten `Theme.Colors`-`static var` frisch — die App
+    /// faerbt sich live um (0084).
+    @ObservedObject private var brand = BrandRuntime.shared
     @State private var selection: Tab
     @State private var mehrPath: [MehrDeepLink] = []
     /// Der Operator-Start-Redirect (siehe `body`) darf nur EINMAL feuern —
@@ -154,6 +159,11 @@ struct MainTabView: View {
                 .tabItem { Label("tab.mehr", systemImage: "ellipsis") }
                 .tag(Tab.mehr)
         }
+        // Tab-Bar-Akzent (Auswahl-Färbung) an die Vereinsfarbe binden. Das
+        // App-weite `.tint` in RollsportManagerApp gilt für den Login-Screen
+        // (noch kein Verein) und wird EINMAL gesetzt; hier — wo `brand`
+        // beobachtet wird — zieht die Tab-Leiste bei einer Farbänderung nach.
+        .tint(Theme.Colors.brand)
         // DAS BETREIBER-BAND über ALLEN Tabs (Spiegel des sticky top-0 im Web).
         // Bewusst hier als safeAreaInset auf der TabView — nicht in einer einzelnen
         // NavigationStack-View, sonst verschwände es beim Tab-Wechsel. Von hier aus
@@ -192,6 +202,13 @@ struct MainTabView: View {
             didRouteOperator = true
             selection = .mehr
             mehrPath = [.platform]
+        }
+        // Marken-/Akzentfarbe des aktiven Vereins laden und anwenden (0084).
+        // `id: session.clubId` feuert beim ersten Erscheinen UND bei jedem
+        // Vereinswechsel (Betreiber A verlassen → B betreten) — dann traegt die
+        // Shell die Farbe von B. Netzfehler schluckt loadAndApply (Standard bleibt).
+        .task(id: session.clubId) {
+            await BrandRuntime.shared.loadAndApply(clubId: session.clubId, api: session.api)
         }
     }
 }

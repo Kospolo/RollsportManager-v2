@@ -58,14 +58,19 @@ public enum Theme {
         public static let line = rsmDynamic(UIColor(red: 0.9216, green: 0.8627, blue: 0.8078, alpha: 1), UIColor(red: 0.2431, green: 0.1922, blue: 0.1608, alpha: 1))
         public static let lineStrong = rsmDynamic(UIColor(red: 0.8627, green: 0.7882, blue: 0.7216, alpha: 1), UIColor(red: 0.3059, green: 0.2431, blue: 0.20, alpha: 1))
         /// Beere — genau eine Primäraktion pro Sichtbereich
-        public static let brand = rsmDynamic(UIColor(red: 0.6980, green: 0.2275, blue: 0.3608, alpha: 1), UIColor(red: 0.8784, green: 0.4118, blue: 0.5412, alpha: 1))
+        private static let brandDefault = rsmDynamic(UIColor(red: 0.6980, green: 0.2275, blue: 0.3608, alpha: 1), UIColor(red: 0.8784, green: 0.4118, blue: 0.5412, alpha: 1))
+        public static var brand: Color { BrandRuntime.shared.color(forToken: "brand") ?? brandDefault }
         /// Hover/Pressed
-        public static let brandStrong = rsmDynamic(UIColor(red: 0.6118, green: 0.1843, blue: 0.3059, alpha: 1), UIColor(red: 0.9216, green: 0.4980, blue: 0.6157, alpha: 1))
-        public static let brandSoft = rsmDynamic(UIColor(red: 0.9686, green: 0.8902, blue: 0.9137, alpha: 1), UIColor(red: 0.2745, green: 0.1373, blue: 0.1804, alpha: 1))
+        private static let brandStrongDefault = rsmDynamic(UIColor(red: 0.6118, green: 0.1843, blue: 0.3059, alpha: 1), UIColor(red: 0.9216, green: 0.4980, blue: 0.6157, alpha: 1))
+        public static var brandStrong: Color { BrandRuntime.shared.color(forToken: "brandStrong") ?? brandStrongDefault }
+        private static let brandSoftDefault = rsmDynamic(UIColor(red: 0.9686, green: 0.8902, blue: 0.9137, alpha: 1), UIColor(red: 0.2745, green: 0.1373, blue: 0.1804, alpha: 1))
+        public static var brandSoft: Color { BrandRuntime.shared.color(forToken: "brandSoft") ?? brandSoftDefault }
         /// Text auf brand.soft
-        public static let brandInk = rsmDynamic(UIColor(red: 0.5569, green: 0.1608, blue: 0.2745, alpha: 1), UIColor(red: 0.9490, green: 0.6627, blue: 0.7412, alpha: 1))
+        private static let brandInkDefault = rsmDynamic(UIColor(red: 0.5569, green: 0.1608, blue: 0.2745, alpha: 1), UIColor(red: 0.9490, green: 0.6627, blue: 0.7412, alpha: 1))
+        public static var brandInk: Color { BrandRuntime.shared.color(forToken: "brandInk") ?? brandInkDefault }
         /// Text auf brand — ~5,8:1
-        public static let brandContrast = rsmDynamic(UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1), UIColor(red: 0.1686, green: 0.0549, blue: 0.0902, alpha: 1))
+        private static let brandContrastDefault = rsmDynamic(UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1), UIColor(red: 0.1686, green: 0.0549, blue: 0.0902, alpha: 1))
+        public static var brandContrast: Color { BrandRuntime.shared.color(forToken: "brandContrast") ?? brandContrastDefault }
         /// EXKLUSIV Musik/Küren: Waveform (gespielt), Loop, Zeitmarken, Kür-Chips. Nie im Mahnwesen.
         public static let honey = rsmDynamic(UIColor(red: 0.9098, green: 0.6627, blue: 0.2902, alpha: 1), UIColor(red: 0.9098, green: 0.6627, blue: 0.2902, alpha: 1))
         /// Honig als Text/Icon — ~5,7:1
