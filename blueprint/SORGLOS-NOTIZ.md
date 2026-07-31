@@ -54,6 +54,44 @@ wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team v
 
 ---
 
+## ⏩ WIEDEREINSTIEG 2026-07-31 (nach Claude-Neustart ZUERST lesen)
+
+**Alles selbst verifiziert (Web-Browser, Dev-API/DB per curl, iOS-Simulator per Screenshot), 4 Commits.**
+Thema der Sitzung: „die Farben sind nicht meins — mach das einstellbar." → **komplett gebaut, alle Ebenen.**
+
+- **Einstellbare Marken-/Akzentfarbe (Web-UI)** `2c57154` — Vereins-Einstellungen: 7 WCAG-AA-Presets
+  + freie Hex-Farbe. `apps/web/lib/brand/*` (color/presets/derive/runtime/BrandBoot). AA-Gate für
+  Freifarben DREIFACH (Weiß-auf-Brand + Brand-auf-Canvas #FBF4EC + Brand-auf-Soft) — zu helle Farben
+  (Gelb/Cyan) werden bis AA abgedunkelt, sonst abgelehnt (Ampel ist ehrlich). Live-Vorschau, kein Flash.
+- **Serverseitige Persistenz** `1b260d2` — **Migration 0084**: `app.clubs.brand_color` (#RRGGBB-CHECK) +
+  `brand_preset` (7er-Enum-CHECK), `grant select` (Positivliste 99e unverändert), UPDATE unter
+  `clubs_update` (owner/admin). clubSchema/clubUpdateSchema + CLUB_COLUMNS + openapi/Swift/Kotlin-Codegen
+  (Gate grün). Web-mappers liest echte Felder; `updateClubSettings` sendet brand EXPLIZIT (auch null =
+  leeren, Lehre aus valid_until). **2021 SQL-Tests grün.** curl-E2E: preset=wald persistiert (API+GET+DB),
+  freie Hex + Preset-Vorrang, ungültiger Hex→400, Reset→null, Trainerin (kein Recht)→403.
+- **iOS wendet die Vereinsfarbe nativ an** `f78c174` — Generator (`gen-swift.mjs`): 5 Brand-Token →
+  laufzeit-übersteuerbare `static var` (kein Aufruf ändert sich). Neu `App/DesignSystem/BrandRuntime.swift`
+  = 7 Presets + 1:1-Port von color.ts/derive.ts (inkl. AA-Gate) für Freifarben. `MainTabView`:
+  `.task(id: session.clubId)` lädt `getClub` → wendet an, beobachtet BrandRuntime → **Live-Umfärbung**
+  (+ `.tint` für die Tab-Leiste). Simulator verifiziert: preset=petrol UND freie Hex #1E88E5 färben
+  Countdown-Karte + Tab-Bar; xcodebuild BUILD SUCCEEDED. **Der bekannte SourceKit-„Cannot find"-False-Alarm
+  trat wieder auf — xcodebuild ist maßgeblich, alles grün.**
+
+**OFFEN aus dieser Farb-Kette:** **Android (Kotlin)** muss dieselbe BrandRuntime-Kopie noch nachziehen
+(Presets-Tabelle + derive-Port). Driftfreie Zukunft = Server liefert das aufgelöste Fünferpaket, dann fällt
+jede native Kopie weg (erst sinnvoll, wenn Android sonst die 3. Kopie wäre).
+
+**NOCH BLOCKIERT (braucht Marcel), NICHT still weiterbauen:**
+1. **Domain-Tausch v2→rollsportmanager.de, alt→beta.rollsportmanager.de:** v2 ist auf der Beta **mock-only**
+   (kein echter Login verdrahtet, kein Hosting mit DB). Als Haupt-Domain wäre v2 heute eine Demo, nicht das
+   Produkt. Entscheidung nötig: (a) trotzdem als Mock-Demo live schalten (+ „Entbetaisieren": noindex/Persona-
+   Umschalter raus) ODER (b) erst echtes Hosting+Login. Und der NPM-Proxy-Schritt braucht Marcels Token.
+2. **App-Store: alt durch neu ersetzen + Apple-Prüf-Nutzer:** braucht die **Bundle-ID der alten App im Store**
+   (sonst ist v2 = neue App, kein Replace) + Hosting + echten Login in den Apps (auth-login.ts existiert, ist
+   aber ungenutzt). Prüf-Nutzer erst sinnvoll, wenn echter Login steht.
+
+---
+
 ## ⏩ WIEDEREINSTIEG 2026-07-30 (nach Claude-Neustart ZUERST lesen)
 
 **Live auf der Beta: Commit `2a1d8cc`. Arbeitsbaum sauber.** In dieser Sitzung abgearbeitet
