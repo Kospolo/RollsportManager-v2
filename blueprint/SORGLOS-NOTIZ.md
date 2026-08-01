@@ -54,6 +54,22 @@ wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team v
 
 ---
 
+## 🟢🟢 v2 KOMPLETT LIVE — API + WEB (2026-07-31)
+
+**Web-App live: https://app.rollsportmanager.de** (Prod-Build, api-Modus, KEIN Beta/noindex, KEINE Personas).
+- Container `rsm2-prod-web` (deploy/docker-compose.yml, Service `web`), 127.0.0.1:3026, NPM-Host-id 32, Cert-id 39.
+- Build-ARGs backen NEXT_PUBLIC_DATA_SOURCE=api + NEXT_PUBLIC_API_URL=https://api.rollsportmanager.de + RSM_BETA="" ein.
+- **CORS:** API (app.ts `appCors`) erlaubt in selfhosted die `config.appBaseUrl`-Origin (app. und api. sind verschiedene Subdomains → cross-origin → CORS nötig). Preflight app→api = 204 + ACAO. Deploy/.env APP_BASE_URL=https://app.rollsportmanager.de.
+- **Öffentlich verifiziert:** register→login→OnboardingGate „Verein gründen/beitreten" gegen die live API, DE/EN, kein Persona-Link.
+- Web-Update: `git pull && cd deploy && docker compose up -d --build web`.
+- **Echter Web-Login gebaut vom web-engineer, selbst verifiziert** (Commit 3225a79): lib/auth/account.ts (authLogin/Register/Reset + GET /me → setSessionClub), AccountLoginCard, passwort-neu, OnboardingGate.
+
+**Beide App-Plattformen sprechen jetzt die echte Auth:** iOS (Release→api.rollsportmanager.de, Onboarding) + Web (app.rollsportmanager.de). DEV-Falle: iOS DEBUG + Web NODE_ENV!=production zeigen weiter Personas; das ist gewollt (nur lokal).
+
+**Noch offen bis App Store (E/F):** Konto-Löschen (Apple 5.1.1v), iOS-Rebuild als `de.rollsportmanager.ios` 2.0 + Archive/Upload, neue Store-Screenshots+Texte, ECHTE Rechtstexte im Betreiber-Admin (aktuell nur vorlaeufige terms/privacy v1 in Prod). Ein verwaister Test-Verein in Prod (harmlos, 0 Konten) — vor echtem Launch wischen.
+
+---
+
 ## 🟢 v2-BACKEND IST LIVE — 2026-07-31 (api.rollsportmanager.de)
 
 **Der echte Prod-Stack läuft auf dem Mac Studio (.220), getrennt von v1:**
