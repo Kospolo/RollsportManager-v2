@@ -30,9 +30,19 @@ COPY . .
 # RSM_DOCKER=1  → next.config: kein Monorepo-Root (hier IST apps/web die
 #                 Wurzel), dafür output: "standalone".
 # RSM_BETA=1    → noindex in robots.txt und als X-Robots-Tag auf jeder Antwort.
+#
+# Build-ARGs (Next bäckt NEXT_PUBLIC_* zur BUILD-Zeit ein):
+#   * Beta (Default): RSM_BETA=1, kein DATA_SOURCE → Mock-Demo (unverändert).
+#   * Prod-App (app.rollsportmanager.de): NEXT_PUBLIC_DATA_SOURCE=api +
+#     NEXT_PUBLIC_API_URL=https://api.rollsportmanager.de + RSM_BETA="" (echte App).
+ARG RSM_BETA=1
+ARG NEXT_PUBLIC_DATA_SOURCE=""
+ARG NEXT_PUBLIC_API_URL=""
 ENV RSM_DOCKER=1 \
-    RSM_BETA=1 \
-    NEXT_TELEMETRY_DISABLED=1
+    RSM_BETA=$RSM_BETA \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NEXT_PUBLIC_DATA_SOURCE=$NEXT_PUBLIC_DATA_SOURCE \
+    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build \
     # `standalone` kopiert public/ und .next/static ABSICHTLICH nicht mit (die
     # gehören laut Next-Doku üblicherweise vor ein CDN). Hier gibt es kein CDN,
