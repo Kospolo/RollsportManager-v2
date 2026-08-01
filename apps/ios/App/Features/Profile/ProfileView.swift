@@ -15,6 +15,7 @@ struct ProfileView: View {
     /// Eigenes ViewModel, weil es an einem ANDEREN Endpunkt hängt
     /// (club-/mitglieds-gebunden) als die Stammdaten (`/me`).
     @StateObject private var selfProfile = ProfileSelfViewModel()
+    @State private var showDeleteConfirm = false
 
     var body: some View {
         Group {
@@ -115,6 +116,7 @@ struct ProfileView: View {
                 }
 
                 signOutButton
+                deleteAccountButton
             }
             .padding(Theme.Spacing.s5)
         }
@@ -147,6 +149,44 @@ struct ProfileView: View {
         }
         .buttonStyle(RSMPressableButtonStyle())
         .accessibilityLabel(Text("common.logout"))
+    }
+
+    /// Konto unwiderruflich löschen (Apple 5.1.1(v)). Bewusst dezent unter dem
+    /// Abmelden, mit Pflicht-Bestätigung; Fehler (z. B. „alleiniger Inhaber")
+    /// als Alert.
+    private var deleteAccountButton: some View {
+        Button(role: .destructive) {
+            showDeleteConfirm = true
+        } label: {
+            Text(verbatim: "Konto löschen")
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkFaint)
+                .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
+        }
+        .buttonStyle(.plain)
+        .confirmationDialog(
+            Text(verbatim: "Konto wirklich löschen?"),
+            isPresented: $showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(role: .destructive) {
+                _Concurrency.Task { await session.deleteAccount() }
+            } label: { Text(verbatim: "Endgültig löschen") }
+            Button(role: .cancel) {} label: { Text(verbatim: "Abbrechen") }
+        } message: {
+            Text(verbatim: "Dein Konto und deine persönlichen Daten werden unwiderruflich gelöscht. Das kann nicht rückgängig gemacht werden.")
+        }
+        .alert(
+            Text(verbatim: "Löschen nicht möglich"),
+            isPresented: Binding(
+                get: { session.deleteError != nil },
+                set: { if !$0 { session.deleteError = nil } }
+            )
+        ) {
+            Button(role: .cancel) { session.deleteError = nil } label: { Text(verbatim: "OK") }
+        } message: {
+            Text(verbatim: session.deleteError ?? "")
+        }
     }
 
     // MARK: - Lade-/Fehlerzustände

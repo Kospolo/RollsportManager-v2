@@ -76,6 +76,12 @@ extension APIClient {
         try await get("/clubs")
     }
 
+    /// DELETE /me — das EIGENE Konto unwiderruflich löschen (Apple 5.1.1(v)).
+    /// 409 (APIError), wenn man alleiniger Inhaber eines Vereins ist.
+    func deleteAccount() async throws -> AccountDeleted {
+        try await delete("/me")
+    }
+
     /// POST /clubs — Verein GRÜNDEN (Contract-Typ ClubRegistration/-Result). Der
     /// Aufrufer wird sofort Owner (aktive Mitgliedschaft + 30-Tage-Testphase).
     /// Zustimmung zu Bedingungen/Datenschutz ist Pflicht (DSGVO).

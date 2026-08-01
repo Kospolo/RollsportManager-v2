@@ -170,6 +170,21 @@ final class SessionStore: ObservableObject {
     /// true, sobald ein Beitrittsantrag gestellt wurde (wartet auf Freigabe).
     @Published var joinPending = false
 
+    /// Fehlertext beim Konto-Löschen (z. B. 409 „alleiniger Inhaber").
+    @Published var deleteError: String?
+
+    /// Das EIGENE Konto unwiderruflich löschen (Apple 5.1.1(v)). Erfolg → Logout;
+    /// 409 (alleiniger Inhaber) → deleteError für die UI.
+    func deleteAccount() async {
+        deleteError = nil
+        do {
+            _ = try await api.deleteAccount()
+            logout()
+        } catch {
+            deleteError = (error as? APIError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
     /// Verein gründen → sofort Owner. Danach aktiven Verein neu laden.
     func createClub(name: String, city: String) async {
         await runAuth {
