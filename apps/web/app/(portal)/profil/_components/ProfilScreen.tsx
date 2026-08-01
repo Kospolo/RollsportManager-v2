@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useLocale, useT } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/format";
-import { errorMessage, isNotImplemented } from "@/lib/data";
+import { dataSource, errorMessage, isNotImplemented } from "@/lib/data";
 import { useData } from "@/lib/data/useData";
 import type { MyProfile, MyProfileMembership } from "@/lib/types";
 import { Avatar } from "@/components/ui/Avatar";
@@ -19,6 +19,7 @@ import { ProfileEditCard } from "./ProfileEditCard";
 import { ProfilePhotoCard } from "./ProfilePhotoCard";
 import { SelfProfileCard } from "./SelfProfileCard";
 import { AccountCard } from "./AccountCard";
+import { DeleteAccountCard } from "./DeleteAccountCard";
 
 /**
  * Eigenes Profil (App-Shell-Selbstsicht): Kopf mit Avatar/Name/Rolle/Verein/
@@ -192,6 +193,9 @@ function ProfileBody({ profile, onSaved }: { profile: MyProfile; onSaved: () => 
         {/* Rechts: Konto */}
         <div className="grid gap-5">
           <AccountCard email={accountEmail} />
+          {/* Konto-Löschung nur im api-Modus (echter Login). In der öffentlichen
+              Mock-Beta gibt es kein echtes Konto — die Karte entfällt dort. */}
+          {dataSource === "api" && <DeleteAccountCard />}
         </div>
       </div>
     </>

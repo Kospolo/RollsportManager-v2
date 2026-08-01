@@ -129,6 +129,24 @@ export const profilDict = {
     passwordHint:
       "Aus Sicherheitsgründen ändern wir Passwörter nicht im Portal — nutze dafür die Anmeldung.",
 
+    /* Konto löschen (Apple 5.1.1(v) / DSGVO Art. 17) */
+    deleteEyebrow: "Gefahrenzone",
+    deleteTitle: "Konto löschen",
+    deleteBody:
+      "Dein Konto und deine persönlichen Daten werden dauerhaft gelöscht. Das lässt sich nicht rückgängig machen (DSGVO Art. 17).",
+    deleteButton: "Konto löschen",
+    deleteDialogTitle: "Konto wirklich löschen?",
+    deleteDialogBody:
+      "Dein Konto und alle damit verbundenen persönlichen Daten werden unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
+    deleteAcknowledge: "Ja, ich möchte mein Konto unwiderruflich löschen.",
+    deleteCancel: "Abbrechen",
+    deleteConfirm: "Konto endgültig löschen",
+    deleteDeleting: "Wird gelöscht …",
+    deleteSuccessToast: "Dein Konto wurde gelöscht.",
+    deleteBlockedTitle: "Konto konnte nicht gelöscht werden",
+    deleteBlockedFallback:
+      "Du bist alleinige:r Inhaber:in eines Vereins. Übertrage zuerst die Inhaberschaft oder lösche den Verein.",
+
     /* Weitere Mitgliedschaften */
     otherEyebrow: "Weitere Vereine",
     otherTitle: "Weitere Mitgliedschaften",
@@ -257,6 +275,24 @@ export const profilDict = {
     passwordNote: "Changed via the login",
     passwordHint:
       "For security we don't change passwords inside the portal — use the login for that.",
+
+    /* Delete account (Apple 5.1.1(v) / GDPR Art. 17) */
+    deleteEyebrow: "Danger zone",
+    deleteTitle: "Delete account",
+    deleteBody:
+      "Your account and personal data will be permanently deleted. This cannot be undone (GDPR Art. 17).",
+    deleteButton: "Delete account",
+    deleteDialogTitle: "Really delete your account?",
+    deleteDialogBody:
+      "Your account and all personal data linked to it will be irreversibly deleted. This action cannot be undone.",
+    deleteAcknowledge: "Yes, I want to permanently delete my account.",
+    deleteCancel: "Cancel",
+    deleteConfirm: "Delete account permanently",
+    deleteDeleting: "Deleting …",
+    deleteSuccessToast: "Your account has been deleted.",
+    deleteBlockedTitle: "Account could not be deleted",
+    deleteBlockedFallback:
+      "You are the sole owner of a club. Transfer ownership or delete the club first.",
 
     /* Other memberships */
     otherEyebrow: "Other clubs",
