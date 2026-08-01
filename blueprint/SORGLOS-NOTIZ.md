@@ -54,6 +54,25 @@ wiederholen lassen · kurz schreiben · Ergebnisse SELBST verifizieren · Team v
 
 ---
 
+## 🟢🟢🟢 v2.0 IM APP-STORE-REVIEW — 2026-08-01 (WAITING_FOR_REVIEW)
+
+**Der komplette „v2 echt machen"-Epic ist durch.** v2 ersetzt v1 im App Store.
+- **App Store:** App-id 6758109320 (de.rollsportmanager.ios). Version **2.0, Build 124** eingereicht →
+  `reviewSubmission` 7db4c782… Zustand **WAITING_FOR_REVIEW**. Nach Apple-Freigabe ersetzt 2.0 die Live-1.8.
+- **Rebuild:** project.yml Bundle-ID de.rollsportmanager.v2 → **de.rollsportmanager.ios**, Team 7NY73DS832,
+  CFBundleVersion 124 (>123). Archive+Export+Upload via ASC-Key (altool), ExportOptions.plist (app-store-connect).
+  Release zeigt auf api.rollsportmanager.de, keine Personas. usesNonExemptEncryption=false gesetzt.
+- **Präsentation:** Neue de-DE-Beschreibung + „Neu in 2.0"-Text in 5 Sprachen (de/en/fr/tr/ru). **Frische v2-iPhone-
+  Screenshots (6.9", 1320×2868)** aus dem DEBUG-Build (Seed-Daten, Owner-Persona): Dashboard/Küren/Mitglieder/Mehr —
+  altes APP_IPHONE_65 gelöscht, neues APP_IPHONE_67-Set. iPad-Set geerbt (v1, gültig) — frische iPad-Bilder = Folge-Update.
+- **Konto löschen (Apple 5.1.1(v)):** DELETE /me (Migr. 0087/0088, Owner-Schutz 409, PII-Anonymisierung), UI in iOS-Profil + Web-/profil. Live per curl bewiesen.
+- **ASC-Falle:** alter `appStoreVersionSubmissions`-CREATE ist tot → `reviewSubmissions`+`reviewSubmissionItems`+PATCH{submitted:true}. Cert-Create nur `meta:{}`.
+- **Screenshots-Tooling:** iPhone 16 Pro Max / iPad-Pro-Sim per `simctl create` aus installiertem Runtime (kein Download); DEBUG-Auto-Login `defaults write <bundle> devPersona owner`; Voll-Res via `simctl io <udid> screenshot`. ASC-Upload: reservieren→PUT(uploadOperations)→PATCH{uploaded,sourceFileChecksum=md5}.
+
+**Offen (klein, nach Freigabe):** verwaister Test-Verein in Prod wischen; echte Rechtstexte im Betreiber-Admin (aktuell vorläufig); frische v2-iPad-Screenshots; C (Dev-Surfaces) ist durch die Release-/Prod-Builds praktisch erledigt.
+
+---
+
 ## 🟢🟢 v2 KOMPLETT LIVE — API + WEB (2026-07-31)
 
 **Web-App live: https://app.rollsportmanager.de** (Prod-Build, api-Modus, KEIN Beta/noindex, KEINE Personas).
