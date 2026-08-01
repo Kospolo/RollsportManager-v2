@@ -113,7 +113,12 @@ export const DEV_PERSONA_CARDS: DevPersonaCard[] = [
   },
 ];
 
-export function personaByKey(key: DevPersonaKey): DevPersonaCard | undefined {
+/**
+ * Persona-Karte zu einem Session-Schluessel. Fuer "account" (echte
+ * E-Mail/Passwort-Anmeldung) gibt es keine Dev-Persona -> undefined; die
+ * Aufrufer (Sidebar/UserMenu) fallen dann auf Profil-Name und club_role zurueck.
+ */
+export function personaByKey(key: DevPersonaKey | "account"): DevPersonaCard | undefined {
   return DEV_PERSONA_CARDS.find((p) => p.key === key);
 }
 

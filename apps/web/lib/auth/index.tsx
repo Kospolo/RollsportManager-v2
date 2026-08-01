@@ -133,3 +133,15 @@ export function useAuth(): AuthContextValue {
  * Rechte-Trick, die Rechte kommen aus der DB).
  */
 export { setSessionClub };
+
+/**
+ * Re-Export der echten E-Mail/Passwort-Anmeldung (api-Modus). Formulare
+ * importieren so aus einer Quelle — `@/lib/auth` — statt tief in Untermodule
+ * zu greifen. Details: lib/auth/account.ts.
+ */
+export {
+  authLogin,
+  authRegister,
+  requestPasswordReset,
+  confirmPasswordReset,
+} from "./account";

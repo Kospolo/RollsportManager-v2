@@ -116,12 +116,23 @@ const PUBLIC_PATHS = new Set([
 const PUBLIC_PREFIXES = ['/public/'];
 
 /**
- * DEV-ONLY CORS for the web portal on localhost:3021. Checked per request so
- * it is impossible to keep the header in a prod-mode process; prod traffic
- * goes through the reverse proxy on the same origin and needs no CORS.
+ * CORS — genau EINE erlaubte Web-Origin je Modus, per Request geprueft (so kann
+ * kein falscher Header in einem anderen Modus haengenbleiben):
+ *   * dev        → das lokale Portal (http://localhost:3021).
+ *   * selfhosted/prod → die konfigurierte Web-App (config.appBaseUrl, z. B.
+ *     https://app.rollsportmanager.de). Web und API liegen auf VERSCHIEDENEN
+ *     Subdomains (app. vs api.), also ist der Browser-Fetch cross-origin und
+ *     braucht CORS — die fruehere Annahme „same origin, kein CORS" gilt fuer
+ *     getrennte Subdomains nicht. Alles andere: KEIN CORS-Header → geblockt.
+ * Die origin-Funktion liest die Config pro Request; ein leerer Rueckgabewert
+ * setzt keinen Access-Control-Allow-Origin.
  */
-const devCors = cors({
-  origin: 'http://localhost:3021',
+const appCors = cors({
+  origin: (origin) => {
+    const { auth, appBaseUrl } = getConfig();
+    if (auth.mode === 'dev') return origin === 'http://localhost:3021' ? origin : '';
+    return origin !== '' && origin === appBaseUrl ? origin : '';
+  },
   allowHeaders: ['authorization', 'content-type', 'x-request-id'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   exposeHeaders: ['x-request-id'],
@@ -132,10 +143,10 @@ export function createApp(): OpenAPIHono<AuthEnv> {
   const app = new OpenAPIHono<AuthEnv>();
 
   app.use('*', requestId);
-  app.use('*', async (c, next) => {
-    if (getConfig().auth.mode === 'dev') return devCors(c, next);
-    return next();
-  });
+  // CORS immer anwenden — die origin-Funktion (appCors) entscheidet je Modus,
+  // welche EINE Web-Origin einen Header bekommt (dev: localhost:3021,
+  // selfhosted/prod: config.appBaseUrl). Alles andere bleibt ungeheadert.
+  app.use('*', appCors);
   app.use('*', async (c, next) => {
     if (PUBLIC_PATHS.has(c.req.path)) return next();
     if (PUBLIC_PREFIXES.some((p) => c.req.path.startsWith(p))) return next();

@@ -50,7 +50,13 @@ export interface AuthProfile {
 }
 
 export interface AuthSession {
-  persona: DevPersonaKey;
+  /**
+   * Herkunft der Session. Eine Dev-Persona (/dev/login) ODER "account" für
+   * eine echte E-Mail/Passwort-Anmeldung (/auth/login, /auth/register). Der
+   * Wert steuert nichts an Rechten — die kommen aus der DB; er unterscheidet
+   * nur, WOHER der Token stammt.
+   */
+  persona: DevPersonaKey | "account";
   token: string;
   /** Unix-Millisekunden, ab denen der Token abgelaufen ist. */
   expiresAt: number;

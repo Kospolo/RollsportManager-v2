@@ -22,7 +22,7 @@ import { loginDict } from "./i18n";
  * localStorage (rsm.dev.auth), danach /dashboard. Läuft der Stack nicht,
  * gibt es einen Klartext-Hinweis auf `scripts/dev-stack.sh up`.
  */
-export function DevLoginCard() {
+export function DevLoginCard({ onBack }: { onBack?: () => void } = {}) {
   const t = useT(loginDict);
   const { locale } = useLocale();
   const { signIn } = useAuth();
@@ -150,6 +150,18 @@ export function DevLoginCard() {
               })}
             </ul>
           </section>
+
+          {onBack && (
+            <p className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={onBack}
+                className="rounded-sm text-caption font-semibold text-ink-faint hover:text-ink"
+              >
+                {t("devBackToAccount")}
+              </button>
+            </p>
+          )}
         </div>
       </main>
     </div>

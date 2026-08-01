@@ -3,6 +3,7 @@ import { Topbar } from "@/components/shell/Topbar";
 import { BottomNav } from "@/components/shell/BottomNav";
 import { AuthGate } from "@/components/shell/AuthGate";
 import { BetaViewerBoundary } from "@/components/shell/BetaViewerBoundary";
+import { OnboardingGate } from "@/components/shell/OnboardingGate";
 import { OperatorPortalGate } from "@/components/shell/OperatorPortalGate";
 import { ToastProvider } from "@/components/ui/Toast";
 import { CapabilitiesProvider } from "@/lib/capabilities";
@@ -46,7 +47,9 @@ export default function PortalLayout({
               <Topbar />
               <main className="flex-1 px-4 pb-24 pt-6 lg:px-8 lg:pb-10 lg:pt-7">
                 <AuthGate>
-                  <OperatorPortalGate>{children}</OperatorPortalGate>
+                  <OnboardingGate>
+                    <OperatorPortalGate>{children}</OperatorPortalGate>
+                  </OnboardingGate>
                 </AuthGate>
               </main>
             </div>
