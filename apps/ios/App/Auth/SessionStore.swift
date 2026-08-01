@@ -159,6 +159,50 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    // MARK: - Onboarding ohne Verein
+
+    /// Angemeldet, aber (noch) in keinem Verein und KEIN Plattform-Admin →
+    /// die App zeigt statt der (leeren) Vereins-Shell den Gründen/Beitreten-Screen.
+    var needsClubOnboarding: Bool {
+        isAuthenticated && !hasClubMembership && !isPlatformAdmin
+    }
+
+    /// true, sobald ein Beitrittsantrag gestellt wurde (wartet auf Freigabe).
+    @Published var joinPending = false
+
+    /// Verein gründen → sofort Owner. Danach aktiven Verein neu laden.
+    func createClub(name: String, city: String) async {
+        await runAuth {
+            _ = try await self.api.createClub(name: name, city: city)
+            try await self.reloadActiveClub()
+        }
+    }
+
+    /// Beitritt per Code BEANTRAGEN. Erfolg = Antrag gestellt (pending) — die
+    /// Mitgliedschaft wird erst nach Freigabe aktiv, deshalb bleibt der Nutzer
+    /// vorerst im Onboarding (joinPending zeigt den Wartehinweis).
+    func joinClub(code: String, firstName: String, lastName: String) async {
+        await runAuth {
+            _ = try await self.api.joinClub(code: code, firstName: firstName, lastName: lastName)
+            self.joinPending = true
+        }
+    }
+
+    /// Vereine neu holen und den ersten als aktiv setzen (Session neu bauen —
+    /// DevLoginProfile ist unveränderlich).
+    private func reloadActiveClub() async throws {
+        guard let s = session else { return }
+        let clubs = (try? await api.listClubs()) ?? []
+        let p = s.profile
+        let np = DevLoginProfile(
+            sub: p.sub, memberId: p.memberId, displayName: p.displayName, email: p.email,
+            clubId: clubs.first?.id, clubRole: p.clubRole, isPlatformAdmin: p.isPlatformAdmin
+        )
+        let ns = DevSession(accessToken: s.accessToken, expiresAt: s.expiresAt, persona: s.persona, profile: np)
+        apply(ns)
+        persist(ns)
+    }
+
     /// Gemeinsamer Rahmen: Spinner + Fehlertext, wie login(persona:).
     private func runAuth(_ work: () async throws -> Void) async {
         guard !isLoggingIn else { return }

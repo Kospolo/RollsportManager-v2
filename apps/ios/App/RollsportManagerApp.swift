@@ -15,11 +15,17 @@ struct RollsportManagerApp: App {
         WindowGroup {
             Group {
                 if session.isAuthenticated {
+                    if session.needsClubOnboarding {
+                        // Angemeldet, aber noch in keinem Verein → gründen/beitreten,
+                        // statt in die leere Vereins-Shell zu laufen.
+                        NoClubOnboardingView()
+                    } else {
 #if os(macOS)
-                    MacRootView()
+                        MacRootView()
 #else
-                    MainTabView()
+                        MainTabView()
 #endif
+                    }
                 } else {
 #if os(macOS)
                     // Die Persona-Auswahl ist eine schmale Spalte — in einem

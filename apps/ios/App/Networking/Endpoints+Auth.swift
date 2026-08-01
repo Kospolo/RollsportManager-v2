@@ -75,4 +75,22 @@ extension APIClient {
     func listClubs() async throws -> [Club] {
         try await get("/clubs")
     }
+
+    /// POST /clubs — Verein GRÜNDEN (Contract-Typ ClubRegistration/-Result). Der
+    /// Aufrufer wird sofort Owner (aktive Mitgliedschaft + 30-Tage-Testphase).
+    /// Zustimmung zu Bedingungen/Datenschutz ist Pflicht (DSGVO).
+    func createClub(name: String, city: String) async throws -> ClubRegistrationResult {
+        try await post("/clubs", body: ClubRegistration(
+            name: name, city: city, acceptTerms: true, acceptPrivacy: true
+        ))
+    }
+
+    /// POST /clubs/join — Beitritt per Vereinscode BEANTRAGEN (ClubJoinInput/
+    /// -Result). Ergebnis ist ein ANTRAG (status meist "pending") — die
+    /// Mitgliedschaft wird erst nach Freigabe durch einen Vereins-Admin aktiv.
+    func joinClub(code: String, firstName: String, lastName: String) async throws -> ClubJoinResult {
+        try await post("/clubs/join", body: ClubJoinInput(
+            code: code, firstName: firstName, lastName: lastName, acceptTerms: true, acceptPrivacy: true
+        ))
+    }
 }
