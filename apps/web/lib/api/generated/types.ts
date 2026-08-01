@@ -726,6 +726,10 @@ export interface MeUpdate {
   "postal_address"?: string | null;
 }
 
+export interface AccountDeleted {
+  "ok": boolean;
+}
+
 export type ThemePreference = "light" | "dark" | "auto";
 export const ThemePreferenceValues: readonly ThemePreference[] = ["light", "dark", "auto"] as const;
 

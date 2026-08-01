@@ -3309,6 +3309,20 @@ public struct MeUpdate: Codable, Equatable, Sendable {
     }
 }
 
+public struct AccountDeleted: Codable, Equatable, Sendable {
+    public var ok: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case ok
+    }
+
+    public init(
+        ok: Bool
+    ) {
+        self.ok = ok
+    }
+}
+
 public struct NotificationPrefs: Codable, Equatable, Sendable {
     public var events: Bool?
     public var invoices: Bool?

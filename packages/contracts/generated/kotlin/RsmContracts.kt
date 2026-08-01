@@ -1347,6 +1347,11 @@ data class MeUpdate(
 )
 
 @Serializable
+data class AccountDeleted(
+    val ok: Boolean
+)
+
+@Serializable
 data class NotificationPrefs(
     val events: Boolean? = null,
     val invoices: Boolean? = null,

@@ -479,6 +479,16 @@ export class ApiClient {
   }
 
   /**
+   * Delete the caller's own account (irreversible)
+   * Loescht das eigene Konto unwiderruflich (Apple 5.1.1(v) / DSGVO Art. 17). 409, wenn die Person alleiniger aktiver Inhaber eines Vereins ist — erst Inhaberschaft uebertragen oder Verein loeschen.
+   * 
+   * `DELETE /me`
+   */
+  async deleteMe(options?: RequestOptions): Promise<M.AccountDeleted> {
+    return this.request<M.AccountDeleted>("DELETE", "/me", { auth: true, options });
+  }
+
+  /**
    * The caller's app-shell preferences (locale/theme/notifications)
    * 
    * `GET /me/preferences`

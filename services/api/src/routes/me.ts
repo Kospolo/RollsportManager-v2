@@ -23,10 +23,11 @@ import {
   capabilityResolutionSchema,
   meSchema,
   meUpdateSchema,
+  problemSchema,
   userPreferencesSchema,
   userPreferencesUpdateSchema,
 } from '../lib/validation.js';
-import { withUser } from '../db.js';
+import { withUser, withServiceRole } from '../db.js';
 import type { Tx } from '../db.js';
 import { problem } from '../middleware/error.js';
 import { avatarUrlFor } from '../lib/avatar.js';
@@ -121,6 +122,78 @@ meRouter.openapi(
       return loadMe(tx, claims.sub);
     });
     return c.json(meSchema.parse(me), 200);
+  },
+);
+
+// ---------------------------------------------------------------------------
+// DELETE /me — das eigene Konto UNWIDERRUFLICH loeschen (App-Store 5.1.1(v),
+// DSGVO Art. 17). Loescht auth.users (Kaskade auf Profil, Notizen, Einstellungen,
+// Einwilligungen-als-Subjekt, Reset-Token) und anonymisiert vorher die PII der
+// eigenen Mitgliedschaften; der Verein behaelt eine ENTKOPPELTE, namenlose Zeile
+// (0087 stellte die zwei RESTRICT-FKs auf SET NULL). BLOCKIERT (409), wenn die
+// Person ALLEINIGER aktiver Inhaber eines Vereins ist.
+// ---------------------------------------------------------------------------
+const accountDeletedSchema = z
+  .object({ ok: z.literal(true) })
+  .openapi('AccountDeleted');
+
+meRouter.openapi(
+  createRoute({
+    method: 'delete',
+    path: '/me',
+    tags: ['me'],
+    summary: 'Delete the caller\'s own account (irreversible)',
+    description:
+      'Loescht das eigene Konto unwiderruflich (Apple 5.1.1(v) / DSGVO Art. 17). 409, wenn die Person ' +
+      'alleiniger aktiver Inhaber eines Vereins ist — erst Inhaberschaft uebertragen oder Verein loeschen.',
+    security: [{ bearerAuth: [] }],
+    responses: {
+      200: jsonContent(accountDeletedSchema, 'Account deleted'),
+      409: jsonContent(problemSchema, 'Sole owner of a club — transfer or delete it first'),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const sub = c.get('claims').sub;
+
+    // 1) Alleiniger-Inhaber-Schutz. Service-Mode, weil ALLE Inhaber gezaehlt
+    //    werden muessen (nicht nur die RLS-sichtbaren).
+    const soleOwner = await withServiceRole('account delete: sole-owner check', async (tx) => {
+      return (await tx`
+        select c.name
+          from app.clubs c
+         where c.deleted_at is null
+           and exists (
+             select 1 from app.club_members m
+              where m.club_id = c.id and m.profile_id = ${sub}
+                and m.role = 'owner' and m.status = 'active' and m.deleted_at is null)
+           and (
+             select count(*) from app.club_members m2
+              where m2.club_id = c.id and m2.role = 'owner'
+                and m2.status = 'active' and m2.deleted_at is null) = 1
+      `) as { name: string }[];
+    });
+    if (soleOwner.length > 0) {
+      const names = soleOwner.map((r) => r.name).join(', ');
+      throw problem(
+        409,
+        'Conflict',
+        `Du bist alleiniger Inhaber von: ${names}. Übertrage zuerst die Inhaberschaft oder lösche den Verein. / You are the sole owner of: ${names}. Transfer ownership or delete the club first.`,
+      );
+    }
+
+    // 2) PII in den eigenen Mitgliedschaften anonymisieren, dann Konto loeschen.
+    //    Eine Transaktion; der Rest raeumt sich per Kaskade/SET NULL.
+    await withServiceRole('account delete', async (tx) => {
+      await tx`
+        update app.club_members
+           set first_name = '(gelöscht)', last_name = '', email = null,
+               phone = null, postal_address = null, birth_date = null
+         where profile_id = ${sub}`;
+      await tx`delete from auth.users where id = ${sub}`;
+    });
+
+    return c.json({ ok: true as const }, 200);
   },
 );
 
