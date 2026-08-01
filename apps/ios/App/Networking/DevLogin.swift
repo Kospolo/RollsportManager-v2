@@ -89,6 +89,28 @@ struct DevLoginProfile: Codable, Equatable {
         clubRole = try container.decodeIfPresent(ClubRole.self, forKey: .clubRole)
         isPlatformAdmin = try container.decodeIfPresent(Bool.self, forKey: .isPlatformAdmin) ?? false
     }
+
+    /// Memberwise-Init fuer den ECHTEN Login (Endpoints+Auth): /auth/login liefert
+    /// nur sub/email/Admin-Flag; club_id/member_id kommen aus GET /clubs, den
+    /// Anzeigenamen setzt der Aufrufer (Registrierung kennt ihn, Login nutzt
+    /// den E-Mail-Praefix als Notbehelf).
+    init(
+        sub: String,
+        memberId: String?,
+        displayName: String,
+        email: String,
+        clubId: String?,
+        clubRole: ClubRole?,
+        isPlatformAdmin: Bool
+    ) {
+        self.sub = sub
+        self.memberId = memberId
+        self.displayName = displayName
+        self.email = email
+        self.clubId = clubId
+        self.clubRole = clubRole
+        self.isPlatformAdmin = isPlatformAdmin
+    }
 }
 
 /// Antwort von POST /dev/login.

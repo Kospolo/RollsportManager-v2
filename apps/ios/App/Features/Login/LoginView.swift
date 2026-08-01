@@ -1,99 +1,43 @@
 import SwiftUI
 
-/// Anzeige-Metadaten der Persona-Karten — Spiegel der Web-Login-Karten
-/// (apps/web/lib/auth/personas.ts). Quelle der Wahrheit für sub/member_id
-/// ist services/api/src/routes/dev-login.ts; hier stehen nur UI-Texte.
-private struct LoginPersonaCard: Identifiable {
-    let persona: DevPersona
-    let displayName: String
-    /// app.club_members.id aus dem Seed — für den deterministischen Avatar-Ton.
-    let memberId: String
-    let roleKey: LocalizedStringKey
-    let descriptionKey: LocalizedStringKey
-
-    var id: String { persona.rawValue }
-}
-
-private let personaCards: [LoginPersonaCard] = [
-    .init(
-        persona: .coach,
-        displayName: "Sandra Vogel",
-        memberId: "a0000000-0000-4000-8000-000000000001",
-        roleKey: "persona.coach.role",
-        descriptionKey: "persona.coach.description"
-    ),
-    .init(
-        persona: .owner,
-        displayName: "Jürgen Häberle",
-        memberId: "a0000000-0000-4000-8000-000000000002",
-        roleKey: "persona.owner.role",
-        descriptionKey: "persona.owner.description"
-    ),
-    .init(
-        persona: .treasurer,
-        displayName: "Beate Schäfer",
-        memberId: "a0000000-0000-4000-8000-000000000003",
-        roleKey: "persona.treasurer.role",
-        descriptionKey: "persona.treasurer.description"
-    ),
-    .init(
-        persona: .member,
-        displayName: "Katrin Grünewald",
-        memberId: "a0000000-0000-4000-8000-000000000009",
-        roleKey: "persona.member.role",
-        descriptionKey: "persona.member.description"
-    ),
-    .init(
-        persona: .guest,
-        displayName: "Milena Öztürk",
-        memberId: "a0000000-0000-4000-8000-000000000006",
-        roleKey: "persona.guest.role",
-        descriptionKey: "persona.guest.description"
-    ),
-]
-
-/// Die Betreiber-Persona steht BEWUSST getrennt unter den Vereins-Personas.
-///
-/// Sie gehört keinem Verein an (`member_id`/`club_id`/`club_role` = null) und
-/// sieht eine völlig andere App: die Konsole über ALLE Vereine. Sie mit in die
-/// Karten-Liste zu werfen, würde genau das verwischen — sie sähe aus wie „noch
-/// eine Rolle im RSV Neckarsulm“, und wer sie wählt, wundert sich über leere
-/// Vereinsbereiche. Die eigene Überschrift sagt vorher, was gleich passiert.
-private let operatorCard = LoginPersonaCard(
-    persona: .platform,
-    displayName: "RSM Plattform-Admin",
-    // Kein `member_id` vorhanden — für den Avatar-Ton nimmt die Karte die
-    // stabile Profil-ID aus dem Seed (…090). Der Ton bleibt damit derselbe.
-    memberId: "90000000-0000-4000-8000-000000000090",
-    roleKey: "persona.platform.role",
-    descriptionKey: "persona.platform.description"
-)
-
-/// Persona-Login gegen den lokalen Dev-Stack — wie die Web-Login-Karten.
+/// Anmelde-Bildschirm: echter E-Mail/Passwort-Login + Registrierung gegen die
+/// live API (/auth/login, /auth/register). Die Persona-Schnellanmeldung (Dev-
+/// Stack) steht NUR in DEBUG-Builds darunter — Release zeigt sie nie.
 struct LoginView: View {
     @EnvironmentObject private var session: SessionStore
-    @State private var pendingPersona: DevPersona?
+    @State private var email = ""
+    @State private var password = ""
+    @State private var displayName = ""
+    @State private var isRegistering = false
+
+    private var canSubmit: Bool {
+        !email.trimmingCharacters(in: .whitespaces).isEmpty
+            && password.count >= 8
+            && (!isRegistering || !displayName.trimmingCharacters(in: .whitespaces).isEmpty)
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.s5) {
                 header
-                devBanner
-                ForEach(personaCards) { card in
-                    personaButton(card)
-                }
-                operatorSection
+                authForm
                 if let error = session.loginError {
                     errorCard(error)
                 }
+#if DEBUG
+                DevPersonaLogin()
+#endif
             }
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
             .padding(Theme.Spacing.s5)
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .animation(.easeOut(duration: Theme.Motion.standard), value: session.loginError)
+        .animation(.easeOut(duration: Theme.Motion.standard), value: isRegistering)
     }
 
-    // MARK: - Bausteine
+    // MARK: - Kopf
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
@@ -106,93 +50,86 @@ struct LoginView: View {
                 .font(Theme.Fonts.display)
                 .tracking(Theme.Fonts.displayTracking)
                 .foregroundStyle(Theme.Colors.inkPrimary)
-            Text("login.subtitle")
-                .font(Theme.Fonts.body)
-                .foregroundStyle(Theme.Colors.inkSoft)
         }
         .padding(.top, Theme.Spacing.s6)
     }
 
-    /// Dev-Hinweis-Banner: nichts hier ist Produktion.
-    private var devBanner: some View {
-        HStack(alignment: .top, spacing: Theme.Spacing.s3) {
-            Image(systemName: "wrench.and.screwdriver.fill")
-                .foregroundStyle(Theme.Colors.info)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
-                Text("login.devBanner.title")
-                    .font(Theme.Fonts.bodyStrong)
-                    .foregroundStyle(Theme.Colors.info)
-                Text("login.devBanner.message")
-                    .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkSoft)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(Theme.Spacing.s4)
-        .background(Theme.Colors.infoSoft)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
-        .accessibilityElement(children: .combine)
-    }
+    // MARK: - Formular
 
-    private func personaButton(_ card: LoginPersonaCard) -> some View {
-        Button {
-            pendingPersona = card.persona
-            // `Task` ist in diesem Modul der Contracts-Struct — daher voll
-            // qualifiziert `_Concurrency.Task` für Swift Concurrency.
-            _Concurrency.Task {
-                await session.login(persona: card.persona)
-                pendingPersona = nil
-            }
-        } label: {
-            RSMCard(padding: Theme.Spacing.s4) {
-                HStack(spacing: Theme.Spacing.s3) {
-                    RSMAvatarView(name: card.displayName, personId: card.memberId, size: 44)
-                    VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
-                        HStack(spacing: Theme.Spacing.s2) {
-                            Text(card.displayName)
-                                .font(Theme.Fonts.bodyStrong)
-                                .foregroundStyle(Theme.Colors.inkPrimary)
-                            RSMStatusPill(text: card.roleKey, kind: .brand)
-                        }
-                        Text(card.descriptionKey)
-                            .font(Theme.Fonts.caption)
-                            .foregroundStyle(Theme.Colors.inkSoft)
-                            .multilineTextAlignment(.leading)
-                    }
-                    Spacer(minLength: 0)
-                    if pendingPersona == card.persona && session.isLoggingIn {
-                        ProgressView()
-                            .tint(Theme.Colors.brand)
-                    } else {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Theme.Colors.inkFaint)
-                            .accessibilityHidden(true)
-                    }
+    private var authForm: some View {
+        RSMCard(padding: Theme.Spacing.s4) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
+                if isRegistering {
+                    labeledField("Name", text: $displayName)
                 }
+                labeledField("E-Mail", text: $email, isEmail: true)
+                labeledSecureField(isRegistering ? "Passwort (min. 8 Zeichen)" : "Passwort")
+
+                Button(action: submit) {
+                    HStack(spacing: Theme.Spacing.s2) {
+                        if session.isLoggingIn {
+                            ProgressView().tint(Theme.Colors.brandContrast)
+                        }
+                        Text(isRegistering ? "Konto erstellen" : "Anmelden")
+                            .font(Theme.Fonts.bodyStrong)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Theme.Spacing.s3)
+                    .background(canSubmit ? Theme.Colors.brand : Theme.Colors.lineStrong)
+                    .foregroundStyle(Theme.Colors.brandContrast)
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(session.isLoggingIn || !canSubmit)
+
+                Button {
+                    isRegistering.toggle()
+                    session.loginError = nil
+                } label: {
+                    Text(isRegistering ? "Schon ein Konto? Anmelden"
+                                       : "Neu hier? Konto erstellen")
+                        .font(Theme.Fonts.caption)
+                        .foregroundStyle(Theme.Colors.brandInk)
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, Theme.Spacing.s1)
             }
         }
-        .buttonStyle(RSMPressableButtonStyle())
-        .disabled(session.isLoggingIn)
-        .accessibilityLabel(
-            Text("login.a11y.persona \(card.displayName)")
-        )
     }
 
-    /// Abgesetzter Block „Betreiber“ — eigene Überschrift, eigener Satz,
-    /// damit niemand die Konsole für eine weitere Vereinsrolle hält.
-    private var operatorSection: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
-            Text("login.section.operator")
-                .font(Theme.Fonts.eyebrow)
-                .tracking(Theme.Fonts.eyebrowTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(Theme.Colors.inkFaint)
-                .padding(.leading, Theme.Spacing.s1)
-            personaButton(operatorCard)
+    private func submit() {
+        _Concurrency.Task {
+            if isRegistering {
+                await session.register(email: email, password: password, displayName: displayName)
+            } else {
+                await session.signIn(email: email, password: password)
+            }
         }
-        .padding(.top, Theme.Spacing.s3)
+    }
+
+    // MARK: - Feld-Bausteine (cross-platform)
+
+    private func labeledField(_ title: String, text: Binding<String>, isEmail: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
+            Text(title).font(Theme.Fonts.caption).foregroundStyle(Theme.Colors.inkSoft)
+            TextField("", text: text)
+                .autocorrectionDisabled()
+                .modifier(EmailFieldTraits(isEmail: isEmail))
+                .padding(Theme.Spacing.s3)
+                .background(Theme.Colors.bgSunken)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
+        }
+    }
+
+    private func labeledSecureField(_ title: String) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
+            Text(title).font(Theme.Fonts.caption).foregroundStyle(Theme.Colors.inkSoft)
+            SecureField("", text: $password)
+                .padding(Theme.Spacing.s3)
+                .background(Theme.Colors.bgSunken)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
+        }
     }
 
     private func errorCard(_ message: String) -> some View {
@@ -207,14 +144,31 @@ struct LoginView: View {
                 Text(message)
                     .font(Theme.Fonts.caption)
                     .foregroundStyle(Theme.Colors.inkSoft)
-                Text("login.error.hint")
-                    .font(Theme.Fonts.caption)
-                    .foregroundStyle(Theme.Colors.inkSoft)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Spacing.s4)
         .background(Theme.Colors.dangerSoft)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.l, style: .continuous))
+    }
+}
+
+/// iOS-spezifische Tastatur-/AutoFill-Feinheiten (E-Mail). Auf macOS ein No-op —
+/// UITextContentType/UIKeyboardType existieren dort nicht.
+private struct EmailFieldTraits: ViewModifier {
+    let isEmail: Bool
+    func body(content: Content) -> some View {
+#if os(iOS)
+        if isEmail {
+            content
+                .textContentType(.emailAddress)
+                .keyboardType(.emailAddress)
+                .textInputAutocapitalization(.never)
+        } else {
+            content
+        }
+#else
+        content
+#endif
     }
 }

@@ -131,6 +131,67 @@ final class SessionStore: ObservableObject {
         }
     }
 
+    // MARK: - Echter Login (E-Mail/Passwort, /auth/*)
+
+    /// Anmelden mit E-Mail + Passwort gegen die live API.
+    func signIn(email: String, password: String) async {
+        await runAuth {
+            let r = try await self.api.authLogin(email: email, password: password)
+            // /auth/login liefert keinen Anzeigenamen — E-Mail-Praefix als Notbehelf.
+            let hint = String(email.split(separator: "@").first ?? "").capitalized
+            try await self.completeAuth(
+                token: r.accessToken, expiresIn: r.expiresIn, sub: r.profile.sub,
+                email: r.profile.email, isPlatformAdmin: r.profile.isPlatformAdmin,
+                displayName: hint.isEmpty ? r.profile.email : hint
+            )
+        }
+    }
+
+    /// Konto anlegen (E-Mail + Passwort + Name) — danach sofort angemeldet.
+    func register(email: String, password: String, displayName: String) async {
+        await runAuth {
+            let r = try await self.api.authRegister(email: email, password: password, displayName: displayName)
+            try await self.completeAuth(
+                token: r.accessToken, expiresIn: r.expiresIn, sub: r.profile.sub,
+                email: r.profile.email, isPlatformAdmin: r.profile.isPlatformAdmin,
+                displayName: displayName
+            )
+        }
+    }
+
+    /// Gemeinsamer Rahmen: Spinner + Fehlertext, wie login(persona:).
+    private func runAuth(_ work: () async throws -> Void) async {
+        guard !isLoggingIn else { return }
+        isLoggingIn = true
+        loginError = nil
+        defer { isLoggingIn = false }
+        do { try await work() }
+        catch { loginError = (error as? APIError)?.errorDescription ?? error.localizedDescription }
+    }
+
+    /// Aus der /auth-Antwort eine Session bauen: Token setzen, Vereine holen
+    /// (RLS-scoped, frisch registriert = leer), aktiven Verein = der erste.
+    private func completeAuth(
+        token: String, expiresIn: Int, sub: String, email: String,
+        isPlatformAdmin: Bool, displayName: String
+    ) async throws {
+        // Token ZUERST, damit GET /clubs autorisiert ist.
+        currentToken = token
+        let clubs = (try? await api.listClubs()) ?? []
+        let profile = DevLoginProfile(
+            sub: sub, memberId: nil, displayName: displayName, email: email,
+            clubId: clubs.first?.id, clubRole: nil, isPlatformAdmin: isPlatformAdmin
+        )
+        let session = DevSession(
+            accessToken: token,
+            expiresAt: Date().addingTimeInterval(TimeInterval(expiresIn)),
+            persona: "account",
+            profile: profile
+        )
+        apply(session)
+        persist(session)
+    }
+
 #if DEBUG
     /// Dev-Automation für Smoke-Tests: das Launch-Argument
     /// `-devPersona <coach|owner|treasurer|admin|member|guest>` loggt die

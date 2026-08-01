@@ -1,19 +1,21 @@
 import Foundation
 
-/// Dev-Konfiguration der App.
+/// Laufzeit-Konfiguration der App (Basis-URLs).
 ///
-/// Die App spricht AUSSCHLIESSLICH mit dem lokalen Dev-Stack
-/// (`scripts/dev-stack.sh up`) — niemals mit rollsportmanager.de oder
-/// anderen entfernten Hosts. Der iOS-Simulator erreicht 127.0.0.1 direkt.
+/// DEBUG-Builds sprechen den lokalen Dev-Stack (`scripts/dev-stack.sh up`) auf
+/// 127.0.0.1 an; RELEASE-Builds die LIVE-API `https://api.rollsportmanager.de`
+/// (self-contained Auth, AUTH_MODE=selfhosted). Der Name „DevConfig" bleibt aus
+/// Aufrufer-Kompatibilitaet; „Dev" heisst hier nur „nicht fest verdrahtet".
 enum DevConfig {
-    /// Default-Basis-URL des lokalen Hono-API-Stacks.
+    /// Default-Basis-URL der API: lokal in DEBUG, live in RELEASE.
+#if DEBUG
     static let defaultBaseURL = URL(string: "http://127.0.0.1:3022")!
-
-    /// Origin der lokalen Web-App (dev-stack.sh: `Web: http://localhost:3021`).
-    /// Kür-Share-Links sind serverseitig RELATIV (`/wettkampf/kuer/{token}`) —
-    /// die native App setzt diesen Origin davor (QR/Kopieren/Teilen). Kein
-    /// Prod-Mechanismus; die echte Domain kommt später aus der Konfiguration.
+    /// Origin der Web-App fuer relative Kür-Share-Links (QR/Kopieren/Teilen).
     static let webBaseURL = URL(string: "http://localhost:3021")!
+#else
+    static let defaultBaseURL = URL(string: "https://api.rollsportmanager.de")!
+    static let webBaseURL = URL(string: "https://app.rollsportmanager.de")!
+#endif
 
     /// UserDefaults-Schlüssel, um die Basis-URL in Dev-Szenarien zu
     /// übersteuern (z. B. `xcrun simctl launch ... --setenv` Alternativen
