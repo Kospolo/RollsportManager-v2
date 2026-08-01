@@ -42,7 +42,9 @@ targets:
       properties:
         CFBundleDisplayName: RollsportManager
         CFBundleShortVersionString: "2.0.0"
-        CFBundleVersion: "1"
+        # Build > 123 (hoechste je hochgeladene Build-Nummer der Live-App
+        # de.rollsportmanager.ios, App-id 6758109320) — sonst weist ASC ab.
+        CFBundleVersion: "124"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -57,7 +59,10 @@ targets:
           NSAllowsLocalNetworking: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: de.rollsportmanager.v2
+        # Die Identitaet der LIVE-App im Store (App-id 6758109320) — v2 ersetzt
+        # v1 als neue Version 2.0. War de.rollsportmanager.v2 (separate App).
+        PRODUCT_BUNDLE_IDENTIFIER: de.rollsportmanager.ios
+        DEVELOPMENT_TEAM: 7NY73DS832
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
         SWIFT_EMIT_LOC_STRINGS: YES
