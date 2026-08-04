@@ -1,0 +1,274 @@
+import SwiftUI
+
+/// „Erfolg bearbeiten" als Sheet — Spiegel von `AwardAchievementSheet`
+/// (Anlegen). Das Mitglied steht fest (nur Anzeige, kein `member_id`-Patch,
+/// wie in der Web-Referenz `AchievementFormSheet.tsx`); editierbar sind Titel ·
+/// Wettkampf · Medaille · Platzierung · Datum · Notiz. Die EINE Beere ist
+/// „Änderungen speichern". Darunter liegt „Erfolg löschen" (Bestätigungsdialog
+/// mit destruktiver Aktion — NIE automatisch bestätigt). 403 zeigt einen Alert
+/// und lässt das Sheet offen.
+struct EditAchievementSheet: View {
+    @StateObject private var model: EditAchievementViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var isConfirmingDelete = false
+
+    init(
+        api: APIClient,
+        achievement: MedalAchievement,
+        memberName: String?,
+        onUpdated: @escaping (MedalAchievement) -> Void,
+        onDeleted: @escaping (String) -> Void
+    ) {
+        _model = StateObject(wrappedValue: EditAchievementViewModel(
+            api: api,
+            achievement: achievement,
+            memberName: memberName,
+            onUpdated: onUpdated,
+            onDeleted: onDeleted
+        ))
+    }
+
+    private static let medalOptions: [Medal] = [.gold, .silver, .bronze]
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                    RSMCard {
+                        VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
+                            RSMSectionHeader(
+                                eyebrow: LocalizedStringKey("Erfolg"),
+                                title: LocalizedStringKey("Erfolg bearbeiten")
+                            )
+                            memberField
+                            titleField
+                            competitionField
+                            HStack(alignment: .top, spacing: Theme.Spacing.s3) {
+                                medalField
+                                placementField
+                            }
+                            dateField
+                            noteField
+                        }
+                    }
+                    submitButton
+                    deleteButton
+                }
+                .padding(Theme.Spacing.s5)
+            }
+            .background(Theme.Colors.bgCanvas.ignoresSafeArea())
+            .navigationTitle(Text(verbatim: "Erfolg bearbeiten"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("medaillen.form.cancel") { dismiss() }
+                        .tint(Theme.Colors.inkSoft)
+                }
+            }
+            .alert("medaillen.error.title", isPresented: submitErrorBinding) {
+                Button("medaillen.error.ok", role: .cancel) {}
+            } message: {
+                Text(verbatim: model.submitError ?? "")
+            }
+            .confirmationDialog(
+                Text(verbatim: "Diesen Erfolg löschen?"),
+                isPresented: $isConfirmingDelete,
+                titleVisibility: .visible
+            ) {
+                Button(role: .destructive) {
+                    _Concurrency.Task {
+                        if await model.delete() { dismiss() }
+                    }
+                } label: {
+                    Text(verbatim: "Endgültig löschen")
+                }
+                Button("medaillen.form.cancel", role: .cancel) {}
+            } message: {
+                Text(verbatim: "Das lässt sich nicht rückgängig machen.")
+            }
+        }
+        .presentationDragIndicator(.visible)
+    }
+
+    private var submitErrorBinding: Binding<Bool> {
+        Binding(
+            get: { model.submitError != nil },
+            set: { if !$0 { model.submitError = nil } }
+        )
+    }
+
+    // MARK: - Felder
+
+    /// Mitglied steht fest (kein `member_id`-Patch) — nur Anzeige.
+    private var memberField: some View {
+        fieldGroup(label: "medaillen.form.member", hint: nil, error: nil) {
+            HStack(spacing: Theme.Spacing.s2) {
+                Text(verbatim: model.memberName ?? "—")
+                    .foregroundStyle(Theme.Colors.inkSoft)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .modifier(FieldChrome())
+            .accessibilityLabel(Text("medaillen.form.member"))
+        }
+    }
+
+    private var titleField: some View {
+        fieldGroup(label: "medaillen.form.titleField", hint: nil, error: model.fieldErrors.title) {
+            TextField("medaillen.form.title.placeholder", text: $model.title)
+                .textInputAutocapitalization(.sentences)
+                .modifier(FieldChrome())
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .onChange(of: model.title) { model.fieldErrors.title = nil }
+                .accessibilityLabel(Text("medaillen.form.titleField"))
+        }
+    }
+
+    private var competitionField: some View {
+        fieldGroup(label: "medaillen.form.competition", hint: nil, error: nil) {
+            TextField("medaillen.form.competition.placeholder", text: $model.competition)
+                .textInputAutocapitalization(.words)
+                .modifier(FieldChrome())
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .accessibilityLabel(Text("medaillen.form.competition"))
+        }
+    }
+
+    private var medalField: some View {
+        fieldGroup(label: "medaillen.form.medal", hint: nil, error: nil) {
+            Menu {
+                Button { model.medal = nil } label: { Text("medaillen.form.medal.none") }
+                ForEach(Self.medalOptions, id: \.self) { option in
+                    Button { model.medal = option } label: {
+                        Text(MedaillenL10n.medalLabelKey(option))
+                    }
+                }
+            } label: {
+                menuLabel(
+                    model.medal == nil
+                        ? Text("medaillen.form.medal.none")
+                        : Text(MedaillenL10n.medalLabelKey(model.medal)),
+                    isPlaceholder: false
+                )
+            }
+            .accessibilityLabel(Text("medaillen.form.medal"))
+        }
+    }
+
+    private var placementField: some View {
+        fieldGroup(label: "medaillen.form.placement", hint: "medaillen.form.placement.hint", error: model.fieldErrors.placement) {
+            TextField("medaillen.form.placement.placeholder", text: $model.placementText)
+                .keyboardType(.numberPad)
+                .modifier(FieldChrome())
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .onChange(of: model.placementText) { model.fieldErrors.placement = nil }
+                .accessibilityLabel(Text("medaillen.form.placement"))
+        }
+    }
+
+    private var dateField: some View {
+        fieldGroup(label: "medaillen.form.date", hint: nil, error: nil) {
+            DatePicker(
+                "medaillen.form.date",
+                selection: $model.achievedOn,
+                displayedComponents: [.date]
+            )
+            .datePickerStyle(.compact)
+            .labelsHidden()
+            .tint(Theme.Colors.brand)
+        }
+    }
+
+    private var noteField: some View {
+        fieldGroup(label: "medaillen.form.note", hint: nil, error: nil) {
+            TextField("medaillen.form.note.placeholder", text: $model.note, axis: .vertical)
+                .lineLimit(2...4)
+                .modifier(FieldChrome())
+                .foregroundStyle(Theme.Colors.inkPrimary)
+                .accessibilityLabel(Text("medaillen.form.note"))
+        }
+    }
+
+    private var submitButton: some View {
+        RSMPrimaryButton(title: LocalizedStringKey("Änderungen speichern"), isLoading: model.isSaving) {
+            _Concurrency.Task {
+                if await model.submit() { dismiss() }
+            }
+        }
+    }
+
+    /// „Erfolg löschen" — öffnet den Bestätigungsdialog (destruktive Aktion
+    /// liegt DORT, nie hier direkt). Während Speichern/Löschen deaktiviert.
+    private var deleteButton: some View {
+        Button {
+            isConfirmingDelete = true
+        } label: {
+            HStack(spacing: Theme.Spacing.s2) {
+                if model.isDeleting {
+                    ProgressView().tint(Theme.Colors.danger)
+                }
+                Text(verbatim: "Erfolg löschen")
+                    .font(Theme.Fonts.bodyStrong)
+            }
+            .frame(maxWidth: .infinity, minHeight: Theme.Size.touchTarget)
+            .foregroundStyle(Theme.Colors.danger)
+            .background(Theme.Colors.danger.opacity(0.12))
+            .clipShape(Capsule())
+        }
+        .buttonStyle(RSMPressableButtonStyle())
+        .disabled(model.isSaving || model.isDeleting)
+        .accessibilityLabel(Text(verbatim: "Erfolg löschen"))
+    }
+
+    // MARK: - Bausteine
+
+    private func menuLabel(_ content: Text, isPlaceholder: Bool) -> some View {
+        HStack(spacing: Theme.Spacing.s2) {
+            content
+                .foregroundStyle(isPlaceholder ? Theme.Colors.inkFaint : Theme.Colors.inkPrimary)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.up.chevron.down")
+                .font(Theme.Fonts.caption)
+                .foregroundStyle(Theme.Colors.inkSoft)
+        }
+        .modifier(FieldChrome())
+    }
+
+    private func fieldGroup(
+        label: LocalizedStringKey,
+        hint: LocalizedStringKey?,
+        error: LocalizedStringKey?,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+            Text(label)
+                .font(Theme.Fonts.bodyStrong)
+                .foregroundStyle(Theme.Colors.inkPrimary)
+            content()
+            if let error {
+                Text(error)
+                    .font(Theme.Fonts.caption.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.danger)
+            } else if let hint {
+                Text(hint)
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Einheitliches Eingabefeld-Chrome: Body-Schrift, Mulden-Fläche, Radius M.
+private struct FieldChrome: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(Theme.Fonts.body)
+            .padding(Theme.Spacing.s3)
+            .frame(minHeight: Theme.Size.touchTarget, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.Colors.bgSunken)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m, style: .continuous))
+    }
+}

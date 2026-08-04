@@ -28,7 +28,7 @@ struct SpartenView: View {
         .navigationTitle(Text("sparten.title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            if model.canManage, model.state == .loaded, !model.sparten.isEmpty {
+            if model.canManage, model.state == .loaded {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         route = .create

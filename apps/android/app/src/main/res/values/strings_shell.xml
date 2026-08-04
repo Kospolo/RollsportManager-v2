@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tab-Shell (MainScaffold + Platzhalter). -->
+<resources>
+    <string name="tab_dashboard">Overview</string>
+    <string name="tab_events">Events</string>
+    <string name="tab_members">Members</string>
+    <string name="tab_routines">Routines</string>
+    <string name="tab_finance">Finances</string>
+    <string name="tab_mehr">More</string>
+
+    <string name="dashboard_eyebrow">Signed in</string>
+    <string name="dashboard_welcome">Welcome, %1$s</string>
+    <string name="dashboard_logout">Sign out</string>
+
+    <!-- „Mehr“-Hub (features/mehr/MehrHubScreen.kt). -->
+    <string name="mehr_eyebrow">Club</string>
+    <string name="mehr_section_title">All areas</string>
+    <string name="mehr_back">Back</string>
+    <!-- %1$s = Name des Bereichs, z. B. „Teams“ (nur fuer TalkBack). -->
+    <string name="mehr_back_to_hub">Back from %1$s</string>
+    <string name="mehr_finance_description">Invoices, dues and reminders</string>
+    <string name="mehr_teams_title">Teams</string>
+    <string name="mehr_teams_description">Squads with coaches and skaters</string>
+    <string name="mehr_sparten_title">Departments</string>
+    <string name="mehr_sparten_description">How the club is structured</string>
+</resources>

@@ -15,11 +15,17 @@ struct DashboardCountdownCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
-            Text("dashboard.countdown.eyebrow")
-                .font(Theme.Fonts.eyebrow)
-                .tracking(Theme.Fonts.eyebrowTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(Theme.Colors.brandInk)
+            HStack(spacing: Theme.Spacing.s2) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(WarmPalette.goldDeep)
+                    .accessibilityHidden(true)
+                Text("dashboard.countdown.eyebrow")
+                    .font(Theme.Fonts.eyebrow)
+                    .tracking(Theme.Fonts.eyebrowTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(WarmPalette.goldDeep)
+            }
 
             countdownLine
 
@@ -36,7 +42,7 @@ struct DashboardCountdownCard: View {
                 HStack(spacing: Theme.Spacing.s3) {
                     DashboardAvatarStack(
                         members: entrants,
-                        ringColor: Theme.Colors.brandSoft
+                        ringColor: WarmPalette.goldSoft
                     )
                     // Die Klartext-Zeile trägt die Information — der Stack
                     // ist rein visuell (accessibilityHidden).
@@ -48,7 +54,7 @@ struct DashboardCountdownCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(Theme.Spacing.s5)
-        .background(Theme.Colors.brandSoft)
+        .background(WarmPalette.goldSoft)
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.xl, style: .continuous))
         .accessibilityElement(children: .combine)
     }
@@ -60,13 +66,13 @@ struct DashboardCountdownCard: View {
             Text("dashboard.countdown.today")
                 .font(Theme.Fonts.display)
                 .tracking(Theme.Fonts.displayTracking)
-                .foregroundStyle(Theme.Colors.brandInk)
+                .foregroundStyle(WarmPalette.goldDeep)
         } else {
             HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.s2) {
                 Text("\(days)")
                     .font(Theme.Fonts.display(size: countdownSize))
                     .monospacedDigit()
-                    .foregroundStyle(Theme.Colors.brandInk)
+                    .foregroundStyle(WarmPalette.goldDeep)
                 Text(days == 1
                     ? LocalizedStringKey("dashboard.countdown.unit.one")
                     : LocalizedStringKey("dashboard.countdown.unit.other"))

@@ -109,6 +109,21 @@ final class NewsViewModel: ObservableObject {
         items = Self.sorted(items)
     }
 
+    /// Bearbeitete Nachricht in der Liste ersetzen und neu sortieren (ein
+    /// geänderter Pin-Status kann die Position verschieben). Unbekannte IDs
+    /// werden — defensiv — wie ein Einschub behandelt.
+    func replace(updated news: News) {
+        insert(created: news)
+    }
+
+    /// DELETE /news/{id} durchführen und die Nachricht aus der Liste nehmen.
+    /// Wirft weiter, damit das Sheet 403/Transportfehler als Alert zeigt.
+    func delete(newsId: String) async throws {
+        guard let api else { throw APIError.unexpectedStatus(code: -1) }
+        _ = try await api.deleteNews(newsId: newsId)
+        items.removeAll { $0.id == newsId }
+    }
+
     // MARK: - Helfer
 
     /// Sortierung 1:1 wie der Server: angepinnt zuerst, dann veröffentlichte

@@ -73,7 +73,8 @@ struct MemberCardView: View {
             RSMMonogramTile(
                 name: member.membersFullName,
                 personId: member.id,
-                size: Self.tileSide
+                size: Self.tileSide,
+                avatarUrl: member.avatarUrl
             )
             VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
                 nameLine

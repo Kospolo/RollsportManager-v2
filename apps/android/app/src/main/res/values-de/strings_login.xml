@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_eyebrow">Dev-Login</string>
+    <string name="login_title">Wer läuft heute?</string>
+    <string name="login_subtitle">Wähle eine Demo-Persona des RSV Neckarsulm — ohne Passwort, nur lokaler Dev-Stack.</string>
+
+    <string name="login_dev_banner_title">Entwicklungs-Build</string>
+    <string name="login_dev_banner_message">Diese App spricht nur mit dem lokalen Dev-Stack (10.0.2.2:3022). Nichts hier ist Produktion.</string>
+
+    <string name="login_error_title">Anmeldung fehlgeschlagen</string>
+    <string name="login_error_hint">Läuft der Dev-Stack? scripts/dev-stack.sh up</string>
+
+    <string name="login_a11y_persona">Anmelden als %1$s</string>
+
+    <string name="login_persona_coach_role">Trainerin</string>
+    <string name="login_persona_coach_description">Training, Küren, Anwesenheit — der Alltagsblick.</string>
+    <string name="login_persona_admin_role">Vereins-Admin</string>
+    <string name="login_persona_admin_description">Mitglieder, Teams, Rollen und Einstellungen.</string>
+    <string name="login_persona_treasurer_role">Kassenwartin</string>
+    <string name="login_persona_treasurer_description">Rechnungen, Zahlungen und Mahnwesen.</string>
+    <string name="login_persona_member_role">Mitglied</string>
+    <string name="login_persona_member_description">Termine, Zu-/Absagen und eigene Zahlungen.</string>
+    <string name="login_persona_guest_role">Gasttrainerin</string>
+    <string name="login_persona_guest_description">Befristeter Trainer-Zugang mit eingeschränkten Rechten.</string>
+</resources>

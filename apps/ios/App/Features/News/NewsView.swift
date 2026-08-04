@@ -57,7 +57,12 @@ struct NewsView: View {
         }
         .sheet(item: $selection) { selected in
             let item = latest(for: selected)
-            NewsDetailSheet(news: item, authorName: model.authorName(for: item))
+            NewsDetailSheet(
+                news: item,
+                authorName: model.authorName(for: item),
+                api: session.api,
+                model: model
+            )
         }
         .alert("news.error.title", isPresented: refreshErrorBinding) {
             Button("news.error.ok", role: .cancel) {}

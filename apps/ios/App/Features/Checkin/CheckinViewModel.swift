@@ -25,6 +25,9 @@ final class CheckinViewModel: ObservableObject {
     /// Fehler beim Pull-to-Refresh, wenn schon Daten da sind (Alert statt
     /// Fehler-Screen).
     @Published var refreshErrorMessage: String?
+    /// Fehler beim Löschen eines Check-ins (Alert). Das Recht selbst erzwingt
+    /// der Server (RLS/Rollencheck) — ein 403 wird zum Hinweis.
+    @Published var deleteErrorMessage: String?
 
     private(set) var myMemberId: String = ""
     private(set) var myDisplayName: String = ""
@@ -183,6 +186,24 @@ final class CheckinViewModel: ObservableObject {
         )
         let created = try await api.createCheckin(input)
         insert(created)
+    }
+
+    // MARK: - Löschen (nur Trainerstab)
+
+    /// Entfernt einen Check-in (DELETE /checkins/{id}) und nimmt ihn sofort aus
+    /// der Liste — Historie und Kennzahlen stimmen damit direkt. In der UI nur
+    /// dem Trainerstab angeboten; die verbindliche Berechtigung erzwingt der
+    /// Server (RLS/Rollencheck). Fehler (inkl. 403) landen als Hinweis im Alert.
+    func deleteCheckin(_ checkin: Checkin) async {
+        guard let api else { return }
+        do {
+            _ = try await api.deleteCheckin(id: checkin.id)
+            checkins.removeAll { $0.id == checkin.id }
+        } catch {
+            deleteErrorMessage = error.isForbiddenAPIError
+                ? String(localized: "checkin.forbidden")
+                : Self.friendlyMessage(error)
+        }
     }
 
     private func insert(_ checkin: Checkin) {

@@ -257,6 +257,16 @@ export const apiRepository: DataRepository = {
       throw error;
     }
   },
+  async createRoutine(input) {
+    const created = await apiClient.postRoutines({
+      club_id: activeClubId(),
+      title: input.title,
+      category: input.category,
+      team_id: input.teamId,
+    });
+    // Frisch angelegt: noch keine Marker/Wertungen — beides leer.
+    return mapRoutine(created, [], []);
+  },
   async attachRoutineAudio(routineId, file) {
     // EIN Schritt: multipart DIREKT an /routines/{id}/audio (Server erzeugt den
     // storage_key). mediaError macht aus 402 einen ClubProRequiredError.

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Login-Feature. Konvention: pro Feature EIGENE strings_<feature>.xml,
+     Default = ENGLISCH, Deutsch in values-de/ — beide IMMER vollständig. -->
+<resources>
+    <string name="login_eyebrow">Dev login</string>
+    <string name="login_title">Who is skating today?</string>
+    <string name="login_subtitle">Pick a demo persona of RSV Neckarsulm — no password, local dev stack only.</string>
+
+    <string name="login_dev_banner_title">Development build</string>
+    <string name="login_dev_banner_message">This app only talks to the local dev stack (10.0.2.2:3022). Nothing here is production.</string>
+
+    <string name="login_error_title">Sign-in failed</string>
+    <string name="login_error_hint">Is the dev stack running? scripts/dev-stack.sh up</string>
+
+    <string name="login_a11y_persona">Sign in as %1$s</string>
+
+    <string name="login_persona_coach_role">Coach</string>
+    <string name="login_persona_coach_description">Training, routines, attendance — the everyday view.</string>
+    <string name="login_persona_admin_role">Club admin</string>
+    <string name="login_persona_admin_description">Members, teams, roles and settings.</string>
+    <string name="login_persona_treasurer_role">Treasurer</string>
+    <string name="login_persona_treasurer_description">Invoices, payments and dunning.</string>
+    <string name="login_persona_member_role">Member</string>
+    <string name="login_persona_member_description">Events, RSVPs and own payments.</string>
+    <string name="login_persona_guest_role">Guest coach</string>
+    <string name="login_persona_guest_description">Temporary coach access with limited rights.</string>
+</resources>

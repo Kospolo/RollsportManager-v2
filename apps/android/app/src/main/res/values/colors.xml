@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- bg.canvas Light — nur für Window-Background/Launcher; alles andere
+         kommt aus den generierten Compose-Tokens (ui/theme/Theme.kt). -->
+    <color name="rsm_canvas">#FBF4EC</color>
+    <!-- brand (Beere) für den Launcher-Icon-Hintergrund. -->
+    <color name="rsm_brand">#B23A5C</color>
+</resources>

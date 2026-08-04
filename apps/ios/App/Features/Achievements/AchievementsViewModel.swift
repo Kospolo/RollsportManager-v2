@@ -132,6 +132,19 @@ final class AchievementsViewModel: ObservableObject {
         }
     }
 
+    /// Bearbeiteten Erfolg lokal ersetzen; Sortierung (achieved_on desc) halten,
+    /// da sich das Datum geändert haben kann.
+    func apply(updated achievement: MedalAchievement) {
+        guard let index = achievements.firstIndex(where: { $0.id == achievement.id }) else { return }
+        achievements[index] = achievement
+        achievements.sort { $0.achievedOn > $1.achievedOn }
+    }
+
+    /// Gelöschten Erfolg lokal entfernen (die Ableitungen aktualisieren sich).
+    func remove(id: String) {
+        achievements.removeAll { $0.id == id }
+    }
+
     // MARK: - Helfer
 
     static func friendlyMessage(_ error: Error) -> String {

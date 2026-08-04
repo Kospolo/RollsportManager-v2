@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Teams“ (features/teams/**) — Standardsprache Englisch. -->
+<resources>
+    <string name="teams_title">Teams</string>
+    <string name="teams_loading">Loading teams…</string>
+    <string name="teams_error_title">Teams didn\'t load</string>
+    <string name="teams_error_retry">Try again</string>
+
+    <string name="teams_search_placeholder">Search team or age group</string>
+    <string name="teams_search_clear">Clear search</string>
+
+    <string name="teams_empty_title">No teams yet</string>
+    <string name="teams_empty_message">As soon as the club sets up squads, they show up here.</string>
+    <string name="teams_empty_reset">Clear search</string>
+
+    <string name="teams_group_no_sparte">Without department</string>
+    <plurals name="teams_group_count">
+        <item quantity="one">%1$d team</item>
+        <item quantity="other">%1$d teams</item>
+    </plurals>
+    <plurals name="teams_skater_count">
+        <item quantity="one">%1$d skater</item>
+        <item quantity="other">%1$d skaters</item>
+    </plurals>
+    <plurals name="teams_coach_count">
+        <item quantity="one">%1$d coach</item>
+        <item quantity="other">%1$d coaches</item>
+    </plurals>
+
+    <string name="teams_back">Back</string>
+    <string name="teams_detail_eyebrow">Team</string>
+    <string name="teams_detail_coaches_eyebrow">Coaching</string>
+    <string name="teams_detail_skaters_eyebrow">Squad</string>
+    <string name="teams_detail_no_coaches">No coach assigned yet.</string>
+    <string name="teams_detail_no_skaters">Nobody in this squad yet.</string>
+    <string name="teams_detail_gone_title">Team not available</string>
+    <string name="teams_detail_gone_message">This team no longer exists, or you can\'t see it.</string>
+</resources>

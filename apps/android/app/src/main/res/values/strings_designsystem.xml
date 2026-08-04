@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- DesignSystem-Bausteine (Mahnstufen-Ampel §3.6 — Stufe 1 ist Info/Petrol,
+     NIE Honig; Honig gehört exklusiv der Musik). -->
+<resources>
+    <string name="rsm_status_dunning_0">Open</string>
+    <string name="rsm_status_dunning_1">Reminder</string>
+    <string name="rsm_status_dunning_2">1st notice</string>
+    <string name="rsm_status_dunning_3">2nd notice</string>
+</resources>

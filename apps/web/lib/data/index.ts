@@ -22,6 +22,7 @@ export type {
   AddMarkerInput,
   AssignableRole,
   CreateEventInput,
+  CreateRoutineInput,
   CreateMemberInput,
   CreateTeamInput,
   DataRepository,

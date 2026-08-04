@@ -29,6 +29,8 @@ import { problem } from '../middleware/error.js';
 import { withServiceRole } from '../db.js';
 import { clientIp, enforceRateLimits } from '../lib/rate-limit.js';
 import { verifyPassword, hashPassword, DUMMY_PASSWORD_HASH } from '../lib/password.js';
+import { signAccessToken } from '../lib/token.js';
+import { isPlatformAdmin } from '../lib/guards.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { sendMail } from '../lib/mailer.js';
 import { renderPasswordReset } from '../lib/mail-templates/password-reset.js';
@@ -158,6 +160,63 @@ authLoginRouter.openapi(
           sub: user.id,
           email: user.email,
           is_platform_admin: user.is_platform_admin,
+        },
+      },
+      200,
+    );
+  },
+);
+
+// ---------------------------------------------------------------------------
+// POST /auth/refresh — Zugangstoken mit FRISCHEN Claims neu ausstellen.
+//
+// Authentifiziert (ein — auch veralteter — gültiger Token genügt: Signatur +
+// Ablauf zählen, die club_roles darin dürfen alt sein). Baut die club_roles neu
+// aus der DB und gibt einen frischen Token zurück. Der Client ruft das nach
+// einer Mitgliedschaftsänderung (Verein gegründet/beigetreten) auf ODER genau
+// dann, wenn eine vereinsbezogene Route unerwartet 403 „Not a member" liefert —
+// so heilt ein veralteter Token, ohne dass sich die Person neu anmelden muss.
+// ---------------------------------------------------------------------------
+authLoginRouter.openapi(
+  createRoute({
+    method: 'post',
+    path: '/auth/refresh',
+    tags: ['auth'],
+    summary: 'Reissue an access token with fresh club memberships from the DB',
+    description:
+      'Authenticated. Rebuilds club_roles from the database and returns a new signed access ' +
+      'token. Call after a membership change (founding/joining a club) or when a club-scoped ' +
+      'route unexpectedly returns 403 — so a stale token self-heals without a re-login.',
+    security: [{ bearerAuth: [] }],
+    responses: {
+      200: jsonContent(loginResponseSchema, 'Fresh access token + minimal profile'),
+      401: jsonContent(problemSchema, 'Missing or invalid token'),
+    },
+  }),
+  async (c) => {
+    const claims = c.get('claims');
+    const user = await withServiceRole('refresh user lookup', async (tx) => {
+      const rows = await tx`
+        select id, email
+          from auth.users
+         where id = ${claims.sub}
+         limit 1`;
+      return rows[0] as { id: string; email: string } | undefined;
+    });
+    if (!user) {
+      throw problem(401, 'Unauthorized', 'Ungültige Sitzung. / Invalid session.');
+    }
+    const platformAdmin = isPlatformAdmin(claims);
+    const token = await signAccessToken(user.id, platformAdmin);
+    return c.json(
+      {
+        token_type: 'Bearer' as const,
+        access_token: token,
+        expires_in: TOKEN_TTL_SECONDS,
+        profile: {
+          sub: user.id,
+          email: user.email,
+          is_platform_admin: platformAdmin,
         },
       },
       200,

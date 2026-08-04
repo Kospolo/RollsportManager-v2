@@ -205,13 +205,25 @@ final class SessionStore: ObservableObject {
 
     /// Vereine neu holen und den ersten als aktiv setzen (Session neu bauen —
     /// DevLoginProfile ist unveränderlich).
+    /// Beim App-Start aufgerufen: Rolle + aktiven Verein frisch aus /me holen.
+    /// Repariert eine Sitzung, die noch vom alten Code mit Rolle `nil` gespeichert
+    /// wurde (sonst blieben alle Anlegen-/Verwalten-Knöpfe unsichtbar, bis man
+    /// sich ab- und wieder anmeldet). Fehler still — offline bleibt der Stand.
+    func refreshOnLaunchIfNeeded() async {
+        guard isAuthenticated, !needsClubOnboarding else { return }
+        try? await reloadActiveClub()
+    }
+
     private func reloadActiveClub() async throws {
         guard let s = session else { return }
-        let clubs = (try? await api.listClubs()) ?? []
         let p = s.profile
+        // Rolle + memberId frisch aus /me — sonst bliebe nach dem GRÜNDEN eines
+        // Vereins die Rolle nil (kein Owner-Recht im eigenen Verein).
+        let me = try? await api.getMyProfile()
+        let active = me?.memberships.first(where: { $0.status == .active }) ?? me?.memberships.first
         let np = DevLoginProfile(
-            sub: p.sub, memberId: p.memberId, displayName: p.displayName, email: p.email,
-            clubId: clubs.first?.id, clubRole: p.clubRole, isPlatformAdmin: p.isPlatformAdmin
+            sub: p.sub, memberId: active?.id ?? p.memberId, displayName: p.displayName, email: p.email,
+            clubId: active?.clubId, clubRole: active?.role, isPlatformAdmin: p.isPlatformAdmin
         )
         let ns = DevSession(accessToken: s.accessToken, expiresAt: s.expiresAt, persona: s.persona, profile: np)
         apply(ns)
@@ -234,12 +246,16 @@ final class SessionStore: ObservableObject {
         token: String, expiresIn: Int, sub: String, email: String,
         isPlatformAdmin: Bool, displayName: String
     ) async throws {
-        // Token ZUERST, damit GET /clubs autorisiert ist.
+        // Token ZUERST, damit /me autorisiert ist.
         currentToken = token
-        let clubs = (try? await api.listClubs()) ?? []
+        // /me trägt die ECHTE Rolle je Mitgliedschaft. Ohne diese Auflösung
+        // stand clubRole auf nil → keine Rechte → der Vorstand bekam überall
+        // „keine Berechtigung" (Verwaltung, Schließfächer, Budget, Sparten …).
+        let me = try? await api.getMyProfile()
+        let active = me?.memberships.first(where: { $0.status == .active }) ?? me?.memberships.first
         let profile = DevLoginProfile(
-            sub: sub, memberId: nil, displayName: displayName, email: email,
-            clubId: clubs.first?.id, clubRole: nil, isPlatformAdmin: isPlatformAdmin
+            sub: sub, memberId: active?.id, displayName: displayName, email: email,
+            clubId: active?.clubId, clubRole: active?.role, isPlatformAdmin: isPlatformAdmin
         )
         let session = DevSession(
             accessToken: token,

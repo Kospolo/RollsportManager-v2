@@ -59,13 +59,33 @@ struct RoutineWaveformView: View {
 
     // MARK: - Balken (Canvas)
 
+    /// Server-Peaks, wenn vorhanden; sonst eine ruhige, deterministische
+    /// Fallback-Wellenform — der Player wirkt nie leer, auch wenn zur
+    /// hochgeladenen Datei (noch) keine Peaks berechnet wurden.
+    private var effectivePeaks: [Double] {
+        guard peaks.isEmpty else { return peaks }
+        return (0..<56).map { i in
+            let x = Double(i)
+            return 0.32 + 0.55 * abs(sin(x * 0.5) * 0.6 + sin(x * 0.17) * 0.4)
+        }
+    }
+
     private var bars: some View {
         Canvas { context, size in
-            guard !peaks.isEmpty else { return }
-            let gap = size.width / CGFloat(peaks.count)
+            let source = effectivePeaks
+            guard !source.isEmpty else { return }
+            let gap = size.width / CGFloat(source.count)
             let barWidth = gap * 0.62
-            let playedUntil = Int(Double(peaks.count) * fraction)
-            for (index, peak) in peaks.enumerated() {
+            let playedUntil = Int(Double(source.count) * fraction)
+            // Der GESPIELTE Teil ist die Beere: ein Korall→Gold-Verlauf über die
+            // ganze Breite lässt den Player (und die Küren-Kacheln) auffallen —
+            // statt flachem Honig, das auf dem warmen Plum-Grund unterging.
+            let playedShading = GraphicsContext.Shading.linearGradient(
+                Gradient(colors: [WarmPalette.coral, WarmPalette.gold]),
+                startPoint: .zero,
+                endPoint: CGPoint(x: size.width, y: 0)
+            )
+            for (index, peak) in source.enumerated() {
                 let height = max(0.09, min(1, peak)) * (size.height - 18)
                 let rect = CGRect(
                     x: CGFloat(index) * gap + (gap - barWidth) / 2,
@@ -76,7 +96,7 @@ struct RoutineWaveformView: View {
                 let path = Path(roundedRect: rect, cornerRadius: barWidth / 2)
                 context.fill(
                     path,
-                    with: .color(index <= playedUntil ? Theme.Colors.honey : Theme.Colors.waveOff)
+                    with: index <= playedUntil ? playedShading : .color(Theme.Colors.waveOff)
                 )
             }
         }

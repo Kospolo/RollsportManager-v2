@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tab_dashboard">Übersicht</string>
+    <string name="tab_events">Termine</string>
+    <string name="tab_members">Mitglieder</string>
+    <string name="tab_routines">Küren</string>
+    <string name="tab_finance">Finanzen</string>
+    <string name="tab_mehr">Mehr</string>
+
+    <string name="dashboard_eyebrow">Angemeldet</string>
+    <string name="dashboard_welcome">Willkommen, %1$s</string>
+    <string name="dashboard_logout">Abmelden</string>
+
+    <!-- „Mehr“-Hub (features/mehr/MehrHubScreen.kt). -->
+    <string name="mehr_eyebrow">Verein</string>
+    <string name="mehr_section_title">Alle Bereiche</string>
+    <string name="mehr_back">Zurück</string>
+    <!-- %1$s = Name des Bereichs, z. B. „Teams“ (nur fuer TalkBack). -->
+    <string name="mehr_back_to_hub">Zurück aus %1$s</string>
+    <string name="mehr_finance_description">Rechnungen, Beiträge und Mahnungen</string>
+    <string name="mehr_teams_title">Teams</string>
+    <string name="mehr_teams_description">Mannschaften mit Trainer:innen und Läufer:innen</string>
+    <string name="mehr_sparten_title">Sparten</string>
+    <string name="mehr_sparten_description">Wie der Verein gegliedert ist</string>
+</resources>

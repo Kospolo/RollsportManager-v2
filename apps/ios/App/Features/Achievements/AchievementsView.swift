@@ -16,6 +16,9 @@ struct AchievementsView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = AchievementsViewModel()
     @State private var isAwarding = false
+    /// Zu bearbeitender Erfolg (öffnet das Bearbeiten/Löschen-Sheet); nur für
+    /// den Trainerstab (`model.canManage`) — Rechte-Gate wie beim „+".
+    @State private var editing: MedalAchievement?
 
     var body: some View {
         Group {
@@ -58,6 +61,15 @@ struct AchievementsView: View {
                 clubId: session.clubId,
                 members: model.sortedMembers,
                 onCreated: { model.insert(created: $0) }
+            )
+        }
+        .sheet(item: $editing) { achievement in
+            EditAchievementSheet(
+                api: session.api,
+                achievement: achievement,
+                memberName: model.member(for: achievement).map(MedaillenL10n.memberName),
+                onUpdated: { model.apply(updated: $0) },
+                onDeleted: { model.remove(id: $0) }
             )
         }
         .alert("medaillen.error.title", isPresented: refreshErrorBinding) {
@@ -155,11 +167,7 @@ struct AchievementsView: View {
             } else {
                 MineSummaryView(achievements: model.mine)
                 ForEach(model.mine) { achievement in
-                    AchievementCardView(
-                        achievement: achievement,
-                        member: model.member(for: achievement),
-                        showMember: false
-                    )
+                    card(for: achievement, showMember: false)
                 }
             }
         }
@@ -181,17 +189,36 @@ struct AchievementsView: View {
                 }
             } else {
                 ForEach(model.visibleClubAchievements) { achievement in
-                    AchievementCardView(
-                        achievement: achievement,
-                        member: model.member(for: achievement),
-                        showMember: true
-                    )
+                    card(for: achievement, showMember: true)
                 }
             }
         }
     }
 
     // MARK: - Bausteine
+
+    /// Erfolgs-Karte. Für den Trainerstab (`model.canManage`) tippbar → öffnet
+    /// das Bearbeiten/Löschen-Sheet (Rechte-Gate wie beim „+"). Sonst rein
+    /// lesend wie bisher.
+    @ViewBuilder
+    private func card(for achievement: MedalAchievement, showMember: Bool) -> some View {
+        let cardView = AchievementCardView(
+            achievement: achievement,
+            member: model.member(for: achievement),
+            showMember: showMember
+        )
+        if model.canManage {
+            Button {
+                editing = achievement
+            } label: {
+                cardView
+            }
+            .buttonStyle(RSMPressableButtonStyle())
+            .accessibilityHint(Text(verbatim: "Zum Bearbeiten tippen"))
+        } else {
+            cardView
+        }
+    }
 
     private func sectionHeader(title: LocalizedStringKey, sub: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: Theme.Spacing.s1) {

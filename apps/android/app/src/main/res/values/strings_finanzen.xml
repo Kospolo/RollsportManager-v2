@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature "Finanzen" (ui/features/finance) — Default ENGLISCH.
+     Wording gespiegelt aus der iOS-Referenz (Localizable.xcstrings, finance.*). -->
+<resources>
+
+    <!-- Zustände -->
+    <string name="finance_loading">Loading finances…</string>
+    <string name="finance_error_title">Couldn\'t load finances</string>
+    <string name="finance_error_retry">Try again</string>
+    <string name="finance_error_forbidden">Your role doesn\'t have access to finances.</string>
+
+    <!-- KPI-Karte -->
+    <string name="finance_kpi_eyebrow">Fees &amp; finances</string>
+    <string name="finance_kpi_title">At a glance</string>
+    <string name="finance_kpi_sum_eyebrow">Total open</string>
+    <string name="finance_kpi_sum_caption">Sum of all open invoices</string>
+    <string name="finance_kpi_count_eyebrow">Open items</string>
+    <string name="finance_kpi_count_caption">Invoices awaiting payment</string>
+
+    <!-- Offene-Posten-Liste -->
+    <string name="finance_list_eyebrow">Open items</string>
+    <string name="finance_list_title">Who still owes</string>
+    <string name="finance_filter_all">All</string>
+    <string name="finance_filter_open">Open</string>
+    <string name="finance_filter_reminded">Reminded</string>
+    <string name="finance_filter_dunned">Dunned</string>
+    <string name="finance_list_empty_title">Nothing open</string>
+    <string name="finance_list_empty_message">No open invoices in this view.</string>
+    <plurals name="finance_list_footer_count">
+        <item quantity="one">%1$d item shown</item>
+        <item quantity="other">%1$d items shown</item>
+    </plurals>
+    <string name="finance_list_footer_total">Total open: %1$s</string>
+    <string name="finance_member_unknown">Member</string>
+
+    <!-- Mahn-Automatik-Karte -->
+    <string name="finance_dunning_eyebrow">Dunning automation</string>
+    <string name="finance_dunning_title">How reminders go out</string>
+    <string name="finance_dunning_stage1_day">+7 days</string>
+    <string name="finance_dunning_stage1_title">Friendly reminder</string>
+    <string name="finance_dunning_stage1_mode">automatic</string>
+    <string name="finance_dunning_stage2_day">+21 days</string>
+    <string name="finance_dunning_stage2_title">1st dunning notice</string>
+    <string name="finance_dunning_stage2_mode">automatic, with preview</string>
+    <string name="finance_dunning_stage3_day">+35 days</string>
+    <string name="finance_dunning_stage3_title">2nd dunning notice</string>
+    <string name="finance_dunning_stage3_mode">manual approval required</string>
+    <string name="finance_dunning_stage4_day">+49 days</string>
+    <string name="finance_dunning_stage4_title">Handover to the board</string>
+    <string name="finance_dunning_stage4_mode">manual only</string>
+    <string name="finance_dunning_note1">Level 2+ is never sent automatically — the board approves first.</string>
+    <string name="finance_dunning_note2">Before anything goes out you see the e-mail for every recipient.</string>
+    <string name="finance_dunning_forbidden_title">Treasurer only</string>
+    <string name="finance_dunning_forbidden_message">Only the treasurer and the board can start a dunning run — your role has read access here.</string>
+    <string name="finance_dunning_error_title">Dunning preview failed</string>
+    <string name="finance_dunning_preview">Dunning run (preview)</string>
+
+    <!-- Ergebnis-BottomSheet (dry_run) -->
+    <string name="finance_preview_title">Dunning preview</string>
+    <string name="finance_preview_banner">Preview only — nothing has been sent.</string>
+    <string name="finance_preview_summary">%1$d automatic · %2$d need approval · %3$d no action</string>
+    <string name="finance_preview_as_of">As of %1$s</string>
+    <string name="finance_preview_group_auto">Automatic</string>
+    <string name="finance_preview_group_pending">Awaiting approval</string>
+    <string name="finance_preview_group_none">No action</string>
+    <plurals name="finance_preview_overdue">
+        <item quantity="one">%1$d day overdue</item>
+        <item quantity="other">%1$d days overdue</item>
+    </plurals>
+    <string name="finance_preview_level">Level %1$d → %2$d</string>
+    <string name="finance_preview_empty_title">Nothing to dun</string>
+    <string name="finance_preview_empty_message">There are no open items for this run.</string>
+    <string name="finance_preview_close">Done</string>
+
+</resources>

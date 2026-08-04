@@ -149,9 +149,15 @@ memberProfileRouter.openapi(
       // Stammkopf-Redaktion 1:1 wie der Roster (getestet): Kontaktfelder nach
       // contactVisible, Verwaltungs-Kontakt nach privileged, joined_on nach
       // joinedOnVisible, Selbst-Profil nach redactSelfProfile.
+      // Foto-Anzeige-Wache (Kinderschutz, 0056): das Profilfoto nur bei
+      // wirksamer 'photos_internal'-Einwilligung ODER fuer die Person selbst/
+      // ihre Vormuende — rollenunabhaengig, genau wie die Galerie unten.
       const withAvatar = {
         ...head,
-        avatar_url: avatarUrlFor((head['avatar_key'] as string | null) ?? null),
+        avatar_url:
+          photoConsent || selfOrGuardian
+            ? avatarUrlFor((head['avatar_key'] as string | null) ?? null)
+            : null,
       };
       const redactedMember = redactSelfProfile(
         redactMemberForViewer(withAvatar, privileged, joinedOnVisible, contactVisible),

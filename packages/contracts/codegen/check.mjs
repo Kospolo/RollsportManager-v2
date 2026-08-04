@@ -63,6 +63,9 @@ const BODYLESS_MUTATIONS = new Set([
   "POST /clubs/{clubId}/members/{memberId}/approve",
   "POST /clubs/{clubId}/members/{memberId}/reject",
   "POST /clubs/{clubId}/join-code/revoke",
+  // Token-Erneuerung: identifiziert die Person am (auch veralteten) Bearer-Token,
+  // baut die Claims frisch aus der DB — es gibt nichts im Rumpf zu uebergeben.
+  "POST /auth/refresh",
 ]);
 /** Routes that are public by design (no bearerAuth). */
 const PUBLIC_ROUTES = new Set([

@@ -11,6 +11,8 @@ import SwiftUI
 struct MembersListView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = MembersViewModel()
+    /// „Mitglied anlegen"-Sheet (auch ohne E-Mail — reiner Datensatz).
+    @State private var showCreate = false
 
     /// Haptik zur Chip-Auswahl. Die App hatte bisher NULL Haptik — ein Filter,
     /// der die Liste umbaut, darf sich im Daumen bemerkbar machen.
@@ -41,7 +43,24 @@ struct MembersListView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("tab.members"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar { groupMenu }
+        .toolbar {
+            groupMenu
+            if session.permissions.isClubAdmin {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Mitglied anlegen"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            AdminMemberCreateSheet(
+                api: session.api,
+                clubId: session.clubId,
+                onCreated: {
+                    _Concurrency.Task { await viewModel.load(api: session.api, clubId: session.clubId) }
+                }
+            )
+        }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
 #if DEBUG
         .navigationDestination(

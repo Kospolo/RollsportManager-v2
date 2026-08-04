@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Framework-Theme nur als Host — das eigentliche Theming macht RsmTheme
+         (Compose) aus den generierten Heimspiel-Tokens. -->
+    <style name="Theme.RsmV2" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/rsm_canvas</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

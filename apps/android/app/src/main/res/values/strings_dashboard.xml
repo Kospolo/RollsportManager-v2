@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature Dashboard — mirrors the iOS Localizable.xcstrings dashboard.* keys. -->
+<resources>
+    <!-- Greeting + profile menu -->
+    <string name="dashboard_greeting_morning">Good morning, %1$s!</string>
+    <string name="dashboard_greeting_day">Hello, %1$s!</string>
+    <string name="dashboard_greeting_evening">Good evening, %1$s!</string>
+    <string name="dashboard_a11y_profile_menu">Profile and sign out</string>
+    <string name="dashboard_menu_logout">Sign out</string>
+
+    <!-- Loading / errors -->
+    <string name="dashboard_loading">Loading club data …</string>
+    <string name="dashboard_error_title">Something went wrong</string>
+    <string name="dashboard_error_retry">Try again</string>
+    <string name="dashboard_error_refresh">Refresh didn\'t work</string>
+
+    <!-- KPI card -->
+    <string name="dashboard_kpi_eyebrow">Overview</string>
+    <string name="dashboard_kpi_title">Where the club stands</string>
+    <string name="dashboard_kpi_members_eyebrow">Active members</string>
+    <string name="dashboard_kpi_members_caption">in the club</string>
+    <string name="dashboard_kpi_dues_eyebrow">Open dues</string>
+    <string name="dashboard_kpi_dues_caption_empty">no open items visible</string>
+    <plurals name="dashboard_kpi_dues_caption">
+        <item quantity="one">1 open item · from your view</item>
+        <item quantity="other">%1$d open items · from your view</item>
+    </plurals>
+    <string name="dashboard_kpi_next_eyebrow">Next event</string>
+    <string name="dashboard_kpi_next_caption_none">nothing scheduled in the next 14 days</string>
+
+    <!-- Relative days -->
+    <string name="dashboard_date_today">Today</string>
+    <string name="dashboard_date_tomorrow">Tomorrow</string>
+
+    <!-- Competition countdown -->
+    <string name="dashboard_countdown_eyebrow">Competition countdown</string>
+    <string name="dashboard_countdown_today">Competition day is today!</string>
+    <plurals name="dashboard_countdown_unit">
+        <item quantity="one">day to go</item>
+        <item quantity="other">days to go</item>
+    </plurals>
+    <string name="dashboard_countdown_entrants">%1$d registered</string>
+
+    <!-- Events card -->
+    <string name="dashboard_events_eyebrow">Schedule</string>
+    <string name="dashboard_events_title">Today &amp; soon</string>
+    <string name="dashboard_events_empty_title">No events coming up</string>
+    <string name="dashboard_events_empty_message">Nothing is scheduled for the next two weeks.</string>
+    <string name="dashboard_events_more">+%1$d more in the next 14 days</string>
+    <string name="dashboard_events_responses">%1$d going · %2$d declined · %3$d open</string>
+    <string name="dashboard_events_type_competition">Competition</string>
+
+    <!-- Tasks card -->
+    <string name="dashboard_tasks_eyebrow">Tasks</string>
+    <string name="dashboard_tasks_title">What needs doing</string>
+    <string name="dashboard_tasks_empty_title">All done</string>
+    <string name="dashboard_tasks_empty_message">Nothing on the list right now.</string>
+    <string name="dashboard_tasks_due">due %1$s</string>
+    <string name="dashboard_tasks_overdue">overdue since %1$s</string>
+    <string name="dashboard_tasks_error_title">Checking off didn\'t work</string>
+    <string name="dashboard_tasks_a11y_toggle">Task: %1$s</string>
+    <string name="dashboard_tasks_a11y_done">done</string>
+    <string name="dashboard_tasks_a11y_open">open</string>
+    <string name="dashboard_tasks_a11y_hint">Changes the done status.</string>
+</resources>

@@ -9,6 +9,8 @@ import SwiftUI
 struct CompetitionsView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = CompetitionsViewModel()
+    @State private var showCreate = false
+    @State private var manageTarget: CompetitionEditTarget?
 #if DEBUG
     @State private var devDetail: CompetitionDetailTarget?
 #endif
@@ -27,6 +29,22 @@ struct CompetitionsView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("wettkampf.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if session.permissions.isClubAdmin {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neuer Wettkampf"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            CompetitionCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
+        }
+        .sheet(item: $manageTarget) { target in
+            CompetitionManageSheet(model: model, competition: target.competition)
+        }
 #if DEBUG
         .navigationDestination(item: $devDetail) { target in
             CompetitionDetailView(
@@ -139,6 +157,15 @@ struct CompetitionsView: View {
                 }
                 .buttonStyle(RSMPressableButtonStyle())
                 .accessibilityHint(Text("wettkampf.card.a11y.open"))
+                .contextMenu {
+                    if session.permissions.isClubAdmin {
+                        Button {
+                            manageTarget = CompetitionEditTarget(competition: competition)
+                        } label: {
+                            Label { Text(verbatim: "Bearbeiten") } icon: { Image(systemName: "pencil") }
+                        }
+                    }
+                }
             }
         }
     }
@@ -159,6 +186,13 @@ struct CompetitionsView: View {
             set: { if !$0 { model.refreshErrorMessage = nil } }
         )
     }
+}
+
+/// Identifiable-Wrapper um den zu bearbeitenden Wettkampf — `Competition` selbst
+/// ist nicht `Identifiable`, `sheet(item:)` braucht das aber.
+private struct CompetitionEditTarget: Identifiable {
+    let competition: Competition
+    var id: String { competition.id }
 }
 
 #if DEBUG

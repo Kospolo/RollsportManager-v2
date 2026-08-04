@@ -89,6 +89,14 @@ final class DocumentsViewModel: ObservableObject {
         }
     }
 
+    /// Ist die Ablage nutzbar (PRO aktiv, Modul gebucht)? Nur dann zeigt der
+    /// Root-View verwaltenden Personen das „+" zum Hochladen — bei
+    /// proRequired/moduleNotBooked waere ein Upload ohnehin 402/403.
+    var canUpload: Bool {
+        if case .loaded = state { return true }
+        return false
+    }
+
     var categories: [String] {
         guard case .loaded(let docs) = state else { return [] }
         var seen = Set<String>()
@@ -103,5 +111,25 @@ final class DocumentsViewModel: ObservableObject {
         guard case .loaded(let docs) = state else { return [] }
         guard let category = selectedCategory else { return docs }
         return docs.filter { $0.category == category }
+    }
+
+    /// Nach erfolgreichem Upload: das neue Dokument vorn einsortieren (Server
+    /// liefert neueste zuerst) und den Kategorie-Filter loesen, damit es sicher
+    /// sichtbar ist. Kein Neu-Laden noetig — spart das Loading-Flackern.
+    func insert(_ document: Document) {
+        guard case .loaded(let docs) = state else { return }
+        selectedCategory = nil
+        state = .loaded([document] + docs.filter { $0.id != document.id })
+    }
+
+    /// Nach erfolgreichem Loeschen: die Zeile lokal entfernen. Zeigt der Filter
+    /// eine dann leere Kategorie, faellt er auf „Alle" zurueck.
+    func remove(documentId: String) {
+        guard case .loaded(let docs) = state else { return }
+        let remaining = docs.filter { $0.id != documentId }
+        state = .loaded(remaining)
+        if let category = selectedCategory, !remaining.contains(where: { $0.category == category }) {
+            selectedCategory = nil
+        }
     }
 }

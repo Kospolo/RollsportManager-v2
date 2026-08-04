@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Sparten“ (features/sparten/**) — Standardsprache Englisch. -->
+<resources>
+    <string name="sparten_title">Departments</string>
+    <string name="sparten_loading">Loading departments…</string>
+    <string name="sparten_error_title">Departments didn\'t load</string>
+    <string name="sparten_error_retry">Try again</string>
+
+    <string name="sparten_list_eyebrow">Structure</string>
+    <plurals name="sparten_list_count">
+        <item quantity="one">%1$d department</item>
+        <item quantity="other">%1$d departments</item>
+    </plurals>
+    <plurals name="sparten_team_count">
+        <item quantity="one">%1$d team</item>
+        <item quantity="other">%1$d teams</item>
+    </plurals>
+
+    <string name="sparten_inactive">Dormant</string>
+    <string name="sparten_own_finances">Own books</string>
+
+    <string name="sparten_empty_title">No departments yet</string>
+    <string name="sparten_empty_message">Single-discipline clubs don\'t need any — teams work without them.</string>
+</resources>

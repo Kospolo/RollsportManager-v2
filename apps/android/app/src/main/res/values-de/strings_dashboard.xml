@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature Dashboard — Deutsch (Spiegel der iOS-Localizable dashboard.*-Keys). -->
+<resources>
+    <!-- Begrüßung + Profil-Menü -->
+    <string name="dashboard_greeting_morning">Guten Morgen, %1$s!</string>
+    <string name="dashboard_greeting_day">Hallo, %1$s!</string>
+    <string name="dashboard_greeting_evening">Guten Abend, %1$s!</string>
+    <string name="dashboard_a11y_profile_menu">Profil und Abmelden</string>
+    <string name="dashboard_menu_logout">Abmelden</string>
+
+    <!-- Laden / Fehler -->
+    <string name="dashboard_loading">Vereinsdaten werden geladen …</string>
+    <string name="dashboard_error_title">Da ist etwas schiefgelaufen</string>
+    <string name="dashboard_error_retry">Erneut versuchen</string>
+    <string name="dashboard_error_refresh">Aktualisieren hat nicht geklappt</string>
+
+    <!-- KPI-Karte -->
+    <string name="dashboard_kpi_eyebrow">Überblick</string>
+    <string name="dashboard_kpi_title">So steht der Verein da</string>
+    <string name="dashboard_kpi_members_eyebrow">Aktive Mitglieder</string>
+    <string name="dashboard_kpi_members_caption">im Verein</string>
+    <string name="dashboard_kpi_dues_eyebrow">Offene Beiträge</string>
+    <string name="dashboard_kpi_dues_caption_empty">keine offenen Posten sichtbar</string>
+    <plurals name="dashboard_kpi_dues_caption">
+        <item quantity="one">1 offener Posten · aus deiner Sicht</item>
+        <item quantity="other">%1$d offene Posten · aus deiner Sicht</item>
+    </plurals>
+    <string name="dashboard_kpi_next_eyebrow">Nächster Termin</string>
+    <string name="dashboard_kpi_next_caption_none">nichts geplant in den nächsten 14 Tagen</string>
+
+    <!-- Relative Tage -->
+    <string name="dashboard_date_today">Heute</string>
+    <string name="dashboard_date_tomorrow">Morgen</string>
+
+    <!-- Wettkampf-Countdown -->
+    <string name="dashboard_countdown_eyebrow">Wettkampf-Countdown</string>
+    <string name="dashboard_countdown_today">Heute ist Wettkampftag!</string>
+    <plurals name="dashboard_countdown_unit">
+        <item quantity="one">Tag bis zum Start</item>
+        <item quantity="other">Tage bis zum Start</item>
+    </plurals>
+    <string name="dashboard_countdown_entrants">%1$d gemeldet</string>
+
+    <!-- Termin-Karte -->
+    <string name="dashboard_events_eyebrow">Termine</string>
+    <string name="dashboard_events_title">Heute &amp; demnächst</string>
+    <string name="dashboard_events_empty_title">Keine Termine anstehend</string>
+    <string name="dashboard_events_empty_message">In den nächsten zwei Wochen ist nichts geplant.</string>
+    <string name="dashboard_events_more">+%1$d weitere in den nächsten 14 Tagen</string>
+    <string name="dashboard_events_responses">%1$d zugesagt · %2$d abgesagt · %3$d offen</string>
+    <string name="dashboard_events_type_competition">Wettkampf</string>
+
+    <!-- Aufgaben-Karte -->
+    <string name="dashboard_tasks_eyebrow">Aufgaben</string>
+    <string name="dashboard_tasks_title">Was zu erledigen ist</string>
+    <string name="dashboard_tasks_empty_title">Alles erledigt</string>
+    <string name="dashboard_tasks_empty_message">Gerade liegt nichts auf der Liste.</string>
+    <string name="dashboard_tasks_due">fällig %1$s</string>
+    <string name="dashboard_tasks_overdue">überfällig seit %1$s</string>
+    <string name="dashboard_tasks_error_title">Abhaken hat nicht geklappt</string>
+    <string name="dashboard_tasks_a11y_toggle">Aufgabe: %1$s</string>
+    <string name="dashboard_tasks_a11y_done">erledigt</string>
+    <string name="dashboard_tasks_a11y_open">offen</string>
+    <string name="dashboard_tasks_a11y_hint">Ändert den Erledigt-Status.</string>
+</resources>

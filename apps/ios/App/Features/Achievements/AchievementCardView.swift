@@ -2,8 +2,9 @@ import SwiftUI
 
 /// Erfolgs-Karte: Medaillen-Symbol, Medaille/Platzierung als Wort-Pills, Titel,
 /// Wettkampf, Datum und optionale Notiz. Bei `showMember` zusätzlich das
-/// Mitglied (Avatar + Name) für die Vereins-Vitrine. Lesend — Bearbeiten/
-/// Löschen bietet die iOS-App bewusst (noch) nicht. Web-Referenz:
+/// Mitglied (Avatar + Name) für die Vereins-Vitrine. Rein präsentierend; das
+/// Bearbeiten/Löschen (Trainerstab) verdrahtet die Elternansicht per Tap auf
+/// die Karte (`AchievementsView.card(for:showMember:)`). Web-Referenz:
 /// `AchievementCard.tsx`.
 struct AchievementCardView: View {
     let achievement: MedalAchievement

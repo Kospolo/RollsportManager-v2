@@ -59,20 +59,8 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 hidden h-dvh flex-col gap-0.5 overflow-y-auto border-r border-line bg-surface px-3.5 pb-4 pt-5 lg:flex">
-      {/* Wortmarke */}
-      <div className="flex items-center gap-2.5 px-2 pb-4">
-        <span
-          className="grid h-8 w-8 flex-none place-items-center rounded-[10px] bg-gradient-to-br from-brand to-brand-strong font-display text-[13px] font-extrabold text-brand-contrast"
-          aria-hidden="true"
-        >
-          R
-        </span>
-        <span className="font-display text-[15px] font-extrabold tracking-tight text-ink">
-          {t("appName")}
-        </span>
-      </div>
-
-      {/* Vereins-Badge */}
+      {/* Vereins-Badge — Logo + ECHTER Vereinsname stehen oben (kein
+          „RollsportManager"-Schriftzug mehr; das Produkt steht klein im Footer). */}
       <div className="mb-2 flex items-center gap-2.5 rounded-lg border border-line bg-canvas px-3 py-2.5">
         {clubLogoUrl ? (
           <img
@@ -91,9 +79,11 @@ export function Sidebar() {
         )}
         <span className="min-w-0">
           <b className="block truncate font-display text-[14px] font-extrabold leading-tight tracking-tight text-ink">
-            {t("clubName")}
+            {clubData.data?.name ?? t("clubName")}
           </b>
-          <span className="block truncate text-[11.5px] text-ink-faint">{t("clubMeta")}</span>
+          <span className="block truncate text-[11.5px] text-ink-faint">
+            {clubData.data?.discipline || t("clubMeta")}
+          </span>
         </span>
       </div>
 
@@ -137,6 +127,11 @@ export function Sidebar() {
           <span className="block truncate text-[11.5px] text-ink-faint">{roleLabel}</span>
         </span>
       </div>
+
+      {/* Produkt-Credit dezent im Footer (statt Schriftzug oben). */}
+      <p className="mt-2 px-2 text-center text-[10.5px] leading-tight text-ink-faint">
+        © {t("appName")}
+      </p>
     </aside>
   );
 }

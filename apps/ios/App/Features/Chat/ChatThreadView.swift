@@ -25,6 +25,16 @@ struct ChatThreadView: View {
     /// Fremde Nachricht, die der Admin gerade zu entfernen bestätigt (nil = kein
     /// Dialog). Nie automatisch bestätigt — Löschen nur über den Dialog-Button.
     @State private var toModerate: ChatMessage?
+    /// Fremde Nachricht, die gerade gemeldet wird (nil = kein Sheet). Öffnet das
+    /// „Nachricht melden"-Sheet; gemeldet wird nur über dessen Button.
+    @State private var toReport: ReportTarget?
+
+    /// Identifizierbare Hülle für `.sheet(item:)` — `ChatMessage` ist ein
+    /// Contract-Typ (kein globales Identifiable), die ID kommt aus der Nachricht.
+    private struct ReportTarget: Identifiable {
+        let message: ChatMessage
+        var id: String { message.id }
+    }
 
     private static let bottomAnchor = "chat.thread.bottom"
 
@@ -102,7 +112,66 @@ struct ChatThreadView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var messagesView: some View {
+    /// Eine Nachrichtenblase samt Kontextmenü. „Melden" bietet jedes Mitglied an
+    /// fremden, bereits gesendeten Nachrichten an; „Entfernen" nur der Admin in
+    /// team/broadcast. Ohne Aktion bleibt die Blase ohne Menü — kein leeres
+    /// Kontextmenü und keine No-op-VoiceOver-Aktion.
+    @ViewBuilder
+    private func messageRow(_ message: ChatMessage, at index: Int) -> some View {
+        let isOwn = message.senderMemberId == model.myMemberId
+        let bubble = ChatMessageBubble(
+            message: message,
+            isOwn: isOwn,
+            senderName: senderName(for: message.senderMemberId),
+            showSender: showSender(at: index)
+        )
+        // Entfernt der Admin die Blase, gleitet sie zur eigenen Seite aus
+        // (fremde Nachricht = links).
+        .transition(
+            .opacity.combined(with: .move(edge: isOwn ? .trailing : .leading))
+        )
+        let mayReport = canReport(message)
+        let mayModerate = canModerate(message)
+        if mayReport || mayModerate {
+            bubble
+                // Long-Press (iOS-Standardgeste für Nachrichten)…
+                .contextMenu { messageMenu(message, mayReport: mayReport, mayModerate: mayModerate) }
+                // …UND als benannte VoiceOver-/Switch-Control-Aktionen.
+                .accessibilityActions { messageA11yActions(message, mayReport: mayReport, mayModerate: mayModerate) }
+        } else {
+            bubble
+        }
+    }
+
+    @ViewBuilder
+    private func messageMenu(_ message: ChatMessage, mayReport: Bool, mayModerate: Bool) -> some View {
+        if mayReport {
+            Button {
+                toReport = ReportTarget(message: message)
+            } label: {
+                Label { Text(verbatim: "Melden") } icon: { Image(systemName: "flag") }
+            }
+        }
+        if mayModerate {
+            Button(role: .destructive) {
+                toModerate = message
+            } label: {
+                Label("chat.moderate", systemImage: "trash")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func messageA11yActions(_ message: ChatMessage, mayReport: Bool, mayModerate: Bool) -> some View {
+        if mayReport {
+            Button { toReport = ReportTarget(message: message) } label: { Text(verbatim: "Melden") }
+        }
+        if mayModerate {
+            Button { toModerate = message } label: { Text("chat.moderate") }
+        }
+    }
+
+    private var messagesScroll: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 if model.messages.isEmpty {
@@ -110,39 +179,7 @@ struct ChatThreadView: View {
                 } else {
                     LazyVStack(alignment: .leading, spacing: Theme.Spacing.s2) {
                         ForEach(Array(model.messages.enumerated()), id: \.element.id) { index, message in
-                            let isOwn = message.senderMemberId == model.myMemberId
-                            let bubble = ChatMessageBubble(
-                                message: message,
-                                isOwn: isOwn,
-                                senderName: senderName(for: message.senderMemberId),
-                                showSender: showSender(at: index)
-                            )
-                            // Entfernt der Admin die Blase, gleitet sie zur
-                            // eigenen Seite aus (fremde Nachricht = links).
-                            .transition(
-                                .opacity.combined(with: .move(edge: isOwn ? .trailing : .leading))
-                            )
-                            // Moderation NUR anbieten, wenn der Admin diese fremde
-                            // Nachricht auch entfernen darf — sonst KEIN leeres
-                            // Kontextmenü und KEINE No-op-VoiceOver-Aktion
-                            // (irreführend, gerade im Kinderschutz-Kontext).
-                            if canModerate(message) {
-                                bubble
-                                    // Long-Press (iOS-Standardgeste für Nachrichten)…
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            toModerate = message
-                                        } label: {
-                                            Label("chat.moderate", systemImage: "trash")
-                                        }
-                                    }
-                                    // …UND als benannte VoiceOver-/Switch-Control-Aktion.
-                                    .accessibilityAction(named: Text("chat.moderate")) {
-                                        toModerate = message
-                                    }
-                            } else {
-                                bubble
-                            }
+                            messageRow(message, at: index)
                         }
                         Color.clear
                             .frame(height: 1)
@@ -164,6 +201,10 @@ struct ChatThreadView: View {
                 }
             }
         }
+    }
+
+    private var messagesView: some View {
+        messagesScroll
         .alert("chat.refresh.error.title", isPresented: refreshErrorBinding) {
             Button("chat.alert.ok", role: .cancel) {}
         } message: {
@@ -187,6 +228,18 @@ struct ChatThreadView: View {
             Button("chat.alert.ok", role: .cancel) {}
         } message: {
             Text(verbatim: model.moderationErrorMessage ?? "")
+        }
+        .sheet(item: $toReport) { target in
+            ReportMessageSheet(
+                message: target.message,
+                model: model,
+                senderName: senderName(for: target.message.senderMemberId)
+            )
+        }
+        .alert(Text(verbatim: "Meldung eingegangen"), isPresented: reportSuccessBinding) {
+            Button("chat.alert.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: "Danke. Der Vorstand kümmert sich um deine Meldung.")
         }
     }
 
@@ -329,6 +382,14 @@ struct ChatThreadView: View {
             && !message.id.hasPrefix("temp-")
     }
 
+    /// „Melden" an FREMDER, bereits gesendeter Nachricht — für jedes Mitglied,
+    /// unabhängig von Admin/Kanal (Spiegel MessageThread.tsx: `onReport`). Die
+    /// eigene Nachricht meldet man nicht, optimistische (`temp-`) auch nicht.
+    private func canReport(_ message: ChatMessage) -> Bool {
+        message.senderMemberId != model.myMemberId
+            && !message.id.hasPrefix("temp-")
+    }
+
     private var title: String {
         let name = channel.rsmDisplayName
         if !name.isEmpty { return name }
@@ -384,6 +445,13 @@ struct ChatThreadView: View {
         Binding(
             get: { model.moderationErrorMessage != nil },
             set: { if !$0 { model.moderationErrorMessage = nil } }
+        )
+    }
+
+    private var reportSuccessBinding: Binding<Bool> {
+        Binding(
+            get: { model.reportSuccess },
+            set: { if !$0 { model.reportSuccess = false } }
         )
     }
 

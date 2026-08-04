@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Mitglieder“ (features/members) — Default ENGLISCH, Deutsch in
+     values-de/strings_mitglieder.xml. Wortlaut gespiegelt von iOS
+     (Localizable.xcstrings, members.* / role.*). -->
+<resources>
+    <string name="members_title">Members</string>
+    <string name="members_loading">Loading members…</string>
+
+    <string name="members_error_title">Couldn\'t load the members</string>
+    <string name="members_error_retry">Try again</string>
+
+    <string name="members_search_placeholder">Search by name or email</string>
+    <string name="members_search_clear">Clear search</string>
+
+    <string name="members_list_eyebrow">Club</string>
+    <plurals name="members_list_count">
+        <item quantity="one">%1$d member</item>
+        <item quantity="other">%1$d members</item>
+    </plurals>
+
+    <string name="members_filter_all">All</string>
+
+    <string name="members_role_owner">Owner</string>
+    <string name="members_role_admin">Admin</string>
+    <string name="members_role_moderator">Moderator</string>
+    <string name="members_role_treasurer">Treasurer</string>
+    <string name="members_role_coach">Coach</string>
+    <string name="members_role_member">Member</string>
+    <string name="members_role_guest_coach">Guest coach</string>
+
+    <string name="members_status_pending">Pending</string>
+    <string name="members_status_rejected">Rejected</string>
+    <string name="members_status_active">Active</string>
+    <string name="members_status_inactive">Inactive</string>
+    <string name="members_status_left">Left</string>
+
+    <string name="members_fee_paid">Fees paid</string>
+    <string name="members_row_no_team">No team</string>
+    <string name="members_row_a11y">Open member %1$s</string>
+
+    <string name="members_empty_title">No matches</string>
+    <string name="members_empty_message">Nobody matches your search and filter right now.</string>
+    <string name="members_empty_reset">Reset filters</string>
+
+    <string name="members_back">Back</string>
+    <string name="members_detail_missing_title">Member not found</string>
+    <string name="members_detail_missing_message">This member is not part of the loaded roster.</string>
+
+    <string name="members_detail_master_eyebrow">Profile</string>
+    <string name="members_detail_master_title">About this person</string>
+    <string name="members_detail_email">Email</string>
+    <string name="members_detail_birth_date">Date of birth</string>
+    <string name="members_detail_joined_on">Member since</string>
+    <string name="members_detail_teams">Teams</string>
+    <string name="members_detail_none">Not on file</string>
+
+    <string name="members_family_eyebrow">Family</string>
+    <string name="members_family_title">Who belongs together</string>
+    <string name="members_family_empty_title">No family visible</string>
+    <string name="members_family_empty_admin_message">No family links are on file for this member.</string>
+    <string name="members_family_empty_own_message">For privacy you only see your own family here.</string>
+    <string name="members_family_child_pill">Child</string>
+    <string name="members_family_guardian_pill">Guardian</string>
+    <string name="members_family_relation_parent">Parent</string>
+
+    <string name="members_role_change_eyebrow">Permissions</string>
+    <string name="members_role_change_title">Role in the club</string>
+    <string name="members_role_change_menu">Change role</string>
+    <string name="members_role_change_a11y">Change this member\'s role</string>
+    <string name="members_role_change_self">You can\'t change your own role.</string>
+    <string name="members_role_change_owner_hint">The last owner is protected and can\'t be demoted.</string>
+    <string name="members_role_change_forbidden">No permission — the change was rolled back.</string>
+</resources>

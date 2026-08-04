@@ -3,9 +3,9 @@ import SwiftUI
 /// Detail-Sheet einer Halle: Stammdaten (Art, Ort, Kapazität, Hinweise) und die
 /// kommenden Buchungen nach Datum gruppiert. „Hier buchen“ öffnet das
 /// Buchen-Sheet (Halle vorbelegt). Überschneidungen werden je Buchung als
-/// Warn-Chip markiert. Buchungen sind hier bewusst nur lesbar — der Dev-Stack
-/// stellt (Stand jetzt) keinen Lösch-Endpoint bereit.
-/// Web-Referenz: belegungsplan/_components/FacilityDetailSheet.tsx.
+/// Warn-Chip markiert. Vereins-Admins (`canManage`) können die Anlage über den
+/// Bearbeiten-Knopf ändern/löschen und einzelne Buchungen entfernen.
+/// Web-Referenz: belegungsplan/_components/{FacilityDetailSheet,DeleteBookingDialog}.tsx.
 struct FacilityDetailSheet: View {
     let facility: Facility
     /// Buchungen genau dieser Halle (für Liste + Überschneidungs-Markierung).
@@ -13,8 +13,17 @@ struct FacilityDetailSheet: View {
     let bookerName: (FacilityBooking) -> String?
     let teamName: (String?) -> String?
     let onBook: () -> Void
+    /// Vereins-Admin? Zeigt Bearbeiten (Anlage) + Löschen (Buchung).
+    var canManage: Bool = false
+    /// Öffnet das Bearbeiten/Löschen-Sheet der Anlage (vom Parent verdrahtet).
+    var onEdit: () -> Void = {}
+    /// Löscht eine Buchung (DELETE /facility-bookings/{id}) — wirft bei 403 weiter.
+    var onDeleteBooking: (FacilityBooking) async throws -> Void = { _ in }
 
     @Environment(\.dismiss) private var dismiss
+    /// Zu löschende Buchung (steuert den Bestätigungsdialog).
+    @State private var bookingToDelete: FacilityBooking?
+    @State private var deleteErrorMessage: String?
 
     private var days: [BelegungLogic.DayGroup] {
         BelegungLogic.groupByDay(BelegungLogic.upcomingBookings(bookings))
@@ -43,9 +52,58 @@ struct FacilityDetailSheet: View {
                     Button("belegungsplan.detail.close") { dismiss() }
                         .tint(Theme.Colors.inkSoft)
                 }
+                if canManage {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { onEdit() } label: { Image(systemName: "square.and.pencil") }
+                            .tint(Theme.Colors.brand)
+                            .accessibilityLabel(Text(verbatim: "Anlage bearbeiten"))
+                    }
+                }
+            }
+            .confirmationDialog(
+                Text(verbatim: bookingToDelete.map { "Buchung „\($0.title)“ wirklich löschen?" } ?? ""),
+                isPresented: bookingDeleteBinding, titleVisibility: .visible,
+                presenting: bookingToDelete
+            ) { booking in
+                Button(role: .destructive) { performDeleteBooking(booking) } label: { Text(verbatim: "Löschen") }
+                Button(role: .cancel) {} label: { Text(verbatim: "Abbrechen") }
+            } message: { _ in
+                Text(verbatim: "Der Termin wird aus dem Belegungsplan entfernt.")
+            }
+            .alert(
+                Text(verbatim: "Buchung"),
+                isPresented: deleteErrorBinding
+            ) {
+                Button(role: .cancel) {} label: { Text(verbatim: "OK") }
+            } message: {
+                Text(verbatim: deleteErrorMessage ?? "")
             }
         }
         .presentationDragIndicator(.visible)
+    }
+
+    private var bookingDeleteBinding: Binding<Bool> {
+        Binding(
+            get: { bookingToDelete != nil },
+            set: { if !$0 { bookingToDelete = nil } }
+        )
+    }
+
+    private var deleteErrorBinding: Binding<Bool> {
+        Binding(
+            get: { deleteErrorMessage != nil },
+            set: { if !$0 { deleteErrorMessage = nil } }
+        )
+    }
+
+    private func performDeleteBooking(_ booking: FacilityBooking) {
+        _Concurrency.Task {
+            do {
+                try await onDeleteBooking(booking)
+            } catch {
+                deleteErrorMessage = (error as? APIError)?.errorDescription ?? "Buchung konnte nicht gelöscht werden."
+            }
+        }
     }
 
     // MARK: - Kopf + Stammdaten
@@ -168,6 +226,18 @@ struct FacilityDetailSheet: View {
                     )
                     if BelegungLogic.hasConflict(booking, in: bookings) {
                         RSMStatusPill(text: "belegungsplan.conflict", kind: .warn)
+                    }
+                    if canManage {
+                        Spacer(minLength: Theme.Spacing.s2)
+                        Button(role: .destructive) {
+                            bookingToDelete = booking
+                        } label: {
+                            Image(systemName: "trash")
+                                .font(.system(size: 14))
+                                .foregroundStyle(Theme.Colors.danger)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(Text(verbatim: "Buchung löschen"))
                     }
                 }
 

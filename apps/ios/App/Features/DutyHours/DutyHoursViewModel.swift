@@ -58,6 +58,9 @@ final class DutyHoursViewModel: ObservableObject {
     /// Fehler beim Pull-to-Refresh, wenn schon Daten da sind (Alert statt
     /// die Karte durch einen Fehler-Screen zu ersetzen).
     @Published var refreshErrorMessage: String?
+    /// Fehler beim Löschen eines Eintrags (Alert). Das Recht selbst erzwingt der
+    /// Server (RLS) — ein 403 wird zum Hinweis.
+    @Published var deleteErrorMessage: String?
 
     private var api: APIClient?
     private var clubId: String?
@@ -136,6 +139,25 @@ final class DutyHoursViewModel: ObservableObject {
             entries.append(entry)
         }
         recompute()
+    }
+
+    // MARK: - Löschen (eigener Eintrag)
+
+    /// Entfernt einen erfassten Eintrag (DELETE /duty-entries/{id}), nimmt ihn
+    /// sofort aus der Liste und rechnet den Fortschritt neu. Angeboten an eigenen
+    /// Einträgen; die verbindliche Berechtigung erzwingt der Server (RLS). Fehler
+    /// (inkl. 403) landen als Hinweis im Alert.
+    func deleteEntry(_ entry: DutyEntry) async {
+        guard let api else { return }
+        do {
+            _ = try await api.deleteDutyEntry(id: entry.id)
+            entries.removeAll { $0.id == entry.id }
+            recompute()
+        } catch {
+            deleteErrorMessage = error.isForbiddenAPIError
+                ? String(localized: "pflichtstunden.forbidden")
+                : Self.friendlyMessage(error)
+        }
     }
 
     private func recompute() {

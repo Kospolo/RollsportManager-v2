@@ -34,6 +34,8 @@ final class ChatThreadViewModel: ObservableObject {
     /// Fehler beim moderierten Entfernen (Admin löscht fremde Nachricht) — die
     /// View zeigt ihn als Alert. Das Recht selbst ist serverseitig (RLS).
     @Published var moderationErrorMessage: String?
+    /// True nach erfolgreichem Melden — die View zeigt eine kurze Bestätigung.
+    @Published var reportSuccess = false
 
     private var api: APIClient?
     private var clubId: String?
@@ -170,6 +172,29 @@ final class ChatThreadViewModel: ObservableObject {
             moderationErrorMessage = Self.friendlyMessage(error)
             return false
         }
+    }
+
+    // MARK: - Melden (Verstoss an den Vorstand/Betreiber)
+
+    /// Meldet eine FREMDE Nachricht als Verstoss (POST /chat/reports). Der Server
+    /// hält Melder, IP und einen Snapshot des Textes fest — die UI reicht nur
+    /// `messageId` und den Grund weiter. Aufrufbar für jedes Mitglied an fremden,
+    /// bereits gesendeten Nachrichten (nie `temp-`, nie eigene). Wird nie
+    /// automatisch ausgelöst — gemeldet wird ausschliesslich über den Dialog.
+    /// Wirft bei Fehler (inkl. 403/404), damit das Sheet ihn inline zeigt und
+    /// offen bleibt. Bei Erfolg setzt `reportSuccess` die Bestätigung.
+    func report(message: ChatMessage, reason: String) async throws {
+        let trimmed = reason.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let api, let clubId,
+              !message.id.hasPrefix("temp-"),
+              !trimmed.isEmpty
+        else { return }
+        _ = try await api.reportChatMessage(
+            clubId: clubId,
+            messageId: message.id,
+            reason: trimmed
+        )
+        reportSuccess = true
     }
 
     static func friendlyMessage(_ error: Error) -> String {

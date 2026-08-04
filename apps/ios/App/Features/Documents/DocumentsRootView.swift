@@ -8,6 +8,8 @@ import QuickLook
 struct DocumentsRootView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = DocumentsViewModel()
+    @State private var showUpload = false
+    @State private var manageTarget: DocumentManageTarget?
 
     var body: some View {
         ScrollView {
@@ -17,8 +19,34 @@ struct DocumentsRootView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("documents.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if session.permissions.isClubAdmin, viewModel.canUpload {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showUpload = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Dokument hochladen"))
+                }
+            }
+        }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
         .quickLookPreview($viewModel.previewURL)
+        .sheet(isPresented: $showUpload) {
+            DocumentUploadSheet(
+                api: session.api,
+                clubId: session.clubId,
+                categories: viewModel.categories
+            ) { created in
+                viewModel.insert(created)
+            }
+        }
+        .sheet(item: $manageTarget) { target in
+            DocumentManageSheet(
+                api: session.api,
+                document: target.document,
+                uploaderName: viewModel.uploaderName(for: target.document)
+            ) { deletedId in
+                viewModel.remove(documentId: deletedId)
+            }
+        }
         .alert("documents.download.errorTitle", isPresented: downloadErrorBinding) {
             Button("routines.common.ok", role: .cancel) {}
         } message: {
@@ -66,7 +94,13 @@ struct DocumentsRootView: View {
             VStack(spacing: Theme.Spacing.s2) {
                 ForEach(viewModel.visibleDocuments, id: \.id) { doc in
                     Button {
-                        _Concurrency.Task { await viewModel.open(document: doc, api: session.api) }
+                        // Verwaltende oeffnen das Verwalten-Sheet (Oeffnen +
+                        // Loeschen); alle anderen laden direkt herunter.
+                        if session.permissions.isClubAdmin {
+                            manageTarget = DocumentManageTarget(document: doc)
+                        } else {
+                            _Concurrency.Task { await viewModel.open(document: doc, api: session.api) }
+                        }
                     } label: {
                         DocumentRow(
                             document: doc,
@@ -131,6 +165,13 @@ struct DocumentsRootView: View {
             set: { if !$0 { viewModel.downloadError = nil } }
         )
     }
+}
+
+/// Identifiable-Wrapper fuers `.sheet(item:)` — `Document` selbst ist (wie im
+/// Contract generiert) nicht Identifiable; die Liste nutzt `id: \.id`.
+private struct DocumentManageTarget: Identifiable {
+    let document: Document
+    var id: String { document.id }
 }
 
 /// Eine Dokument-Zeile: Typ-Icon, Titel + Kategorie/Größe, „von … · Datum" und

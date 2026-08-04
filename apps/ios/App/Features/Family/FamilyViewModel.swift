@@ -45,8 +45,29 @@ final class FamilyViewModel: ObservableObject {
     /// „Eltern & Bezugspersonen“ — die Person ist Kind.
     @Published private(set) var guardians: [FamilyMember] = []
 
+    /// Alle Mitglieder (Stammdaten) — Basis für die Verknüpfungs-Kandidaten.
+    @Published private(set) var members: [ClubMember] = []
+    /// Eigene Member-ID (zum Ausschließen aus Kandidaten/Kanten).
+    private(set) var meId: String = ""
+    /// Team-Namen je Team-ID — zum Auflösen der Chips bei lokal ergänzten Kindern.
+    private var teamNameById: [String: String] = [:]
+
     /// True, sobald geladen wurde und weder Kinder noch Bezugspersonen bestehen.
     var isEmpty: Bool { children.isEmpty && guardians.isEmpty }
+
+    /// Verknüpfbare Kandidaten: vereinsverwaltete Mitglieder (Rolle „member“)
+    /// OHNE eigenen Zugang (keine E-Mail), die noch nicht mein Kind und nicht
+    /// ich selbst sind. Der Server erzwingt die genaue Regel endgültig — dies
+    /// ist nur die plausible Vorauswahl (analog Web `linkCandidates`).
+    var linkCandidates: [ClubMember] {
+        let linkedIds = Set(children.map { $0.member.id })
+        return members
+            .filter { $0.role == .member
+                && ($0.email ?? "").isEmpty
+                && $0.id != meId
+                && !linkedIds.contains($0.id) }
+            .sorted { $0.familyFullName.localizedStandardCompare($1.familyFullName) == .orderedAscending }
+    }
 
     // MARK: - Laden
 
@@ -71,6 +92,11 @@ final class FamilyViewModel: ObservableObject {
 
             let memberById = Dictionary(members.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             let teamNameById = Dictionary(teams.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+
+            // Stammdaten für Kandidaten + lokale Ergänzungen vorhalten.
+            self.members = members
+            self.meId = meId
+            self.teamNameById = teamNameById
 
             func teamNames(_ member: ClubMember) -> [String] {
                 member.teamIds.compactMap { teamNameById[$0] }
@@ -104,6 +130,46 @@ final class FamilyViewModel: ObservableObject {
         } catch {
             state = .failed(Self.message(for: error))
         }
+    }
+
+    // MARK: - Mutationen (Selfservice)
+
+    /// Team-Namen eines Mitglieds aus dem zuletzt geladenen Team-Verzeichnis.
+    private func teamNames(for member: ClubMember) -> [String] {
+        member.teamIds.compactMap { teamNameById[$0] }
+    }
+
+    /// Frisch angelegtes Kind lokal in die Liste übernehmen (kein Reload-Flash).
+    func addCreatedChild(_ created: ChildCreated) {
+        if !members.contains(where: { $0.id == created.child.id }) {
+            members.append(created.child)
+        }
+        insertChild(FamilyMember(
+            id: created.guardianship.id, kind: .child, member: created.child,
+            relation: created.guardianship.relation, teamNames: teamNames(for: created.child)
+        ))
+    }
+
+    /// Neu verknüpftes, bestehendes Mitglied lokal als Kind übernehmen.
+    func addLinkedChild(_ guardianship: Guardianship, member: ClubMember) {
+        insertChild(FamilyMember(
+            id: guardianship.id, kind: .child, member: member,
+            relation: guardianship.relation, teamNames: teamNames(for: member)
+        ))
+    }
+
+    /// Verknüpfung serverseitig entfernen und die Zeile lokal streichen.
+    func deleteGuardianship(id: String, api: APIClient, clubId: String) async throws {
+        _ = try await api.deleteGuardianship(clubId: clubId, guardianshipId: id)
+        children.removeAll { $0.id == id }
+    }
+
+    /// Zeile per guardianshipId einfügen/ersetzen und neu sortieren.
+    private func insertChild(_ entry: FamilyMember) {
+        var next = children.filter { $0.id != entry.id }
+        next.append(entry)
+        children = next.sorted(by: Self.byName)
+        if state != .loaded { state = .loaded }
     }
 
     // MARK: - Helfer

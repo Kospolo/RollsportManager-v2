@@ -10,6 +10,8 @@ struct RegionalEventsView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = RegionalEventsViewModel()
     @State private var selection: RegionalEventSelection?
+    @State private var editSelection: RegionalEventSelection?
+    @State private var showCreate = false
 
     var body: some View {
         Group {
@@ -24,6 +26,19 @@ struct RegionalEventsView: View {
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("events.regional.title"))
+        .toolbar {
+            if session.permissions.isClubAdmin {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neuer überregionaler Termin"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            RegionalEventCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
+        }
         .navigationBarTitleDisplayMode(.large)
         .task {
             await model.loadIfNeeded(api: session.api, clubId: session.clubId)
@@ -32,6 +47,14 @@ struct RegionalEventsView: View {
             RegionalEventDetailSheet(
                 event: selected.event,
                 isPast: RegionalEventDate.isPast(selected.event)
+            )
+        }
+        .sheet(item: $editSelection) { selected in
+            RegionalEventEditSheet(
+                api: session.api,
+                event: selected.event,
+                onSaved: { _Concurrency.Task { await model.refresh() } },
+                onDeleted: { _Concurrency.Task { await model.refresh() } }
             )
         }
         .alert("events.regional.error.title", isPresented: refreshErrorBinding) {
@@ -162,7 +185,13 @@ struct RegionalEventsView: View {
                         event: event,
                         isPast: RegionalEventDate.isPast(event)
                     ) {
-                        selection = RegionalEventSelection(event: event)
+                        // Vereinsleitung tippt zum Bearbeiten/Löschen, alle
+                        // anderen öffnen die rein lesende Detail-Ansicht.
+                        if session.permissions.isClubAdmin {
+                            editSelection = RegionalEventSelection(event: event)
+                        } else {
+                            selection = RegionalEventSelection(event: event)
+                        }
                     }
                 }
             }

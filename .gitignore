@@ -53,3 +53,6 @@ dist/
 # iOS-Build (xcodebuild -derivedDataPath build/DerivedData)
 /build/
 apps/ios/build/
+
+# Transiente Workflow-Worktrees (Claude Code)
+.claude/worktrees/

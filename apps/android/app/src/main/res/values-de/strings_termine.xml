@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature "Termine" — deutsche Übersetzungen (Default Englisch in values/).
+     Wortlaut identisch zur iOS-App (Localizable.xcstrings, events.*). -->
+<resources>
+    <string name="events_title">Termine</string>
+    <string name="events_loading">Termine werden geladen …</string>
+
+    <string name="events_error_title">Da ist etwas schiefgelaufen</string>
+    <string name="events_error_retry">Erneut versuchen</string>
+
+    <string name="events_empty_title">Keine Termine</string>
+    <string name="events_empty_message">Für diesen Zeitraum stehen keine Termine an.</string>
+    <string name="events_empty_filtered_message">Kein Termin passt zu diesem Filter.</string>
+
+    <string name="events_filter_a11y">Termine filtern</string>
+    <string name="events_filter_all">Alle</string>
+    <string name="events_filter_training">Training</string>
+    <string name="events_filter_competition">Wettkampf</string>
+    <string name="events_filter_other">Sonstiges</string>
+
+    <string name="events_section_today">Heute</string>
+    <string name="events_section_tomorrow">Morgen</string>
+
+    <string name="events_type_training">Training</string>
+    <string name="events_type_competition">Wettkampf</string>
+    <string name="events_type_other">Sonstiges</string>
+
+    <string name="events_teams_more">+%1$d</string>
+    <string name="events_row_a11y_hint">Öffnet die Termindetails</string>
+
+    <plurals name="events_counts_going">
+        <item quantity="one">%d Zusage</item>
+        <item quantity="other">%d Zusagen</item>
+    </plurals>
+    <plurals name="events_counts_declined">
+        <item quantity="one">%d Absage</item>
+        <item quantity="other">%d Absagen</item>
+    </plurals>
+    <plurals name="events_counts_maybe">
+        <item quantity="one">%d Vielleicht</item>
+        <item quantity="other">%d Vielleicht</item>
+    </plurals>
+    <plurals name="events_counts_open">
+        <item quantity="one">%d offen</item>
+        <item quantity="other">%d offen</item>
+    </plurals>
+
+    <string name="events_detail_title">Termindetails</string>
+    <string name="events_detail_close">Fertig</string>
+    <string name="events_detail_a11y_close">Termindetails schließen</string>
+    <string name="events_detail_note_title">Hinweis</string>
+
+    <string name="events_rsvp_eyebrow">Deine Rückmeldung</string>
+    <string name="events_rsvp_title">Bist du dabei?</string>
+    <string name="events_rsvp_going">Zusagen</string>
+    <string name="events_rsvp_maybe">Vielleicht</string>
+    <string name="events_rsvp_declined">Absagen</string>
+    <string name="events_rsvp_a11y_going">Für diesen Termin zusagen</string>
+    <string name="events_rsvp_a11y_maybe">Mit Vielleicht antworten</string>
+    <string name="events_rsvp_a11y_declined">Für diesen Termin absagen</string>
+    <string name="events_rsvp_comment_placeholder">Grund der Absage (optional)</string>
+    <string name="events_rsvp_comment_a11y">Grund der Absage</string>
+    <string name="events_rsvp_comment_send">Absage senden</string>
+
+    <string name="events_participants_eyebrow">Teilnehmer</string>
+    <string name="events_participants_title">Wer kommt</string>
+    <string name="events_participants_empty">Noch keine Rückmeldungen.</string>
+    <string name="events_participant_unknown">Unbekanntes Mitglied</string>
+
+    <string name="events_status_going">Zusage</string>
+    <string name="events_status_declined">Absage</string>
+    <string name="events_status_maybe">Vielleicht</string>
+    <string name="events_status_sick">Krank</string>
+    <string name="events_status_open">Offen</string>
+
+    <string name="events_attendance_present">Anwesend</string>
+    <string name="events_attendance_late">Verspätet</string>
+    <string name="events_attendance_excused">Entschuldigt</string>
+    <string name="events_attendance_absent">Fehlt</string>
+    <string name="events_attendance_none">Erfassen</string>
+    <string name="events_attendance_menu_a11y">Anwesenheit für %1$s ändern</string>
+</resources>

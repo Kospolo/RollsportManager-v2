@@ -30,9 +30,11 @@ struct RoutinePlayerCard: View {
                 timeline
                 transportRow
 
-                HStack(alignment: .top, spacing: Theme.Spacing.s4) {
+                // Untereinander statt nebeneinander: der A–B-Loop braucht drei
+                // Knöpfe (A · B · Wiederholen) und wurde neben dem Countdown auf
+                // dem iPhone so schmal, dass die Zeit senkrecht umbrach.
+                VStack(alignment: .leading, spacing: Theme.Spacing.s4) {
                     countdownControl
-                    Spacer(minLength: Theme.Spacing.s2)
                     loopControl
                 }
 
@@ -156,17 +158,15 @@ struct RoutinePlayerCard: View {
                 .foregroundStyle(Theme.Colors.brandContrast)
                 .offset(x: playback.isActive ? 0 : 2)
                 .frame(width: Theme.Size.playButton, height: Theme.Size.playButton)
-                // Ohne spielbare Datei bleibt die Beere sichtbar, aber matt —
-                // sie verspricht nichts, was sie nicht halten kann.
-                .background(Circle().fill(playback.canPlay
-                    ? Theme.Colors.brand
-                    : Theme.Colors.brand.opacity(0.35)))
-                .shadow(
-                    color: Theme.Shadows.pop.color,
-                    radius: Theme.Shadows.pop.radius,
-                    x: Theme.Shadows.pop.x,
-                    y: Theme.Shadows.pop.y
+                // Die EINE Beere: warmer Korall→Pfirsich-Verlauf mit Glow, damit
+                // der Player auf dem Plum-Grund auffällt. Ohne spielbare Datei
+                // matt — sie verspricht nichts, was sie nicht halten kann.
+                .background(
+                    Circle().fill(WarmPalette.heroGradient)
+                        .opacity(playback.canPlay ? 1 : 0.35)
                 )
+                .shadow(color: WarmPalette.coral.opacity(playback.canPlay ? 0.45 : 0),
+                        radius: 16, x: 0, y: 8)
         }
         .buttonStyle(RSMPressableButtonStyle())
         .disabled(!playback.canPlay)
@@ -240,7 +240,7 @@ struct RoutinePlayerCard: View {
     // MARK: - A–B-Loop: A-/B-Griffe + Toggle mit Wortlabel
 
     private var loopControl: some View {
-        VStack(alignment: .trailing, spacing: Theme.Spacing.s2) {
+        VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
             sectionEyebrow("routines.player.loop.eyebrow")
             HStack(spacing: Theme.Spacing.s2) {
                 loopPointButton(
@@ -269,6 +269,8 @@ struct RoutinePlayerCard: View {
             Text(verbatim: "\(letter) \(time)")
                 .font(Theme.Fonts.monoCaption.weight(.bold))
                 .monospacedDigit()
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .foregroundStyle(Theme.Colors.inkSoft)
                 .frame(minHeight: 44)
                 .padding(.horizontal, Theme.Spacing.s3)

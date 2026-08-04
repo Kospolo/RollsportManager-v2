@@ -7,6 +7,7 @@ import type {
   PlatformClubSummary,
   PlatformStats,
   PlatformUserSummary,
+  Routine,
   RoutineMarker,
   Team,
 } from "@/lib/types";
@@ -178,6 +179,26 @@ export const mockRepository: DataRepository = {
   },
   async getRoutineById(id) {
     return mock.routineById(id);
+  },
+  async createRoutine(input): Promise<Routine> {
+    // Demo: lokal in-memory anlegen (setzt sich beim Reload zurück).
+    const created: Routine = {
+      id: `w-local-${Date.now()}`,
+      clubId: clubStore.id,
+      title: input.title,
+      status: "draft",
+      memberIds: [],
+      teamId: input.teamId,
+      music: { title: "", artist: "", durationMs: 0 },
+      waveformPeaks: [],
+      markers: [],
+      scores: [],
+      category: input.category ?? "",
+      audioUrl: null,
+      imageUrl: null,
+    };
+    mock.routines.unshift(created);
+    return created;
   },
   async attachRoutineAudio(routineId, file) {
     const routine = mock.routineById(routineId);

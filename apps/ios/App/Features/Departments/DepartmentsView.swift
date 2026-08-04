@@ -9,6 +9,12 @@ import SwiftUI
 struct DepartmentsView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = DepartmentsViewModel()
+    @State private var route: DepartmentSheetRoute?
+
+    /// Vereins-Admins legen Abteilungen an, bearbeiten/löschen sie und pflegen
+    /// die Mitglieder — die verbindliche Prüfung bleibt serverseitig (403 →
+    /// Alert). Für alle anderen bleibt die Ansicht rein lesend.
+    private var canManage: Bool { session.permissions.isClubAdmin }
 
     var body: some View {
         Group {
@@ -24,7 +30,66 @@ struct DepartmentsView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("module.departments.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if canManage, viewModel.state == .loaded {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        route = .create
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .tint(Theme.Colors.brand)
+                    .accessibilityLabel(Text(verbatim: "Abteilung anlegen"))
+                }
+            }
+        }
+        .sheet(item: $route) { route in
+            sheet(for: route)
+        }
+        .alert(Text(verbatim: "Aktion fehlgeschlagen"), isPresented: actionErrorBinding) {
+            Button(role: .cancel) { } label: { Text(verbatim: "OK") }
+        } message: {
+            Text(verbatim: viewModel.actionError ?? "")
+        }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
+    }
+
+    // MARK: - Sheets
+
+    @ViewBuilder
+    private func sheet(for route: DepartmentSheetRoute) -> some View {
+        switch route {
+        case .create:
+            DepartmentFormSheet(
+                mode: .create,
+                members: viewModel.allMembers,
+                api: session.api,
+                clubId: session.clubId,
+                onSaved: { viewModel.upsert($0) }
+            )
+        case .edit(let department):
+            DepartmentFormSheet(
+                mode: .edit(department),
+                members: viewModel.allMembers,
+                api: session.api,
+                clubId: session.clubId,
+                onSaved: { viewModel.upsert($0) }
+            )
+        case .members(let department):
+            DepartmentMembersSheet(
+                department: department,
+                members: viewModel.allMembers,
+                api: session.api,
+                onSaved: { viewModel.upsert($0) }
+            )
+        }
+    }
+
+    private var actionErrorBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.actionError != nil },
+            set: { if !$0 { viewModel.actionError = nil } }
+        )
     }
 
     // MARK: - Zustände
@@ -85,7 +150,9 @@ struct DepartmentsView: View {
                     RSMEmptyState(
                         systemImage: "square.grid.2x2",
                         title: "abteilungen.empty.title",
-                        message: "abteilungen.empty.message"
+                        message: "abteilungen.empty.message",
+                        actionTitle: canManage ? "Abteilung anlegen" : nil,
+                        action: canManage ? { route = .create } : nil
                     )
                 }
                 .padding(Theme.Spacing.s5)
@@ -111,6 +178,23 @@ struct DepartmentsView: View {
                 .padding(Theme.Spacing.s5)
             }
             .refreshable { await viewModel.load(api: session.api, clubId: session.clubId) }
+        }
+    }
+}
+
+/// Sheet-Routen der Abteilungs-Verwaltung (ohne Identifiable-Konformanz auf dem
+/// Contracts-Typ `Department`, um Kollisionen zwischen Feature-Modulen zu
+/// vermeiden). Wird von der Liste und dem Detail geteilt.
+enum DepartmentSheetRoute: Identifiable {
+    case create
+    case edit(Department)
+    case members(Department)
+
+    var id: String {
+        switch self {
+        case .create: "create"
+        case .edit(let department): "edit-\(department.id)"
+        case .members(let department): "members-\(department.id)"
         }
     }
 }

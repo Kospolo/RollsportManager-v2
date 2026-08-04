@@ -10,6 +10,7 @@ struct RoutinesRootView: View {
     @StateObject private var viewModel = RoutinesViewModel()
     /// Vorschau-Wiedergabe der Kacheln — hält höchstens EINE klingende Kür.
     @StateObject private var preview = RoutineListPreviewPlayer()
+    @State private var showCreate = false
 
 #if DEBUG
     // Dev-Automation für Smoke-Tests: Launch-Argument `-devOpenFirstRoutine YES`
@@ -63,6 +64,19 @@ struct RoutinesRootView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("routines.list.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if session.permissions.isTrainer {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neue Kür"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            RoutineCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await viewModel.load(api: session.api, clubId: session.clubId) }
+            }
+        }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId) }
         // Beim Sprung ins Detail (oder aus dem Tab heraus) verstummt die
         // Vorschau — sonst liefen Kachel- und Detail-Player gegeneinander.

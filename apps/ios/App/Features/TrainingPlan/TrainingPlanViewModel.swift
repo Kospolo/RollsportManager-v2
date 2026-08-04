@@ -90,6 +90,20 @@ final class TrainingPlanViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Lokale Mutationen (nach Bearbeiten/Löschen)
+
+    /// Aktualisierten Slot lokal ersetzen (ohne Neu-Laden) — die Wochengruppen
+    /// werden daraus abgeleitet und sortieren sich neu.
+    func replace(_ slot: TrainingSlot) {
+        guard let idx = slots.firstIndex(where: { $0.id == slot.id }) else { return }
+        slots[idx] = slot
+    }
+
+    /// Gelöschten Slot lokal entfernen (ohne Neu-Laden).
+    func remove(id: String) {
+        slots.removeAll { $0.id == id }
+    }
+
     // MARK: - Ableitungen
 
     /// Alle sieben Tage Mo–So (auch leere) — das mobile Wochenraster zeigt die

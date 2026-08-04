@@ -101,7 +101,11 @@ export function PlayerCard({ routine, playback }: { routine: Routine; playback: 
               })}
             </Badge>
           )}
-          <span className="ml-auto text-caption text-ink-faint">{t("demoHint")}</span>
+          {/* „Wiedergabe wird simuliert" nur ohne echte Audiodatei — mit
+              hochgeladener Musik spielt der Player die Datei wirklich ab. */}
+          {routine.audioUrl == null && (
+            <span className="ml-auto text-caption text-ink-faint">{t("demoHint")}</span>
+          )}
         </div>
 
         <Waveform

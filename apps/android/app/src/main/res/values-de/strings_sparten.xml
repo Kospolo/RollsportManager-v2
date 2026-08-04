@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Sparten“ (features/sparten/**) — Deutsch, echte Umlaute. -->
+<resources>
+    <string name="sparten_title">Sparten</string>
+    <string name="sparten_loading">Sparten werden geladen …</string>
+    <string name="sparten_error_title">Sparten konnten nicht geladen werden</string>
+    <string name="sparten_error_retry">Nochmal versuchen</string>
+
+    <string name="sparten_list_eyebrow">Gliederung</string>
+    <plurals name="sparten_list_count">
+        <item quantity="one">%1$d Sparte</item>
+        <item quantity="other">%1$d Sparten</item>
+    </plurals>
+    <plurals name="sparten_team_count">
+        <item quantity="one">%1$d Team</item>
+        <item quantity="other">%1$d Teams</item>
+    </plurals>
+
+    <string name="sparten_inactive">Ruht</string>
+    <string name="sparten_own_finances">Eigene Kasse</string>
+
+    <string name="sparten_empty_title">Noch keine Sparten</string>
+    <string name="sparten_empty_message">Einsparten-Vereine brauchen keine — Teams gehen auch ohne.</string>
+</resources>

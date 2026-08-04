@@ -113,6 +113,21 @@ final class TeamsViewModel: ObservableObject {
         return spartenById[sparteId]
     }
 
+    /// Alle geladenen Sparten des Vereins, sortiert (Sortierung, dann Name) —
+    /// die Auswahl-Optionen im Team → Sparte-Sheet. Leer, wenn der Sparten-Call
+    /// fehlschlug (dann zeigt das Sheet seinen eigenen Leerzustand).
+    var sortedSparten: [Sparte] {
+        SpartenViewModel.sort(Array(spartenById.values))
+    }
+
+    /// Aktualisiertes Team (z. B. nach der Sparte-Zuordnung) an Ort und Stelle
+    /// ersetzen — die Detailseite liest `team(id:)` neu und der Kopf zeigt die
+    /// neue Sparte ohne Voll-Reload. Unbekannte IDs werden ignoriert.
+    func applyUpdatedTeam(_ team: Team) {
+        guard let index = teams.firstIndex(where: { $0.id == team.id }) else { return }
+        teams[index] = team
+    }
+
     /// „Mein Team": die angemeldete Person steht als Läufer:in ODER im
     /// Trainerstab auf dem Kader.
     func isMine(_ team: Team) -> Bool {

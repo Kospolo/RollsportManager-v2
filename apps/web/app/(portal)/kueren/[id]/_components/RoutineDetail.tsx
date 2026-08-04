@@ -24,6 +24,7 @@ import { Icon } from "@/components/shell/icons";
 import { useToast } from "@/components/ui/Toast";
 import { kuerenDict, STATUS_TONE, STATUS_KEY, disciplineKey } from "../../i18n";
 import { usePlayback } from "./usePlayback";
+import { useAuthedMedia } from "./useAuthedMedia";
 import { PlayerCard } from "./PlayerCard";
 import { MarkerList } from "./MarkerList";
 import { ScoreTrend } from "./ScoreTrend";
@@ -141,7 +142,10 @@ function LoadedDetail({
   const t = useT(kuerenDict);
   const { showToast } = useToast();
   const { hasCap } = useCapabilities();
-  const playback = usePlayback(routine.music.durationMs);
+  // Echte Audioquelle (auth-gated → Object-URL) für den Trainings-Player: er
+  // spielt jetzt DIESELBE Datei wie die Vorschau unten, nur mit Tempo/Loop.
+  const audioSrc = useAuthedMedia(routine.audioUrl);
+  const playback = usePlayback(routine.music.durationMs, audioSrc);
 
   /* Kür-Teilen UND Medien-Upload sind Trainer:innen vorbehalten (serverseitig
      is_club_trainer + PRO); im UI ausgeblendet statt 403. */
@@ -286,7 +290,22 @@ function LoadedDetail({
       {/* Kür-Bild — sichtbar für alle, die die Kür sehen (wenn hinterlegt). */}
       <RoutineCoverImage routine={routine} />
 
-      <PlayerCard routine={routine} playback={playback} />
+      {/* Ohne hinterlegte Musik gibt es KEINEN (simulierten) Player: das erste,
+          was man sieht, ist das Hochladen von Musik/Bild (Trainer:in/Vorstand)
+          bzw. ein Hinweis (nur-Lesen). Erst mit echter Audiodatei erscheint der
+          Trainings-Player. Genau die von Marcel gewünschte Reihenfolge. */}
+      {routine.audioUrl != null ? (
+        <PlayerCard routine={routine} playback={playback} />
+      ) : canManage ? (
+        <RoutineMediaCard routine={routine} onChanged={reload} />
+      ) : (
+        <div className="rounded-xl border border-line-strong bg-surface px-5 py-10 text-center">
+          <p className="text-body font-bold text-ink">{t("noAudioTitle")}</p>
+          <p className="mx-auto mt-1 max-w-md text-caption leading-[18px] text-ink-soft">
+            {t("noAudioBody")}
+          </p>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <MarkerList
@@ -300,8 +319,12 @@ function LoadedDetail({
         />
         <div className="grid gap-6">
           <ScoreTrend routine={routine} />
-          {/* Medien-Upload nur für Trainer:innen (ausgeblendet statt 403). */}
-          {canManage && <RoutineMediaCard routine={routine} onChanged={reload} />}
+          {/* Medien-Upload nur für Trainer:innen (ausgeblendet statt 403). Ohne
+              Audio steht die Karte bereits OBEN (Upload-first); hier nur, wenn
+              schon Musik da ist — dann zum Ersetzen bzw. Bild-Nachreichen. */}
+          {canManage && routine.audioUrl != null && (
+            <RoutineMediaCard routine={routine} onChanged={reload} />
+          )}
           {/* INTERNE Trainer-Notiz je Läufer:in — direkt über der persönlichen
               „Meine Notiz", damit beide Notiz-Arten nebeneinander stehen. Bei
               Paar-/Gruppenküren trägt jede Karte den Namen (heading). */}

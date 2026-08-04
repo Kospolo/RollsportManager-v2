@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Mitglieder“ — deutsche Strings (echte Umlaute, Wortlaut = iOS). -->
+<resources>
+    <string name="members_title">Mitglieder</string>
+    <string name="members_loading">Mitglieder werden geladen …</string>
+
+    <string name="members_error_title">Mitglieder konnten nicht geladen werden</string>
+    <string name="members_error_retry">Erneut versuchen</string>
+
+    <string name="members_search_placeholder">Nach Name oder E-Mail suchen</string>
+    <string name="members_search_clear">Suche löschen</string>
+
+    <string name="members_list_eyebrow">Verein</string>
+    <plurals name="members_list_count">
+        <item quantity="one">%1$d Mitglied</item>
+        <item quantity="other">%1$d Mitglieder</item>
+    </plurals>
+
+    <string name="members_filter_all">Alle</string>
+
+    <string name="members_role_owner">Vorstand</string>
+    <string name="members_role_admin">Verwaltung</string>
+    <string name="members_role_moderator">Moderator:in</string>
+    <string name="members_role_treasurer">Kassenwart:in</string>
+    <string name="members_role_coach">Trainer:in</string>
+    <string name="members_role_member">Mitglied</string>
+    <string name="members_role_guest_coach">Gasttrainer:in</string>
+
+    <string name="members_status_pending">Angefragt</string>
+    <string name="members_status_rejected">Abgelehnt</string>
+    <string name="members_status_active">Aktiv</string>
+    <string name="members_status_inactive">Pausiert</string>
+    <string name="members_status_left">Ausgetreten</string>
+
+    <string name="members_fee_paid">Beitrag bezahlt</string>
+    <string name="members_row_no_team">Kein Team</string>
+    <string name="members_row_a11y">Mitglied %1$s öffnen</string>
+
+    <string name="members_empty_title">Keine Treffer</string>
+    <string name="members_empty_message">Zu Suche und Filter passt gerade niemand.</string>
+    <string name="members_empty_reset">Filter zurücksetzen</string>
+
+    <string name="members_back">Zurück</string>
+    <string name="members_detail_missing_title">Mitglied nicht gefunden</string>
+    <string name="members_detail_missing_message">Dieses Mitglied ist nicht Teil der geladenen Vereinsliste.</string>
+
+    <string name="members_detail_master_eyebrow">Stammdaten</string>
+    <string name="members_detail_master_title">Rund um die Person</string>
+    <string name="members_detail_email">E-Mail</string>
+    <string name="members_detail_birth_date">Geburtsdatum</string>
+    <string name="members_detail_joined_on">Im Verein seit</string>
+    <string name="members_detail_teams">Teams</string>
+    <string name="members_detail_none">Nicht hinterlegt</string>
+
+    <string name="members_family_eyebrow">Familie</string>
+    <string name="members_family_title">Wer zusammengehört</string>
+    <string name="members_family_empty_title">Keine Familie sichtbar</string>
+    <string name="members_family_empty_admin_message">Für dieses Mitglied sind keine Familienverknüpfungen hinterlegt.</string>
+    <string name="members_family_empty_own_message">Aus Datenschutzgründen siehst du hier nur die eigene Familie.</string>
+    <string name="members_family_child_pill">Kind</string>
+    <string name="members_family_guardian_pill">Erziehungsberechtigt</string>
+    <string name="members_family_relation_parent">Elternteil</string>
+
+    <string name="members_role_change_eyebrow">Rechte</string>
+    <string name="members_role_change_title">Rolle im Verein</string>
+    <string name="members_role_change_menu">Rolle ändern</string>
+    <string name="members_role_change_a11y">Rolle dieses Mitglieds ändern</string>
+    <string name="members_role_change_self">Die eigene Rolle kann nicht geändert werden.</string>
+    <string name="members_role_change_owner_hint">Der letzte Vorstand ist geschützt und kann nicht herabgestuft werden.</string>
+    <string name="members_role_change_forbidden">Keine Berechtigung — die Änderung wurde zurückgenommen.</string>
+</resources>

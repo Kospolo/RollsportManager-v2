@@ -27,6 +27,12 @@ struct MehrHubView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var visibility = MehrVisibilityStore()
 
+    /// Merkt sich die oberste sichtbare Kachel, damit der Hub nach dem Zurück-
+    /// gehen aus einem Modul wieder an derselben Stelle steht statt nach ganz
+    /// oben zu springen. Das `@State` überlebt Push/Pop (die Root-View bleibt
+    /// am Leben); `.scrollPosition` stellt die Position daraus wieder her.
+    @State private var topTile: String?
+
     private let columns = [
         GridItem(.flexible(), spacing: Theme.Spacing.s3),
         GridItem(.flexible(), spacing: Theme.Spacing.s3),
@@ -76,6 +82,7 @@ struct MehrHubView: View {
                 }
                 .padding(Theme.Spacing.s5)
             }
+            .scrollPosition(id: $topTile, anchor: .top)
             .background(Theme.Colors.bgCanvas.ignoresSafeArea())
             .navigationTitle(Text("mehr.title"))
             .navigationBarTitleDisplayMode(.large)
@@ -145,6 +152,7 @@ struct MehrHubView: View {
                         .id(tile.id)
                 }
             }
+            .scrollTargetLayout()
         }
     }
 

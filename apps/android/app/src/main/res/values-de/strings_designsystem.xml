@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="rsm_status_dunning_0">Offen</string>
+    <string name="rsm_status_dunning_1">Erinnerung</string>
+    <string name="rsm_status_dunning_2">1. Mahnung</string>
+    <string name="rsm_status_dunning_3">2. Mahnung</string>
+</resources>

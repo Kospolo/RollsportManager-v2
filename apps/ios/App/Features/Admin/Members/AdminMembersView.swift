@@ -11,6 +11,7 @@ struct AdminMembersView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = AdminMembersViewModel()
     @State private var editing: AdminEditContext?
+    @State private var creating = false
 #if DEBUG
     @State private var didAutoOpenEdit = false
 #endif
@@ -49,6 +50,25 @@ struct AdminMembersView: View {
                 currentUserId: session.session?.profile.memberId,
                 onUpdated: { viewModel.apply(updated: $0) }
             )
+        }
+        .sheet(isPresented: $creating) {
+            AdminMemberCreateSheet(
+                api: session.api,
+                clubId: session.clubId,
+                onCreated: {
+                    _Concurrency.Task { await viewModel.load(api: session.api, clubId: session.clubId) }
+                }
+            )
+        }
+        .toolbar {
+            if canManageMembers {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { creating = true } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel(Text(verbatim: "Mitglied anlegen"))
+                }
+            }
         }
     }
 

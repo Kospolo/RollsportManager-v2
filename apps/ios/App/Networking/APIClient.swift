@@ -92,6 +92,14 @@ struct APIClient {
         try await request(method: "PATCH", path: path, query: [], body: body)
     }
 
+    /// PATCH ohne Request-Body (z. B. `/lockers/{id}/release`). Die API
+    /// antwortet mit dem aktualisierten Objekt, das dekodiert wird.
+    func patch<Response: Decodable>(
+        _ path: String
+    ) async throws -> Response {
+        try await request(method: "PATCH", path: path, query: [], body: nil as Never?)
+    }
+
     /// DELETE ohne Request-Body. Die API antwortet mit 200 + JSON (z. B.
     /// `Deleted` aus den Contracts), deshalb wird die Antwort dekodiert —
     /// analog zu `get`. Für 403 gilt derselbe RFC-7807-Pfad wie überall.

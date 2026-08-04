@@ -58,6 +58,8 @@ struct FamilyTeamChip: View {
 /// Beziehung) · Team-Chips. Rein informativ (lesender Batch, keine Navigation).
 struct FamilyMemberRow: View {
     let entry: FamilyViewModel.FamilyMember
+    /// Zeigt einen dezenten Chevron als Hinweis auf eine tippbare Zeile.
+    var showsDisclosure = false
 
     private var fullName: String { entry.member.familyFullName }
 
@@ -91,6 +93,12 @@ struct FamilyMemberRow: View {
                 }
             }
             Spacer(minLength: 0)
+            if showsDisclosure {
+                Image(systemName: "chevron.right")
+                    .font(Theme.Fonts.caption.weight(.semibold))
+                    .foregroundStyle(Theme.Colors.inkFaint)
+                    .accessibilityHidden(true)
+            }
         }
         .frame(minHeight: Theme.Size.listRow)
         .contentShape(Rectangle())
@@ -105,6 +113,9 @@ struct FamilyMemberRow: View {
 struct FamilySectionCard: View {
     let title: LocalizedStringKey
     let entries: [FamilyViewModel.FamilyMember]
+    /// Optional: tippbare Zeilen (z. B. „Meine Kinder“ → Verwalten/Entfernen).
+    /// Ohne Closure bleiben die Zeilen rein informativ (Bezugspersonen).
+    var onSelect: ((FamilyViewModel.FamilyMember) -> Void)? = nil
 
     var body: some View {
         RSMCard {
@@ -119,7 +130,14 @@ struct FamilySectionCard: View {
                 }
                 VStack(spacing: 0) {
                     ForEach(entries) { entry in
-                        FamilyMemberRow(entry: entry)
+                        if let onSelect {
+                            Button { onSelect(entry) } label: {
+                                FamilyMemberRow(entry: entry, showsDisclosure: true)
+                            }
+                            .buttonStyle(.plain)
+                        } else {
+                            FamilyMemberRow(entry: entry)
+                        }
                         if entry.id != entries.last?.id {
                             Divider().overlay(Theme.Colors.line)
                         }

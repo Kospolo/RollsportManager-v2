@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature "Küren" (ui/features/routines) — Default ENGLISCH.
+     Wortlaut gespiegelt aus apps/ios/App/Localizable.xcstrings (routines.*). -->
+<resources>
+    <!-- Liste -->
+    <string name="routines_list_title">Routines</string>
+    <string name="routines_list_subtitle">Music, markers and RollArt scores for your skaters</string>
+    <string name="routines_list_error_title">Could not load data</string>
+    <string name="routines_common_retry">Try again</string>
+    <string name="routines_list_empty_title">No routines yet</string>
+    <string name="routines_list_empty_message">Once a routine with music is created, it will appear here.</string>
+    <string name="routines_list_last_score">Last RollArt score</string>
+    <string name="routines_list_no_score">No score yet</string>
+    <string name="routines_list_a11y_card">Routine %1$s, %2$s — open details</string>
+
+    <!-- Status + Disziplin -->
+    <string name="routines_status_draft">Draft</string>
+    <string name="routines_status_ready">Competition-ready</string>
+    <string name="routines_status_competition">Competing</string>
+    <string name="routines_status_archived">Archived</string>
+    <string name="routines_discipline_single">Singles</string>
+    <string name="routines_discipline_pair">Pairs</string>
+
+    <!-- Detail -->
+    <string name="routines_detail_back">Back</string>
+    <string name="routines_detail_error_title">Could not load details</string>
+    <string name="routines_detail_meta_length">Length %1$s</string>
+    <string name="routines_detail_meta_bpm">%1$d BPM</string>
+    <string name="routines_detail_no_music_title">No music yet</string>
+    <string name="routines_detail_no_music_message">This routine has no audio file yet — the training player appears once music is attached.</string>
+
+    <!-- Trainings-Player -->
+    <string name="routines_player_eyebrow">Training player</string>
+    <string name="routines_player_demo_hint">Demo without audio file — playback is simulated</string>
+    <string name="routines_player_loop_chip">Loop %1$s–%2$s</string>
+    <string name="routines_player_starting_in">Starting in %1$d s</string>
+    <string name="routines_player_countdown_eyebrow">Countdown</string>
+    <string name="routines_player_countdown_off">Off</string>
+    <string name="routines_player_countdown_seconds">%1$d s</string>
+    <string name="routines_player_loop_eyebrow">A–B loop</string>
+    <string name="routines_player_loop_on">on</string>
+    <string name="routines_player_loop_off">off</string>
+    <string name="routines_player_tempo_eyebrow">Tempo</string>
+    <string name="routines_player_tempo_note_original">Original tempo — the routine runs %1$s · pitch is preserved</string>
+    <string name="routines_player_tempo_note">at %1$d %% the routine runs %2$s instead of %3$s · pitch is preserved</string>
+    <string name="routines_player_wave_value">%1$s of %2$s</string>
+
+    <!-- Player a11y -->
+    <string name="routines_player_a11y_play">Play</string>
+    <string name="routines_player_a11y_pause">Pause</string>
+    <string name="routines_player_a11y_skip_back">Back 5 seconds</string>
+    <string name="routines_player_a11y_skip_forward">Forward 5 seconds</string>
+    <string name="routines_player_a11y_wave">Waveform of the routine music — swipe or adjust to seek</string>
+    <string name="routines_player_a11y_tempo_slider">Fine tempo control, 50 to 200 percent</string>
+    <string name="routines_player_a11y_tempo_preset">Tempo %1$d percent</string>
+    <string name="routines_player_a11y_loop_toggle">A–B loop</string>
+    <string name="routines_player_a11y_set_loop_a">Set loop point A to the current position, currently %1$s</string>
+    <string name="routines_player_a11y_set_loop_b">Set loop point B to the current position, currently %1$s</string>
+    <string name="routines_player_a11y_countdown_off">Countdown off</string>
+    <string name="routines_player_a11y_countdown">Countdown %1$d seconds before start</string>
+
+    <!-- Zeitmarken -->
+    <string name="routines_markers_eyebrow">Markers</string>
+    <string name="routines_markers_title">Elements in the routine</string>
+    <string name="routines_markers_empty">No markers for this routine yet.</string>
+    <string name="routines_markers_in_loop">in loop</string>
+    <string name="routines_markers_a11y_play_from">Play from %1$s — %2$s</string>
+
+    <!-- RollArt-Verlauf -->
+    <string name="routines_scores_eyebrow">RollArt history</string>
+    <string name="routines_scores_title">Scores across the season</string>
+    <string name="routines_scores_empty">No scores yet — the trend will appear here after the first competition.</string>
+    <string name="routines_scores_training">Training run</string>
+    <string name="routines_scores_competition_fallback">Competition</string>
+    <string name="routines_scores_technical">Technical %1$s</string>
+    <string name="routines_scores_components">Components %1$s</string>
+    <string name="routines_scores_since_first">points since the first score</string>
+    <string name="routines_scores_first">First score</string>
+    <string name="routines_scores_best">Best score %1$s points</string>
+    <string name="routines_scores_a11y_chart">Score trend: %1$s points</string>
+
+    <!-- Notizen (lokal) -->
+    <string name="routines_notes_eyebrow">Notes</string>
+    <string name="routines_notes_title">Training notes</string>
+    <string name="routines_notes_placeholder">What went well? What do we keep looping? …</string>
+    <string name="routines_notes_hint">Stored locally on this device only.</string>
+    <string name="routines_notes_save">Save note</string>
+    <string name="routines_notes_saved">Last saved: %1$s</string>
+    <string name="routines_notes_a11y_editor">Note for this routine</string>
+</resources>

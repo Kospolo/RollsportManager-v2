@@ -10400,13 +10400,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "RSV Neckarsulm"
+            "value": "RollsportManager"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "RSV Neckarsulm"
+            "value": "RollsportManager"
           }
         }
       }
@@ -10432,13 +10432,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wähle eine Persona für den Blick in den Verein."
+            "value": "Die App deines Vereins — Küren mit Musik, Mitglieder, Termine und Wettkämpfe an einem Ort."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pick a persona to step into the club."
+            "value": "Your club's app — routines with music, members, schedules and competitions in one place."
           }
         }
       }
@@ -10448,13 +10448,13 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wer meldet sich an?"
+            "value": "Willkommen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Who's signing in?"
+            "value": "Welcome"
           }
         }
       }
@@ -35150,6 +35150,134 @@
           "stringUnit": {
             "state": "translated",
             "value": "You do not have permission for this action."
+          }
+        }
+      }
+    },
+    "login.feature.routines.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Küren & Musik"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routines & music"
+          }
+        }
+      }
+    },
+    "login.feature.routines.desc": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainings-Player mit Tempo, Markern und Wertungen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Training player with tempo, markers and scores."
+          }
+        }
+      }
+    },
+    "login.feature.members.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitglieder & Teams"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Members & teams"
+          }
+        }
+      }
+    },
+    "login.feature.members.desc": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vereinsleben, Rollen und Beiträge übersichtlich."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Club life, roles and fees at a glance."
+          }
+        }
+      }
+    },
+    "login.feature.events.title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termine & Wettkampf"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Events & competition"
+          }
+        }
+      }
+    },
+    "login.feature.events.desc": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planung, Anmeldungen und Ergebnisse."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planning, sign-ups and results."
+          }
+        }
+      }
+    },
+    "login.form.signInTitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anmelden"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in"
+          }
+        }
+      }
+    },
+    "login.form.registerTitle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konto erstellen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create account"
           }
         }
       }

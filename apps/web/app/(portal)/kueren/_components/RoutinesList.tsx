@@ -2,6 +2,8 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { NewRoutineSheet } from "./NewRoutineSheet";
 import type { ClubEntitlement, Member, Routine, RoutineStatus } from "@/lib/types";
 import { errorMessage, isNotImplemented, memberById, permissions } from "@/lib/data";
 import { routineLimit, tierName } from "@/lib/entitlement";
@@ -70,6 +72,8 @@ function ListShell({
   const t = useT(kuerenDict);
   const { locale } = useLocale();
   const { showToast } = useToast();
+  const router = useRouter();
+  const [createOpen, setCreateOpen] = useState(false);
 
   const counterText =
     limit == null
@@ -94,7 +98,7 @@ function ListShell({
       );
       return;
     }
-    showToast(t("demoUnavailable"), { tone: "info" });
+    setCreateOpen(true);
   };
 
   return (
@@ -117,6 +121,13 @@ function ListShell({
         }
       />
       {children}
+      {canCreate && (
+        <NewRoutineSheet
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
+          onCreated={(routine) => router.push(`/kueren/${routine.id}`)}
+        />
+      )}
     </div>
   );
 }

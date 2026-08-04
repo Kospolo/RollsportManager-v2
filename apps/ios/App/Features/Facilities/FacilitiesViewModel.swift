@@ -165,6 +165,37 @@ final class FacilitiesViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Schreiben (bearbeiten/löschen)
+
+    /// Anlage bearbeiten (PATCH). Bei Erfolg wird die Karte in der Liste durch das
+    /// zurückgegebene Objekt ersetzt und die Liste neu nach Name sortiert. Ein 403
+    /// wirft weiter — das Sheet zeigt den Klartext.
+    func update(facilityId: String, _ patch: FacilityUpdate) async throws {
+        guard let api else { return }
+        let updated = try await api.updateFacility(facilityId: facilityId, patch)
+        if let index = facilities.firstIndex(where: { $0.id == facilityId }) {
+            facilities[index] = updated
+        }
+        facilities.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// Anlage löschen (DELETE). Bei Erfolg fliegt die Karte samt ihren Buchungen
+    /// lokal aus der Liste.
+    func delete(facilityId: String) async throws {
+        guard let api else { return }
+        _ = try await api.deleteFacility(facilityId: facilityId)
+        facilities.removeAll { $0.id == facilityId }
+        bookings.removeAll { $0.facilityId == facilityId }
+    }
+
+    /// Buchung löschen (DELETE). Bei Erfolg wird sie lokal entfernt — das
+    /// Detail-Sheet aktualisiert sich, weil es `bookings(for:)` beobachtet.
+    func deleteBooking(id: String) async throws {
+        guard let api else { return }
+        _ = try await api.deleteFacilityBooking(bookingId: id)
+        bookings.removeAll { $0.id == id }
+    }
+
     // MARK: - Helfer
 
     static func friendlyMessage(_ error: Error) -> String {

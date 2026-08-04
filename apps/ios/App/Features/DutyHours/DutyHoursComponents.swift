@@ -164,33 +164,55 @@ struct DutyProgressBar: View {
 }
 
 /// Zeile der eigenen Einträge: Stunden (mono) · Art-Pille · Status-Pille,
-/// darunter Datum · Notiz. Web-Referenz: MyEntryList.tsx.
+/// darunter Datum · Notiz. `onDelete` blendet die Löschen-Aktion ein (eigener
+/// Eintrag). Web-Referenz: MyEntryList.tsx.
 struct DutyEntryRow: View {
     let entry: DutyEntry
+    /// Optionale Löschen-Aktion (nil ⇒ keine Aktion, reine Ansicht).
+    var onDelete: (() -> Void)? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
-            HStack(spacing: Theme.Spacing.s2) {
-                Text(verbatim: DutyHoursFormat.hours(entry.hours ?? 0))
-                    .font(Theme.Fonts.monoTable.weight(.bold))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.Colors.inkPrimary)
-                RSMStatusPill(
-                    text: DutyHoursFormat.kindLabelKey(entry.kind),
-                    kind: DutyHoursFormat.kindTone(entry.kind)
-                )
-                Spacer(minLength: Theme.Spacing.s2)
-                RSMStatusPill(
-                    text: entry.approved ? "pflichtstunden.status.approved" : "pflichtstunden.status.pending",
-                    kind: entry.approved ? .success : .neutral
-                )
+        HStack(alignment: .top, spacing: Theme.Spacing.s3) {
+            VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+                HStack(spacing: Theme.Spacing.s2) {
+                    Text(verbatim: DutyHoursFormat.hours(entry.hours ?? 0))
+                        .font(Theme.Fonts.monoTable.weight(.bold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.Colors.inkPrimary)
+                    RSMStatusPill(
+                        text: DutyHoursFormat.kindLabelKey(entry.kind),
+                        kind: DutyHoursFormat.kindTone(entry.kind)
+                    )
+                    Spacer(minLength: Theme.Spacing.s2)
+                    RSMStatusPill(
+                        text: entry.approved ? "pflichtstunden.status.approved" : "pflichtstunden.status.pending",
+                        kind: entry.approved ? .success : .neutral
+                    )
+                }
+                Text(verbatim: DutyHoursFormat.entryLine(date: entry.activityDate, note: entry.note))
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(Theme.Colors.inkSoft)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text(verbatim: DutyHoursFormat.entryLine(date: entry.activityDate, note: entry.note))
-                .font(Theme.Fonts.caption)
-                .foregroundStyle(Theme.Colors.inkSoft)
-                .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+
+            if let onDelete {
+                deleteButton(onDelete)
+            }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityElement(children: .combine)
+    }
+
+    /// Ghost-Löschen-Knopf (≥ 44 pt Touch-Ziel), Danger-Tint. Auslösen öffnet
+    /// nur den Bestätigungsdialog — gelöscht wird ausschliesslich dort.
+    private func deleteButton(_ onDelete: @escaping () -> Void) -> some View {
+        Button(action: onDelete) {
+            Image(systemName: "trash")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.Colors.danger)
+                .frame(minWidth: Theme.Size.touchTarget, minHeight: Theme.Size.touchTarget)
+        }
+        .buttonStyle(RSMPressableButtonStyle())
+        .accessibilityLabel(Text(verbatim: "Eintrag löschen"))
     }
 }

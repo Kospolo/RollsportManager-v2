@@ -48,8 +48,21 @@ struct RSMAvatarView: View {
     /// Stabile ID für den Farbton (z. B. `member_id`); Fallback: Name.
     var personId: String?
     var size: CGFloat = 36
+    /// Auth-gated Foto-URL ('/media/{key}') — ist eine hinterlegt, zeigt der
+    /// Avatar das FOTO statt der Initialen (Initialen bleiben Fallback beim
+    /// Laden/Fehlen). Nil = nur Initialen (wie bisher).
+    var avatarUrl: String? = nil
 
     private var tone: RSMAvatarTone { .forId(personId ?? name) }
+
+    /// Medien-Key aus '/media/{key}' — sonst nil (Initialen-Fallback).
+    private var photoKey: String? {
+        guard let url = avatarUrl else { return nil }
+        let prefix = "/media/"
+        guard url.hasPrefix(prefix) else { return nil }
+        let key = String(url.dropFirst(prefix.count))
+        return key.isEmpty ? nil : key
+    }
 
     private var initials: String {
         let parts = name.split(separator: " ")
@@ -64,8 +77,16 @@ struct RSMAvatarView: View {
             Text(initials)
                 .font(Theme.Fonts.body(size: size * 0.38, weight: .bold))
                 .foregroundStyle(tone.initialsColor)
+            if let photoKey {
+                // Foto DECKT die Initialen, sobald es geladen ist. MediaImage
+                // schickt den Bearer-Token mit (ein nacktes AsyncImage bekäme 401).
+                MediaImage(key: photoKey, placeholderSystemImage: "person.fill")
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+            }
         }
         .frame(width: size, height: size)
+        .clipShape(Circle())
         .accessibilityHidden(true) // der Name steht immer als Text daneben
     }
 }

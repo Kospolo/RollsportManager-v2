@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Teams“ (features/teams/**) — Deutsch, echte Umlaute. -->
+<resources>
+    <string name="teams_title">Teams</string>
+    <string name="teams_loading">Teams werden geladen …</string>
+    <string name="teams_error_title">Teams konnten nicht geladen werden</string>
+    <string name="teams_error_retry">Nochmal versuchen</string>
+
+    <string name="teams_search_placeholder">Team oder Altersgruppe suchen</string>
+    <string name="teams_search_clear">Suche leeren</string>
+
+    <string name="teams_empty_title">Noch keine Teams</string>
+    <string name="teams_empty_message">Sobald der Verein Mannschaften anlegt, stehen sie hier.</string>
+    <string name="teams_empty_reset">Suche leeren</string>
+
+    <string name="teams_group_no_sparte">Ohne Sparte</string>
+    <plurals name="teams_group_count">
+        <item quantity="one">%1$d Team</item>
+        <item quantity="other">%1$d Teams</item>
+    </plurals>
+    <plurals name="teams_skater_count">
+        <item quantity="one">%1$d Läufer:in</item>
+        <item quantity="other">%1$d Läufer:innen</item>
+    </plurals>
+    <plurals name="teams_coach_count">
+        <item quantity="one">%1$d Trainer:in</item>
+        <item quantity="other">%1$d Trainer:innen</item>
+    </plurals>
+
+    <string name="teams_back">Zurück</string>
+    <string name="teams_detail_eyebrow">Team</string>
+    <string name="teams_detail_coaches_eyebrow">Training</string>
+    <string name="teams_detail_skaters_eyebrow">Mannschaft</string>
+    <string name="teams_detail_no_coaches">Noch niemand als Trainer:in eingetragen.</string>
+    <string name="teams_detail_no_skaters">Noch niemand in dieser Mannschaft.</string>
+    <string name="teams_detail_gone_title">Team nicht verfügbar</string>
+    <string name="teams_detail_gone_message">Dieses Team gibt es nicht mehr — oder du darfst es nicht sehen.</string>
+</resources>

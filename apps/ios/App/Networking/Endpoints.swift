@@ -436,6 +436,39 @@ extension APIClient {
         try await self.patch("/clubs/\(clubId)/members/\(memberId)", body: patch)
     }
 
+    /// POST /clubs/{clubId}/members — Mitglied ANLEGEN (z. B. Ehrenamtliche ohne
+    /// Handy, die der Vorstand aufnimmt). Ohne E-Mail entsteht ein reiner
+    /// Datensatz ohne Login. 403 = nicht berechtigt (can_manage_members).
+    func createMember(clubId: String, _ input: ClubMemberCreate) async throws -> ClubMember {
+        try await self.post("/clubs/\(clubId)/members", body: input)
+    }
+
+    // Anlegen-Endpunkte (bisher nur Web). club_id steckt im Body-Typ.
+    func createRoutine(_ input: RoutineCreate) async throws -> Routine {
+        try await self.post("/routines", body: input)
+    }
+    func createCompetition(_ input: CompetitionCreate) async throws -> Competition {
+        try await self.post("/competitions", body: input)
+    }
+    func createEquipment(_ input: EquipmentCreate) async throws -> Equipment {
+        try await self.post("/equipment", body: input)
+    }
+    func createLocker(_ input: LockerCreate) async throws -> Locker {
+        try await self.post("/lockers", body: input)
+    }
+    func createExercise(_ input: ExerciseCreate) async throws -> Exercise {
+        try await self.post("/exercises", body: input)
+    }
+    func createTrainingSlot(_ input: TrainingSlotCreate) async throws -> TrainingSlot {
+        try await self.post("/training-slots", body: input)
+    }
+    func createRegionalEvent(_ input: RegionalEventCreate) async throws -> RegionalEvent {
+        try await self.post("/regional-events", body: input)
+    }
+    func createFacility(_ input: FacilityCreate) async throws -> Facility {
+        try await self.post("/facilities", body: input)
+    }
+
     /// Rollenwechsel per `AssignableClubRole` (Convenience-Overload zur bereits
     /// bestehenden `changeMemberRole(clubId:memberId:_:)`, die den fertigen
     /// `ClubMemberRoleChange` nimmt). 403 = nicht berechtigt, 409 = letzter Owner.

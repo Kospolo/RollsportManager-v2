@@ -10,6 +10,9 @@ struct DutyHoursView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = DutyHoursViewModel()
     @State private var isLogging = false
+    /// Eintrag, dessen Löschen gerade bestätigt wird (nil = kein Dialog). Nie
+    /// automatisch bestätigt — gelöscht wird nur über den Dialog-Button.
+    @State private var toDelete: DutyEntry?
 
     private var memberId: String { session.session?.profile.memberId ?? "" }
     private var canLog: Bool { !memberId.isEmpty }
@@ -63,6 +66,30 @@ struct DutyHoursView: View {
             Button("pflichtstunden.error.ok", role: .cancel) {}
         } message: {
             Text(verbatim: model.refreshErrorMessage ?? "")
+        }
+        .confirmationDialog(
+            Text(verbatim: "Eintrag löschen"),
+            isPresented: deleteConfirmBinding,
+            titleVisibility: .visible,
+            presenting: toDelete
+        ) { entry in
+            Button(role: .destructive) {
+                let target = entry
+                toDelete = nil
+                _Concurrency.Task { await model.deleteEntry(target) }
+            } label: {
+                Text(verbatim: "Löschen")
+            }
+            Button(role: .cancel) { toDelete = nil } label: {
+                Text(verbatim: "Abbrechen")
+            }
+        } message: { _ in
+            Text(verbatim: "Dieser Eintrag wird entfernt. Das lässt sich nicht rückgängig machen.")
+        }
+        .alert(Text(verbatim: "Löschen fehlgeschlagen"), isPresented: deleteErrorBinding) {
+            Button("pflichtstunden.error.ok", role: .cancel) {}
+        } message: {
+            Text(verbatim: model.deleteErrorMessage ?? "")
         }
     }
 
@@ -150,7 +177,7 @@ struct DutyHoursView: View {
                 .padding(.leading, Theme.Spacing.s1)
                 ForEach(model.sortedEntries, id: \.id) { entry in
                     RSMCard(padding: Theme.Spacing.s4) {
-                        DutyEntryRow(entry: entry)
+                        DutyEntryRow(entry: entry, onDelete: { toDelete = entry })
                     }
                 }
             }
@@ -161,6 +188,20 @@ struct DutyHoursView: View {
         Binding(
             get: { model.refreshErrorMessage != nil },
             set: { if !$0 { model.refreshErrorMessage = nil } }
+        )
+    }
+
+    private var deleteConfirmBinding: Binding<Bool> {
+        Binding(
+            get: { toDelete != nil },
+            set: { if !$0 { toDelete = nil } }
+        )
+    }
+
+    private var deleteErrorBinding: Binding<Bool> {
+        Binding(
+            get: { model.deleteErrorMessage != nil },
+            set: { if !$0 { model.deleteErrorMessage = nil } }
         )
     }
 }

@@ -30,6 +30,32 @@ extension APIClient {
         try await get("/lockers", query: [URLQueryItem(name: "club_id", value: clubId)])
     }
 
+    /// PATCH /lockers/{id} — Fach ändern (Bezeichnung/Ort/Größe/Gebühr/Notiz).
+    /// Berechtigung sitzt serverseitig (RLS + Rolle). Ort/Gebühr/Notiz sind
+    /// leerbar (explizit null), Status/Zuordnung werden NICHT angefasst (die
+    /// laufen über assign/release) — deshalb der eigene Wire-Encoder.
+    func updateLocker(lockerId: String, _ input: LockerUpdate) async throws -> Locker {
+        try await patch("/lockers/\(lockerId)", body: LockerPatchWire(input))
+    }
+
+    /// PATCH /lockers/{id}/assign — Fach einem Mitglied zuordnen. Setzt Status
+    /// serverseitig auf „belegt“.
+    func assignLocker(lockerId: String, memberId: String) async throws -> Locker {
+        try await patch("/lockers/\(lockerId)/assign", body: LockerAssign(memberId: memberId))
+    }
+
+    /// PATCH /lockers/{id}/release — Zuordnung aufheben (Fach wird frei).
+    func releaseLocker(lockerId: String) async throws -> Locker {
+        try await patch("/lockers/\(lockerId)/release")
+    }
+
+    /// DELETE /lockers/{id} — Fach löschen. Antwort `Deleted` fürs optimistische
+    /// Entfernen aus der Liste.
+    @discardableResult
+    func deleteLocker(lockerId: String) async throws -> Deleted {
+        try await delete("/lockers/\(lockerId)")
+    }
+
     // MARK: - Wartelisten (Waitlists)
     //
     // Web-Referenz: /(portal)/wartelisten. Warteschlangen des Vereins
@@ -112,5 +138,44 @@ extension APIClient {
     /// Antwort sind die aktualisierten `UserPreferences`.
     func updateMyPreferences(_ patch: UserPreferencesUpdate) async throws -> UserPreferences {
         try await self.patch("/me/preferences", body: patch)
+    }
+}
+
+/// PATCH-Body für Schließfach-Bearbeiten mit korrekter Leer-Semantik: Ort,
+/// Gebühr und Notiz sind leerbar (explizit null), Status und Zuordnung werden
+/// NICHT mitgeschickt (nil = unverändert), weil beide über eigene Routen
+/// (assign/release) laufen und ein versehentliches null sie sonst wegwischte.
+private struct LockerPatchWire: Encodable {
+    let label: String?
+    let location: String?
+    let status: LockerStatus?
+    let size: LockerSize?
+    let pricePerMonthCents: Int?
+    let assignedMemberId: String?
+    let note: String?
+
+    init(_ u: LockerUpdate) {
+        label = u.label; location = u.location; status = u.status; size = u.size
+        pricePerMonthCents = u.pricePerMonthCents; assignedMemberId = u.assignedMemberId; note = u.note
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case label, location, status, size
+        case pricePerMonthCents = "price_per_month_cents"
+        case assignedMemberId = "assigned_member_id"
+        case note
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        // Nicht anfassen (nil = weglassen):
+        try c.encodeIfPresent(label, forKey: .label)
+        try c.encodeIfPresent(size, forKey: .size)
+        try c.encodeIfPresent(status, forKey: .status)
+        try c.encodeIfPresent(assignedMemberId, forKey: .assignedMemberId)
+        // Leerbar (nil -> JSON null):
+        try c.encode(location, forKey: .location)
+        try c.encode(pricePerMonthCents, forKey: .pricePerMonthCents)
+        try c.encode(note, forKey: .note)
     }
 }

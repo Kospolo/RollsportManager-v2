@@ -12,6 +12,15 @@ import SwiftUI
 struct TrainingPlanView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = TrainingPlanViewModel()
+    @State private var showCreate = false
+    @State private var editingSlot: EditingSlot?
+
+    /// Wrapper, damit `sheet(item:)` einen Identifiable-Wert bekommt, ohne dem
+    /// Contract-Typ `TrainingSlot` eine Konformität aufzuzwingen.
+    private struct EditingSlot: Identifiable {
+        let slot: TrainingSlot
+        var id: String { slot.id }
+    }
 
     var body: some View {
         Group {
@@ -26,6 +35,27 @@ struct TrainingPlanView: View {
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("trainingsplan.title"))
+        .toolbar {
+            if session.permissions.isTrainer {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neue Trainingszeit"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            TrainingSlotCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
+        }
+        .sheet(item: $editingSlot) { editing in
+            TrainingSlotEditSheet(
+                api: session.api,
+                slot: editing.slot,
+                onUpdated: { model.replace($0) },
+                onDeleted: { model.remove(id: $0) }
+            )
+        }
         .navigationBarTitleDisplayMode(.large)
         .task {
             await model.loadIfNeeded(api: session.api, clubId: session.clubId)
@@ -117,13 +147,28 @@ struct TrainingPlanView: View {
                 emptyDayRow
             } else {
                 ForEach(group.slots, id: \.id) { slot in
-                    TrainingSlotCard(
-                        slot: slot,
-                        teamName: model.teamName(for: slot.teamId),
-                        coachName: model.coachName(for: slot.coachMemberId)
-                    )
+                    slotCard(slot)
                 }
             }
+        }
+    }
+
+    /// Karte einer Trainingszeit. Für den Trainerstab ist sie antippbar und
+    /// öffnet das Bearbeiten/Löschen-Sheet (Gate wie beim „+"); sonst rein
+    /// lesend.
+    @ViewBuilder
+    private func slotCard(_ slot: TrainingSlot) -> some View {
+        let card = TrainingSlotCard(
+            slot: slot,
+            teamName: model.teamName(for: slot.teamId),
+            coachName: model.coachName(for: slot.coachMemberId)
+        )
+        if session.permissions.isTrainer {
+            Button { editingSlot = EditingSlot(slot: slot) } label: { card }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(verbatim: "Trainingszeit bearbeiten"))
+        } else {
+            card
         }
     }
 

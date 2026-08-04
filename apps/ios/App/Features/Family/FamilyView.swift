@@ -2,16 +2,25 @@ import SwiftUI
 
 /// Öffentliche Root-View des Familie-Features (Web-Referenz: /(portal)/familie).
 ///
-/// Zeigt rein lesend die Familienbeziehungen der eingeloggten Person:
-/// „Meine Kinder“ und „Eltern & Bezugspersonen“, je mit Avatar, Name, Team und
-/// Beziehung. Die Verwaltung (Kind anlegen/verknüpfen/entfernen) bleibt diesem
-/// Batch bewusst außen vor. Wird im NavigationStack des „Mehr“-Tabs gepusht.
+/// Zeigt die Familienbeziehungen der eingeloggten Person: „Meine Kinder“ und
+/// „Eltern & Bezugspersonen“, je mit Avatar, Name, Team und Beziehung. „Meine
+/// Kinder“ ist Selfservice: Kind anlegen, ein bestehendes Mitglied als Kind
+/// verknüpfen und Verknüpfung entfernen — die Regeln erzwingt der Server
+/// (403 ⇒ Klartext-Alert). „Eltern & Bezugspersonen“ bleibt rein lesend.
+/// Wird im NavigationStack des „Mehr“-Tabs gepusht.
 struct FamilyView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var viewModel = FamilyViewModel()
 
     /// Eigene Member-ID zum Auflösen der Beziehungen (aus der Dev-Session).
     private var meId: String { session.session?.profile.memberId ?? "" }
+
+    // Schreib-Aktionen (Selfservice): Kind anlegen/verknüpfen + Verknüpfung
+    // entfernen. Kein Client-Rechte-Gate — der Server erzwingt die Regeln.
+    @State private var showCreate = false
+    @State private var showLink = false
+    @State private var removeTarget: FamilyViewModel.FamilyMember?
+    @State private var actionError: String?
 
     var body: some View {
         Group {
@@ -27,7 +36,67 @@ struct FamilyView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("familie.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button { showCreate = true } label: {
+                        Label { Text(verbatim: "Kind anlegen") } icon: { Image(systemName: "person.badge.plus") }
+                    }
+                    Button { showLink = true } label: {
+                        Label { Text(verbatim: "Kind verknüpfen") } icon: { Image(systemName: "link") }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .accessibilityLabel(Text(verbatim: "Familie verwalten"))
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            FamilyCreateChildSheet(api: session.api, clubId: session.clubId) { created in
+                viewModel.addCreatedChild(created)
+            }
+        }
+        .sheet(isPresented: $showLink) {
+            FamilyLinkChildSheet(
+                api: session.api, clubId: session.clubId, candidates: viewModel.linkCandidates
+            ) { guardianship, member in
+                viewModel.addLinkedChild(guardianship, member: member)
+            }
+        }
+        .confirmationDialog(
+            Text(verbatim: "Verknüpfung entfernen?"),
+            isPresented: Binding(get: { removeTarget != nil }, set: { if !$0 { removeTarget = nil } }),
+            presenting: removeTarget
+        ) { target in
+            Button(role: .destructive) {
+                removeGuardianship(target)
+            } label: {
+                Text(verbatim: "Verknüpfung entfernen")
+            }
+            Button(role: .cancel) { } label: { Text(verbatim: "Abbrechen") }
+        } message: { target in
+            Text(verbatim: "Die Familien-Verknüpfung zu \(target.member.familyFullName) wird entfernt. Das Mitglied selbst bleibt im Verein bestehen — nur die Zuordnung zu dir wird aufgehoben.")
+        }
+        .alert(
+            Text(verbatim: "Aktion fehlgeschlagen"),
+            isPresented: Binding(get: { actionError != nil }, set: { if !$0 { actionError = nil } })
+        ) {
+            Button { actionError = nil } label: { Text(verbatim: "OK") }
+        } message: {
+            Text(verbatim: actionError ?? "")
+        }
         .task { await viewModel.loadIfNeeded(api: session.api, clubId: session.clubId, meId: meId) }
+    }
+
+    /// Verknüpfung entfernen (Server + lokale Zeile) — Fehler als Klartext-Alert.
+    private func removeGuardianship(_ target: FamilyViewModel.FamilyMember) {
+        _Concurrency.Task {
+            do {
+                try await viewModel.deleteGuardianship(id: target.id, api: session.api, clubId: session.clubId)
+            } catch {
+                actionError = (error as? APIError)?.errorDescription ?? error.localizedDescription
+            }
+        }
     }
 
     // MARK: - Zustände
@@ -92,7 +161,11 @@ struct FamilyView: View {
                     RSMCard { emptyState }
                 } else {
                     if !viewModel.children.isEmpty {
-                        FamilySectionCard(title: "familie.children.title", entries: viewModel.children)
+                        FamilySectionCard(
+                            title: "familie.children.title",
+                            entries: viewModel.children,
+                            onSelect: { removeTarget = $0 }
+                        )
                     }
                     if !viewModel.guardians.isEmpty {
                         FamilySectionCard(title: "familie.guardians.title", entries: viewModel.guardians)
@@ -109,12 +182,19 @@ struct FamilyView: View {
         }
     }
 
-    /// Keine Beziehungen — freundlicher Leerzustand (ohne CTA im lesenden Batch).
+    /// Keine Beziehungen — freundlicher Leerzustand mit Selfservice-CTAs
+    /// (Kind anlegen als Primäraktion, Kind verknüpfen als Zweitaktion).
     private var emptyState: some View {
-        RSMEmptyState(
-            systemImage: "figure.2.and.child.holdinghands",
-            title: "familie.empty.title",
-            message: "familie.empty.message"
-        )
+        VStack(spacing: Theme.Spacing.s4) {
+            RSMEmptyState(
+                systemImage: "figure.2.and.child.holdinghands",
+                title: "familie.empty.title",
+                message: "familie.empty.message",
+                actionTitle: "Kind anlegen",
+                action: { showCreate = true }
+            )
+            RSMSecondaryButton(title: "Kind verknüpfen") { showLink = true }
+                .fixedSize()
+        }
     }
 }

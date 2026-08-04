@@ -13,6 +13,11 @@ struct FacilitiesView: View {
     /// Vom Detail-Sheet angeforderte Vorbelegung — nach dessen Schließen zeigen
     /// wir das Buchen-Sheet (SwiftUI mag kein Sheet-über-Sheet direkt).
     @State private var pendingBookingFacilityId: String?
+    /// Analog: vom Detail-Sheet angefordertes Bearbeiten — nach dessen Schließen
+    /// öffnen wir das Bearbeiten/Löschen-Sheet der Anlage.
+    @State private var pendingEditFacilityId: String?
+    @State private var editing: FacilitySelection?
+    @State private var showCreate = false
 
     var body: some View {
         Group {
@@ -26,6 +31,13 @@ struct FacilitiesView: View {
         .navigationTitle(Text("belegungsplan.title"))
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            if session.permissions.isClubAdmin {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .tint(Theme.Colors.brand)
+                        .accessibilityLabel(Text(verbatim: "Neue Anlage"))
+                }
+            }
             if model.state == .loaded, !model.facilities.isEmpty {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -49,17 +61,28 @@ struct FacilitiesView: View {
             applyDevHooks()
 #endif
         }
-        .sheet(item: $detail, onDismiss: presentPendingBookingIfNeeded) { selected in
+        .sheet(item: $detail, onDismiss: presentPendingSheetIfNeeded) { selected in
             FacilityDetailSheet(
                 facility: current(selected),
                 bookings: model.bookings(for: selected.id),
                 bookerName: model.bookerName,
                 teamName: model.teamName,
-                onBook: { requestBooking(for: selected.id) }
+                onBook: { requestBooking(for: selected.id) },
+                canManage: session.permissions.isClubAdmin,
+                onEdit: { requestEdit(for: selected.id) },
+                onDeleteBooking: { try await model.deleteBooking(id: $0.id) }
             )
         }
         .sheet(item: $booking) { request in
             BookingFormSheet(model: makeBookingModel(initialFacilityId: request.facilityId))
+        }
+        .sheet(item: $editing) { selected in
+            FacilityEditSheet(model: model, facility: current(selected))
+        }
+        .sheet(isPresented: $showCreate) {
+            FacilityCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
         }
         .alert("belegungsplan.error.title", isPresented: refreshErrorBinding) {
             Button("belegungsplan.error.ok", role: .cancel) {}
@@ -175,10 +198,27 @@ struct FacilitiesView: View {
         detail = nil
     }
 
-    private func presentPendingBookingIfNeeded() {
-        guard let facilityId = pendingBookingFacilityId else { return }
-        pendingBookingFacilityId = nil
-        booking = BookingRequest(facilityId: facilityId)
+    /// Bearbeiten aus dem Detail-Sheet: Detail schließen, danach das Edit-Sheet
+    /// öffnen (SwiftUI mag kein Sheet-über-Sheet direkt — deshalb der Umweg).
+    private func requestEdit(for facilityId: String) {
+        pendingEditFacilityId = facilityId
+        detail = nil
+    }
+
+    /// Nach dem Schließen des Detail-Sheets ggf. das angeforderte Folge-Sheet
+    /// (Buchen ODER Anlage bearbeiten) öffnen.
+    private func presentPendingSheetIfNeeded() {
+        if let facilityId = pendingBookingFacilityId {
+            pendingBookingFacilityId = nil
+            booking = BookingRequest(facilityId: facilityId)
+            return
+        }
+        if let facilityId = pendingEditFacilityId {
+            pendingEditFacilityId = nil
+            if let facility = model.facilities.first(where: { $0.id == facilityId }) {
+                editing = FacilitySelection(facility: facility)
+            }
+        }
     }
 
     private func makeBookingModel(initialFacilityId: String?) -> BookingFormViewModel {

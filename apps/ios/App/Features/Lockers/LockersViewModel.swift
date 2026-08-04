@@ -21,6 +21,9 @@ final class LockersViewModel: ObservableObject {
     @Published private(set) var state: State = .loading
     @Published private(set) var lockers: [Locker] = []
     @Published private(set) var membersById: [String: ClubMember] = [:]
+    /// Mietverträge des Vereins (Beiwerk zur Fach-Liste — ein RLS-403 darf das
+    /// Inventar nicht verhindern). Quelle für laufende Miete + Monatssumme.
+    @Published private(set) var rentals: [LockerRental] = []
     /// Aktiver Status-Filter (Chip-Auswahl).
     @Published var filter: LockerStatusFilter = .all
     /// Fehler beim Pull-to-Refresh, wenn schon Daten da sind (Alert statt die
@@ -54,9 +57,12 @@ final class LockersViewModel: ObservableObject {
             // Mitglieder sind Beiwerk (Namensauflösung der Belegung) — ein
             // RLS-403 einer Rolle darf das Fach-Inventar nicht verhindern.
             async let membersCall = api.members(clubId: clubId)
+            // Mietverträge ebenso best effort (Geld-Ebene über der Zuordnung).
+            async let rentalsCall = api.listLockerRentals(clubId: clubId)
 
             let loadedLockers = try await lockersCall
             let loadedMembers = (try? await membersCall) ?? []
+            self.rentals = (try? await rentalsCall) ?? []
 
             self.lockers = loadedLockers.sorted {
                 $0.label.localizedStandardCompare($1.label) == .orderedAscending
@@ -109,6 +115,114 @@ final class LockersViewModel: ObservableObject {
         let name = "\(member.firstName) \(member.lastName)"
             .trimmingCharacters(in: .whitespaces)
         return name.isEmpty ? nil : name
+    }
+
+    // MARK: - Mitglieder-Auswahl (Zuordnung)
+
+    /// Mitglieder alphabetisch für den Zuordnungs-Picker (Nachname, Vorname).
+    var sortedMembers: [ClubMember] {
+        membersById.values.sorted {
+            let a = "\($0.lastName) \($0.firstName)"
+            let b = "\($1.lastName) \($1.firstName)"
+            return a.localizedStandardCompare(b) == .orderedAscending
+        }
+    }
+
+    // MARK: - Ableitungen (Miete)
+
+    /// Der laufende Vertrag eines Fachs — `nil` heißt „ich sehe keinen“ (kann
+    /// RLS-gekürzt sein), nicht zwingend „es gibt keinen“. Web: activeRentalOf.
+    func activeRental(for lockerId: String) -> LockerRental? {
+        rentals.first { $0.lockerId == lockerId && $0.status == .aktiv }
+    }
+
+    /// Aufgelöster Name des Mieters — `nil`, wenn nicht ladbar.
+    func memberName(forId memberId: String?) -> String? {
+        guard let memberId, let member = membersById[memberId] else { return nil }
+        let name = member.membersFullName.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? nil : name
+    }
+
+    /// Summe der laufenden Mieten je Monat — für die Kopfzeile der Verwaltung.
+    /// Verträge OHNE festgelegten Preis werden NICHT als 0 mitgezählt, sondern
+    /// separat gemeldet (ehrliche Zahl). Web: monthlyRentalTotal.
+    var monthlyRentalTotal: (cents: Int, counted: Int, withoutPrice: Int) {
+        var cents = 0, counted = 0, withoutPrice = 0
+        for rental in rentals where rental.status == .aktiv {
+            guard let price = rental.pricePerMonthCents else { withoutPrice += 1; continue }
+            cents += price; counted += 1
+        }
+        return (cents, counted, withoutPrice)
+    }
+
+    // MARK: - Aktionen (Miete schreiben)
+
+    /// Ersetzt/ergänzt einen Vertrag in der lokalen Liste (Wahrheit vom Server).
+    private func replaceRental(_ updated: LockerRental) {
+        if let idx = rentals.firstIndex(where: { $0.id == updated.id }) {
+            rentals[idx] = updated
+        } else {
+            rentals.append(updated)
+        }
+    }
+
+    /// Fach vermieten (neuer Vertrag).
+    func createRental(_ input: LockerRentalCreate) async throws {
+        guard let api else { return }
+        replaceRental(try await api.createLockerRental(input))
+    }
+
+    /// Bestehenden Vertrag ändern (Preis/Zeitraum/Notiz).
+    func updateRental(rentalId: String, _ input: LockerRentalUpdate) async throws {
+        guard let api else { return }
+        replaceRental(try await api.updateLockerRental(rentalId: rentalId, input))
+    }
+
+    /// Miete beenden — Status auf „beendet“/„gekündigt“ + Enddatum.
+    func endRental(rentalId: String, status: LockerRentalStatus, endOn: String) async throws {
+        guard let api else { return }
+        replaceRental(try await api.updateLockerRental(
+            rentalId: rentalId,
+            LockerRentalUpdate(endOn: endOn, status: status)
+        ))
+    }
+
+    // MARK: - Aktionen (schreiben)
+
+    /// Ersetzt ein Fach in der Liste durch die Server-Antwort (Wahrheit vom
+    /// Server, inkl. abgeleitetem Status).
+    private func replace(_ updated: Locker) {
+        if let idx = lockers.firstIndex(where: { $0.id == updated.id }) {
+            lockers[idx] = updated
+        } else {
+            lockers.append(updated)
+        }
+        lockers.sort { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
+    }
+
+    /// Fach ändern (Bezeichnung/Ort/Größe/Gebühr/Status/Notiz).
+    func update(lockerId: String, _ input: LockerUpdate) async throws {
+        guard let api else { return }
+        replace(try await api.updateLocker(lockerId: lockerId, input))
+    }
+
+    /// Fach einem Mitglied zuordnen.
+    func assign(lockerId: String, memberId: String) async throws {
+        guard let api else { return }
+        replace(try await api.assignLocker(lockerId: lockerId, memberId: memberId))
+    }
+
+    /// Zuordnung aufheben (Fach wird frei).
+    func release(lockerId: String) async throws {
+        guard let api else { return }
+        replace(try await api.releaseLocker(lockerId: lockerId))
+    }
+
+    /// Fach löschen (aus der Liste entfernen).
+    func delete(lockerId: String) async throws {
+        guard let api else { return }
+        _ = try await api.deleteLocker(lockerId: lockerId)
+        lockers.removeAll { $0.id == lockerId }
     }
 
     static func friendlyMessage(_ error: Error) -> String {

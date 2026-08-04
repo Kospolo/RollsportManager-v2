@@ -210,17 +210,21 @@ clubsRouter.openapi(
     // dem Verein und traegt club_roles={}).
     await requireClubRoleDb(c, clubId, ADMIN_ROLES, 'club_settings');
 
-    const patch: Record<string, unknown> = { ...body };
-    if (patch['settings'] !== undefined) patch['settings'] = JSON.stringify(patch['settings']);
-
     // `returning *` waere hier seit 0035 ein 42501: RETURNING verlangt das
     // Leserecht auf JEDE genannte Spalte, und join_code ist fuer authenticated
     // keine mehr. Die Liste ist nicht Kosmetik, sie ist die Bedingung.
-    const rows = await withUser(c.get('claims'), (tx) =>
-      tx`update app.clubs set ${tx(patch)}
+    const rows = await withUser(c.get('claims'), (tx) => {
+      const patch: Record<string, unknown> = { ...body };
+      // settings ist JSONB: mit tx.json einbetten, NICHT JSON.stringify. Ein
+      // roher String landet in JSONB als JSON-*String* (doppelt kodiert) und
+      // laesst danach jedes clubSchema.parse beim Lesen mit ZodError 500en.
+      if (patch['settings'] !== undefined) {
+        patch['settings'] = tx.json(patch['settings'] as Parameters<typeof tx.json>[0]);
+      }
+      return tx`update app.clubs set ${tx(patch)}
          where id = ${clubId} and deleted_at is null
-         returning ${tx.unsafe(CLUB_COLUMNS)}`,
-    );
+         returning ${tx.unsafe(CLUB_COLUMNS)}`;
+    });
     if (rows.length === 0) throw problem(404, 'Not Found', 'Club not found');
     return c.json(clubSchema.parse(rows[0]), 200);
   },

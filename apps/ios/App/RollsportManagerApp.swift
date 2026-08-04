@@ -40,6 +40,10 @@ struct RollsportManagerApp: App {
             }
             .environmentObject(session)
             .tint(Theme.Colors.brand)
+            // Rolle + aktiven Verein bei jedem Start frisch aus /me holen —
+            // repariert eine vor dem Rollen-Fix gespeicherte Sitzung (Rolle nil),
+            // ohne dass man sich ab- und wieder anmelden muss.
+            .task { await session.refreshOnLaunchIfNeeded() }
 #if DEBUG
             .task { await session.autoLoginFromLaunchArgumentsIfNeeded() }
 #endif

@@ -6,6 +6,7 @@ import SwiftUI
 /// (in einem NavigationStack) — sie ersetzt DashboardPlaceholderView.
 struct DashboardView: View {
     @EnvironmentObject private var session: SessionStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = DashboardViewModel()
 
     var body: some View {
@@ -48,7 +49,7 @@ struct DashboardView: View {
             // Gruss klebt jetzt am Kopf, statt in der Mitte einer Leerzone zu
             // schweben.
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
-                greeting
+                heroGreeting
                 if let refreshError = viewModel.refreshError {
                     refreshErrorBanner(refreshError)
                 }
@@ -99,17 +100,31 @@ struct DashboardView: View {
     /// groessten Schrift der App untereinander. Der Gruss ist eine Hoeflichkeit,
     /// kein Inhalt — er darf nicht ein Fuenftel des Bildschirms kosten. Die
     /// Display-Schrift bleibt den KPI-Zahlen und Kartentiteln vorbehalten.
-    private var greeting: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
-            Text(DashboardFormat.eyebrowDateText(Date()))
-                .font(Theme.Fonts.eyebrow)
-                .tracking(Theme.Fonts.eyebrowTracking)
-                .textCase(.uppercase)
-                .foregroundStyle(Theme.Colors.inkFaint)
-            greetingTitle
-                .font(Theme.Fonts.h2)
-                .foregroundStyle(Theme.Colors.inkPrimary)
+    /// Warmer Hero-Gruß im Design „Bewegung & Wärme": Verlaufs-Karte mit der
+    /// Wellenform-Signatur — derselbe erste-Eindruck-Ton wie beim Login, statt
+    /// grauer Text auf leerer Fläche.
+    private var heroGreeting: some View {
+        ZStack(alignment: .bottomLeading) {
+            WarmPalette.heroGradient
+            WaveformStrip(color: .white.opacity(0.5), reduceMotion: reduceMotion)
+                .frame(height: 54)
+                .frame(maxWidth: .infinity, alignment: .bottom)
+                .allowsHitTesting(false)
+            VStack(alignment: .leading, spacing: Theme.Spacing.s1) {
+                Text(DashboardFormat.eyebrowDateText(Date()))
+                    .font(Theme.Fonts.eyebrow)
+                    .tracking(Theme.Fonts.eyebrowTracking)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.white.opacity(0.85))
+                greetingTitle
+                    .font(.system(size: 27, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.bottom, Theme.Spacing.s5)
+            }
+            .padding(Theme.Spacing.s4)
         }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: WarmPalette.coral.opacity(0.26), radius: 16, x: 0, y: 8)
         .accessibilityElement(children: .combine)
     }
 

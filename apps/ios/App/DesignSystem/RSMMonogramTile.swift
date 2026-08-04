@@ -21,6 +21,10 @@ struct RSMMonogramTile: View {
     var personId: String?
     /// Kantenlaenge bei Standard-Textgroesse.
     var size: CGFloat = 68
+    /// Optionaler `avatar_url` ('/media/{key}'). Ist ein Bild hinterlegt, DECKT
+    /// es das Monogramm — dieselbe Quelle, die die Detailseite ohnehin zeigt.
+    /// Fehlt es (die Regel bei Kindern ohne Foto), bleibt das Monogramm stehen.
+    var avatarUrl: String? = nil
 
     /// Die Kachel waechst mit der Systemschrift mit — sonst steht bei grosser
     /// Schrift ein Briefmarken-Monogramm neben einem riesigen Namen. Gedeckelt,
@@ -28,6 +32,15 @@ struct RSMMonogramTile: View {
     @ScaledMetric(relativeTo: .headline) private var scale: CGFloat = 1
 
     private var tone: RSMAvatarTone { .forId(personId ?? name) }
+
+    /// Medien-Key aus '/media/{key}' — sonst nil (Monogramm-Fallback).
+    private var photoKey: String? {
+        guard let url = avatarUrl else { return nil }
+        let prefix = "/media/"
+        guard url.hasPrefix(prefix) else { return nil }
+        let key = String(url.dropFirst(prefix.count))
+        return key.isEmpty ? nil : key
+    }
 
     private var side: CGFloat { min(size * scale, size * 1.35) }
 
@@ -55,6 +68,13 @@ struct RSMMonogramTile: View {
                 .foregroundStyle(tone.initialsColor)
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
+            if let photoKey {
+                // Foto DECKT das Monogramm, sobald es geladen ist. MediaImage
+                // schickt den Bearer-Token mit (ein nacktes AsyncImage bekaeme 401).
+                MediaImage(key: photoKey, placeholderSystemImage: "person.fill")
+                    .frame(width: side, height: side)
+                    .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+            }
         }
         .frame(width: side, height: side)
         .accessibilityHidden(true) // der Name steht immer als Text daneben

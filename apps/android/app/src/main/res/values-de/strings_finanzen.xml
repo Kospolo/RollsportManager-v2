@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature "Finanzen" — Deutsch (echte Umlaute, Wording = iOS-Referenz). -->
+<resources>
+
+    <!-- Zustände -->
+    <string name="finance_loading">Finanzen werden geladen …</string>
+    <string name="finance_error_title">Finanzen konnten nicht geladen werden</string>
+    <string name="finance_error_retry">Erneut versuchen</string>
+    <string name="finance_error_forbidden">Für die Finanzen fehlen deiner Rolle die Rechte.</string>
+
+    <!-- KPI-Karte -->
+    <string name="finance_kpi_eyebrow">Beiträge &amp; Finanzen</string>
+    <string name="finance_kpi_title">Auf einen Blick</string>
+    <string name="finance_kpi_sum_eyebrow">Offen gesamt</string>
+    <string name="finance_kpi_sum_caption">Summe aller offenen Rechnungen</string>
+    <string name="finance_kpi_count_eyebrow">Offene Posten</string>
+    <string name="finance_kpi_count_caption">Rechnungen ohne Zahlungseingang</string>
+
+    <!-- Offene-Posten-Liste -->
+    <string name="finance_list_eyebrow">Offene Posten</string>
+    <string name="finance_list_title">Wer noch offen ist</string>
+    <string name="finance_filter_all">Alle</string>
+    <string name="finance_filter_open">Offen</string>
+    <string name="finance_filter_reminded">Erinnert</string>
+    <string name="finance_filter_dunned">Gemahnt</string>
+    <string name="finance_list_empty_title">Nichts offen</string>
+    <string name="finance_list_empty_message">In dieser Ansicht ist keine Rechnung offen.</string>
+    <plurals name="finance_list_footer_count">
+        <item quantity="one">%1$d Posten angezeigt</item>
+        <item quantity="other">%1$d Posten angezeigt</item>
+    </plurals>
+    <string name="finance_list_footer_total">Gesamt offen: %1$s</string>
+    <string name="finance_member_unknown">Mitglied</string>
+
+    <!-- Mahn-Automatik-Karte -->
+    <string name="finance_dunning_eyebrow">Mahn-Automatik</string>
+    <string name="finance_dunning_title">So wird erinnert</string>
+    <string name="finance_dunning_stage1_day">+7 Tage</string>
+    <string name="finance_dunning_stage1_title">Freundliche Erinnerung</string>
+    <string name="finance_dunning_stage1_mode">automatisch</string>
+    <string name="finance_dunning_stage2_day">+21 Tage</string>
+    <string name="finance_dunning_stage2_title">1. Mahnung</string>
+    <string name="finance_dunning_stage2_mode">automatisch, mit Vorschau</string>
+    <string name="finance_dunning_stage3_day">+35 Tage</string>
+    <string name="finance_dunning_stage3_title">2. Mahnung</string>
+    <string name="finance_dunning_stage3_mode">nur mit manueller Freigabe</string>
+    <string name="finance_dunning_stage4_day">+49 Tage</string>
+    <string name="finance_dunning_stage4_title">Übergabe an den Vorstand</string>
+    <string name="finance_dunning_stage4_mode">nur manuell</string>
+    <string name="finance_dunning_note1">Stufe 2+ wird nie automatisch versendet — Freigabe durch den Vorstand.</string>
+    <string name="finance_dunning_note2">Vor jedem Versand siehst du die E-Mail pro Empfänger.</string>
+    <string name="finance_dunning_forbidden_title">Nur für die Kasse</string>
+    <string name="finance_dunning_forbidden_message">Den Mahnlauf können nur Kassenwart und Vorstand starten — deine Rolle hat hier Leserechte.</string>
+    <string name="finance_dunning_error_title">Mahnlauf-Vorschau nicht möglich</string>
+    <string name="finance_dunning_preview">Mahnlauf (Vorschau)</string>
+
+    <!-- Ergebnis-BottomSheet (dry_run) -->
+    <string name="finance_preview_title">Mahnlauf-Vorschau</string>
+    <string name="finance_preview_banner">Nur Vorschau — es wurde nichts versendet.</string>
+    <string name="finance_preview_summary">%1$d automatisch · %2$d mit Freigabe · %3$d ohne Aktion</string>
+    <string name="finance_preview_as_of">Stand: %1$s</string>
+    <string name="finance_preview_group_auto">Automatisch</string>
+    <string name="finance_preview_group_pending">Wartet auf Freigabe</string>
+    <string name="finance_preview_group_none">Keine Aktion</string>
+    <plurals name="finance_preview_overdue">
+        <item quantity="one">%1$d Tag überfällig</item>
+        <item quantity="other">%1$d Tage überfällig</item>
+    </plurals>
+    <string name="finance_preview_level">Stufe %1$d → %2$d</string>
+    <string name="finance_preview_empty_title">Nichts zu mahnen</string>
+    <string name="finance_preview_empty_message">Für diesen Lauf gibt es keine offenen Posten.</string>
+    <string name="finance_preview_close">Fertig</string>
+
+</resources>

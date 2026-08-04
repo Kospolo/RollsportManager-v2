@@ -138,6 +138,14 @@ export interface CreateEventInput {
   note?: string;
 }
 
+/** Neue Kür anlegen (POST /routines). Nur Titel ist Pflicht; Musik/Kategorie
+ *  füllt man danach in der Detailansicht (Audio-Upload, Marker …). */
+export interface CreateRoutineInput {
+  title: string;
+  category?: string;
+  teamId?: Id;
+}
+
 /**
  * Teil-Update eines Termins (owner/admin/coach) — alle Felder optional, wie
  * CreateEventInput. Weggelassene Felder bleiben unverändert; note/location auf
@@ -316,6 +324,9 @@ export interface DataRepository
   /* ---------- Küren ---------- */
   getRoutines(): Promise<Routine[]>;
   getRoutineById(id: Id): Promise<Routine | undefined>;
+  /** Neue Kür anlegen (POST /routines) — Aufrufer wird über activeClubId
+   *  gescoped. Rechte prüft der Server (can_manage_routines). */
+  createRoutine(input: CreateRoutineInput): Promise<Routine>;
   /**
    * Kür-Musik hochladen und an die Kür hängen (Trainer:in des Teams + PRO,
    * serverseitig erzwungen). EIN Schritt: multipart-POST der Datei DIREKT an

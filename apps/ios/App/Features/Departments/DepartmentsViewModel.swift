@@ -25,6 +25,11 @@ final class DepartmentsViewModel: ObservableObject {
     /// Vereinsmitglieder nach ID — zum Auflösen von Leitung + Roster.
     /// Leer, wenn `listMembers` für die Rolle nicht sichtbar war (RLS).
     @Published private(set) var membersById: [String: ClubMember] = [:]
+    /// Fehler bei einer Aktion (Löschen) — Alert statt Fehler-Screen, solange
+    /// schon Daten stehen.
+    @Published var actionError: String?
+    /// Abteilungs-ID, die gerade eine Mutation durchläuft (Buttons sperren).
+    @Published private(set) var busyId: String?
 
     // MARK: - Laden
 
@@ -51,13 +56,53 @@ final class DepartmentsViewModel: ObservableObject {
 
         do {
             let list = try await departmentsCall
-            departments = list.sorted { a, b in
-                if a.sortOrder != b.sortOrder { return a.sortOrder < b.sortOrder }
-                return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
-            }
+            departments = Self.sorted(list)
             state = .loaded
         } catch {
             state = .failed(Self.message(for: error))
+        }
+    }
+
+    /// Club-Mitglieder als Array (Pool für Leitungs-/Mitglieder-Auswahl),
+    /// nach Nachname/Vorname sortiert.
+    var allMembers: [ClubMember] {
+        membersById.values.sorted { a, b in
+            let byLast = a.lastName.localizedCaseInsensitiveCompare(b.lastName)
+            if byLast != .orderedSame { return byLast == .orderedAscending }
+            return a.firstName.localizedCaseInsensitiveCompare(b.firstName) == .orderedAscending
+        }
+    }
+
+    // MARK: - Mutationen (optimistischer Ersatz nach Server-Antwort)
+
+    /// Neu angelegte oder bearbeitete Abteilung einsortieren (gleiche ID ersetzt).
+    func upsert(_ department: Department) {
+        if let index = departments.firstIndex(where: { $0.id == department.id }) {
+            departments[index] = department
+        } else {
+            departments.append(department)
+        }
+        departments = Self.sorted(departments)
+    }
+
+    /// Abteilung löschen. Der Aufruf startet ausschließlich über die explizite
+    /// Bestätigung in der View (kein Auto-Confirm). 403/Fehler landen als
+    /// `actionError`; die Liste bleibt unverändert.
+    @discardableResult
+    func delete(_ department: Department, api: APIClient) async -> Bool {
+        guard busyId == nil else { return false }
+        busyId = department.id
+        defer { busyId = nil }
+        do {
+            let deleted = try await api.deleteDepartment(departmentId: department.id)
+            let removedId = deleted.id.isEmpty ? department.id : deleted.id
+            departments.removeAll { $0.id == removedId }
+            return true
+        } catch {
+            actionError = error.isForbiddenAPIError
+                ? "Dazu fehlt dir die Berechtigung."
+                : Self.message(for: error)
+            return false
         }
     }
 
@@ -90,5 +135,13 @@ final class DepartmentsViewModel: ObservableObject {
 
     private static func message(for error: Error) -> String {
         (error as? APIError)?.errorDescription ?? error.localizedDescription
+    }
+
+    /// Sortierung: `sort_order` aufsteigend, dann Name (case-insensitive).
+    static func sorted(_ list: [Department]) -> [Department] {
+        list.sorted { a, b in
+            if a.sortOrder != b.sortOrder { return a.sortOrder < b.sortOrder }
+            return a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+        }
     }
 }

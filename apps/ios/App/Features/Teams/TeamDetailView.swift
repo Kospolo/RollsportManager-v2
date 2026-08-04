@@ -13,6 +13,8 @@ struct TeamDetailView: View {
     @ObservedObject var model: TeamsViewModel
     @ObservedObject var membersModel: MembersViewModel
     @EnvironmentObject private var session: SessionStore
+    /// Team → Sparte zuordnen/ändern (nur für can_manage_sparten sichtbar).
+    @State private var showSparteSheet = false
 #if DEBUG
     /// Ziel der DEBUG-Smoke-Automation (`-devTeamOpenFirstMember`).
     @State private var devMemberRoute: DevMemberRoute?
@@ -41,6 +43,17 @@ struct TeamDetailView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text(verbatim: model.team(id: teamId)?.name ?? ""))
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showSparteSheet) {
+            if let team = model.team(id: teamId) {
+                TeamSparteSheet(
+                    team: team,
+                    sparten: model.sortedSparten,
+                    api: session.api,
+                    clubId: session.clubId,
+                    onSaved: { model.applyUpdatedTeam($0) }
+                )
+            }
+        }
 #if DEBUG
         // NUR DEBUG/Smoke-Test: `-devTeamOpenFirstMember YES` springt vom Kader
         // direkt auf das erste Mitglieder-Profil (für Screenshots).
@@ -106,17 +119,30 @@ struct TeamDetailView: View {
                     Spacer(minLength: 0)
                 }
 
-                // Sparte NUR zeigen, wenn eine gesetzt (und sichtbar) ist —
-                // sonst steht hier bewusst nichts statt einer leeren Zeile.
-                if let sparte = model.sparte(of: team) {
+                // Sparte: Anzeige (Badge) und — für Berechtigte (can_manage_sparten)
+                // — Zuordnen/Ändern. Ohne Berechtigung UND ohne gesetzte Sparte
+                // steht hier bewusst nichts statt einer leeren Zeile.
+                // Web-Referenz: teams/[id]/TeamDetail.tsx.
+                let teamSparte = model.sparte(of: team)
+                let canManageSparten = session.permissions.canManageSparten
+                if teamSparte != nil || canManageSparten {
                     Divider().overlay(Theme.Colors.line)
-                    VStack(alignment: .leading, spacing: Theme.Spacing.s2) {
+                    VStack(alignment: .leading, spacing: Theme.Spacing.s3) {
                         Text("teamsMember.detail.sparte")
                             .font(Theme.Fonts.eyebrow)
                             .tracking(Theme.Fonts.eyebrowTracking)
                             .textCase(.uppercase)
                             .foregroundStyle(Theme.Colors.inkFaint)
-                        SparteBadgeRow(sparte: sparte)
+                        if let sparte = teamSparte {
+                            SparteBadgeRow(sparte: sparte)
+                        } else {
+                            Text(verbatim: "Keiner Sparte zugeordnet")
+                                .font(Theme.Fonts.caption)
+                                .foregroundStyle(Theme.Colors.inkFaint)
+                        }
+                        if canManageSparten {
+                            sparteManageButton(hasSparte: teamSparte != nil)
+                        }
                     }
                 }
 
@@ -124,6 +150,28 @@ struct TeamDetailView: View {
                 coachSection(roster.coaches)
             }
         }
+    }
+
+    /// Sekundäre Aktion (brand-soft-Pille): öffnet das Team → Sparte-Sheet.
+    /// Text richtet sich danach, ob schon eine Sparte gesetzt ist.
+    private func sparteManageButton(hasSparte: Bool) -> some View {
+        Button {
+            showSparteSheet = true
+        } label: {
+            HStack(spacing: Theme.Spacing.s2) {
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(.system(size: 12, weight: .semibold))
+                Text(verbatim: hasSparte ? "Sparte ändern" : "Sparte zuordnen")
+                    .font(Theme.Fonts.caption.weight(.bold))
+            }
+            .foregroundStyle(Theme.Colors.brandInk)
+            .padding(.horizontal, Theme.Spacing.s4)
+            .frame(minHeight: Theme.Size.touchTarget)
+            .background(Theme.Colors.brandSoft)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(RSMPressableButtonStyle())
+        .accessibilityLabel(Text(verbatim: hasSparte ? "Sparte ändern" : "Sparte zuordnen"))
     }
 
     @ViewBuilder

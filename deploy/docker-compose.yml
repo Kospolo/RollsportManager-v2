@@ -73,3 +73,21 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${WEB_PORT:-3026}:3021"
+
+# ── Eigener Adressbereich ─────────────────────────────────────────────────────
+# Ohne diesen Abschnitt sucht Docker selbst einen freien Bereich. Auf diesem Mac
+# sind 172.17–172.31 bereits von 18 anderen Netzen belegt; Docker griff deshalb
+# am 01.08.2026 um 01:08 zu 192.168.0.0/20 — und das umfasst Marcels HEIMNETZ
+# 192.168.1.x. Folge: Alle Container hielten 192.168.1.17 (NAS) und
+# 192.168.1.220 (Mac Studio) für „intern" und schickten nichts mehr hinaus.
+# Nextcloud, paperless, Plex und das NAS-Dashboard waren über ihre Namen tot,
+# während sie selbst tadellos liefen. Gemessen: Domains über
+# `host.docker.internal` antworteten in 44 ms, Domains über eine 192.168.1.x-
+# Adresse liefen in die Zeitüberschreitung.
+#
+# 10.201.0.0/24 kollidiert mit nichts in diesem Netz und reicht für 254 Adressen.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.201.0.0/24

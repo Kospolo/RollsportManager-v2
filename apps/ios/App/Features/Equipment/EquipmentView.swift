@@ -9,6 +9,8 @@ struct EquipmentView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = EquipmentViewModel()
     @State private var reserveTarget: EquipmentSelection?
+    @State private var manageTarget: EquipmentSelection?
+    @State private var showCreate = false
 
     var body: some View {
         Group {
@@ -24,6 +26,19 @@ struct EquipmentView: View {
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("ausruestung.title"))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            if session.permissions.isTrainer {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neue Ausrüstung"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            EquipmentCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
+        }
         .task {
             await model.loadIfNeeded(
                 api: session.api,
@@ -35,6 +50,15 @@ struct EquipmentView: View {
 #if DEBUG
             applyEquipmentDevHooks()
 #endif
+        }
+        .sheet(item: $manageTarget) { selection in
+            EquipmentManageSheet(
+                api: session.api,
+                equipment: selection.equipment,
+                onChanged: {
+                    _Concurrency.Task { await model.refresh() }
+                }
+            )
         }
         .sheet(item: $reserveTarget) { selection in
             EquipmentReserveSheet(
@@ -148,10 +172,22 @@ struct EquipmentView: View {
             }
         } else {
             ForEach(items, id: \.id) { item in
-                RSMCard {
+                let card = RSMCard {
                     EquipmentCardView(equipment: item) {
                         reserveTarget = EquipmentSelection(equipment: item)
                     }
+                }
+                // Trainerstab: Tippen auf die Karte (außerhalb des Reservieren-
+                // Knopfs) öffnet Bearbeiten/Löschen — analog zum „+“-Gate.
+                if session.permissions.isTrainer {
+                    card
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            manageTarget = EquipmentSelection(equipment: item)
+                        }
+                        .accessibilityHint(Text(verbatim: "Zum Bearbeiten tippen"))
+                } else {
+                    card
                 }
             }
         }

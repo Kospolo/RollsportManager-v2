@@ -10,6 +10,8 @@ struct ExercisesView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var model = ExercisesViewModel()
     @State private var selection: ExerciseSelection?
+    @State private var editSelection: ExerciseSelection?
+    @State private var showCreate = false
 
     /// Ein Adaptiv-Grid: auf dem iPhone eine Spalte (lesbare Karten), auf
     /// breiten Layouts (iPad/Landscape) mehrspaltig — analog zum responsiven
@@ -31,6 +33,19 @@ struct ExercisesView: View {
         }
         .background(Theme.Colors.bgCanvas.ignoresSafeArea())
         .navigationTitle(Text("uebungen.title"))
+        .toolbar {
+            if session.permissions.isTrainer {
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showCreate = true } label: { Image(systemName: "plus") }
+                        .accessibilityLabel(Text(verbatim: "Neue Übung"))
+                }
+            }
+        }
+        .sheet(isPresented: $showCreate) {
+            ExerciseCreateSheet(api: session.api, clubId: session.clubId) {
+                _Concurrency.Task { await model.refresh() }
+            }
+        }
         .navigationBarTitleDisplayMode(.large)
         .task {
             await model.loadIfNeeded(api: session.api, clubId: session.clubId)
@@ -38,6 +53,15 @@ struct ExercisesView: View {
         .sheet(item: $selection) { selected in
             let item = latest(for: selected)
             ExerciseDetailSheet(exercise: item, authorName: model.authorName(for: item))
+        }
+        .sheet(item: $editSelection) { selected in
+            let item = latest(for: selected)
+            ExerciseEditSheet(
+                api: session.api,
+                exercise: item,
+                onSaved: { _Concurrency.Task { await model.refresh() } },
+                onDeleted: { _Concurrency.Task { await model.refresh() } }
+            )
         }
         .alert("uebungen.error.refreshTitle", isPresented: refreshErrorBinding) {
             Button("uebungen.error.ok", role: .cancel) {}
@@ -121,7 +145,11 @@ struct ExercisesView: View {
                             exercise: exercise,
                             authorName: model.authorName(for: exercise)
                         ) {
-                            selection = ExerciseSelection(exercise: exercise)
+                            if session.permissions.isTrainer {
+                                editSelection = ExerciseSelection(exercise: exercise)
+                            } else {
+                                selection = ExerciseSelection(exercise: exercise)
+                            }
                         }
                     }
                 }

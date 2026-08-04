@@ -1156,6 +1156,16 @@ export class ApiClient {
   }
 
   /**
+   * Reissue an access token with fresh club memberships from the DB
+   * Authenticated. Rebuilds club_roles from the database and returns a new signed access token. Call after a membership change (founding/joining a club) or when a club-scoped route unexpectedly returns 403 — so a stale token self-heals without a re-login.
+   * 
+   * `POST /auth/refresh`
+   */
+  async postAuthRefresh(options?: RequestOptions): Promise<M.LoginResponse> {
+    return this.request<M.LoginResponse>("POST", "/auth/refresh", { auth: true, options });
+  }
+
+  /**
    * Register a new account with email + password
    * Unauthenticated. Creates an account (auth.users + profile) and returns an access token with the same shape as /auth/login. The caller is signed in immediately and can then create or join a club. Fails with 409 if the email is already registered.
    * 

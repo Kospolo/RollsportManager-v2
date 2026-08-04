@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Feature „Küren" — Deutsch (echte Umlaute, Wortlaut wie iOS). -->
+<resources>
+    <!-- Liste -->
+    <string name="routines_list_title">Küren</string>
+    <string name="routines_list_subtitle">Musik, Marker und RollArt-Wertungen deiner Kürgruppe</string>
+    <string name="routines_list_error_title">Daten konnten nicht geladen werden</string>
+    <string name="routines_common_retry">Erneut versuchen</string>
+    <string name="routines_list_empty_title">Noch keine Küren</string>
+    <string name="routines_list_empty_message">Sobald eine Kür mit Musik angelegt ist, erscheint sie hier.</string>
+    <string name="routines_list_last_score">Letzte RollArt-Wertung</string>
+    <string name="routines_list_no_score">Noch keine Wertung</string>
+    <string name="routines_list_a11y_card">Kür %1$s, %2$s — Details öffnen</string>
+
+    <!-- Status + Disziplin -->
+    <string name="routines_status_draft">Entwurf</string>
+    <string name="routines_status_ready">Wettkampfbereit</string>
+    <string name="routines_status_competition">Im Wettkampf</string>
+    <string name="routines_status_archived">Archiviert</string>
+    <string name="routines_discipline_single">Einzellauf</string>
+    <string name="routines_discipline_pair">Paarlauf</string>
+
+    <!-- Detail -->
+    <string name="routines_detail_back">Zurück</string>
+    <string name="routines_detail_error_title">Details konnten nicht geladen werden</string>
+    <string name="routines_detail_meta_length">Länge %1$s</string>
+    <string name="routines_detail_meta_bpm">%1$d BPM</string>
+    <string name="routines_detail_no_music_title">Noch keine Musik</string>
+    <string name="routines_detail_no_music_message">Dieser Kür ist keine Audiodatei zugeordnet — der Trainings-Player erscheint, sobald Musik hinterlegt ist.</string>
+
+    <!-- Trainings-Player -->
+    <string name="routines_player_eyebrow">Trainings-Player</string>
+    <string name="routines_player_demo_hint">Demo ohne Audiodatei — Wiedergabe wird simuliert</string>
+    <string name="routines_player_loop_chip">Loop %1$s–%2$s</string>
+    <string name="routines_player_starting_in">Start in %1$d s</string>
+    <string name="routines_player_countdown_eyebrow">Countdown</string>
+    <string name="routines_player_countdown_off">Aus</string>
+    <string name="routines_player_countdown_seconds">%1$d s</string>
+    <string name="routines_player_loop_eyebrow">A–B-Loop</string>
+    <string name="routines_player_loop_on">aktiv</string>
+    <string name="routines_player_loop_off">aus</string>
+    <string name="routines_player_tempo_eyebrow">Tempo</string>
+    <string name="routines_player_tempo_note_original">Originaltempo — die Kür läuft %1$s · Tonhöhe bleibt erhalten</string>
+    <string name="routines_player_tempo_note">bei %1$d %% läuft die Kür %2$s statt %3$s · Tonhöhe bleibt erhalten</string>
+    <string name="routines_player_wave_value">%1$s von %2$s</string>
+
+    <!-- Player a11y -->
+    <string name="routines_player_a11y_play">Abspielen</string>
+    <string name="routines_player_a11y_pause">Pause</string>
+    <string name="routines_player_a11y_skip_back">5 Sekunden zurück</string>
+    <string name="routines_player_a11y_skip_forward">5 Sekunden vor</string>
+    <string name="routines_player_a11y_wave">Wellenform der Kürmusik — wischen oder anpassen zum Springen</string>
+    <string name="routines_player_a11y_tempo_slider">Tempo-Feinregler, 50 bis 200 Prozent</string>
+    <string name="routines_player_a11y_tempo_preset">Tempo %1$d Prozent</string>
+    <string name="routines_player_a11y_loop_toggle">A–B-Loop</string>
+    <string name="routines_player_a11y_set_loop_a">Loop-Punkt A auf aktuelle Position setzen, aktuell %1$s</string>
+    <string name="routines_player_a11y_set_loop_b">Loop-Punkt B auf aktuelle Position setzen, aktuell %1$s</string>
+    <string name="routines_player_a11y_countdown_off">Countdown aus</string>
+    <string name="routines_player_a11y_countdown">Countdown %1$d Sekunden vor dem Start</string>
+
+    <!-- Zeitmarken -->
+    <string name="routines_markers_eyebrow">Markierungen</string>
+    <string name="routines_markers_title">Elemente in der Kür</string>
+    <string name="routines_markers_empty">Noch keine Zeitmarken für diese Kür.</string>
+    <string name="routines_markers_in_loop">im Loop</string>
+    <string name="routines_markers_a11y_play_from">Ab %1$s abspielen — %2$s</string>
+
+    <!-- RollArt-Verlauf -->
+    <string name="routines_scores_eyebrow">RollArt-Verlauf</string>
+    <string name="routines_scores_title">Wertung über die Saison</string>
+    <string name="routines_scores_empty">Noch keine Wertung — nach dem ersten Wettkampf entsteht hier der Verlauf.</string>
+    <string name="routines_scores_training">Trainingsmessung</string>
+    <string name="routines_scores_competition_fallback">Wettkampf</string>
+    <string name="routines_scores_technical">Technik %1$s</string>
+    <string name="routines_scores_components">Komponenten %1$s</string>
+    <string name="routines_scores_since_first">Punkte seit der ersten Wertung</string>
+    <string name="routines_scores_first">Erster Wert</string>
+    <string name="routines_scores_best">Bestwert %1$s Punkte</string>
+    <string name="routines_scores_a11y_chart">Wertungsverlauf: %1$s Punkte</string>
+
+    <!-- Notizen (lokal) -->
+    <string name="routines_notes_eyebrow">Notizen</string>
+    <string name="routines_notes_title">Trainingsnotizen</string>
+    <string name="routines_notes_placeholder">Was lief gut? Was üben wir im Loop weiter? …</string>
+    <string name="routines_notes_hint">Wird nur lokal auf diesem Gerät gespeichert.</string>
+    <string name="routines_notes_save">Notiz speichern</string>
+    <string name="routines_notes_saved">Zuletzt gespeichert: %1$s</string>
+    <string name="routines_notes_a11y_editor">Notiz zur Kür</string>
+</resources>

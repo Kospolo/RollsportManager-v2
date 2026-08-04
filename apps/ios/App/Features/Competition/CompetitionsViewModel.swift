@@ -66,6 +66,46 @@ final class CompetitionsViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Aktionen (schreiben)
+
+    /// Wettkampf bearbeiten (Stammdaten). Die Server-Antwort ist die Wahrheit —
+    /// sie wird lokal einsortiert (Status kann den Abschnitt wechseln lassen).
+    func update(competitionId: String, _ input: CompetitionUpdate) async throws {
+        guard let api else { return }
+        apply(try await api.updateCompetition(competitionId: competitionId, input))
+    }
+
+    /// Wettkampf löschen — aus beiden Abschnitten entfernen.
+    func delete(competitionId: String) async throws {
+        guard let api else { return }
+        _ = try await api.deleteCompetition(competitionId: competitionId)
+        rebucket((upcoming + past).filter { $0.id != competitionId })
+    }
+
+    /// Aktualisierten Wettkampf in die kombinierte Liste übernehmen und neu
+    /// gruppieren — deckt auch einen Statuswechsel (kommend ↔ vergangen) ab.
+    private func apply(_ updated: Competition) {
+        var all = upcoming + past
+        if let idx = all.firstIndex(where: { $0.id == updated.id }) {
+            all[idx] = updated
+        } else {
+            all.append(updated)
+        }
+        rebucket(all)
+    }
+
+    /// Kombinierte Liste in kommende/vergangene aufteilen — dieselbe Regel wie
+    /// beim Laden (abgesagte werden ausgeblendet, ISO-Strings sortieren
+    /// lexikografisch = chronologisch).
+    private func rebucket(_ all: [Competition]) {
+        upcoming = all
+            .filter { $0.status == .upcoming || $0.status == .running }
+            .sorted { $0.startsAt < $1.startsAt }
+        past = all
+            .filter { $0.status == .done }
+            .sorted { $0.startsAt > $1.startsAt }
+    }
+
     static func friendlyMessage(_ error: Error) -> String {
         (error as? APIError)?.errorDescription ?? error.localizedDescription
     }

@@ -64,6 +64,25 @@ function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url
 }
 
 /**
+ * Foto-Anzeige-Wache fuer das Roster (Kinderschutz): das Profilfoto (avatar_url)
+ * wird — wie die Galerie (0056: app.has_internal_photo_consent) — NUR bei
+ * wirksamer 'photos_internal'-Einwilligung gezeigt, ROLLENUNABHAENGIG. Ausnahme:
+ * die betroffene Person selbst und ihre Vormuende sehen ihr Foto immer.
+ * Ohne diese Wache waeren die Gesichter (auch der vielen Kinder) fuer das ganze
+ * Verzeichnis sichtbar, obwohl members.ts keine Einwilligung prueft.
+ * Erwartet die SQL-Zusatzspalten `_photo_consent` (app.has_internal_photo_consent)
+ * und `_self_or_guardian` (app.can_act_for_member) auf der Zeile.
+ */
+function gateAvatarConsent<T extends Record<string, unknown> & { avatar_url: string | null }>(
+  row: T,
+): T {
+  const consented = row['_photo_consent'] === true;
+  const selfOrGuardian = row['_self_or_guardian'] === true;
+  if (consented || selfOrGuardian) return row;
+  return { ...row, avatar_url: null };
+}
+
+/**
  * KONTAKT-/PII-Spalten. Sichtbar nur fuer can_manage_members oder Plattform-
  * Admins. Nicht-privilegierte Betrachter (member / coach / guest_coach) sehen
  * die unkritischen Felder: id/first_name/last_name/team_ids/role/status — plus
@@ -363,6 +382,9 @@ membersRouter.openapi(
            -- also ist auth.uid() der/die Betrachter:in -> wahr fuer die eigene
            -- Zeile und die der eigenen Kinder.
            app.can_act_for_member(m.id) as _self_or_guardian,
+           -- Foto-Anzeige-Wache (Kinderschutz, 0056): zeigt das Roster-Foto nur
+           -- bei wirksamer 'photos_internal'-Einwilligung (rollenunabhaengig).
+           app.has_internal_photo_consent(m.id) as _photo_consent,
            -- Zeilenweise Kontakt-Sichtbarkeit (0054): betreut der/die BETRACHTER:IN
            -- ein Team, in dem DIESE Person Mitglied ist? Laeuft impersoniert ->
            -- coached_team_ids sieht auth.uid() als Trainer:in. Dieselbe Bauart wie
@@ -380,7 +402,7 @@ membersRouter.openapi(
     const mapped = rows.map((row) =>
       redactSelfProfile(
         redactMemberForViewer(
-          withAvatar(row),
+          gateAvatarConsent(withAvatar(row)),
           privileged,
           joinedOnVisible,
           maySeeContactOf(claims, clubId, row),

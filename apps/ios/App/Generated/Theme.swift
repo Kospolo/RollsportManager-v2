@@ -44,19 +44,19 @@ public enum Theme {
 
     public enum Colors {
         /// App-Hintergrund — warmes Papier
-        public static let bgCanvas = rsmDynamic(UIColor(red: 0.9843, green: 0.9569, blue: 0.9255, alpha: 1), UIColor(red: 0.1412, green: 0.1020, blue: 0.0784, alpha: 1))
+        public static let bgCanvas = rsmDynamic(UIColor(red: 0.9843, green: 0.9569, blue: 0.9255, alpha: 1), UIColor(red: 0.1020, green: 0.0706, blue: 0.0941, alpha: 1))
         /// Karten, Topbar, Sidebar; Pflicht-Fläche in der Seriositätszone (Finanzen)
-        public static let bgSurface = rsmDynamic(UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1), UIColor(red: 0.1725, green: 0.1294, blue: 0.1020, alpha: 1))
+        public static let bgSurface = rsmDynamic(UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1), UIColor(red: 0.1451, green: 0.1059, blue: 0.1333, alpha: 1))
         /// Mulden: Suchfeld, Segmente, Zitat-Blasen
-        public static let bgSunken = rsmDynamic(UIColor(red: 0.9569, green: 0.9137, blue: 0.8667, alpha: 1), UIColor(red: 0.1098, green: 0.0745, blue: 0.0549, alpha: 1))
+        public static let bgSunken = rsmDynamic(UIColor(red: 0.9569, green: 0.9059, blue: 0.9333, alpha: 1), UIColor(red: 0.0784, green: 0.0510, blue: 0.0706, alpha: 1))
         /// Text, Espresso statt Schwarz — ~13:1 auf Surface
-        public static let inkPrimary = rsmDynamic(UIColor(red: 0.2078, green: 0.1451, blue: 0.1098, alpha: 1), UIColor(red: 0.9608, green: 0.9176, blue: 0.8784, alpha: 1))
+        public static let inkPrimary = rsmDynamic(UIColor(red: 0.1647, green: 0.1137, blue: 0.1647, alpha: 1), UIColor(red: 0.9647, green: 0.9255, blue: 0.9373, alpha: 1))
         /// Sekundärtext — ~6,6:1
-        public static let inkSoft = rsmDynamic(UIColor(red: 0.4196, green: 0.3373, blue: 0.2824, alpha: 1), UIColor(red: 0.7882, green: 0.7020, blue: 0.6431, alpha: 1))
+        public static let inkSoft = rsmDynamic(UIColor(red: 0.3725, green: 0.3059, blue: 0.3451, alpha: 1), UIColor(red: 0.7608, green: 0.6824, blue: 0.7216, alpha: 1))
         /// Tertiär/Captions — ~4,8:1, nie unter 12,5 px einsetzen
-        public static let inkFaint = rsmDynamic(UIColor(red: 0.5412, green: 0.4510, blue: 0.3961, alpha: 1), UIColor(red: 0.6314, green: 0.5490, blue: 0.4902, alpha: 1))
-        public static let line = rsmDynamic(UIColor(red: 0.9216, green: 0.8627, blue: 0.8078, alpha: 1), UIColor(red: 0.2431, green: 0.1922, blue: 0.1608, alpha: 1))
-        public static let lineStrong = rsmDynamic(UIColor(red: 0.8627, green: 0.7882, blue: 0.7216, alpha: 1), UIColor(red: 0.3059, green: 0.2431, blue: 0.20, alpha: 1))
+        public static let inkFaint = rsmDynamic(UIColor(red: 0.5216, green: 0.4510, blue: 0.5059, alpha: 1), UIColor(red: 0.6039, green: 0.5294, blue: 0.5686, alpha: 1))
+        public static let line = rsmDynamic(UIColor(red: 0.9255, green: 0.8627, blue: 0.8902, alpha: 1), UIColor(red: 0.2157, green: 0.1647, blue: 0.1961, alpha: 1))
+        public static let lineStrong = rsmDynamic(UIColor(red: 0.8627, green: 0.7804, blue: 0.8235, alpha: 1), UIColor(red: 0.2824, green: 0.2157, blue: 0.2471, alpha: 1))
         /// Beere — genau eine Primäraktion pro Sichtbereich
         private static let brandDefault = rsmDynamic(UIColor(red: 0.6980, green: 0.2275, blue: 0.3608, alpha: 1), UIColor(red: 0.8784, green: 0.4118, blue: 0.5412, alpha: 1))
         public static var brand: Color { BrandRuntime.shared.color(forToken: "brand") ?? brandDefault }
