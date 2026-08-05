@@ -19,7 +19,17 @@ export const einstellungenDict = {
     tabLegal: "Rechtstexte",
     tabContent: "Website & SEO",
     tabFlags: "Feature-Flags",
+    tabBilling: "Abrechnung",
     lastUpdated: "Zuletzt geändert: {date}",
+
+    // Abrechnung / Testphase
+    billingEyebrow: "Abrechnung",
+    billingTitle: "Testphase",
+    billingDesc:
+      "Wie viele Tage ein neu registrierter Verein die Pro-Funktionen kostenlos testen kann. Gilt für neue Selbst-Registrierungen; einzelne Vereine lassen sich unter Lizenzen abweichend einstellen.",
+    trialDaysLabel: "Testphase (Tage)",
+    trialDaysHint: "1–365 Tage. Standard: 14.",
+    trialDaysError: "Bitte 1 bis 365 Tage angeben.",
 
     // Aktionen / Rückmeldungen
     save: "Speichern",
@@ -101,6 +111,14 @@ export const einstellungenDict = {
     tabLegal: "Legal",
     tabContent: "Website & SEO",
     tabFlags: "Feature flags",
+    tabBilling: "Billing",
+    billingEyebrow: "Billing",
+    billingTitle: "Trial period",
+    billingDesc:
+      "How many days a newly registered club can try the Pro features for free. Applies to new self-registrations; individual clubs can be overridden under “Licenses”.",
+    trialDaysLabel: "Trial period (days)",
+    trialDaysHint: "1–365 days. Default: 14.",
+    trialDaysError: "Please enter 1 to 365 days.",
     lastUpdated: "Last changed: {date}",
 
     save: "Save",

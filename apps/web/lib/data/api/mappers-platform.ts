@@ -145,6 +145,7 @@ export function mapPlatformSettings(w: M.PlatformSettings): PlatformSettings {
       seoKeywords: w.content.seo_keywords,
     },
     featureFlags: toBoolFlags(w.feature_flags),
+    billing: { trialDays: Number(w.billing?.trial_days ?? 14) },
     updatedAt: w.updated_at,
   };
 }

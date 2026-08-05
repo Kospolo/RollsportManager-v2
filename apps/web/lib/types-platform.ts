@@ -248,6 +248,8 @@ export interface PlatformSettings {
   legal: PlatformLegalSettings;
   content: PlatformContentSettings;
   featureFlags: Record<string, boolean>;
+  /** Abrechnung: Default-Länge der Selbst-Registrierungs-Testphase (Tage). */
+  billing: { trialDays: number };
   updatedAt: string;
 }
 

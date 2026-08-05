@@ -40,11 +40,11 @@ const clubIdParam = z.object({ clubId: uuid.openapi({ param: { name: 'clubId', i
 /**
  * Testphase eines neu angelegten Vereins.
  *
- * 30 Tage: lang genug, um eine Saisonvorbereitung zu erleben (Trainingsplan,
- * ein Wettkampf, eine Abrechnung), kurz genug, um eine Entscheidung zu
- * erzwingen.
+ * Die Länge ist BETREIBER-KONFIGURIERBAR (internal.platform_settings.billing
+ * .trial_days, Default 14) und wird serverseitig über die SECURITY-DEFINER-
+ * Funktion app.default_trial_days() gelesen — die Registrierung selbst darf die
+ * Betreiber-Zeile per RLS nicht sehen. Siehe Migration 0089.
  */
-const TRIAL_DAYS = 30;
 
 /**
  * Die Spalten eines Vereins, die JEDES Mitglied lesen darf - exakt clubSchema.
@@ -256,7 +256,7 @@ clubsRouter.openapi(
     description:
       'Legt einen Verein an und macht die aufrufende Person zur Inhaberin (owner, active) - inklusive ' +
       'Rollenzuweisung, sonst haette sie im eigenen Verein NULL Rechte (app.member_role_keys, 0025:37-53). ' +
-      'Setzt eine 30-Tage-Testphase (Entitlement club_license, metadata.status=trial) und erzeugt den ersten ' +
+      'Setzt eine Testphase (Länge = Betreiber-Einstellung billing.trial_days, Default 14; Entitlement club_license, metadata.status=trial) und erzeugt den ersten ' +
       'Vereinscode. Erfordert eine Anmeldung (fuer den Inhaber-Bezug), aber KEINE Vereinszugehoerigkeit.',
     security: [{ bearerAuth: [] }],
     request: {
@@ -336,7 +336,7 @@ clubsRouter.openapi(
           insert into app.entitlements
             (subject_type, subject_id, entitlement, source, provider_ref, valid_until, metadata)
           values ('club', ${club.id}, 'club_license', 'manual', 'self-service trial',
-                  now() + (${TRIAL_DAYS} || ' days')::interval,
+                  now() + (app.default_trial_days() || ' days')::interval,
                   ${tx.json({ tier: 'pro', status: 'trial' })})
           returning valid_until`;
 

@@ -286,6 +286,7 @@ interface SettingsStore {
     seoKeywords: string;
   };
   featureFlags: Record<string, boolean>;
+  billing: { trialDays: number };
   updatedAt: string;
 }
 
@@ -324,6 +325,7 @@ const settingsStore: SettingsStore = {
     bankabgleich: true,
     ki_etikett: false,
   },
+  billing: { trialDays: 14 },
   updatedAt: daysFromNow(-2),
 };
 
@@ -341,6 +343,7 @@ function settingsView(): PlatformSettings {
     legal: { ...settingsStore.legal },
     content: { ...settingsStore.content },
     featureFlags: { ...settingsStore.featureFlags },
+    billing: { ...settingsStore.billing },
     updatedAt: settingsStore.updatedAt,
   };
 }
@@ -407,6 +410,9 @@ export const moduleRepositoryPlatform: PlatformConsoleRepository = {
     if (patch.content) Object.assign(settingsStore.content, patch.content);
     if (patch.featureFlags) {
       settingsStore.featureFlags = { ...settingsStore.featureFlags, ...patch.featureFlags };
+    }
+    if (patch.billing?.trialDays !== undefined) {
+      settingsStore.billing.trialDays = patch.billing.trialDays;
     }
     settingsStore.updatedAt = nowIso();
     return settingsView();

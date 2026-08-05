@@ -132,6 +132,7 @@ export interface UpdatePlatformSettingsInput {
   legal?: UpdatePlatformLegalInput;
   content?: UpdatePlatformContentInput;
   featureFlags?: Record<string, boolean>;
+  billing?: { trialDays?: number };
 }
 
 /**

@@ -17,6 +17,7 @@ import { einstellungenDict } from "./i18n";
 import { SmtpPanel } from "./SmtpPanel";
 import { LegalPanel, ContentPanel } from "./TextPanels";
 import { FlagsPanel } from "./FlagsPanel";
+import { BillingPanel } from "./BillingPanel";
 import type { ApplyPatch, PanelProps } from "./shared";
 
 /**
@@ -107,7 +108,7 @@ function SettingsLoader() {
 
 /* ------------------------------------------------------------------ */
 
-type TabValue = "smtp" | "legal" | "content" | "flags";
+type TabValue = "smtp" | "legal" | "content" | "flags" | "billing";
 
 const ID_BASE = "platform-settings";
 
@@ -133,6 +134,7 @@ function SettingsWorkbench({ initial }: { initial: PlatformSettings }) {
     { value: "legal", label: t("tabLegal") },
     { value: "content", label: t("tabContent") },
     { value: "flags", label: t("tabFlags") },
+    { value: "billing", label: t("tabBilling") },
   ];
 
   return (
@@ -163,6 +165,9 @@ function SettingsWorkbench({ initial }: { initial: PlatformSettings }) {
       </TabPanel>
       <TabPanel value="flags" active={tab} idBase={ID_BASE}>
         <FlagsPanel {...panelProps} />
+      </TabPanel>
+      <TabPanel value="billing" active={tab} idBase={ID_BASE}>
+        <BillingPanel {...panelProps} />
       </TabPanel>
     </div>
   );

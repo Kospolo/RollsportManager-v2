@@ -230,12 +230,21 @@ export const platformContentSchema = z
   })
   .openapi('PlatformContent');
 
+/** Abrechnungs-Konfiguration des Betreibers (aktuell: Default-Testphase). */
+export const platformBillingSchema = z
+  .object({
+    /** Default-Länge der Selbst-Registrierungs-Testphase in Tagen (1..365). */
+    trial_days: z.number().int().min(1).max(365),
+  })
+  .openapi('PlatformBilling');
+
 export const platformSettingsSchema = z
   .object({
     smtp: platformSmtpSchema,
     legal: platformLegalSchema,
     content: platformContentSchema,
     feature_flags: z.record(z.boolean()),
+    billing: platformBillingSchema,
     updated_at: timestamp,
   })
   .openapi('PlatformSettings');
@@ -274,12 +283,19 @@ export const platformContentPatchSchema = z
   })
   .openapi('PlatformContentPatch');
 
+export const platformBillingPatchSchema = z
+  .object({
+    trial_days: z.number().int().min(1).max(365).optional(),
+  })
+  .openapi('PlatformBillingPatch');
+
 export const platformSettingsPatchSchema = z
   .object({
     smtp: platformSmtpPatchSchema.optional(),
     legal: platformLegalPatchSchema.optional(),
     content: platformContentPatchSchema.optional(),
     feature_flags: z.record(z.boolean()).optional(),
+    billing: platformBillingPatchSchema.optional(),
   })
   .refine((v) => Object.keys(v).length > 0, { message: 'empty update' })
   .openapi('PlatformSettingsPatch');

@@ -104,6 +104,7 @@ export const moduleApiRepositoryPlatform: PlatformConsoleRepository = {
         seo_keywords: patch.content.seoKeywords,
       },
       feature_flags: patch.featureFlags,
+      billing: patch.billing && { trial_days: patch.billing.trialDays },
     });
     return mapPlatformSettings(updated);
   },

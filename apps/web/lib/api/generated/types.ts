@@ -1016,11 +1016,16 @@ export interface PlatformContent {
   "seo_keywords": string;
 }
 
+export interface PlatformBilling {
+  "trial_days": number;
+}
+
 export interface PlatformSettings {
   "smtp": PlatformSmtp;
   "legal": PlatformLegal;
   "content": PlatformContent;
   "feature_flags": Record<string, unknown>;
+  "billing": PlatformBilling;
   "updated_at": string;
 }
 
@@ -1050,11 +1055,16 @@ export interface PlatformContentPatch {
   "seo_keywords"?: string;
 }
 
+export interface PlatformBillingPatch {
+  "trial_days"?: number;
+}
+
 export interface PlatformSettingsPatch {
   "smtp"?: PlatformSmtpPatch;
   "legal"?: PlatformLegalPatch;
   "content"?: PlatformContentPatch;
   "feature_flags"?: Record<string, unknown>;
+  "billing"?: PlatformBillingPatch;
 }
 
 export interface SmtpTestResponse {

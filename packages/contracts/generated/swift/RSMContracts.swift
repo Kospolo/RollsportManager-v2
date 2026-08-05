@@ -4376,11 +4376,26 @@ public struct PlatformContent: Codable, Equatable, Sendable {
     }
 }
 
+public struct PlatformBilling: Codable, Equatable, Sendable {
+    public var trialDays: Int
+
+    enum CodingKeys: String, CodingKey {
+        case trialDays = "trial_days"
+    }
+
+    public init(
+        trialDays: Int
+    ) {
+        self.trialDays = trialDays
+    }
+}
+
 public struct PlatformSettings: Codable, Equatable, Sendable {
     public var smtp: PlatformSmtp
     public var legal: PlatformLegal
     public var content: PlatformContent
     public var featureFlags: [String: JSONValue]
+    public var billing: PlatformBilling
     public var updatedAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -4388,6 +4403,7 @@ public struct PlatformSettings: Codable, Equatable, Sendable {
         case legal
         case content
         case featureFlags = "feature_flags"
+        case billing
         case updatedAt = "updated_at"
     }
 
@@ -4396,12 +4412,14 @@ public struct PlatformSettings: Codable, Equatable, Sendable {
         legal: PlatformLegal,
         content: PlatformContent,
         featureFlags: [String: JSONValue],
+        billing: PlatformBilling,
         updatedAt: String
     ) {
         self.smtp = smtp
         self.legal = legal
         self.content = content
         self.featureFlags = featureFlags
+        self.billing = billing
         self.updatedAt = updatedAt
     }
 }
@@ -4504,29 +4522,47 @@ public struct PlatformContentPatch: Codable, Equatable, Sendable {
     }
 }
 
+public struct PlatformBillingPatch: Codable, Equatable, Sendable {
+    public var trialDays: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case trialDays = "trial_days"
+    }
+
+    public init(
+        trialDays: Int? = nil
+    ) {
+        self.trialDays = trialDays
+    }
+}
+
 public struct PlatformSettingsPatch: Codable, Equatable, Sendable {
     public var smtp: PlatformSmtpPatch?
     public var legal: PlatformLegalPatch?
     public var content: PlatformContentPatch?
     public var featureFlags: [String: JSONValue]?
+    public var billing: PlatformBillingPatch?
 
     enum CodingKeys: String, CodingKey {
         case smtp
         case legal
         case content
         case featureFlags = "feature_flags"
+        case billing
     }
 
     public init(
         smtp: PlatformSmtpPatch? = nil,
         legal: PlatformLegalPatch? = nil,
         content: PlatformContentPatch? = nil,
-        featureFlags: [String: JSONValue]? = nil
+        featureFlags: [String: JSONValue]? = nil,
+        billing: PlatformBillingPatch? = nil
     ) {
         self.smtp = smtp
         self.legal = legal
         self.content = content
         self.featureFlags = featureFlags
+        self.billing = billing
     }
 }
 

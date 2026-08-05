@@ -113,7 +113,7 @@ export class ApiClient {
 
   /**
    * Verein selbst anlegen (Testphase) / Register a club (trial)
-   * Legt einen Verein an und macht die aufrufende Person zur Inhaberin (owner, active) - inklusive Rollenzuweisung, sonst haette sie im eigenen Verein NULL Rechte (app.member_role_keys, 0025:37-53). Setzt eine 30-Tage-Testphase (Entitlement club_license, metadata.status=trial) und erzeugt den ersten Vereinscode. Erfordert eine Anmeldung (fuer den Inhaber-Bezug), aber KEINE Vereinszugehoerigkeit.
+   * Legt einen Verein an und macht die aufrufende Person zur Inhaberin (owner, active) - inklusive Rollenzuweisung, sonst haette sie im eigenen Verein NULL Rechte (app.member_role_keys, 0025:37-53). Setzt eine Testphase (Länge = Betreiber-Einstellung billing.trial_days, Default 14; Entitlement club_license, metadata.status=trial) und erzeugt den ersten Vereinscode. Erfordert eine Anmeldung (fuer den Inhaber-Bezug), aber KEINE Vereinszugehoerigkeit.
    * 
    * `POST /clubs`
    */

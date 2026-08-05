@@ -38,6 +38,7 @@ function toResponse(row: Json): SettingsResponse {
   const legal = (row['legal'] ?? {}) as Json;
   const content = (row['content'] ?? {}) as Json;
   const flags = (row['feature_flags'] ?? {}) as Json;
+  const billing = (row['billing'] ?? {}) as Json;
   const pw = smtp['password'];
   return platformSettingsSchema.parse({
     smtp: {
@@ -64,6 +65,9 @@ function toResponse(row: Json): SettingsResponse {
       seo_keywords: content['seo_keywords'] ?? '',
     },
     feature_flags: flags,
+    billing: {
+      trial_days: Number(billing['trial_days'] ?? 14),
+    },
     updated_at: row['updated_at'],
   });
 }
@@ -133,13 +137,15 @@ platformSettingsRouter.openapi(
       const legal = { ...((current['legal'] ?? {}) as Json), ...(patch.legal ?? {}) };
       const content = { ...((current['content'] ?? {}) as Json), ...(patch.content ?? {}) };
       const featureFlags = patch.feature_flags ?? (current['feature_flags'] ?? {});
+      const billing = { ...((current['billing'] ?? {}) as Json), ...(patch.billing ?? {}) };
 
       const updated = await tx`
         update internal.platform_settings
         set smtp = ${tx.json(smtp as never)},
             legal = ${tx.json(legal as never)},
             content = ${tx.json(content as never)},
-            feature_flags = ${tx.json(featureFlags as never)}
+            feature_flags = ${tx.json(featureFlags as never)},
+            billing = ${tx.json(billing as never)}
         where id = 1
         returning *`;
       return updated[0] as Json;

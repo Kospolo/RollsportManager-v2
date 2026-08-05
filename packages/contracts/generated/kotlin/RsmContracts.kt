@@ -1660,11 +1660,17 @@ data class PlatformContent(
 )
 
 @Serializable
+data class PlatformBilling(
+    @SerialName("trial_days") val trialDays: Long
+)
+
+@Serializable
 data class PlatformSettings(
     val smtp: PlatformSmtp,
     val legal: PlatformLegal,
     val content: PlatformContent,
     @SerialName("feature_flags") val featureFlags: JsonObject,
+    val billing: PlatformBilling,
     @SerialName("updated_at") val updatedAt: String
 )
 
@@ -1698,11 +1704,17 @@ data class PlatformContentPatch(
 )
 
 @Serializable
+data class PlatformBillingPatch(
+    @SerialName("trial_days") val trialDays: Long? = null
+)
+
+@Serializable
 data class PlatformSettingsPatch(
     val smtp: PlatformSmtpPatch? = null,
     val legal: PlatformLegalPatch? = null,
     val content: PlatformContentPatch? = null,
-    @SerialName("feature_flags") val featureFlags: JsonObject? = null
+    @SerialName("feature_flags") val featureFlags: JsonObject? = null,
+    val billing: PlatformBillingPatch? = null
 )
 
 @Serializable
