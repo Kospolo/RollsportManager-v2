@@ -97,6 +97,10 @@ targets:
         # Live-App de.rollsportmanager.macos, App-id 6758109320) — sonst weist
         # ASC ab. Gleiche Nummer wie iOS 2.0 (124) fuer Konsistenz.
         CFBundleVersion: "125"
+        # Mac App Store PFLICHT: die Kategorie muss in der echten Info.plist
+        # stehen (der INFOPLIST_KEY_-Build-Setting reicht dem Mac-Upload nicht,
+        # nur iOS). Fehlt sie, weist ASC mit 90242 ab.
+        LSApplicationCategoryType: public.app-category.sports
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         # Der Dev-Stack spricht http://127.0.0.1:3022 und laeuft auf DERSELBEN
         # Maschine wie die Mac-App. NSAllowsLocalNetworking nimmt Loopback und
@@ -124,7 +128,7 @@ targets:
         # Bundle-ID der LIVE-Mac-App im Store (App-id 6758109320, Plattform
         # MAC_OS). v2 ersetzt Mac-1.8 als neue Version 2.0 — DESHALB exakt
         # de.rollsportmanager.macos (war de.rollsportmanager.v2.mac, separat).
-        PRODUCT_BUNDLE_IDENTIFIER: de.rollsportmanager.macos
+        PRODUCT_BUNDLE_IDENTIFIER: de.rollsportmanager.ios
         PRODUCT_NAME: RollsportManager
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_EMIT_LOC_STRINGS: YES
