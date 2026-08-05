@@ -79,6 +79,7 @@ function currentEntitlement(): ClubEntitlement {
 type ModuleMethods = Pick<
   DataRepository,
   | "getClubEntitlement"
+  | "startClubCheckout"
   | "listGallery"
   | "uploadGalleryItem"
   | "deleteGalleryItem"
@@ -103,6 +104,10 @@ export const moduleRepositoryBatch5: ModuleMethods = {
   /* ---------- Entitlement / PRO-Gate ---------- */
   async getClubEntitlement(): Promise<ClubEntitlement> {
     return currentEntitlement();
+  },
+  async startClubCheckout(_clubId: string): Promise<{ url: string }> {
+    // Mock/Demo: kein echter Stripe-Checkout — Hinweis-URL statt Zahlung.
+    return { url: "https://rollsportmanager.de/?checkout=demo" };
   },
 
   /* ---------- Galerie ---------- */

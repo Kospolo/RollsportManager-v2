@@ -54,6 +54,12 @@ export interface Batch5Repository {
    * Gate bleibt serverseitig (402 club_pro_required).
    */
   getClubEntitlement(): Promise<ClubEntitlement>;
+  /**
+   * Startet den Stripe-Checkout (Abo) für die Vereinslizenz und liefert die
+   * Weiterleitungs-URL. Nur Finanz-Rollen; 501, wenn Stripe/Produkt nicht
+   * konfiguriert ist. Bezahlung läuft im Web-Portal (nicht in den Apps).
+   */
+  startClubCheckout(clubId: string): Promise<{ url: string }>;
 
   /* ---------- Galerie (PRO) ---------- */
   /** Galerie des aktiven Vereins, neueste zuerst (Lesen = Mitglied + PRO). */

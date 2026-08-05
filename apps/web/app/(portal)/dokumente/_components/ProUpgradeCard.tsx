@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Icon } from "@/components/shell/icons";
 import { useT } from "@/lib/i18n";
+import { data, errorMessage } from "@/lib/data";
+import { useToast } from "@/components/ui/Toast";
 import type { ClubEntitlement, EntitlementTier } from "@/lib/types";
 import { documentsDict } from "../i18n";
 
@@ -14,6 +18,20 @@ import { documentsDict } from "../i18n";
  */
 export function ProUpgradeCard({ entitlement }: { entitlement?: ClubEntitlement }) {
   const t = useT(documentsDict);
+  const { showToast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const subscribe = async () => {
+    if (!entitlement || loading) return;
+    setLoading(true);
+    try {
+      const { url } = await data.startClubCheckout(entitlement.clubId);
+      window.location.href = url;
+    } catch (err) {
+      showToast(errorMessage(err), { tone: "danger" });
+      setLoading(false);
+    }
+  };
 
   const tierKey: Record<EntitlementTier, "tierFree" | "tierPro" | "tierPremium"> = {
     free: "tierFree",
@@ -51,8 +69,13 @@ export function ProUpgradeCard({ entitlement }: { entitlement?: ClubEntitlement 
       </ul>
 
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
+        <Button onClick={() => void subscribe()} disabled={loading} icon="sparkle">
+          {loading ? "Weiterleitung …" : "Jetzt abonnieren"}
+        </Button>
         <Badge tone="neutral">{t("proCurrentTier", { tier: tierLabel })}</Badge>
-        <p className="text-caption text-ink-faint">{t("proHint")}</p>
+        <p className="text-caption text-ink-faint">
+          Bezahlung sicher über Stripe. Nur Vorstand/Kassenwart kann abonnieren.
+        </p>
       </div>
     </section>
   );

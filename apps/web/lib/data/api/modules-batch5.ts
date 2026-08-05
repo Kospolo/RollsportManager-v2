@@ -20,6 +20,7 @@ import { authHeaders, mediaError, proGuard, uploadMedia } from "./media-fetch";
 type ModuleMethods = Pick<
   DataRepository,
   | "getClubEntitlement"
+  | "startClubCheckout"
   | "listGallery"
   | "uploadGalleryItem"
   | "deleteGalleryItem"
@@ -38,6 +39,10 @@ export const moduleApiRepositoryBatch5: ModuleMethods = {
     const clubId = activeClubId();
     const rows = await apiClient.getEntitlementsByClubId(clubId);
     return deriveEntitlement(clubId, rows);
+  },
+  async startClubCheckout(clubId: string) {
+    const res = await apiClient.postClubsByClubIdBillingCheckout(clubId);
+    return { url: res.url };
   },
 
   /* ---------- Galerie ---------- */

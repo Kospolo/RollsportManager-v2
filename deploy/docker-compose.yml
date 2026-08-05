@@ -47,6 +47,12 @@ services:
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET fehlt in .env}
       RATE_LIMIT_PEPPER: ${RATE_LIMIT_PEPPER:?RATE_LIMIT_PEPPER fehlt in .env}
       AUTH_AUDIENCE: "authenticated"
+      # Stripe (Vereinslizenz-Checkout, Testmodus). Secret aus .env; leer =
+      # Checkout deaktiviert. Webhook-Secret noch Platzhalter (aus Stripe-
+      # Dashboard nachziehen für die Zahlungs-Bestätigung).
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec-dev-placeholder}
+      WEB_APP_URL: ${WEB_APP_URL:-https://app.rollsportmanager.de}
       # Reset-/Verify-Links zeigen auf die WEB-App (nicht die API).
       APP_BASE_URL: ${APP_BASE_URL:-https://app.rollsportmanager.de}
       # SMTP-Zugangsdaten liegen NICHT hier, sondern in internal.platform_settings
