@@ -673,6 +673,27 @@
           "accept_privacy"
         ]
       },
+      "BillingCheckoutResult": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "BillingCheckoutRequest": {
+        "type": "object",
+        "properties": {
+          "product_code": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
       "ClubSmtp": {
         "type": "object",
         "properties": {
@@ -12273,6 +12294,93 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ClubJoinCode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (RFC 7807)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not allowed for this role / RLS rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found (or not visible to the caller)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clubs/{clubId}/billing/checkout": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Stripe-Checkout starten / Start a Stripe checkout (finance roles)",
+        "description": "Erzeugt eine Stripe-Checkout-Session (Abo) für die Vereinslizenz und liefert die Weiterleitungs-URL. Nur Finanz-Rollen. 501, wenn Stripe/Produkt nicht konfiguriert ist.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "clubId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingCheckoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingCheckoutResult"
                 }
               }
             }

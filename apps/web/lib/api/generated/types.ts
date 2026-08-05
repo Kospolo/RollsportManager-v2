@@ -127,6 +127,14 @@ export interface ClubRegistration {
   "accept_privacy": boolean;
 }
 
+export interface BillingCheckoutResult {
+  "url": string;
+}
+
+export interface BillingCheckoutRequest {
+  "product_code"?: string;
+}
+
 export interface ClubSmtp {
   "club_id": string;
   "smtp_host": string;

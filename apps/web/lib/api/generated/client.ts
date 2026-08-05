@@ -150,6 +150,16 @@ export class ApiClient {
   }
 
   /**
+   * Stripe-Checkout starten / Start a Stripe checkout (finance roles)
+   * Erzeugt eine Stripe-Checkout-Session (Abo) für die Vereinslizenz und liefert die Weiterleitungs-URL. Nur Finanz-Rollen. 501, wenn Stripe/Produkt nicht konfiguriert ist.
+   * 
+   * `POST /clubs/{clubId}/billing/checkout`
+   */
+  async postClubsByClubIdBillingCheckout(clubId: string, body?: M.BillingCheckoutRequest, options?: RequestOptions): Promise<M.BillingCheckoutResult> {
+    return this.request<M.BillingCheckoutResult>("POST", `/clubs/${encodeURIComponent(clubId)}/billing/checkout`, { body, auth: true, options });
+  }
+
+  /**
    * Vereins-SMTP lesen (is_club_admin) / Read a club SMTP config
    * Liefert die SMTP-Konfiguration des Vereins (Host/Port/User/Absender/SSL). Das Passwort wird NIE im Klartext geliefert — nur smtp_password_set:boolean zeigt, ob eines hinterlegt ist. Erfordert is_club_admin (owner/admin/moderator). / Returns the club SMTP config; password masked.
    * 

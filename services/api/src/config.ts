@@ -111,6 +111,13 @@ export interface ApiConfig {
      */
     stripeWebhookSecret: string;
     /**
+     * Stripe secret API key (sk_test.../sk_live...) for creating checkout
+     * sessions. Empty = checkout disabled (501). Set via deploy/.env only.
+     */
+    stripeSecretKey: string;
+    /** Base URL of the web app for Stripe success/cancel redirects. */
+    webAppUrl: string;
+    /**
      * Exact Authorization header value RevenueCat is configured to send
      * (RevenueCat dashboard -> webhook -> Authorization header).
      */
@@ -181,6 +188,12 @@ export function loadConfig(): ApiConfig {
     },
     billing: {
       stripeWebhookSecret: env('STRIPE_WEBHOOK_SECRET', 'whsec-dev-placeholder'),
+      // Stripe-Geheimschlüssel (sk_test.../sk_live...) — Pflicht, um Checkout-
+      // Sessions zu erstellen. Leer = Checkout ist deaktiviert (402/501), Rest
+      // der App läuft. Wird per deploy/.env gesetzt, NIE im Repo.
+      stripeSecretKey: env('STRIPE_SECRET_KEY', ''),
+      // Basis-URL der Web-App für Stripe-Redirects (success/cancel).
+      webAppUrl: env('WEB_APP_URL', 'https://app.rollsportmanager.de'),
       revenuecatAuthToken: env('REVENUECAT_WEBHOOK_AUTH', 'rc-dev-placeholder-token'),
       stripeSignatureToleranceSeconds: Number.parseInt(
         env('STRIPE_SIGNATURE_TOLERANCE_SECONDS', '300'),

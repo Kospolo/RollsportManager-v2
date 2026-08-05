@@ -1129,6 +1129,35 @@ public struct ClubRegistration: Codable, Equatable, Sendable {
     }
 }
 
+public struct BillingCheckoutResult: Codable, Equatable, Sendable {
+    /// Format: uri
+    public var url: String
+
+    enum CodingKeys: String, CodingKey {
+        case url
+    }
+
+    public init(
+        url: String
+    ) {
+        self.url = url
+    }
+}
+
+public struct BillingCheckoutRequest: Codable, Equatable, Sendable {
+    public var productCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case productCode = "product_code"
+    }
+
+    public init(
+        productCode: String? = nil
+    ) {
+        self.productCode = productCode
+    }
+}
+
 public struct ClubSmtp: Codable, Equatable, Sendable {
     /// Format: uuid
     public var clubId: String

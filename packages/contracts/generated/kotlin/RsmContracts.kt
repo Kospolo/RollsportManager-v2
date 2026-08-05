@@ -746,6 +746,16 @@ data class ClubRegistration(
 )
 
 @Serializable
+data class BillingCheckoutResult(
+    val url: String
+)
+
+@Serializable
+data class BillingCheckoutRequest(
+    @SerialName("product_code") val productCode: String? = null
+)
+
+@Serializable
 data class ClubSmtp(
     @SerialName("club_id") val clubId: String,
     @SerialName("smtp_host") val smtpHost: String,
