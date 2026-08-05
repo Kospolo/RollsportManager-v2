@@ -44,7 +44,7 @@ targets:
         CFBundleShortVersionString: "2.0.0"
         # Build > 123 (hoechste je hochgeladene Build-Nummer der Live-App
         # de.rollsportmanager.ios, App-id 6758109320) — sonst weist ASC ab.
-        CFBundleVersion: "124"
+        CFBundleVersion: "125"
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -96,7 +96,7 @@ targets:
         # Muss > 121 sein (hoechste je hochgeladene MAC_OS-Build-Nr. der
         # Live-App de.rollsportmanager.macos, App-id 6758109320) — sonst weist
         # ASC ab. Gleiche Nummer wie iOS 2.0 (124) fuer Konsistenz.
-        CFBundleVersion: "124"
+        CFBundleVersion: "125"
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         # Der Dev-Stack spricht http://127.0.0.1:3022 und laeuft auf DERSELBEN
         # Maschine wie die Mac-App. NSAllowsLocalNetworking nimmt Loopback und
