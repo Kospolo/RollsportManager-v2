@@ -50,6 +50,9 @@ struct DashboardView: View {
             // schweben.
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                 heroGreeting
+                if let banner = viewModel.trialBanner {
+                    trialBannerView(banner)
+                }
                 if let refreshError = viewModel.refreshError {
                     refreshErrorBanner(refreshError)
                 }
@@ -63,6 +66,42 @@ struct DashboardView: View {
             // Leiste, die selbst schon Luft mitbrachte.
         }
         .refreshable { await viewModel.refresh(api: session.api, clubId: session.clubId) }
+    }
+
+    // MARK: - Trial-/Lizenz-Banner (rein informativ — Kauf läuft im Web)
+
+    @ViewBuilder
+    private func trialBannerView(_ banner: TrialBanner) -> some View {
+        let expired: Bool = { if case .expired = banner.kind { return true } else { return false } }()
+        RSMCard {
+            HStack(alignment: .top, spacing: Theme.Spacing.s3) {
+                Image(systemName: expired ? "lock.circle.fill" : "clock.badge.checkmark")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(expired ? Theme.Colors.danger : Theme.Colors.brandInk)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    switch banner.kind {
+                    case .trial(let daysLeft):
+                        Text(verbatim: daysLeft <= 0
+                            ? "Testphase endet heute"
+                            : (daysLeft == 1 ? "Testphase: noch 1 Tag" : "Testphase: noch \(daysLeft) Tage"))
+                            .font(Theme.Fonts.listTitle)
+                            .foregroundStyle(Theme.Colors.inkPrimary)
+                        Text(verbatim: "Danach die Vereinslizenz im Web-Portal aktivieren (rollsportmanager.de).")
+                            .font(Theme.Fonts.caption)
+                            .foregroundStyle(Theme.Colors.inkSoft)
+                    case .expired:
+                        Text(verbatim: "Testphase abgelaufen")
+                            .font(Theme.Fonts.listTitle)
+                            .foregroundStyle(Theme.Colors.inkPrimary)
+                        Text(verbatim: "Einige Funktionen sind gesperrt. Vereinslizenz im Web-Portal aktivieren (rollsportmanager.de).")
+                            .font(Theme.Fonts.caption)
+                            .foregroundStyle(Theme.Colors.inkSoft)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+        }
     }
 
     // MARK: - Inhalt nach Ladezustand

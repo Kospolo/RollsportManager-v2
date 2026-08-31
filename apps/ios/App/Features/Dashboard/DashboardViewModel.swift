@@ -8,6 +8,8 @@ import Foundation
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published private(set) var state: DashboardLoadState = .loading
+    /// Trial-/Lizenz-Hinweis (nil = Abo aktiv oder unbekannt).
+    @Published private(set) var trialBanner: TrialBanner?
     /// Fehler beim Abhaken einer Aufgabe (der Haken springt dann zurück).
     @Published var taskError: String?
     /// Fehler beim Pull-to-Refresh, wenn schon Daten auf dem Schirm sind —
@@ -79,6 +81,10 @@ final class DashboardViewModel: ObservableObject {
                     now: now
                 )
             )
+            // Trial-/Lizenz-Status best effort — ein RLS-403 darf das Dashboard
+            // NICHT kippen. Bezahlung läuft bewusst NICHT in-App (Apple-IAP),
+            // der Banner informiert nur.
+            await loadTrialBanner(api: api, clubId: clubId)
         } catch {
             let message = (error as? APIError)?.errorDescription ?? error.localizedDescription
             if keepContentOnError, case .loaded = state {
@@ -87,6 +93,38 @@ final class DashboardViewModel: ObservableObject {
                 state = .error(message)
             }
         }
+    }
+
+    // MARK: - Trial-/Lizenz-Status
+
+    private func loadTrialBanner(api: APIClient, clubId: String) async {
+        guard let ents = try? await api.entitlements(clubId: clubId),
+              let lic = ents.first(where: { $0.entitlement == "club_license" }) else {
+            trialBanner = nil; return
+        }
+        let status = lic.status ?? "active"
+        let until = lic.validUntil.flatMap(Self.parseServerDate)
+        let expired = until.map { $0 < Date() } ?? false
+        if status == "trial", let until, !expired {
+            let days = max(0, Calendar.current.dateComponents([.day], from: Date(), to: until).day ?? 0)
+            trialBanner = .init(kind: .trial(daysLeft: days))
+        } else if expired || (status != "active" && status != "trial") {
+            trialBanner = .init(kind: .expired)
+        } else {
+            trialBanner = nil
+        }
+    }
+
+    /// Server-Datum tolerant parsen: ISO-8601 (mit Zeit) oder reines yyyy-MM-dd.
+    private static func parseServerDate(_ raw: String) -> Date? {
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = iso.date(from: raw) { return d }
+        iso.formatOptions = [.withInternetDateTime]
+        if let d = iso.date(from: raw) { return d }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        return f.date(from: String(raw.prefix(10)))
     }
 
     // MARK: - Aufgaben abhaken (optimistisch mit Rollback)
@@ -125,4 +163,13 @@ final class DashboardViewModel: ObservableObject {
             taskError = (error as? APIError)?.errorDescription ?? error.localizedDescription
         }
     }
+}
+
+/// Trial-/Lizenz-Hinweis fürs Dashboard. Rein informativ — Kauf läuft im Web.
+struct TrialBanner: Equatable {
+    enum Kind: Equatable {
+        case trial(daysLeft: Int)
+        case expired
+    }
+    let kind: Kind
 }
