@@ -39,6 +39,7 @@ import { clientIp } from '../lib/rate-limit.js';
 import { avatarUrlFor } from '../lib/avatar.js';
 import {
   maySeeContactOf,
+  gateAvatarConsent,
   maySeeFullRoster,
   maySeeInternalSelfProfile,
   redactMemberForViewer,
@@ -207,7 +208,10 @@ chatRouter.openapi(
                  select 1 from app.team_members tmc
                  where tmc.member_id = m.id and tmc.deleted_at is null
                    and tmc.team_id = any (app.coached_team_ids(m.club_id))
-               ) as _coach_of_member
+               ) as _coach_of_member,
+               -- Foto-Anzeige-Wache (Kinderschutz, 0056): wie im Roster — der
+               -- DM-Picker darf das Foto nicht-eingewilligter Kinder NICHT zeigen.
+               app.has_internal_photo_consent(m.id) as _photo_consent
         from app.club_members m
         where m.club_id = ${club_id}
           and m.deleted_at is null
@@ -221,7 +225,10 @@ chatRouter.openapi(
     const mapped = rows.map((row) =>
       redactSelfProfile(
         redactMemberForViewer(
-          { ...row, avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null) },
+          gateAvatarConsent({
+            ...row,
+            avatar_url: avatarUrlFor((row['avatar_key'] as string | null) ?? null),
+          }),
           privileged,
           privileged,
           maySeeContactOf(claims, club_id, row),

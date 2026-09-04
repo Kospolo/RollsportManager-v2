@@ -107,8 +107,13 @@ billingCheckoutRouter.openapi(
     form.set('client_reference_id', clubId);
     form.set('metadata[club_id]', clubId);
     form.set('metadata[product_code]', product.code);
-    // Der Webhook liest club_id vom Subscription-Objekt — daher auch dort ablegen.
+    // Der Webhook liest NUR die Subscription-Metadaten (customer.subscription.*),
+    // NICHT die der Checkout-Session — daher club_id UND product_code/tier dort
+    // ablegen, sonst landet jede bezahlte Lizenz faelschlich als tier='basic'.
+    const tier = typeof product.metadata['tier'] === 'string' ? (product.metadata['tier'] as string) : 'pro';
     form.set('subscription_data[metadata][club_id]', clubId);
+    form.set('subscription_data[metadata][product_code]', product.code);
+    form.set('subscription_data[metadata][tier]', tier);
     form.set('success_url', `${base}/einstellungen?checkout=success`);
     form.set('cancel_url', `${base}/einstellungen?checkout=cancel`);
 

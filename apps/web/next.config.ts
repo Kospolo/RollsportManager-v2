@@ -34,20 +34,27 @@ const nextConfig: NextConfig = {
   // Standard `.next`). So kann eine parallele Verifikation (eigener Port) laufen,
   // ohne den `.next` eines bereits laufenden Dev-Servers zu überschreiben.
   ...(process.env.RSM_DIST_DIR ? { distDir: process.env.RSM_DIST_DIR } : {}),
-  ...(isBeta
-    ? {
-        async headers() {
-          return [
-            {
-              source: "/:path*",
-              headers: [
-                { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" },
-              ],
-            },
-          ];
-        },
-      }
-    : {}),
+  // Sicherheits-Header für ALLE Builds. Wichtigster Punkt: Clickjacking-Schutz
+  // (frame-ancestors/X-Frame-Options) — die Auth liegt als localStorage-Bearer
+  // im selben Origin, ein eingebetteter Frame trüge die Session mit. Eine volle
+  // script-src-CSP fehlt bewusst noch (die Inline-Boot-Scripts von Theme/Brand
+  // bräuchten gepflegte Hashes) — Follow-up.
+  async headers() {
+    const security = [
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+    ];
+    if (isBeta) {
+      security.push({ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" });
+    }
+    return [{ source: "/:path*", headers: security }];
+  },
 };
 
 export default nextConfig;

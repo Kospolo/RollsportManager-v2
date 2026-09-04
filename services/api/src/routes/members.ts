@@ -73,7 +73,7 @@ function withAvatar<T extends Record<string, unknown>>(row: T): T & { avatar_url
  * Erwartet die SQL-Zusatzspalten `_photo_consent` (app.has_internal_photo_consent)
  * und `_self_or_guardian` (app.can_act_for_member) auf der Zeile.
  */
-function gateAvatarConsent<T extends Record<string, unknown> & { avatar_url: string | null }>(
+export function gateAvatarConsent<T extends Record<string, unknown> & { avatar_url: string | null }>(
   row: T,
 ): T {
   const consented = row['_photo_consent'] === true;

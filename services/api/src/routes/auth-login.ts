@@ -197,16 +197,20 @@ authLoginRouter.openapi(
     const claims = c.get('claims');
     const user = await withServiceRole('refresh user lookup', async (tx) => {
       const rows = await tx`
-        select id, email
+        select id, email,
+               coalesce((raw_app_meta_data->>'is_platform_admin')::boolean, false) as is_platform_admin
           from auth.users
          where id = ${claims.sub}
          limit 1`;
-      return rows[0] as { id: string; email: string } | undefined;
+      return rows[0] as { id: string; email: string; is_platform_admin: boolean } | undefined;
     });
     if (!user) {
       throw problem(401, 'Unauthorized', 'Ungültige Sitzung. / Invalid session.');
     }
-    const platformAdmin = isPlatformAdmin(claims);
+    // Betreiber-Flag FRISCH aus der DB (wie im Login) — NICHT aus dem alten
+    // Token: sonst behielte ein entzogener Plattform-Admin seinen Zugriff durch
+    // wiederholtes Refreshen. club_roles werden ohnehin frisch rekonstruiert.
+    const platformAdmin = user.is_platform_admin === true;
     const token = await signAccessToken(user.id, platformAdmin);
     return c.json(
       {

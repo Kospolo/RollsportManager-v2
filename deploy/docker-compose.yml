@@ -51,7 +51,9 @@ services:
       # Checkout deaktiviert. Webhook-Secret noch Platzhalter (aus Stripe-
       # Dashboard nachziehen für die Zahlungs-Bestätigung).
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec-dev-placeholder}
+      # KEIN Platzhalter-Default: leer lässt den Webhook-Guard (webhooks.ts)
+      # feuern, statt still den öffentlich bekannten Platzhalter zu akzeptieren.
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       WEB_APP_URL: ${WEB_APP_URL:-https://app.rollsportmanager.de}
       # Reset-/Verify-Links zeigen auf die WEB-App (nicht die API).
       APP_BASE_URL: ${APP_BASE_URL:-https://app.rollsportmanager.de}

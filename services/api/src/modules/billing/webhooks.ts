@@ -56,7 +56,10 @@ export function createWebhooksRouter(runner: BillingServiceRunner = sqlRunner): 
 
   router.post('/webhooks/stripe', async (c) => {
     const { auth, billing } = getConfig();
-    if (auth.mode === 'prod' && isPlaceholderSecret(billing.stripeWebhookSecret)) {
+    // Gehaertete Modi (prod UND selfhosted — das reale Deployment laeuft
+    // selfhosted): niemals den oeffentlich bekannten Platzhalter als Signatur-
+    // Secret akzeptieren, sonst koennte jeder gefaelschte Events einspielen.
+    if (auth.mode !== 'dev' && isPlaceholderSecret(billing.stripeWebhookSecret)) {
       throw problem(503, 'Service Unavailable', 'Stripe webhook secret is not configured');
     }
 
@@ -106,7 +109,7 @@ export function createWebhooksRouter(runner: BillingServiceRunner = sqlRunner): 
 
   router.post('/webhooks/revenuecat', async (c) => {
     const { auth, billing } = getConfig();
-    if (auth.mode === 'prod' && isPlaceholderSecret(billing.revenuecatAuthToken)) {
+    if (auth.mode !== 'dev' && isPlaceholderSecret(billing.revenuecatAuthToken)) {
       throw problem(503, 'Service Unavailable', 'RevenueCat webhook authorization is not configured');
     }
 
