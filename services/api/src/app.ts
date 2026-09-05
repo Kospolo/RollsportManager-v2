@@ -117,22 +117,42 @@ const PUBLIC_PATHS = new Set([
 const PUBLIC_PREFIXES = ['/public/'];
 
 /**
- * CORS — genau EINE erlaubte Web-Origin je Modus, per Request geprueft (so kann
- * kein falscher Header in einem anderen Modus haengenbleiben):
+ * CORS — erlaubte Web-Origins je Modus, per Request geprueft (so kann kein
+ * falscher Header in einem anderen Modus haengenbleiben):
  *   * dev        → das lokale Portal (http://localhost:3021).
  *   * selfhosted/prod → die konfigurierte Web-App (config.appBaseUrl, z. B.
- *     https://app.rollsportmanager.de). Web und API liegen auf VERSCHIEDENEN
- *     Subdomains (app. vs api.), also ist der Browser-Fetch cross-origin und
- *     braucht CORS — die fruehere Annahme „same origin, kein CORS" gilt fuer
- *     getrennte Subdomains nicht. Alles andere: KEIN CORS-Header → geblockt.
+ *     https://app.rollsportmanager.de) UND die Haupt-/www-Domain, unter der
+ *     dieselbe Web-App zusaetzlich ausgeliefert wird (rollsportmanager.de,
+ *     www.rollsportmanager.de). Web und API liegen auf VERSCHIEDENEN Subdomains
+ *     (app./api.), also ist der Browser-Fetch cross-origin und braucht CORS —
+ *     die fruehere Annahme „same origin, kein CORS" gilt fuer getrennte
+ *     (Sub-)Domains nicht. Meldet sich jemand ueber rollsportmanager.de/login
+ *     an (die Landing verlinkt relativ dorthin), waere sein Origin sonst nicht
+ *     erlaubt → „Failed to fetch". Alles andere: KEIN Header → geblockt.
  * Die origin-Funktion liest die Config pro Request; ein leerer Rueckgabewert
  * setzt keinen Access-Control-Allow-Origin.
  */
+function allowedWebOrigins(appBaseUrl: string): Set<string> {
+  const set = new Set<string>();
+  if (!appBaseUrl) return set;
+  set.add(appBaseUrl);
+  try {
+    const u = new URL(appBaseUrl);
+    // apex = fuehrendes "app." entfernen (app.rollsportmanager.de → rollsportmanager.de)
+    const apex = u.host.replace(/^app\./, '');
+    set.add(`${u.protocol}//${apex}`);
+    set.add(`${u.protocol}//www.${apex}`);
+  } catch {
+    /* appBaseUrl ist keine gueltige URL → nur der exakte Wert bleibt erlaubt. */
+  }
+  return set;
+}
+
 const appCors = cors({
   origin: (origin) => {
     const { auth, appBaseUrl } = getConfig();
     if (auth.mode === 'dev') return origin === 'http://localhost:3021' ? origin : '';
-    return origin !== '' && origin === appBaseUrl ? origin : '';
+    return origin !== '' && allowedWebOrigins(appBaseUrl).has(origin) ? origin : '';
   },
   allowHeaders: ['authorization', 'content-type', 'x-request-id'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
