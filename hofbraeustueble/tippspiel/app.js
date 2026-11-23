@@ -749,7 +749,7 @@
     }
     var outcome = hasRes(m) ? (m.home_goals > m.away_goals ? 'home' : m.home_goals < m.away_goals ? 'away' : 'draw') : null;
     function leg(key, label, color) {
-      return '<span' + (outcome === key ? ' class="quote__hit"' : '') + '><i style="background:var(--q-' + key + ')"></i>' + label + ' <b>' + t[key] + '&nbsp;%</b></span>';
+      return '<span' + (outcome === key ? ' class="quote__hit" title="So ist es ausgegangen"' : '') + '><i style="background:var(--q-' + key + ')"></i>' + label + ' <b>' + t[key] + '&nbsp;%</b></span>';
     }
     return '<div class="quote"><div class="quote__head"><span class="quote__title">Stammtisch-Quote</span>' +
       '<span class="quote__meta">Häufigster Tipp <b>' + esc(t.top) + '</b> · <b>' + m.tip_count + '</b> ' + plural(m.tip_count, 'Tipp', 'Tipps') + '</span></div>' +

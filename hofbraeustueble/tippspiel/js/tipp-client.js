@@ -424,7 +424,7 @@
   async function liveCall(action, data) {
     var r;
     try {
-      r = await liveFetch(action, data, 0);
+      r = await liveFetch(action, data, 20000);
     } catch (e) {
       throw ApiError('Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.', 0);
     }
