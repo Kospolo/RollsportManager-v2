@@ -30,7 +30,10 @@ players(id INTEGER PK, nickname TEXT UNIQUE COLLATE NOCASE, password_hash TEXT,
 invites(code TEXT PK, note TEXT, max_uses INT, uses INT DEFAULT 0, expires TEXT NULL, revoked INT DEFAULT 0, created TEXT)
 tips(player_id INT, match_id INT, home_goals INT, away_goals INT, updated TEXT, PRIMARY KEY(player_id, match_id))
 bonus_tips(player_id INT, competition_id INT, answer TEXT, updated TEXT, PRIMARY KEY(player_id, competition_id))
+attempts(k TEXT PK, count INT, first INT, last INT, locked_until INT)   -- intern: Brute-Force-Zähler (nur Hash der IP)
 ```
+
+IDs sind `AUTOINCREMENT` (werden nach dem Löschen nie wiederverwendet), Fremdschlüssel mit `ON DELETE CASCADE`, `PRAGMA user_version` = Schema-Version, WAL-Modus.
 
 ## Regeln
 
@@ -95,3 +98,44 @@ TippAPI.demoReset()     // Demo-Daten neu erzeugen
 - 8–10 erfundene Stammgäste mit Spitznamen (z. B. „Kalle“, „Uschi_66“, „Theken-Toni“) und plausiblen Tipps, damit Rangliste und Tendenz gefüllt sind.
 - Einladungscode `DEMO2026` (gültig). Demo-Login: Registrierung mit diesem Code, oder Nickname „Gast“ / Passwort „demo1234“.
 - Admin-Aktionen im Demo-Modus brauchen keine Anmeldung.
+
+## Ergänzungen/Präzisierungen (Backend, umgesetzt in `cms/tipp-api.php` und `tipp-client.js`)
+
+**Allgemein**
+- Fehlerantworten: `{ ok:false, api:"hbs-tipp", error, …extra }`. Extra-Felder: `loggedIn:false` (401), `csrfInvalid:true` (403), `locked:true` (409 Tippschluss), `retryAfter` (429), `setup:"pdo_sqlite"|"data_dir"` (500, Server nicht eingerichtet). Statuscodes: 400 Eingabe, 401 nicht angemeldet, 403 CSRF/fremde Herkunft/Konto gesperrt, 404 nicht gefunden, 405 falsche Methode, 409 Konflikt (Tippschluss, Nickname vergeben, Ergebnis vor Anstoß), 413/415 Body zu groß/kein JSON, 429 Sperre.
+- POST nur mit `Content-Type: application/json`; bei allen POSTs wird zusätzlich `Origin`/`Sec-Fetch-Site` geprüft.
+- Ja/Nein-Felder in Antworten sind **Booleans** (`active`, `locked`, `bonus_locked`, `revoked`, `valid`, `is_me`); Eingabe akzeptiert `true/false/1/0`.
+- Alle Spieler-Aktionen außer `status`, `invite_check`, `register`, `login` erfordern Anmeldung (sonst 401). `logout` ohne Anmeldung ist ok.
+- Spieler-Session: Cookie `HBS_TIPP` (Pfad `/cms/`, 60 Tage, gleitend verlängert), Dateien in `cms/data/tipp-sessions/`. Anonyme Besucher bekommen kein Cookie. Passwortänderung, Passwort-Reset, Deaktivierung oder Löschen melden andere Geräte ab.
+- Brute-Force: 5 Fehlversuche je IP+Nickname bzw. 30 je IP (Kneipen-WLAN!) bzw. 20 falsche Einladungscodes je IP in 15 Min. → 15 Min. Sperre (429). Gespeichert wird nur ein Hash der IP.
+- Admin: GET-Aktionen brauchen nur die CMS-Session, POST zusätzlich `X-CSRF-Token` = CSRF-Token der CMS-Session (aus `cms/api.php?action=status|login`). Aktivität im Tippspiel-Reiter hält die CMS-Session am Leben.
+
+**Validierung**
+- Nickname 2–24 Zeichen: Buchstaben A–Z/a–z, Umlaute ÄÖÜäöüß, Ziffern, Leerzeichen, `_ - .` (mind. ein Buchstabe/Ziffer); eindeutig ohne Groß-/Kleinschreibung (auch Umlaute). Passwort 8–200 Zeichen. E-Mail optional, max. 150.
+- Tore 0–20 (ganze Zahlen). Anstoß `YYYY-MM-DD HH:MM`; akzeptiert auch `YYYY-MM-DDTHH:MM` (input type=datetime-local) und `TT.MM.JJJJ HH:MM`, gespeichert immer als `YYYY-MM-DD HH:MM`.
+- Längen: Wettbewerbsname 1–80, Bonusfrage ≤150, Bonus-Antwort ≤80 (Spieler: 1–80), `bonus_points` 0–100 (Standard 10), `sort` −9999…9999, Runde ≤60, Mannschaft 1–40 (Heim ≠ Gast), Einladungsnotiz ≤100, `max_uses` 1–1000.
+- Einladungscode-Eingabe: Groß-/Kleinschreibung, Leerzeichen und `-` egal. `expires`: leer, `YYYY-MM-DD` (gilt bis Tagesende) oder `YYYY-MM-DD HH:MM`.
+- Punkte-Einstellungen je 0–50 mit exakt ≥ Differenz ≥ Tendenz.
+
+**Spieler-Aktionen – Details**
+- `matches`: zusätzlich `my_kind` (`exact|diff|tendency|miss|null`) und `serverTime`. `tendency` nur bei `locked` und mind. 1 Tipp, Prozente ganzzahlig gerundet; `top` = häufigstes Ergebnis, bei Gleichstand das alphabetisch kleinste. `tip_count`/Tendenz zählen nur aktive Spieler. `competition_id` kann auch einen inaktiven Wettbewerb (Archiv) abfragen.
+- `tip`: 404 unbekanntes Spiel, 409 bei inaktivem Wettbewerb oder ab Anstoß (`locked:true`).
+- `bonus_tip`: 409 wenn gesperrt (`now ≥ erster Anstoß` des Wettbewerbs; ohne Spiele offen) oder Wettbewerb inaktiv; 400 wenn keine Bonusfrage. Bonus zählt nur, wenn `bonus_question` und `bonus_answer` gesetzt sind.
+- `leaderboard`: enthält **alle aktiven Spieler** (auch mit 0 Punkten), deaktivierte nicht. Zeile zusätzlich `bonus` (Bonuspunkte); `points` = Spielpunkte + Bonus; `tips` = gewertete Tipps (Spiele mit Ergebnis). Gesamt = alle Wettbewerbe (auch inaktive).
+- `stats`: `points` inkl. Bonus, zusätzlich `bonus`; `tips` = alle eigenen Tipps im Bereich, `scored_tips` = davon gewertete; `hit_rate` in Prozent (1 Nachkommastelle, Treffer = exakt+Differenz+Tendenz); `avg_points` = Spielpunkte/gewertete Tipps, `avg_points_all` = dasselbe über alle aktiven Spieler (2 Nachkommastellen). Runde = Wettbewerb + `round`, chronologisch nach erstem Anstoß, leere Runde heißt „Ohne Runde“, in der Gesamtansicht mit mehreren Wettbewerben als „Wettbewerb · Runde“. `by_round[].avg_all` = Durchschnitt der Spieler, die in der Runde getippt haben. `best_round` = erste Runde mit den meisten eigenen Punkten (null ohne gewertete Spiele). `favorite_tip` = häufigster eigener Tipp (Gleichstand: alphabetisch kleinster), null ohne Tipps. `rank_history[].rank` = Rang nach dieser Runde (kumuliert, nur Spielpunkte, ohne Bonus). Rundung kaufmännisch, ganzzahlig berechnet (PHP und JS identisch).
+- `player_tips` → `{ player:{nickname,is_me}, tips:[{match_id,competition_id,round,kickoff,home,away,home_goals,away_goals,locked,tip:{home,away},points,kind}], bonus:[{competition_id,competition,question,answer,correct:true|false|null}] }`, Spiele neueste zuerst, nur gesperrte Spiele bzw. gesperrte Bonusfragen; 404 bei unbekanntem/deaktiviertem Spieler.
+- `register`: 400 bei ungültigem/abgelaufenem/zurückgezogenem/aufgebrauchtem Code, 409 bei vergebenem Nickname. `login`: 401 falsche Daten, 403 Konto deaktiviert, 429 Sperre.
+
+**Admin-Aktionen – Details**
+- `admin_overview`: Wettbewerbe zusätzlich `created`, `match_count`, `bonus_locked`; Spiele zusätzlich `locked`, `tip_count`; Spieler zusätzlich `invite_code` (`points` = Gesamtpunkte inkl. Bonus, `tips` = alle Tipps); Einladungen `{code,note,max_uses,uses,expires,revoked,created,valid}` (neueste zuerst); dazu `serverTime`.
+- `admin_competition_save` → `{ competition }`; `admin_match_save` → `{ match }`; `admin_result` → `{ match }`.
+- `admin_result`: Ergebnis erst ab Anstoß (sonst 409); `home_goals`/`away_goals` beide `null` (oder leer) löscht das Ergebnis. `admin_match_save`: ein Spiel mit Ergebnis kann nicht in die Zukunft verlegt werden (409).
+- `admin_match_import`: Trennzeichen `;` oder Tab, Runde optional, leere Zeilen und Zeilen mit `#` werden übersprungen, Duplikate (gleicher Anstoß + Heim + Gast im Wettbewerb) als Fehler gemeldet, max. 1000 Zeilen / 100 000 Zeichen. Gültige Zeilen werden importiert, fehlerhafte in `errors` gemeldet.
+- `admin_player_reset` → `temp_password` (10 Zeichen, ohne verwechselbare Zeichen).
+
+**JS-Client – Ergänzungen**
+- `init()` gibt die `status`-Antwort zurück. Optionen: `base`, `adminCsrf`, `mode:'demo'|'live'` (erzwingen), `timeout` (ms, Standard 8000). Antwortet der Server mit `api:"hbs-tipp"`, aber `ok:false` (z. B. pdo_sqlite fehlt), ist `mode='live'`, `TippAPI.error` gesetzt und `init()` wirft den Fehler.
+- `call()` wirft `Error(message)` mit `.status` (HTTP-Status, 0 = keine Verbindung) und `.data` (komplette Antwort). Admin-POSTs senden `adminCsrf`, Spieler-POSTs das `csrf` aus `status/login/register`.
+- Zusätzlich: `TippAPI.setAdminCsrf(token)`, `TippAPI.player`, `TippAPI.csrf`, `TippAPI.settings`, `TippAPI.error`, `TippAPI.util` (reine Funktionen `tally, rankRows, tendency, leaderboard, stats, ratio, bonusNorm, berlinNow, parseKickoff`).
+- `TippAPI.scoreTip(tip, result, settings)` → `{points, kind}` oder `null` (Tipp/Ergebnis fehlt). `tip` = `{home, away}`, `result` = Spiel-Objekt mit `home_goals/away_goals` (oder `{home, away}` mit Zahlen); ohne `settings` gelten 4/3/2.
+- `demoReset({empty:true})` erzeugt eine leere Demo (für Tests). Demo-Daten älter als 3 Tage werden automatisch neu erzeugt. Demo-`status` enthält zusätzlich `demo:true`. Fehlermeldungen und Statuscodes im Demo-Modus = Live; im Demo-Modus kein Brute-Force-Schutz und keine CSRF-Prüfung. Demo-Seed: Wettbewerb „Demo-Turnier“, 18 Spiele (9 mit Ergebnis, 1 läuft, 8 kommend), 10 Stammgäste inkl. „Gast“/`demo1234`, Einladungen `DEMO2026` (gültig), `THEKE4UH` (gültig), `KALLE7KX` (aufgebraucht), `ALT3RCDE` (zurückgezogen).

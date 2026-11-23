@@ -31,12 +31,13 @@ hofbraeustueble/
 └── cms/
     ├── content.json        ALLE Inhalte der Website (wird von der Verwaltung geschrieben)
     ├── api.php             Schnittstelle der Verwaltung (Login, Speichern, Bilder-Upload …)
+    ├── tipp-api.php        Schnittstelle des Tippspiels (siehe Abschnitt „Tippspiel“)
     ├── config.php          Passwort (nur als Hash) – nicht öffentlich abrufbar
-    ├── .htaccess           sperrt alles außer api.php und content.json
+    ├── .htaccess           sperrt alles außer api.php, tipp-api.php und content.json
     ├── .user.ini           PHP-Einstellungen (Upload-Größe), wo der Hoster das unterstützt
     ├── uploads/            hochgeladene Bilder (Skriptausführung abgeschaltet)
     ├── backups/            automatische Sicherungen (die letzten 20 Versionen)
-    └── data/               Login-Sperre und Sitzungen (intern)
+    └── data/               Login-Sperre, Sitzungen, Tippspiel-Datenbank tippspiel.sqlite (intern)
 ```
 
 ---
@@ -208,3 +209,42 @@ bleiben beim Speichern erhalten.
   Die mitgelieferten Texte sind nur Vorlagen und keine Rechtsberatung.
 - Adresse, Telefonnummer, E-Mail und Google-Maps-Link unter „Kontakt & Adresse“ prüfen.
 - Start-Passwort ändern.
+
+---
+
+## Tippspiel
+
+Kostenloses Tippspiel für Stammgäste – **ohne Geld und ohne Einsätze**, nur Punkte und eine Rangliste.
+Mitmachen kann nur, wer eine **Einladung** hat.
+
+**So funktioniert's**
+
+- In der Verwaltung (Reiter „Tippspiel“) Wettbewerbe anlegen (z. B. „WM 2026“, optional mit Bonusfrage
+  „Wer wird Weltmeister?“), Spiele eintragen oder als Liste einfügen (je Zeile
+  `2026-06-14 21:00; Deutschland; Schottland; Gruppe A`) und nach dem Abpfiff die Ergebnisse eintragen.
+- Einladungen erzeugen: 8-stelliger Code, z. B. „persönlich“ (1× verwendbar) oder als Thekenaushang (z. B. 50×),
+  optional mit Ablaufdatum. Einladungslink: `https://ihre-domain.de/tippspiel/?code=XXXXXXXX`.
+- Gäste registrieren sich mit Code, Nickname und Passwort (E-Mail freiwillig) und tippen bis zum Anstoß.
+  Punkte: exaktes Ergebnis 4, richtige Tordifferenz 3, richtige Tendenz 2 (in der Verwaltung änderbar).
+  Fremde Tipps und die „Community-Quote“ sind erst nach dem Anstoß sichtbar.
+- Passwort vergessen? In der Verwaltung beim Spieler „Passwort zurücksetzen“ – das angezeigte
+  vorläufige Passwort dem Gast persönlich geben.
+
+**Technik**
+
+- Schnittstelle: `cms/tipp-api.php` (Beschreibung aller Aktionen in `tippspiel/SPEC.md`), App: `tippspiel/`.
+- Daten: **`cms/data/tippspiel.sqlite`** (SQLite-Datei, wird beim ersten Aufruf automatisch angelegt;
+  daneben können kurzzeitig `tippspiel.sqlite-wal` und `-shm` liegen). Anmeldungen der Spieler liegen in
+  `cms/data/tipp-sessions/`. Der Ordner `cms/data/` ist per `.htaccess` gesperrt und nicht im Git.
+- **Sicherung:** einfach `cms/data/tippspiel.sqlite` per FTP herunterladen (am besten, wenn gerade niemand
+  tippt). Wiederherstellen: Datei zurückkopieren (vorhandene `-wal`/`-shm`-Dateien vorher löschen).
+- Voraussetzung: PHP 8 mit der Erweiterung **pdo_sqlite** – bei IONOS, Strato, all-inkl & Co.
+  standardmäßig aktiv. Fehlt sie, meldet das Tippspiel das deutlich („Das Tippspiel braucht die
+  PHP-Erweiterung pdo_sqlite“). Eine MySQL-Datenbank wird nicht benötigt.
+- Ohne PHP (z. B. lokale Vorschau mit `python3 -m http.server`) läuft das Tippspiel im **Demo-Modus** mit
+  erfundenen Stammgästen; Anmeldung mit „Gast“ / „demo1234“ oder Registrierung mit Code `DEMO2026`.
+  Die Demo-Daten liegen nur im Browser (`localStorage`: `hbs_tipp_demo`).
+- Schutz: Admin-Aktionen nur mit angemeldeter Verwaltung, Sperre nach mehreren falschen Anmeldungen,
+  Tippschluss wird auf dem Server geprüft (Zeitzone Europe/Berlin).
+- Wichtig: Das Tippspiel ist ein reines Spaß-Spiel. Keine Einsätze oder Geldpreise ausloben –
+  Sportwetten mit Einsatz sind ohne Lizenz verboten.

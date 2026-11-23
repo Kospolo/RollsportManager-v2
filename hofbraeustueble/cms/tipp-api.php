@@ -962,16 +962,12 @@ function current_player(): ?array
         return $cache = null;
     }
     $pid = (int)($_SESSION['pid'] ?? 0);
-    if ($pid <= 0) {
-        return $cache = null;
-    }
-    if (time() - (int)($_SESSION['last'] ?? 0) > TIPP_SESSION_DAYS * 86400) {
-        $_SESSION = [];
-        return $cache = null;
-    }
-    $p = q('SELECT id, nickname, email, active, password_hash FROM players WHERE id = ?', [$pid])->fetch();
+    $p = $pid > 0 && time() - (int)($_SESSION['last'] ?? 0) <= TIPP_SESSION_DAYS * 86400
+        ? q('SELECT id, nickname, email, active, password_hash FROM players WHERE id = ?', [$pid])->fetch()
+        : false;
     if (!$p || !(int)$p['active'] || !hash_equals(pw_stamp((string)$p['password_hash']), (string)($_SESSION['stamp'] ?? ''))) {
-        $_SESSION = [];
+        // abgelaufen, Konto gelöscht/gesperrt, Passwort geändert oder unbekanntes Cookie → Cookie entfernen
+        end_player_session();
         return $cache = null;
     }
     $now = time();
