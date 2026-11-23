@@ -1,0 +1,40 @@
+# Hochgeladene Bilder: nur Bilddateien ausliefern, niemals Skripte ausführen.
+
+# PHP & CGI in diesem Ordner abschalten
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_mime.c>
+  RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht .phar .cgi .pl .py .sh .asp .aspx .jsp
+  RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .phps .pht .phar
+</IfModule>
+<FilesMatch "\.(?i:php\d?|phtml|phps|pht|phar|cgi|pl|py|sh|asp|aspx|jsp|html?|svg|js)$">
+  <IfModule mod_mime.c>
+    SetHandler none
+    ForceType text/plain
+  </IfModule>
+</FilesMatch>
+
+# Nur Bilder freigeben (überschreibt die Sperre aus cms/.htaccess)
+<IfModule mod_authz_core.c>
+  Require all denied
+  <FilesMatch "\.(?i:jpe?g|png|webp|gif)$">
+    Require all granted
+  </FilesMatch>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+  <FilesMatch "\.(?i:jpe?g|png|webp|gif)$">
+    Order allow,deny
+    Allow from all
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Content-Security-Policy "default-src 'none'; img-src 'self'; sandbox"
+</IfModule>

@@ -1,0 +1,10 @@
+# Laufzeitdaten des CMS nicht ins Repository übernehmen
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/.htaccess
+/backups/*
+!/backups/.gitkeep
+!/backups/.htaccess
+/data/*
+!/data/.gitkeep
+!/data/.htaccess

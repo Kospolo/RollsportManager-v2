@@ -1,0 +1,35 @@
+# Hofbräustüble CMS – Zugriffsschutz für den Ordner cms/
+# Öffentlich erreichbar sind NUR api.php und content.json (sowie Bilder in uploads/,
+# siehe uploads/.htaccess). config.php, backups/ und data/ sind gesperrt.
+
+<IfModule mod_authz_core.c>
+  # Apache 2.4
+  Require all denied
+  <FilesMatch "^(api\.php|content\.json)$">
+    Require all granted
+  </FilesMatch>
+  <Files "config.php">
+    Require all denied
+  </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+  # Apache 2.2
+  Order allow,deny
+  Deny from all
+  <FilesMatch "^(api\.php|content\.json)$">
+    Order allow,deny
+    Allow from all
+  </FilesMatch>
+  <Files "config.php">
+    Order allow,deny
+    Deny from all
+  </Files>
+</IfModule>
+
+# Inhalte nicht zwischenspeichern, damit Änderungen sofort sichtbar sind
+<IfModule mod_headers.c>
+  <Files "content.json">
+    Header set Cache-Control "no-cache, must-revalidate"
+    Header set X-Content-Type-Options "nosniff"
+  </Files>
+</IfModule>
