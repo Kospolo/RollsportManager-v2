@@ -36,6 +36,7 @@
     hoursNote: '',
     summer: { enabled: false, title: '', text: '', image: '', season: '' },
     events: [],
+    tippspiel: { enabled: false, title: '', text: '', buttonText: '', note: '' },
     gallery: [],
     contact: { street: '', zip: '', city: '', district: '', phone: '', email: '', mapsUrl: '', note: '' },
     social: { facebook: '', instagram: '' },
