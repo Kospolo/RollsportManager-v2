@@ -47,6 +47,7 @@
           <ul class="nav__list" id="nav-list">
             <li><a href="#stube" data-nav>Die Stube</a></li>
             <li><a href="#termine" data-nav>Termine</a></li>
+            <li data-requires="tippspiel"><a href="../tippspiel/" class="nav__app">Tippspiel</a></li>
             <li><a href="#zeiten" data-nav>Öffnungszeiten</a></li>
             <li data-requires="summer"><a href="#sommer" data-nav>Sommer</a></li>
             <li><a href="#galerie" data-nav>Galerie</a></li>
@@ -142,11 +143,78 @@
       </div>
     </section>
 
+    <!-- TIPPSPIEL ────────────────────────────────────────── -->
+    <section class="section tipp" id="tippspiel" aria-labelledby="tipp-title" hidden>
+      <div class="tipp__glow" aria-hidden="true"></div>
+      <div class="container tipp__grid">
+        <header class="tipp__head">
+          <p class="eyebrow" data-reveal><span class="eyebrow__num">03</span>Tippspiel</p>
+          <h2 class="section-title" id="tipp-title" data-reveal></h2>
+          <div class="prose tipp__text" id="tipp-text" data-reveal></div>
+        </header>
+
+        <div class="tipp__board-wrap" data-reveal style="--d:.12s">
+          <div class="tafel" data-tilt role="img" aria-label="Beispiel, wie die Tabelle im Tippspiel aussieht – mit erfundenen Namen">
+            <span class="corner corner--tl" aria-hidden="true"></span><span class="corner corner--tr" aria-hidden="true"></span>
+            <span class="corner corner--bl" aria-hidden="true"></span><span class="corner corner--br" aria-hidden="true"></span>
+            <div class="tafel__inner" aria-hidden="true">
+              <div class="tafel__top">
+                <p class="tafel__kicker">Stammtisch-Tafel</p>
+                <span class="tafel__stamp">So sieht’s aus</span>
+              </div>
+              <p class="tafel__title">Die <em>Tabelle</em></p>
+              <ol class="tafel__rows">
+                <li class="tafel__row tafel__row--1" style="--r:0">
+                  <span class="tafel__rank">1</span>
+                  <span class="tafel__name">Theken-Toni<small>9 × exakt</small></span>
+                  <span class="tafel__pts">87<small>Pkt.</small></span>
+                </li>
+                <li class="tafel__row tafel__row--2" style="--r:1">
+                  <span class="tafel__rank">2</span>
+                  <span class="tafel__name">Uschi_66<small>7 × exakt</small></span>
+                  <span class="tafel__pts">81<small>Pkt.</small></span>
+                </li>
+                <li class="tafel__row tafel__row--3" style="--r:2">
+                  <span class="tafel__rank">3</span>
+                  <span class="tafel__name">Kalle<small>8 × exakt</small></span>
+                  <span class="tafel__pts">79<small>Pkt.</small></span>
+                </li>
+                <li class="tafel__row tafel__row--you" style="--r:3">
+                  <span class="tafel__rank">?</span>
+                  <span class="tafel__name">Dein Name hier</span>
+                  <span class="tafel__pts">0<small>Pkt.</small></span>
+                </li>
+              </ol>
+              <div class="tafel__ticket">
+                <span class="tafel__ticket-label">Dein Tipp</span>
+                <span class="tafel__match"><span>Deutschland</span><b>2&thinsp;:&thinsp;1</b><span>Frankreich</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tipp__foot">
+          <h3 class="tipp__rules-title" data-reveal>So wird gezählt</h3>
+          <ul class="tipp__rules" data-reveal>
+            <li><span class="tipp__pts">4</span><span class="tipp__rule"><strong>Punkte</strong>Exaktes Ergebnis</span></li>
+            <li><span class="tipp__pts">3</span><span class="tipp__rule"><strong>Punkte</strong>Richtige Tordifferenz</span></li>
+            <li><span class="tipp__pts">2</span><span class="tipp__rule"><strong>Punkte</strong>Richtige Tendenz</span></li>
+          </ul>
+          <div class="tipp__cta" data-reveal>
+            <a class="btn btn--primary" href="../tippspiel/" id="tipp-btn"><span></span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </a>
+            <p class="tipp__note" id="tipp-note"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ÖFFNUNGSZEITEN ───────────────────────────────────── -->
     <section class="section hours" id="zeiten" aria-labelledby="hours-title">
       <div class="container hours__grid">
         <div class="hours__intro">
-          <p class="eyebrow" data-reveal><span class="eyebrow__num">03</span>Wann wir zapfen</p>
+          <p class="eyebrow" data-reveal><span class="eyebrow__num">04</span>Wann wir zapfen</p>
           <h2 class="section-title" id="hours-title" data-reveal>Öffnungs<em>zeiten</em></h2>
           <p class="status-pill status-pill--large" id="hours-status" data-reveal hidden></p>
           <p class="hours__note" id="hours-note" data-reveal></p>
@@ -170,7 +238,7 @@
       <div class="summer__veil" aria-hidden="true"></div>
       <div class="container summer__inner">
         <div class="summer__card" data-reveal>
-          <p class="eyebrow"><span class="eyebrow__num">04</span>Außenbereich</p>
+          <p class="eyebrow"><span class="eyebrow__num">05</span>Außenbereich</p>
           <h2 class="section-title" id="summer-title"></h2>
           <div class="prose" id="summer-text"></div>
           <p class="summer__season" id="summer-season" hidden>
@@ -186,7 +254,7 @@
       <div class="container">
         <header class="section-head">
           <div>
-            <p class="eyebrow" data-reveal><span class="eyebrow__num" id="gallery-num">05</span>Einblicke</p>
+            <p class="eyebrow" data-reveal><span class="eyebrow__num" id="gallery-num">06</span>Einblicke</p>
             <h2 class="section-title" id="gallery-title" data-reveal>Die <em>Galerie</em></h2>
           </div>
           <p class="section-head__aside" data-reveal>Ein erster Blick in die Stube – bevor du selbst vorbeischaust.</p>
@@ -199,7 +267,7 @@
     <section class="section contact" id="kontakt" aria-labelledby="contact-title">
       <div class="container contact__grid">
         <div class="contact__info">
-          <p class="eyebrow" data-reveal><span class="eyebrow__num" id="contact-num">06</span>So findest du uns</p>
+          <p class="eyebrow" data-reveal><span class="eyebrow__num" id="contact-num">07</span>So findest du uns</p>
           <h2 class="section-title" id="contact-title" data-reveal>Komm <em>vorbei</em></h2>
           <address class="contact__address" id="contact-address" data-reveal></address>
           <ul class="contact__actions" id="contact-actions" data-reveal></ul>

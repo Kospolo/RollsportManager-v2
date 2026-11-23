@@ -40,7 +40,7 @@
   });
 
   function render() {
-    var steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderHours, renderSummer,
+    var steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer,
       renderGallery, renderContact, renderFooter, renderLegal, buildNav];
     steps.forEach(function (fn) {
       try { fn(); } catch (e) { if (window.console) console.warn('Render-Fehler in ' + fn.name, e); }
@@ -49,6 +49,7 @@
     initNav();
     initDialogs();
     initFlipCards();
+    initTippBoard();
     initPrism();
     initTilts();
     initScroll3D();
@@ -457,6 +458,33 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Tippspiel-Teaser (Tipp-Tabelle)                                    */
+  /* ------------------------------------------------------------------ */
+  function renderTippspiel() {
+    var t = C.tippspiel || {};
+    var sec = $('#tippspiel');
+    if (!t.enabled) { sec.remove(); return; }
+    sec.hidden = false;
+    $('#tippTitle').textContent = t.title || 'Tippspiel';
+    if (t.text) $('#tippText').innerHTML = H.paragraphs(t.text); else $('#tippText').hidden = true;
+    $('#tippBtn span').textContent = t.buttonText || 'Zum Tippspiel';
+    var note = $('#tippNote');
+    if (t.note) note.innerHTML = icon('shield') + '<span>' + esc(t.note) + '</span>'; else note.hidden = true;
+  }
+
+  // Punkte-Ziffern der Tipp-Tabelle klappen beim ersten Sichtkontakt um (Fallblatt)
+  function initTippBoard() {
+    var board = $('#tippBoard');
+    if (!board || reduced || !('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (en) {
+      if (!en[0].isIntersecting) return;
+      board.classList.add('is-live');
+      io.disconnect();
+    }, { threshold: .35 });
+    io.observe(board);
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Öffnungszeiten-Anzeigetafel                                        */
   /* ------------------------------------------------------------------ */
   function renderHours() {
@@ -800,10 +828,12 @@
   /* Navigation                                                          */
   /* ------------------------------------------------------------------ */
   function buildNav() {
-    var items = [['ueber-uns', 'Über uns'], ['termine', 'Termine'], ['zeiten', 'Zeiten'], ['sommer', 'Sommer'], ['galerie', 'Galerie'], ['kontakt', 'Kontakt']]
+    // [Abschnitt, Beschriftung, externes Ziel?] – das Tippspiel verlinkt auf die eigene App
+    var items = [['ueber-uns', 'Über uns'], ['termine', 'Termine'], ['tippspiel', 'Tippspiel', '../tippspiel/'], ['zeiten', 'Zeiten'], ['sommer', 'Sommer'], ['galerie', 'Galerie'], ['kontakt', 'Kontakt']]
       .filter(function (it) { return document.getElementById(it[0]); });
-    $('#navList').innerHTML = items.map(function (it) { return '<li><a href="#' + it[0] + '">' + it[1] + '</a></li>'; }).join('');
-    $('#mmenuList').innerHTML = items.map(function (it, i) { return '<li style="--i:' + i + '"><a href="#' + it[0] + '">' + it[1] + '</a></li>'; }).join('');
+    var link = function (it) { return '<a href="' + (it[2] || '#' + it[0]) + '"' + (it[2] ? ' class="nav-app"' : '') + '>' + it[1] + '</a>'; };
+    $('#navList').innerHTML = items.map(function (it) { return '<li>' + link(it) + '</li>'; }).join('');
+    $('#mmenuList').innerHTML = items.map(function (it, i) { return '<li style="--i:' + i + '">' + link(it) + '</li>'; }).join('');
     // Abschnittsnummern fortlaufend setzen (Sommer ist optional)
     var no = 1;
     $$('main .sec .sec-no').forEach(function (el) { el.textContent = pad(no++); });

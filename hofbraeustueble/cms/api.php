@@ -354,6 +354,13 @@ final class Validator
                 'category' => $line(60),
                 'image' => $line(200, 'image'),
             ]], 500],
+            'tippspiel' => ['obj', [
+                'enabled' => ['bool'],
+                'title' => $line(150),
+                'text' => $text(2000),
+                'buttonText' => $line(60),
+                'note' => $text(500),
+            ]],
             'gallery' => ['list', ['obj', [
                 'src' => $line(200, 'image-req'),
                 'caption' => $line(250),

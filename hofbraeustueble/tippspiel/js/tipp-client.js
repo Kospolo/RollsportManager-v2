@@ -1,0 +1,1128 @@
+/*
+ * Hofbräustüble – Tippspiel-Client  (window.TippAPI)
+ * Vertrag: tippspiel/SPEC.md
+ *
+ *   await TippAPI.init({ base: '../cms/tipp-api.php', adminCsrf: '…' })
+ *   TippAPI.mode                       // 'live' | 'demo'
+ *   await TippAPI.call(action, data)   // wirft Error(message) mit .status und .data bei ok:false
+ *   TippAPI.demoReset()                // Demo-Daten neu erzeugen
+ *   TippAPI.scoreTip(tip, result, settings)  // → {points, kind} | null
+ *
+ * Live-Modus: fetch auf cms/tipp-api.php (Cookies, X-CSRF-Token).
+ * Demo-Modus: vollständige Nachbildung im Browser (localStorage "hbs_tipp_demo") mit denselben Regeln.
+ * Keine Abhängigkeiten, läuft per einfachem <script>-Tag.
+ */
+(function (global) {
+  'use strict';
+
+  var DEMO_KEY = 'hbs_tipp_demo';
+  var DEMO_VERSION = 1;
+  var DEMO_MAX_AGE_MS = 3 * 24 * 3600 * 1000; // ältere Demo-Daten werden neu erzeugt (damit „kommende Spiele“ kommend bleiben)
+  var DEFAULT_SETTINGS = { points_exact: 4, points_diff: 3, points_tendency: 2 };
+  var MAX_GOALS = 20;
+  var INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var PW_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
+  var NICK_RE = /^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/;
+  var NICK_HAS_ALNUM = /[A-Za-z0-9ÄÖÜäöüß]/;
+  var GET_ACTIONS = { status: 1, invite_check: 1, matches: 1, leaderboard: 1, stats: 1, player_tips: 1, admin_overview: 1 };
+
+  /* ================================================================ Hilfen */
+
+  function ApiError(message, status, data) {
+    var e = new Error(message);
+    e.status = status || 400;
+    e.data = data || { ok: false, error: message };
+    return e;
+  }
+  function fail(message, status, extra) {
+    var data = { ok: false, api: 'hbs-tipp', error: message };
+    if (extra) for (var k in extra) data[k] = extra[k];
+    throw ApiError(message, status || 400, data);
+  }
+  function clone(x) { return x === undefined ? undefined : JSON.parse(JSON.stringify(x)); }
+  function lower(s) { return String(s).toLowerCase(); }
+  function strLen(s) { return Array.from(String(s)).length; }
+  function cmpStr(a, b) { return a < b ? -1 : (a > b ? 1 : 0); }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  /** Kaufmännisch gerundet auf dec Stellen – rein ganzzahlig, identisch zur PHP-Funktion ratio() */
+  function ratio(num, den, dec) {
+    if (dec === undefined) dec = 2;
+    if (!(den > 0)) return 0;
+    var f = Math.pow(10, dec);
+    return Math.floor((num * f * 2 + den) / (2 * den)) / f;
+  }
+
+  function bonusNorm(s) { return lower(String(s == null ? '' : s).replace(/\s+/g, '')); }
+
+  /* ============================================== Gemeinsame Punkte-Logik (rein) */
+
+  /** Tore aus {home, away} bzw. {home_goals, away_goals} lesen; primary = bevorzugte Schlüssel */
+  function goalsOf(obj, primary) {
+    if (!obj || typeof obj !== 'object') return null;
+    var alt = primary === 'tip' ? ['home_goals', 'away_goals'] : ['home', 'away'];
+    var keys = primary === 'tip' ? ['home', 'away'] : ['home_goals', 'away_goals'];
+    if (!(keys[0] in obj) && !(keys[1] in obj)) keys = alt;
+    var h = obj[keys[0]], w = obj[keys[1]];
+    if (h === null || h === undefined || h === '' || w === null || w === undefined || w === '') return null;
+    h = Number(h); w = Number(w);
+    if (!isFinite(h) || !isFinite(w)) return null;
+    return [h, w];
+  }
+
+  /**
+   * Punkte für einen Tipp.
+   * tip: {home, away} (oder {home_goals, away_goals}); result: {home_goals, away_goals} (oder {home, away});
+   * settings: {points_exact, points_diff, points_tendency}.
+   * → {points, kind: 'exact'|'diff'|'tendency'|'miss'} oder null, wenn Tipp oder Ergebnis fehlt.
+   */
+  function scoreTip(tip, result, settings) {
+    var s = settings || DEFAULT_SETTINGS;
+    var t = goalsOf(tip, 'tip');
+    var r = goalsOf(result, 'result');
+    if (!t || !r) return null;
+    if (t[0] === r[0] && t[1] === r[1]) return { points: +s.points_exact, kind: 'exact' };
+    var tt = Math.sign(t[0] - t[1]);
+    var rt = Math.sign(r[0] - r[1]);
+    if (tt !== rt) return { points: 0, kind: 'miss' };
+    if (rt !== 0 && (t[0] - t[1]) === (r[0] - r[1])) return { points: +s.points_diff, kind: 'diff' };
+    return { points: +s.points_tendency, kind: 'tendency' };
+  }
+
+  function hasResult(m) { return m.home_goals !== null && m.home_goals !== undefined && m.away_goals !== null && m.away_goals !== undefined; }
+
+  /**
+   * Punkte je Spieler. players: [{id, nickname}], matches: Spiele (nur die mit Ergebnis zählen),
+   * tips: [{player_id, match_id, home_goals, away_goals}], comps: Wettbewerbe (Bonus), bonusTips: [{player_id, competition_id, answer}]
+   */
+  function tally(players, matches, tips, comps, bonusTips, s, withBonus) {
+    var t = {};
+    players.forEach(function (p) {
+      t[p.id] = { points: 0, match_points: 0, bonus: 0, exact: 0, diff: 0, tendency: 0, miss: 0, tips: 0 };
+    });
+    var byId = {};
+    matches.forEach(function (m) { if (hasResult(m)) byId[m.id] = m; });
+    tips.forEach(function (tp) {
+      var m = byId[tp.match_id];
+      var row = t[tp.player_id];
+      if (!m || !row) return;
+      var sc = scoreTip({ home: tp.home_goals, away: tp.away_goals }, m, s);
+      row.tips++;
+      row[sc.kind]++;
+      row.match_points += sc.points;
+    });
+    if (withBonus !== false) {
+      var answers = {};
+      (comps || []).forEach(function (c) {
+        if (c.bonus_question != null && String(c.bonus_question).trim() !== '' && bonusNorm(c.bonus_answer) !== '') {
+          answers[c.id] = [bonusNorm(c.bonus_answer), +c.bonus_points];
+        }
+      });
+      (bonusTips || []).forEach(function (b) {
+        var a = answers[b.competition_id];
+        if (a && t[b.player_id] && bonusNorm(b.answer) === a[0]) t[b.player_id].bonus += a[1];
+      });
+    }
+    Object.keys(t).forEach(function (k) { t[k].points = t[k].match_points + t[k].bonus; });
+    return t;
+  }
+
+  /** Rangliste: Punkte ↓, exakte ↓, Tordifferenz ↓, Nickname; Gleichstand = gleicher Rang */
+  function rankRows(players, t, meId) {
+    var rows = players.map(function (p) {
+      var x = t[p.id];
+      return {
+        rank: 0, nickname: p.nickname, points: x.points, exact: x.exact, diff: x.diff, tendency: x.tendency,
+        tips: x.tips, bonus: x.bonus, is_me: meId != null && p.id === meId, _id: p.id
+      };
+    });
+    rows.sort(function (a, b) {
+      return (b.points - a.points) || (b.exact - a.exact) || (b.diff - a.diff) || cmpStr(lower(a.nickname), lower(b.nickname));
+    });
+    var prev = null;
+    rows.forEach(function (r, i) {
+      if (prev && prev.points === r.points && prev.exact === r.exact && prev.diff === r.diff) r.rank = prev.rank;
+      else r.rank = i + 1;
+      prev = r;
+    });
+    return rows;
+  }
+
+  /** Community-Quote (nur nach Tippschluss zeigen) */
+  function tendency(tips) {
+    var n = tips.length;
+    if (!n) return null;
+    var h = 0, d = 0, a = 0, res = {};
+    tips.forEach(function (t) {
+      if (t.home_goals > t.away_goals) h++; else if (t.home_goals === t.away_goals) d++; else a++;
+      var k = t.home_goals + ':' + t.away_goals;
+      res[k] = (res[k] || 0) + 1;
+    });
+    var top = null;
+    Object.keys(res).forEach(function (k) {
+      if (top === null || res[k] > res[top] || (res[k] === res[top] && k < top)) top = k;
+    });
+    return { home: ratio(h * 100, n, 0), draw: ratio(d * 100, n, 0), away: ratio(a * 100, n, 0), top: top };
+  }
+
+  function sortMatches(list) {
+    return list.slice().sort(function (a, b) { return cmpStr(a.kickoff, b.kickoff) || (a.id - b.id); });
+  }
+
+  /** scope: {comps, players:[{id,nickname}], matches, tips, bonus} */
+  function leaderboardOf(scope, s, meId) {
+    var t = tally(scope.players, scope.matches.filter(hasResult), scope.tips, scope.comps, scope.bonus, s);
+    var rows = rankRows(scope.players, t, meId);
+    var meRank = null;
+    rows.forEach(function (r) { if (r.is_me) meRank = r.rank; delete r._id; });
+    return { rows: rows, me_rank: meRank };
+  }
+
+  function statsOf(scope, s, meId) {
+    var players = scope.players;
+    var scored = sortMatches(scope.matches.filter(hasResult));
+    var t = tally(players, scored, scope.tips, scope.comps, scope.bonus, s);
+    var me = t[meId] || { points: 0, match_points: 0, bonus: 0, exact: 0, diff: 0, tendency: 0, miss: 0, tips: 0 };
+    var myTips = scope.tips.filter(function (x) { return x.player_id === meId; });
+    var allMP = 0, allScored = 0;
+    Object.keys(t).forEach(function (k) { allMP += t[k].match_points; allScored += t[k].tips; });
+
+    var compNames = {};
+    scope.comps.forEach(function (c) { compNames[c.id] = c.name; });
+    var groups = [], gIndex = {};
+    scored.forEach(function (m) {
+      var key = m.competition_id + '|' + (m.round || '');
+      if (!gIndex[key]) { gIndex[key] = { cid: m.competition_id, round: m.round || '', matches: [] }; groups.push(gIndex[key]); }
+      gIndex[key].matches.push(m);
+    });
+    var cids = {};
+    groups.forEach(function (g) { cids[g.cid] = 1; });
+    var multi = Object.keys(cids).length > 1;
+
+    var byRound = [], rankHistory = [], cum = [], best = null;
+    groups.forEach(function (g) {
+      var label = g.round !== '' ? g.round : 'Ohne Runde';
+      if (multi) label = (compNames[g.cid] || '') + ' · ' + label;
+      var ids = {};
+      g.matches.forEach(function (m) { ids[m.id] = 1; });
+      var gTips = scope.tips.filter(function (x) { return ids[x.match_id]; });
+      var gt = tally(players, g.matches, gTips, [], [], s, false);
+      var sum = 0, n = 0;
+      Object.keys(gt).forEach(function (k) { if (gt[k].tips > 0) { sum += gt[k].match_points; n++; } });
+      var mine = gt[meId] ? gt[meId].match_points : 0;
+      byRound.push({ round: label, points: mine, avg_all: ratio(sum, n) });
+      if (best === null || mine > best.points) best = { round: label, points: mine };
+      cum = cum.concat(g.matches);
+      var ct = tally(players, cum, scope.tips, [], [], s, false);
+      var rank = null;
+      rankRows(players, ct, meId).forEach(function (r) { if (r.is_me) rank = r.rank; });
+      rankHistory.push({ label: label, rank: rank });
+    });
+
+    var fav = {}, favorite = null;
+    myTips.forEach(function (x) { var k = x.home_goals + ':' + x.away_goals; fav[k] = (fav[k] || 0) + 1; });
+    Object.keys(fav).forEach(function (k) {
+      if (favorite === null || fav[k] > fav[favorite] || (fav[k] === fav[favorite] && k < favorite)) favorite = k;
+    });
+
+    var hits = me.exact + me.diff + me.tendency;
+    return {
+      points: me.points, bonus: me.bonus, tips: myTips.length, scored_tips: me.tips,
+      exact: me.exact, diff: me.diff, tendency: me.tendency, miss: me.miss,
+      hit_rate: ratio(hits * 100, me.tips, 1), avg_points: ratio(me.match_points, me.tips),
+      avg_points_all: ratio(allMP, allScored), best_round: best, by_round: byRound,
+      favorite_tip: favorite, rank_history: rankHistory
+    };
+  }
+
+  /* ================================================================== Zeit */
+
+  /** Aktuelle Ortszeit Europe/Berlin als "YYYY-MM-DD HH:MM:SS" */
+  function berlinNow(date) {
+    date = date || new Date();
+    try {
+      var f = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+      });
+      var p = {};
+      f.formatToParts(date).forEach(function (x) { p[x.type] = x.value; });
+      var hh = p.hour === '24' ? '00' : p.hour;
+      return p.year + '-' + p.month + '-' + p.day + ' ' + hh + ':' + p.minute + ':' + p.second;
+    } catch (e) {
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' +
+        pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds());
+    }
+  }
+  function nowMin() { return berlinNow().slice(0, 16); }
+  function nowFull() { return berlinNow(); }
+  function today() { return berlinNow().slice(0, 10); }
+
+  /** "naive" Zeitrechnung: Berliner Wanduhrzeit als UTC-Zahl */
+  function naiveMs(str) {
+    var m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?::(\d{2}))?/.exec(str);
+    return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] || 0));
+  }
+  function fmtNaive(ms) {
+    var d = new Date(ms);
+    return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()) + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+  }
+
+  /* ============================================================ Validierung */
+
+  function vInt(v, min, max, label) {
+    var n;
+    if (typeof v === 'number' && isFinite(v) && Math.floor(v) === v && Math.abs(v) < 1e9) n = v;
+    else if (typeof v === 'string' && /^\s*-?\d{1,9}\s*$/.test(v)) n = parseInt(v.trim(), 10);
+    else fail(label + ': bitte eine ganze Zahl angeben.', 400);
+    if (n < min || n > max) fail(label + ' muss zwischen ' + min + ' und ' + max + ' liegen.', 400);
+    return n;
+  }
+  function vId(v, label) { return vInt(v, 1, 2147483647, label || 'ID'); }
+  function vGoals(v, label) { return vInt(v, 0, MAX_GOALS, label); }
+  function vBool(v, label) {
+    if (v === true || v === 1 || v === '1' || v === 'true') return 1;
+    if (v === false || v === 0 || v === '0' || v === 'false') return 0;
+    fail(label + ': ungültiger Wert (ja/nein erwartet).', 400);
+  }
+  function vStr(v, min, max, label, multiline) {
+    if (v === null || v === undefined) v = '';
+    if (typeof v === 'number') v = String(v);
+    if (typeof v !== 'string') fail(label + ': ungültiger Text.', 400);
+    v = v.replace(/\r\n|\r/g, '\n').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F​-‏‪-‮⁦-⁩﻿]/g, '');
+    v = multiline ? v.replace(/\t/g, ' ') : v.replace(/\s+/g, ' ');
+    v = v.trim();
+    var len = strLen(v);
+    if (len < min) fail(min <= 1 ? 'Bitte ' + label + ' angeben.' : label + ' muss mindestens ' + min + ' Zeichen lang sein.', 400);
+    if (len > max) fail(label + ' ist zu lang (höchstens ' + max + ' Zeichen).', 400);
+    return v;
+  }
+  function vOptStr(v, max, label) { var s = vStr(v, 0, max, label); return s === '' ? null : s; }
+  function checkDate(y, m, d) {
+    if (m < 1 || m > 12 || d < 1) return false;
+    var dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return d <= dim;
+  }
+  function parseKickoff(v) {
+    if (typeof v !== 'string') return null;
+    v = v.trim();
+    var m, y, mo, d, h, mi;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::00)?$/.exec(v))) { y = +m[1]; mo = +m[2]; d = +m[3]; h = +m[4]; mi = +m[5]; }
+    else if ((m = /^(\d{1,2})\.(\d{1,2})\.(\d{4}),? (\d{1,2}):(\d{2})$/.exec(v))) { d = +m[1]; mo = +m[2]; y = +m[3]; h = +m[4]; mi = +m[5]; }
+    else return null;
+    if (y < 2000 || y > 2100 || !checkDate(y, mo, d) || h > 23 || mi > 59) return null;
+    return y + '-' + pad(mo) + '-' + pad(d) + ' ' + pad(h) + ':' + pad(mi);
+  }
+  function vKickoff(v) {
+    var k = parseKickoff(v);
+    if (k === null) fail('Anstoß: bitte im Format JJJJ-MM-TT HH:MM angeben (z. B. 2026-06-14 21:00).', 400);
+    return k;
+  }
+  function vExpires(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var m;
+    if (typeof v === 'string' && (m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim())) && checkDate(+m[1], +m[2], +m[3])) return v.trim();
+    var k = parseKickoff(v);
+    if (k === null) fail('Ablaufdatum: bitte im Format JJJJ-MM-TT angeben.', 400);
+    return k;
+  }
+  function vNickname(v) {
+    var n = vStr(v, 2, 24, 'Nickname');
+    if (!NICK_RE.test(n) || !NICK_HAS_ALNUM.test(n)) fail('Der Nickname darf nur Buchstaben (auch Umlaute), Ziffern, Leerzeichen sowie _ - . enthalten.', 400);
+    return n;
+  }
+  function vNewPassword(v, label) {
+    label = label || 'Das Passwort';
+    if (typeof v !== 'string') fail(label + ' ist ungültig.', 400);
+    if (strLen(v) < 8) fail(label + ' muss mindestens 8 Zeichen lang sein.', 400);
+    if (unescape(encodeURIComponent(v)).length > 200) fail(label + ' ist zu lang (höchstens 200 Zeichen).', 400);
+    return v;
+  }
+  function vEmail(v) {
+    var e = vStr(v, 0, 150, 'E-Mail');
+    if (e === '') return null;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) fail('Die E-Mail-Adresse ist ungültig.', 400);
+    return e;
+  }
+  function normCode(v) {
+    if (typeof v !== 'string') return '';
+    var c = v.replace(/[\s\-]+/g, '').toUpperCase();
+    return /^[A-Z0-9]{4,16}$/.test(c) ? c : '';
+  }
+  function present(data, k) { return data[k] !== undefined && data[k] !== null && data[k] !== ''; }
+
+  function randomString(alphabet, len) {
+    var out = '', i, buf = null;
+    var c = global.crypto || (typeof crypto !== 'undefined' ? crypto : null);
+    if (c && c.getRandomValues) { buf = new Uint32Array(len); c.getRandomValues(buf); }
+    for (i = 0; i < len; i++) {
+      var r = buf ? buf[i] : Math.floor(Math.random() * 4294967296);
+      out += alphabet[r % alphabet.length];
+    }
+    return out;
+  }
+
+  /* ============================================================ Live-Modus */
+
+  var state = {
+    mode: null,
+    base: '../cms/tipp-api.php',
+    csrf: null,
+    adminCsrf: null,
+    player: null,
+    settings: clone(DEFAULT_SETTINGS),
+    status: null
+  };
+
+  function buildQuery(data) {
+    var parts = [];
+    Object.keys(data || {}).forEach(function (k) {
+      var v = data[k];
+      if (v === undefined || v === null) return;
+      parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(String(v)));
+    });
+    return parts.length ? '&' + parts.join('&') : '';
+  }
+
+  function rememberStatus(res) {
+    if (res && res.api === 'hbs-tipp' && 'player' in res) {
+      state.player = res.player || null;
+      state.csrf = res.csrf || null;
+      if (res.settings) state.settings = res.settings;
+      state.status = res;
+    }
+  }
+
+  async function liveFetch(action, data, timeoutMs) {
+    var isGet = !!GET_ACTIONS[action];
+    var url = state.base + (state.base.indexOf('?') >= 0 ? '&' : '?') + 'action=' + encodeURIComponent(action) + (isGet ? buildQuery(data) : '');
+    var headers = { 'Accept': 'application/json' };
+    var opts = { method: isGet ? 'GET' : 'POST', credentials: 'include', headers: headers, cache: 'no-store' };
+    if (!isGet) {
+      headers['Content-Type'] = 'application/json';
+      var token = action.indexOf('admin_') === 0 ? state.adminCsrf : state.csrf;
+      if (token) headers['X-CSRF-Token'] = token;
+      opts.body = JSON.stringify(data || {});
+    }
+    var ctrl = null, timer = null;
+    if (timeoutMs && typeof AbortController !== 'undefined') {
+      ctrl = new AbortController();
+      opts.signal = ctrl.signal;
+      timer = setTimeout(function () { ctrl.abort(); }, timeoutMs);
+    }
+    try {
+      var resp = await fetch(url, opts);
+      var text = await resp.text();
+      var json = null;
+      try { json = JSON.parse(text); } catch (e) { json = null; }
+      return { http: resp.status, json: json };
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  async function liveCall(action, data) {
+    var r;
+    try {
+      r = await liveFetch(action, data, 0);
+    } catch (e) {
+      throw ApiError('Keine Verbindung zum Server. Bitte prüfe deine Internetverbindung.', 0);
+    }
+    var j = r.json;
+    if (!j || typeof j !== 'object') throw ApiError('Der Server hat eine ungültige Antwort geschickt.', r.http || 500);
+    if (!j.ok) {
+      if (r.http === 401 && action.indexOf('admin_') !== 0) { state.player = null; state.csrf = null; }
+      throw ApiError(j.error || 'Unbekannter Fehler.', r.http, j);
+    }
+    if (action === 'status' || action === 'login' || action === 'register') rememberStatus(j);
+    if (action === 'logout' || action === 'delete_account') { state.player = null; state.csrf = null; }
+    if (action === 'admin_settings_save' && j.settings) state.settings = j.settings;
+    return j;
+  }
+
+  /* ============================================================ Demo-Modus */
+
+  var memoryStore = null; // Fallback, falls localStorage nicht verfügbar ist
+
+  function storageGet() {
+    try { return global.localStorage ? global.localStorage.getItem(DEMO_KEY) : null; } catch (e) { return null; }
+  }
+  function storageSet(str) {
+    try { if (global.localStorage) { global.localStorage.setItem(DEMO_KEY, str); return true; } } catch (e) { /* voll/gesperrt */ }
+    return false;
+  }
+
+  function demoHash(pw) { // nur Demo – keine echte Kryptografie
+    var h = 0x811c9dc5, s = 'hbs-demo|' + pw;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return 'demo$' + h.toString(16);
+  }
+  function stamp(p) { return p.pw; }
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function emptyDb() {
+    return {
+      v: DEMO_VERSION, seededAt: Date.now(), seq: { competitions: 0, matches: 0, players: 0 },
+      settings: clone(DEFAULT_SETTINGS), competitions: [], matches: [], players: [], invites: [], tips: [], bonus_tips: [], session: null
+    };
+  }
+
+  function seedDb() {
+    var db = emptyDb();
+    var rnd = mulberry32(20260611);
+    var now = berlinNow();
+    var nowMs = naiveMs(now);
+    var day = 24 * 3600 * 1000;
+    var todayMs = naiveMs(now.slice(0, 10) + ' 00:00');
+    var at = function (dayOffset, hh, mm) { return fmtNaive(todayMs + dayOffset * day + (hh * 60 + (mm || 0)) * 60000); };
+    var created = fmtNaive(todayMs - 20 * day + 19 * 3600000) + ':00';
+
+    db.competitions.push({ id: 1, name: 'Demo-Turnier', active: 1, sort: 0, bonus_question: 'Wer gewinnt das Turnier?', bonus_answer: null, bonus_points: 10, created: created });
+    db.seq.competitions = 1;
+
+    var A = 'Gruppe A · 1. Spieltag', B = 'Gruppe B · 1. Spieltag', A2 = 'Gruppe A · 2. Spieltag', B2 = 'Gruppe B · 2. Spieltag',
+      A3 = 'Gruppe A · 3. Spieltag', B3 = 'Gruppe B · 3. Spieltag';
+    var running = fmtNaive(Math.floor((nowMs - 30 * 60000) / 60000) * 60000);
+    var plan = [
+      // vergangene Spiele mit Ergebnis
+      [at(-9, 18), 'Deutschland', 'Schweiz', A, 2, 1],
+      [at(-9, 21), 'Spanien', 'Kroatien', A, 1, 1],
+      [at(-8, 18), 'Italien', 'Österreich', A, 0, 2],
+      [at(-8, 21), 'Frankreich', 'Dänemark', B, 3, 0],
+      [at(-7, 18), 'Portugal', 'Belgien', B, 1, 2],
+      [at(-7, 21), 'England', 'Niederlande', B, 2, 2],
+      [at(-5, 18), 'Deutschland', 'Spanien', A2, 1, 0],
+      [at(-5, 21), 'Schweiz', 'Italien', A2, 0, 0],
+      [at(-4, 21), 'Kroatien', 'Österreich', A2, 4, 1],
+      // läuft gerade (gesperrt, noch kein Ergebnis)
+      [running, 'Frankreich', 'Portugal', B2, null, null],
+      // kommende Spiele
+      [at(1, 18), 'Dänemark', 'Belgien', B2, null, null],
+      [at(1, 21), 'Niederlande', 'England', B2, null, null],
+      [at(2, 18), 'Österreich', 'Deutschland', A3, null, null],
+      [at(2, 21), 'Italien', 'Spanien', A3, null, null],
+      [at(3, 21), 'Kroatien', 'Schweiz', A3, null, null],
+      [at(4, 18), 'Belgien', 'Frankreich', B3, null, null],
+      [at(4, 21), 'England', 'Portugal', B3, null, null],
+      [at(5, 21), 'Dänemark', 'Niederlande', B3, null, null]
+    ];
+    plan.forEach(function (p, i) {
+      db.matches.push({ id: i + 1, competition_id: 1, round: p[3], kickoff: p[0], home: p[1], away: p[2], home_goals: p[4], away_goals: p[5] });
+    });
+    db.seq.matches = plan.length;
+
+    db.invites.push({ code: 'DEMO2026', note: 'Demo-Einladung (für alle)', max_uses: 100, uses: 9, expires: null, revoked: 0, created: created });
+    db.invites.push({ code: 'THEKE4UH', note: 'Aushang an der Theke', max_uses: 50, uses: 0, expires: at(30, 0).slice(0, 10), revoked: 0, created: created });
+    db.invites.push({ code: 'KALLE7KX', note: 'Kalle (persönlich)', max_uses: 1, uses: 1, expires: null, revoked: 0, created: created });
+    db.invites.push({ code: 'ALT3RCDE', note: 'Alter Code (zurückgezogen)', max_uses: 10, uses: 0, expires: null, revoked: 1, created: created });
+
+    var names = ['Gast', 'Kalle', 'Uschi_66', 'Theken-Toni', 'Moni', 'Schorsch', 'Jürgen W.', 'Biggi', 'Hansi', 'Dr. Elfmeter'];
+    var champs = ['Deutschland', 'Frankreich', 'Spanien', 'Deutschland', 'England', 'Portugal', 'Deutschland', 'Niederlande', 'Spanien', 'Frankreich'];
+    var goals = [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+    var firstKick = db.matches[0].kickoff;
+    var nowFullStr = now;
+    names.forEach(function (n, i) {
+      var id = i + 1;
+      var lastLogin = fmtNaive(nowMs - Math.floor(rnd() * 5 * day)) + ':00';
+      db.players.push({
+        id: id, nickname: n, pw: demoHash(n === 'Gast' ? 'demo1234' : 'stammgast-' + id), email: null, active: 1,
+        created: created, last_login: lastLogin, invite_code: id === 2 ? 'KALLE7KX' : 'DEMO2026'
+      });
+      db.bonus_tips.push({ player_id: id, competition_id: 1, answer: champs[i], updated: fmtNaive(naiveMs(firstKick) - (i + 2) * 3600000) + ':00' });
+      db.matches.forEach(function (m, mi) {
+        var upcoming = m.kickoff > nowFullStr.slice(0, 16);
+        if (n === 'Gast') {
+          if (upcoming && mi > 11) return;         // ein paar kommende Spiele bleiben zum Ausprobieren offen
+          if (!upcoming && mi === 4) return;       // einmal vergessen
+        } else if (upcoming ? rnd() < 0.35 : rnd() < 0.08) {
+          return;
+        }
+        var h, a;
+        if (m.home_goals !== null && rnd() < 0.22) { h = m.home_goals; a = m.away_goals; }
+        else { h = goals[Math.floor(rnd() * goals.length)]; a = goals[Math.floor(rnd() * goals.length)]; if (rnd() < 0.3 && h === a) h++; }
+        var upd = fmtNaive(naiveMs(m.kickoff) - Math.floor(1 + rnd() * 48) * 3600000);
+        if (upd > nowFullStr.slice(0, 16)) upd = fmtNaive(nowMs - Math.floor(rnd() * 120) * 60000);
+        db.tips.push({ player_id: id, match_id: m.id, home_goals: h, away_goals: a, updated: upd + ':00' });
+      });
+    });
+    db.seq.players = names.length;
+    return db;
+  }
+
+  var demoDb = null;
+
+  function demoLoad() {
+    var raw = storageGet();
+    var parsed = null;
+    if (raw) { try { parsed = JSON.parse(raw); } catch (e) { parsed = null; } }
+    if (!parsed) parsed = demoDb || memoryStore;
+    if (!parsed || parsed.v !== DEMO_VERSION || !(Date.now() - (parsed.seededAt || 0) < DEMO_MAX_AGE_MS)) {
+      demoDb = seedDb();
+      demoSave();
+      return demoDb;
+    }
+    demoDb = parsed;
+    return demoDb;
+  }
+  function demoSave() {
+    var str = JSON.stringify(demoDb);
+    if (!storageSet(str)) memoryStore = JSON.parse(str);
+  }
+
+  function demoReset(opts) {
+    demoDb = (opts && opts.empty) ? emptyDb() : seedDb();
+    demoSave();
+    if (state.mode === 'demo') { state.player = null; state.csrf = null; }
+    return true;
+  }
+
+  /* --- Demo-Datenzugriff --- */
+
+  function dbSettings(db) {
+    return { points_exact: +db.settings.points_exact, points_diff: +db.settings.points_diff, points_tendency: +db.settings.points_tendency };
+  }
+  function findComp(db, id) { return db.competitions.filter(function (c) { return c.id === id; })[0] || null; }
+  function findMatch(db, id) { return db.matches.filter(function (m) { return m.id === id; })[0] || null; }
+  function findPlayer(db, id) { return db.players.filter(function (p) { return p.id === id; })[0] || null; }
+  function findPlayerByNick(db, nick) {
+    var k = lower(nick);
+    return db.players.filter(function (p) { return lower(p.nickname) === k; })[0] || null;
+  }
+  function compsSorted(db) {
+    return db.competitions.slice().sort(function (a, b) { return (a.sort - b.sort) || (a.id - b.id); });
+  }
+  function firstKickoffs(db) {
+    var out = {};
+    db.matches.forEach(function (m) { if (!out[m.competition_id] || m.kickoff < out[m.competition_id]) out[m.competition_id] = m.kickoff; });
+    return out;
+  }
+  function bonusLocked(cid, fk) { return !!fk[cid] && nowMin() >= fk[cid]; }
+  function compOut(c, fk) {
+    return {
+      id: c.id, name: c.name, active: !!c.active, sort: c.sort, bonus_question: c.bonus_question, bonus_answer: c.bonus_answer,
+      bonus_points: c.bonus_points, bonus_locked: bonusLocked(c.id, fk)
+    };
+  }
+  function matchBase(m) {
+    return {
+      id: m.id, competition_id: m.competition_id, round: m.round, kickoff: m.kickoff, home: m.home, away: m.away,
+      home_goals: m.home_goals, away_goals: m.away_goals, locked: nowMin() >= m.kickoff
+    };
+  }
+  function inviteValid(inv) {
+    if (inv.revoked || inv.uses >= inv.max_uses) return false;
+    if (!inv.expires) return true;
+    return inv.expires.length === 10 ? today() <= inv.expires : nowMin() < inv.expires;
+  }
+  function inviteOut(i) {
+    return { code: i.code, note: i.note, max_uses: i.max_uses, uses: i.uses, expires: i.expires, revoked: !!i.revoked, created: i.created, valid: inviteValid(i) };
+  }
+  function scopeOf(db, compId, onlyActive) {
+    var comps = compId != null ? db.competitions.filter(function (c) { return c.id === compId; }) : compsSorted(db);
+    var cids = {};
+    comps.forEach(function (c) { cids[c.id] = 1; });
+    var players = db.players.filter(function (p) { return !onlyActive || p.active; })
+      .sort(function (a, b) { return a.id - b.id; })
+      .map(function (p) { return { id: p.id, nickname: p.nickname }; });
+    var pids = {};
+    players.forEach(function (p) { pids[p.id] = 1; });
+    var matches = sortMatches(db.matches.filter(function (m) { return cids[m.competition_id]; }));
+    var mids = {};
+    matches.forEach(function (m) { mids[m.id] = 1; });
+    return {
+      comps: comps, players: players, matches: matches,
+      tips: db.tips.filter(function (t) { return mids[t.match_id] && pids[t.player_id]; }),
+      bonus: db.bonus_tips.filter(function (b) { return cids[b.competition_id] && pids[b.player_id]; })
+    };
+  }
+
+  function demoCurrentPlayer(db) {
+    var s = db.session;
+    if (!s) return null;
+    var p = findPlayer(db, s.pid);
+    if (!p || !p.active || s.stamp !== stamp(p)) { db.session = null; return null; }
+    return p;
+  }
+  function demoStatus(db, p) {
+    return {
+      ok: true, api: 'hbs-tipp',
+      player: p ? { id: p.id, nickname: p.nickname, email: p.email } : null,
+      csrf: p ? db.session.csrf : null, settings: dbSettings(db), serverTime: nowFull(), demo: true
+    };
+  }
+  function demoLogin(db, p) {
+    db.session = { pid: p.id, stamp: stamp(p), csrf: randomString('0123456789abcdef', 64) };
+  }
+  function requirePlayer(db) {
+    var p = demoCurrentPlayer(db);
+    if (!p) fail('Bitte melde dich an.', 401, { loggedIn: false });
+    return p;
+  }
+  function optCompId(db, data) {
+    if (!present(data, 'competition_id')) return null;
+    var id = vId(data.competition_id, 'Wettbewerb');
+    if (!findComp(db, id)) fail('Wettbewerb nicht gefunden.', 404);
+    return id;
+  }
+  function compOr404(db, id) { var c = findComp(db, id); if (!c) fail('Wettbewerb nicht gefunden.', 404); return c; }
+  function matchOr404(db, id) { var m = findMatch(db, id); if (!m) fail('Spiel nicht gefunden.', 404); return m; }
+  function playerOr404(db, id) { var p = findPlayer(db, id); if (!p) fail('Spieler nicht gefunden.', 404); return p; }
+  function removePlayer(db, id) {
+    db.tips = db.tips.filter(function (t) { return t.player_id !== id; });
+    db.bonus_tips = db.bonus_tips.filter(function (b) { return b.player_id !== id; });
+    db.players = db.players.filter(function (p) { return p.id !== id; });
+  }
+  function ok(obj) { var o = { ok: true }; for (var k in obj) o[k] = obj[k]; return o; }
+
+  var demoActions = {
+
+    /* ----------------------------------------------------------- Spieler */
+
+    status: function (db) { return demoStatus(db, demoCurrentPlayer(db)); },
+
+    invite_check: function (db, d) {
+      var code = normCode(d.code);
+      var inv = code ? db.invites.filter(function (i) { return i.code === code; })[0] : null;
+      return ok({ valid: !!(inv && inviteValid(inv)) });
+    },
+
+    register: function (db, d) {
+      var code = normCode(d.code);
+      var nick = vNickname(d.nickname);
+      var pw = vNewPassword(d.password);
+      var email = vEmail(d.email);
+      var inv = code ? db.invites.filter(function (i) { return i.code === code; })[0] : null;
+      if (!inv || !inviteValid(inv)) fail('Der Einladungscode ist ungültig, abgelaufen oder schon aufgebraucht.', 400);
+      if (findPlayerByNick(db, nick)) fail('Dieser Nickname ist schon vergeben. Bitte such dir einen anderen aus.', 409);
+      var now = nowFull();
+      var p = { id: ++db.seq.players, nickname: nick, pw: demoHash(pw), email: email, active: 1, created: now, last_login: now, invite_code: code };
+      db.players.push(p);
+      inv.uses++;
+      demoLogin(db, p);
+      return demoStatus(db, p);
+    },
+
+    login: function (db, d) {
+      var nick = typeof d.nickname === 'string' ? d.nickname.replace(/\s+/g, ' ').trim() : '';
+      if (nick === '' || typeof d.password !== 'string' || d.password === '') fail('Bitte Nickname und Passwort eingeben.', 400);
+      var p = findPlayerByNick(db, nick);
+      if (!p || p.pw !== demoHash(d.password)) fail('Nickname oder Passwort falsch.', 401);
+      if (!p.active) fail('Dein Konto ist gesperrt. Bitte sprich uns an der Theke an.', 403);
+      p.last_login = nowFull();
+      demoLogin(db, p);
+      return demoStatus(db, p);
+    },
+
+    logout: function (db) { db.session = null; return ok({}); },
+
+    matches: function (db, d) {
+      var me = requirePlayer(db);
+      var cid = optCompId(db, d);
+      var s = dbSettings(db);
+      var comps = cid != null ? [findComp(db, cid)] : compsSorted(db).filter(function (c) { return c.active; });
+      var fk = firstKickoffs(db);
+      var cids = {};
+      comps.forEach(function (c) { cids[c.id] = 1; });
+      var active = {};
+      db.players.forEach(function (p) { if (p.active) active[p.id] = 1; });
+      var tipsBy = {};
+      db.tips.forEach(function (t) { if (active[t.player_id]) (tipsBy[t.match_id] = tipsBy[t.match_id] || []).push(t); });
+      var outComps = comps.map(function (c) {
+        var o = compOut(c, fk);
+        var b = db.bonus_tips.filter(function (x) { return x.player_id === me.id && x.competition_id === c.id; })[0];
+        o.my_bonus = b ? b.answer : null;
+        return o;
+      });
+      var outMatches = sortMatches(db.matches.filter(function (m) { return cids[m.competition_id]; })).map(function (m) {
+        var o = matchBase(m);
+        var list = tipsBy[m.id] || [];
+        var mine = null;
+        list.forEach(function (t) { if (t.player_id === me.id) mine = { home: t.home_goals, away: t.away_goals }; });
+        var sc = mine ? scoreTip(mine, m, s) : null;
+        o.my_tip = mine;
+        o.my_points = sc ? sc.points : null;
+        o.my_kind = sc ? sc.kind : null;
+        o.tip_count = list.length;
+        o.tendency = o.locked ? tendency(list) : null;
+        return o;
+      });
+      return ok({ competitions: outComps, matches: outMatches, serverTime: nowFull() });
+    },
+
+    tip: function (db, d) {
+      var me = requirePlayer(db);
+      var mid = vId(d.match_id, 'Spiel');
+      var h = vGoals(d.home, 'Tore Heim');
+      var a = vGoals(d.away, 'Tore Gast');
+      var m = findMatch(db, mid);
+      if (!m) fail('Spiel nicht gefunden.', 404);
+      var c = findComp(db, m.competition_id);
+      if (!c || !c.active) fail('Dieser Wettbewerb ist gerade nicht aktiv.', 409);
+      if (nowMin() >= m.kickoff) fail('Tippschluss! Das Spiel hat schon begonnen – dein Tipp kann nicht mehr geändert werden.', 409, { locked: true });
+      var now = nowFull();
+      var t = db.tips.filter(function (x) { return x.player_id === me.id && x.match_id === mid; })[0];
+      if (t) { t.home_goals = h; t.away_goals = a; t.updated = now; }
+      else db.tips.push({ player_id: me.id, match_id: mid, home_goals: h, away_goals: a, updated: now });
+      return ok({ tip: { home: h, away: a }, updated: now });
+    },
+
+    bonus_tip: function (db, d) {
+      var me = requirePlayer(db);
+      var cid = vId(d.competition_id, 'Wettbewerb');
+      var answer = vStr(d.answer, 1, 80, 'eine Antwort');
+      var c = findComp(db, cid);
+      if (!c) fail('Wettbewerb nicht gefunden.', 404);
+      if (!c.active) fail('Dieser Wettbewerb ist gerade nicht aktiv.', 409);
+      if (c.bonus_question == null || String(c.bonus_question).trim() === '') fail('Für diesen Wettbewerb gibt es keine Bonusfrage.', 400);
+      if (bonusLocked(cid, firstKickoffs(db))) fail('Tippschluss! Die Bonusfrage konnte nur bis zum Anstoß des ersten Spiels beantwortet werden.', 409, { locked: true });
+      var b = db.bonus_tips.filter(function (x) { return x.player_id === me.id && x.competition_id === cid; })[0];
+      if (b) { b.answer = answer; b.updated = nowFull(); }
+      else db.bonus_tips.push({ player_id: me.id, competition_id: cid, answer: answer, updated: nowFull() });
+      return ok({ answer: answer });
+    },
+
+    leaderboard: function (db, d) {
+      var me = requirePlayer(db);
+      return ok(leaderboardOf(scopeOf(db, optCompId(db, d), true), dbSettings(db), me.id));
+    },
+
+    stats: function (db, d) {
+      var me = requirePlayer(db);
+      return ok(statsOf(scopeOf(db, optCompId(db, d), true), dbSettings(db), me.id));
+    },
+
+    player_tips: function (db, d) {
+      var me = requirePlayer(db);
+      var nick = typeof d.nickname === 'string' ? d.nickname.replace(/\s+/g, ' ').trim() : '';
+      var p = nick && strLen(nick) <= 40 ? findPlayerByNick(db, nick) : null;
+      if (!p || !p.active) fail('Spieler nicht gefunden.', 404);
+      var s = dbSettings(db);
+      var now = nowMin();
+      var tips = [];
+      db.tips.filter(function (t) { return t.player_id === p.id; }).forEach(function (t) {
+        var m = findMatch(db, t.match_id);
+        if (!m || m.kickoff > now) return;
+        var o = matchBase(m);
+        if (!o.locked) return;
+        var sc = scoreTip({ home: t.home_goals, away: t.away_goals }, m, s);
+        var row = { match_id: m.id };
+        Object.keys(o).forEach(function (k) { if (k !== 'id') row[k] = o[k]; });
+        row.tip = { home: t.home_goals, away: t.away_goals };
+        row.points = sc ? sc.points : null;
+        row.kind = sc ? sc.kind : null;
+        tips.push(row);
+      });
+      tips.sort(function (a, b) { return cmpStr(b.kickoff, a.kickoff) || (b.match_id - a.match_id); });
+      var fk = firstKickoffs(db);
+      var bonus = [];
+      compsSorted(db).forEach(function (c) {
+        var b = db.bonus_tips.filter(function (x) { return x.player_id === p.id && x.competition_id === c.id; })[0];
+        if (!b || !bonusLocked(c.id, fk)) return;
+        var has = bonusNorm(c.bonus_answer) !== '';
+        bonus.push({ competition_id: c.id, competition: c.name, question: c.bonus_question, answer: b.answer, correct: has ? bonusNorm(b.answer) === bonusNorm(c.bonus_answer) : null });
+      });
+      return ok({ player: { nickname: p.nickname, is_me: p.id === me.id }, tips: tips, bonus: bonus });
+    },
+
+    change_password: function (db, d) {
+      var me = requirePlayer(db);
+      if (typeof d.old !== 'string' || me.pw !== demoHash(d.old)) fail('Das aktuelle Passwort ist falsch.', 400);
+      var nw = vNewPassword(d['new'], 'Das neue Passwort');
+      if (nw === d.old) fail('Das neue Passwort muss sich vom bisherigen unterscheiden.', 400);
+      me.pw = demoHash(nw);
+      db.session.stamp = stamp(me);
+      return ok({});
+    },
+
+    delete_account: function (db, d) {
+      var me = requirePlayer(db);
+      if (typeof d.password !== 'string' || me.pw !== demoHash(d.password)) fail('Das Passwort ist falsch.', 400);
+      removePlayer(db, me.id);
+      db.session = null;
+      return ok({});
+    },
+
+    /* ------------------------------------------------------------- Admin */
+
+    admin_overview: function (db) {
+      var fk = firstKickoffs(db);
+      var mc = {}, tc = {}, ptc = {};
+      db.matches.forEach(function (m) { mc[m.competition_id] = (mc[m.competition_id] || 0) + 1; });
+      db.tips.forEach(function (t) { tc[t.match_id] = (tc[t.match_id] || 0) + 1; ptc[t.player_id] = (ptc[t.player_id] || 0) + 1; });
+      var comps = compsSorted(db).map(function (c) {
+        var o = compOut(c, fk); o.created = c.created; o.match_count = mc[c.id] || 0; return o;
+      });
+      var matches = sortMatches(db.matches).map(function (m) { var o = matchBase(m); o.tip_count = tc[m.id] || 0; return o; });
+      var sc = scopeOf(db, null, false);
+      var t = tally(sc.players, sc.matches.filter(hasResult), sc.tips, sc.comps, sc.bonus, dbSettings(db));
+      var players = db.players.slice().sort(function (a, b) { return cmpStr(lower(a.nickname), lower(b.nickname)); }).map(function (p) {
+        return {
+          id: p.id, nickname: p.nickname, email: p.email, active: !!p.active, created: p.created, last_login: p.last_login,
+          invite_code: p.invite_code, tips: ptc[p.id] || 0, points: t[p.id] ? t[p.id].points : 0
+        };
+      });
+      var invites = db.invites.slice().sort(function (a, b) { return cmpStr(b.created, a.created) || cmpStr(a.code, b.code); }).map(inviteOut);
+      return ok({ competitions: comps, matches: matches, players: players, invites: invites, settings: dbSettings(db), serverTime: nowFull() });
+    },
+
+    admin_competition_save: function (db, d) {
+      var id = present(d, 'id') ? vId(d.id, 'ID') : null;
+      var name = vStr(d.name, 1, 80, 'einen Namen');
+      var active = d.active === undefined || d.active === null ? 1 : vBool(d.active, 'Aktiv');
+      var sort = d.sort === undefined || d.sort === null || d.sort === '' ? 0 : vInt(d.sort, -9999, 9999, 'Reihenfolge');
+      var bq = vOptStr(d.bonus_question, 150, 'Bonusfrage');
+      var ba = vOptStr(d.bonus_answer, 80, 'Bonus-Antwort');
+      var bp = d.bonus_points === undefined || d.bonus_points === null || d.bonus_points === '' ? 10 : vInt(d.bonus_points, 0, 100, 'Bonuspunkte');
+      var c;
+      if (id !== null) {
+        c = compOr404(db, id);
+      } else {
+        c = { id: ++db.seq.competitions, created: nowFull() };
+        db.competitions.push(c);
+      }
+      c.name = name; c.active = active; c.sort = sort; c.bonus_question = bq; c.bonus_answer = ba; c.bonus_points = bp;
+      return ok({ competition: compOut(c, firstKickoffs(db)) });
+    },
+
+    admin_competition_delete: function (db, d) {
+      var id = vId(d.id);
+      compOr404(db, id);
+      var mids = {};
+      db.matches.forEach(function (m) { if (m.competition_id === id) mids[m.id] = 1; });
+      db.tips = db.tips.filter(function (t) { return !mids[t.match_id]; });
+      db.matches = db.matches.filter(function (m) { return m.competition_id !== id; });
+      db.bonus_tips = db.bonus_tips.filter(function (b) { return b.competition_id !== id; });
+      db.competitions = db.competitions.filter(function (c) { return c.id !== id; });
+      return ok({});
+    },
+
+    admin_match_save: function (db, d) {
+      var id = present(d, 'id') ? vId(d.id, 'ID') : null;
+      var cid = vId(d.competition_id, 'Wettbewerb');
+      compOr404(db, cid);
+      var round = vStr(d.round, 0, 60, 'Runde');
+      var kick = vKickoff(d.kickoff);
+      var home = vStr(d.home, 1, 40, 'die Heimmannschaft');
+      var away = vStr(d.away, 1, 40, 'die Gastmannschaft');
+      if (lower(home) === lower(away)) fail('Heim- und Gastmannschaft müssen verschieden sein.', 400);
+      var m;
+      if (id !== null) {
+        m = matchOr404(db, id);
+        if (m.home_goals !== null && kick > nowMin()) fail('Das Spiel hat schon ein Ergebnis – der Anstoß kann nicht in die Zukunft verlegt werden. Bitte zuerst das Ergebnis löschen.', 409);
+      } else {
+        m = { id: ++db.seq.matches, home_goals: null, away_goals: null };
+        db.matches.push(m);
+      }
+      m.competition_id = cid; m.round = round; m.kickoff = kick; m.home = home; m.away = away;
+      return ok({ match: matchBase(m) });
+    },
+
+    admin_match_delete: function (db, d) {
+      var id = vId(d.id);
+      matchOr404(db, id);
+      db.tips = db.tips.filter(function (t) { return t.match_id !== id; });
+      db.matches = db.matches.filter(function (m) { return m.id !== id; });
+      return ok({});
+    },
+
+    admin_match_import: function (db, d) {
+      var cid = vId(d.competition_id, 'Wettbewerb');
+      compOr404(db, cid);
+      if (typeof d.text !== 'string') fail('Bitte die Spiele als Text einfügen.', 400);
+      if (unescape(encodeURIComponent(d.text)).length > 100000) fail('Der Text ist zu lang (höchstens 100 000 Zeichen).', 400);
+      var lines = d.text.split(/\r\n|\r|\n/);
+      if (lines.length > 1000) fail('Zu viele Zeilen (höchstens 1000).', 400);
+      var errors = [], rows = [], seen = {};
+      db.matches.forEach(function (m) { if (m.competition_id === cid) seen[m.kickoff + '|' + lower(m.home) + '|' + lower(m.away)] = 1; });
+      lines.forEach(function (line, i) {
+        var no = i + 1;
+        line = line.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F﻿]/g, '').trim();
+        if (line === '' || line.charAt(0) === '#') return;
+        var parts = line.split(/\s*[;\t]\s*/).map(function (x) { return x.trim(); });
+        if (parts.length < 3 || parts.length > 4) { errors.push({ line: no, message: 'Erwartet: JJJJ-MM-TT HH:MM; Heim; Gast; Runde' }); return; }
+        var kick = parseKickoff(parts[0]);
+        var home = parts[1].replace(/\s+/g, ' '), away = parts[2].replace(/\s+/g, ' '), round = (parts[3] || '').replace(/\s+/g, ' ');
+        var key = kick + '|' + lower(home) + '|' + lower(away);
+        if (kick === null) errors.push({ line: no, message: 'Ungültiger Anstoß „' + Array.from(parts[0]).slice(0, 30).join('') + '“ (Format JJJJ-MM-TT HH:MM).' });
+        else if (home === '' || away === '' || strLen(home) > 40 || strLen(away) > 40) errors.push({ line: no, message: 'Mannschaftsnamen fehlen oder sind zu lang (höchstens 40 Zeichen).' });
+        else if (lower(home) === lower(away)) errors.push({ line: no, message: 'Heim- und Gastmannschaft sind gleich.' });
+        else if (strLen(round) > 60) errors.push({ line: no, message: 'Runde ist zu lang (höchstens 60 Zeichen).' });
+        else if (seen[key]) errors.push({ line: no, message: 'Dieses Spiel gibt es schon.' });
+        else { seen[key] = 1; rows.push({ round: round, kickoff: kick, home: home, away: away }); }
+      });
+      rows.forEach(function (r) {
+        db.matches.push({ id: ++db.seq.matches, competition_id: cid, round: r.round, kickoff: r.kickoff, home: r.home, away: r.away, home_goals: null, away_goals: null });
+      });
+      return ok({ imported: rows.length, errors: errors });
+    },
+
+    admin_result: function (db, d) {
+      var id = vId(d.match_id, 'Spiel');
+      var m = matchOr404(db, id);
+      var hg = d.home_goals, ag = d.away_goals;
+      if ((hg === null || hg === undefined || hg === '') && (ag === null || ag === undefined || ag === '')) {
+        m.home_goals = null; m.away_goals = null;
+      } else {
+        hg = vGoals(hg, 'Tore Heim');
+        ag = vGoals(ag, 'Tore Gast');
+        if (nowMin() < m.kickoff) fail('Das Spiel hat noch nicht begonnen – ein Ergebnis kann erst nach dem Anstoß eingetragen werden.', 409);
+        m.home_goals = hg; m.away_goals = ag;
+      }
+      return ok({ match: matchBase(m) });
+    },
+
+    admin_invite_create: function (db, d) {
+      var note = vStr(d.note, 0, 100, 'Notiz');
+      var max = vInt(d.max_uses === undefined || d.max_uses === null ? 1 : d.max_uses, 1, 1000, 'Anzahl Verwendungen');
+      var exp = vExpires(d.expires);
+      var code;
+      do { code = randomString(INVITE_ALPHABET, 8); } while (db.invites.some(function (i) { return i.code === code; }));
+      var inv = { code: code, note: note, max_uses: max, uses: 0, expires: exp, revoked: 0, created: nowFull() };
+      db.invites.push(inv);
+      return ok({ invite: inviteOut(inv) });
+    },
+
+    admin_invite_revoke: function (db, d) {
+      var code = normCode(d.code);
+      var inv = code ? db.invites.filter(function (i) { return i.code === code; })[0] : null;
+      if (!inv) fail('Einladung nicht gefunden.', 404);
+      inv.revoked = 1;
+      return ok({});
+    },
+
+    admin_player_update: function (db, d) {
+      var id = vId(d.id);
+      var p = playerOr404(db, id);
+      p.active = vBool(d.active, 'Aktiv');
+      return ok({});
+    },
+
+    admin_player_reset: function (db, d) {
+      var id = vId(d.id);
+      var p = playerOr404(db, id);
+      var temp = randomString(PW_ALPHABET, 10);
+      p.pw = demoHash(temp);
+      return ok({ temp_password: temp });
+    },
+
+    admin_player_delete: function (db, d) {
+      var id = vId(d.id);
+      playerOr404(db, id);
+      removePlayer(db, id);
+      return ok({});
+    },
+
+    admin_settings_save: function (db, d) {
+      var n = {
+        points_exact: vInt(d.points_exact, 0, 50, 'Punkte exaktes Ergebnis'),
+        points_diff: vInt(d.points_diff, 0, 50, 'Punkte Tordifferenz'),
+        points_tendency: vInt(d.points_tendency, 0, 50, 'Punkte Tendenz')
+      };
+      if (!(n.points_exact >= n.points_diff && n.points_diff >= n.points_tendency)) fail('Bitte so wählen: exaktes Ergebnis ≥ Tordifferenz ≥ Tendenz.', 400);
+      db.settings = n;
+      state.settings = clone(n);
+      return ok({ settings: dbSettings(db) });
+    }
+  };
+
+  async function demoCall(action, data) {
+    var fn = Object.prototype.hasOwnProperty.call(demoActions, action) ? demoActions[action] : null;
+    if (!fn) fail('Unbekannte Aktion.', 400);
+    var db = demoLoad();
+    var input = (data && typeof data === 'object') ? clone(data) : {};
+    // Kopie bearbeiten: bei einem Fehler bleibt der gespeicherte Stand unverändert (wie eine Transaktion)
+    var work = clone(db);
+    var res;
+    try {
+      res = fn(work, input);
+    } catch (e) {
+      if (e && e.status === 401) { demoDb.session = work.session; demoSave(); state.player = null; state.csrf = null; }
+      throw e;
+    }
+    demoDb = work;
+    demoSave();
+    if (action === 'status' || action === 'login' || action === 'register') rememberStatus(res);
+    if (action === 'logout' || action === 'delete_account') { state.player = null; state.csrf = null; }
+    await new Promise(function (r) { setTimeout(r, 0); });
+    return clone(res);
+  }
+
+  /* ================================================================ Öffentlich */
+
+  var initPromise = null;
+
+  async function init(options) {
+    options = options || {};
+    if (options.base) state.base = options.base;
+    if (options.adminCsrf !== undefined) state.adminCsrf = options.adminCsrf || null;
+    var forced = options.mode || options.force || null; // 'demo' | 'live' (optional)
+    if (forced === 'demo') {
+      state.mode = 'demo';
+      return demoCall('status', {});
+    }
+    var r = null;
+    try {
+      r = await liveFetch('status', {}, options.timeout || 8000);
+    } catch (e) {
+      r = null;
+    }
+    var j = r && r.json;
+    if (j && typeof j === 'object' && j.api === 'hbs-tipp') {
+      state.mode = 'live';
+      if (!j.ok) {
+        TippAPI.error = j.error || 'Das Tippspiel ist gerade nicht erreichbar.';
+        throw ApiError(TippAPI.error, r.http || 500, j);
+      }
+      TippAPI.error = null;
+      rememberStatus(j);
+      return j;
+    }
+    if (forced === 'live') {
+      state.mode = 'live';
+      TippAPI.error = 'Das Tippspiel ist gerade nicht erreichbar.';
+      throw ApiError(TippAPI.error, (r && r.http) || 0);
+    }
+    state.mode = 'demo';
+    TippAPI.error = null;
+    return demoCall('status', {});
+  }
+
+  async function call(action, data) {
+    if (typeof action !== 'string' || !/^[a-z_]{1,40}$/.test(action)) throw ApiError('Unbekannte Aktion.', 400);
+    if (!state.mode) {
+      if (!initPromise) initPromise = init({});
+      try { await initPromise; } catch (e) { /* Fehler wird beim Aufruf erneut gemeldet */ }
+    }
+    return state.mode === 'demo' ? demoCall(action, data || {}) : liveCall(action, data || {});
+  }
+
+  var TippAPI = {
+    version: '1.0',
+    init: function (options) { initPromise = init(options); return initPromise; },
+    call: call,
+    demoReset: demoReset,
+    scoreTip: scoreTip,
+    setAdminCsrf: function (token) { state.adminCsrf = token || null; },
+    error: null,
+    /** reine Hilfsfunktionen (auch für Tests) */
+    util: {
+      tally: tally, rankRows: rankRows, tendency: tendency, leaderboard: leaderboardOf, stats: statsOf,
+      ratio: ratio, bonusNorm: bonusNorm, berlinNow: berlinNow, parseKickoff: parseKickoff
+    }
+  };
+  Object.defineProperty(TippAPI, 'mode', { enumerable: true, get: function () { return state.mode; } });
+  Object.defineProperty(TippAPI, 'player', { enumerable: true, get: function () { return state.player ? clone(state.player) : null; } });
+  Object.defineProperty(TippAPI, 'csrf', { enumerable: true, get: function () { return state.csrf; } });
+  Object.defineProperty(TippAPI, 'settings', { enumerable: true, get: function () { return clone(state.settings); } });
+  Object.defineProperty(TippAPI, 'base', { enumerable: true, get: function () { return state.base; } });
+
+  global.TippAPI = TippAPI;
+})(typeof window !== 'undefined' ? window : this);

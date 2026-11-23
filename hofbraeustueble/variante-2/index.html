@@ -51,6 +51,7 @@
     <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 9M20 4v5h-5M20 12a8 8 0 0 1-13.7 5.6L4 15M4 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2.8 4.5 5.8v5.7c0 4.7 3.2 8.6 7.5 9.7 4.3-1.1 7.5-5 7.5-9.7V5.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="m8.6 12.1 2.4 2.4 4.4-4.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
     <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
@@ -165,12 +166,66 @@
       </div>
     </section>
 
+    <!-- TIPPSPIEL -->
+    <section class="sec sec-tipp" id="tippspiel" aria-labelledby="tippTitle" hidden>
+      <div class="tag-bg" aria-hidden="true">Tabelle</div>
+      <div class="wrap p3d">
+        <div class="tipp-grid">
+          <div class="tipp-head">
+            <header class="sec-head">
+              <p class="sec-label"><span class="sec-no">03</span>Tippspiel</p>
+              <h2 class="sec-title" id="tippTitle"></h2>
+              <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 24 C 90 12, 190 30, 270 18 S 380 14, 414 22" /><path class="drip" d="M100 20 v13 M318 17 v8"/></svg>
+            </header>
+            <div class="tipp-text" id="tippText"></div>
+          </div>
+
+          <div class="tipp-board" id="tippBoard">
+            <div class="lt tilt" role="img" aria-label="Beispiel, wie die Tabelle im Tippspiel aussieht – mit erfundenen Namen">
+              <div class="lt-frame" aria-hidden="true">
+                <div class="lt-top">
+                  <p class="lt-title">Tipp-Tabelle</p>
+                  <span class="lt-demo">So sieht’s aus</span>
+                </div>
+                <div class="lt-cols"><span>Pl.</span><span>Name</span><span>Exakt</span><span>Pkt.</span></div>
+                <ol class="lt-rows">
+                  <li class="lt-row is-lead" style="--r:0"><span class="lt-pos">01</span><span class="lt-name">Theken-Toni</span><span class="lt-ex">9</span><span class="lt-pts"><span class="lt-d" style="--k:0"><i>8</i></span><span class="lt-d" style="--k:1"><i>7</i></span></span></li>
+                  <li class="lt-row" style="--r:1"><span class="lt-pos">02</span><span class="lt-name">Uschi_66</span><span class="lt-ex">7</span><span class="lt-pts"><span class="lt-d" style="--k:0"><i>8</i></span><span class="lt-d" style="--k:1"><i>1</i></span></span></li>
+                  <li class="lt-row" style="--r:2"><span class="lt-pos">03</span><span class="lt-name">Kalle</span><span class="lt-ex">8</span><span class="lt-pts"><span class="lt-d" style="--k:0"><i>7</i></span><span class="lt-d" style="--k:1"><i>9</i></span></span></li>
+                  <li class="lt-row is-you" style="--r:3"><span class="lt-pos">--</span><span class="lt-name">Du?<span class="lt-cursor"></span></span><span class="lt-ex">0</span><span class="lt-pts"><span class="lt-d" style="--k:0"><i>0</i></span><span class="lt-d" style="--k:1"><i>0</i></span></span></li>
+                </ol>
+                <div class="lt-match">
+                  <span class="lt-match-label">Dein Tipp</span>
+                  <span class="lt-team">Deutschland</span>
+                  <span class="lt-score">2<span>:</span>1</span>
+                  <span class="lt-team">Frankreich</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tipp-foot">
+            <p class="tipp-rules-title">Punkte pro Spiel</p>
+            <ul class="tipp-rules">
+              <li><span class="tr-pts">4</span><span class="tr-txt"><b>Exaktes Ergebnis</b><small>Tipp 2:1 · Endstand 2:1</small></span></li>
+              <li><span class="tr-pts">3</span><span class="tr-txt"><b>Richtige Tordifferenz</b><small>Tipp 2:1 · Endstand 3:2</small></span></li>
+              <li><span class="tr-pts">2</span><span class="tr-txt"><b>Richtige Tendenz</b><small>Tipp 2:1 · Endstand 3:0</small></span></li>
+            </ul>
+            <div class="tipp-cta">
+              <a class="btn btn-red" href="../tippspiel/" id="tippBtn"><span></span><svg class="ico" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+              <p class="tipp-note" id="tippNote"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ÖFFNUNGSZEITEN -->
     <section class="sec sec-hours" id="zeiten" aria-labelledby="hoursTitle">
       <div class="wrap p3d">
         <div class="hours-grid">
           <header class="sec-head">
-            <p class="sec-label"><span class="sec-no">03</span>Öffnungszeiten</p>
+            <p class="sec-label"><span class="sec-no">04</span>Öffnungszeiten</p>
             <h2 class="sec-title" id="hoursTitle">Anstoß&shy;zeiten</h2>
             <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 20 C 110 12, 190 28, 280 20 S 380 14, 414 22" /><path class="drip" d="M150 20 v13 M360 18 v7"/></svg>
             <p class="hours-note" id="hoursNote"></p>
@@ -199,7 +254,7 @@
           </figure>
           <div class="summer-copy">
             <header class="sec-head">
-              <p class="sec-label"><span class="sec-no">04</span>Außenbereich</p>
+              <p class="sec-label"><span class="sec-no">05</span>Außenbereich</p>
               <h2 class="sec-title" id="summerTitle"></h2>
               <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 24 C 80 14, 200 28, 290 16 S 390 20, 414 18" /><path class="drip" d="M230 22 v12"/></svg>
             </header>
@@ -214,7 +269,7 @@
     <section class="sec sec-gallery" id="galerie" aria-labelledby="galleryTitle">
       <div class="wrap p3d">
         <header class="sec-head sec-head-center">
-          <p class="sec-label"><span class="sec-no" id="galleryNo">05</span>Galerie</p>
+          <p class="sec-label"><span class="sec-no" id="galleryNo">06</span>Galerie</p>
           <h2 class="sec-title" id="galleryTitle">Einblicke</h2>
           <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 20 C 100 28, 200 10, 300 20 S 390 24, 414 16" /><path class="drip" d="M196 16 v12"/></svg>
         </header>
@@ -243,7 +298,7 @@
         <div class="contact-grid">
           <div class="contact-copy">
             <header class="sec-head">
-              <p class="sec-label"><span class="sec-no" id="contactNo">06</span>Kontakt &amp; Anfahrt</p>
+              <p class="sec-label"><span class="sec-no" id="contactNo">07</span>Kontakt &amp; Anfahrt</p>
               <h2 class="sec-title" id="contactTitle">Treffpunkt</h2>
               <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 18 C 120 26, 220 12, 300 22 S 380 16, 414 20" /><path class="drip" d="M64 20 v12 M270 21 v8"/></svg>
             </header>

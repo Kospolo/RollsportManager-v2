@@ -30,6 +30,7 @@ const ICONS = {
   pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   car: '<path d="M5 16.5h14M5 16.5V12l2-5h10l2 5v4.5M5 16.5v2.5M19 16.5v2.5M3.5 11h17"/><circle cx="8" cy="14" r=".6"/><circle cx="16" cy="14" r=".6"/>',
   arrow: '<path d="M7 17 17 7M9 7h8v8"/>',
+  shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6z"/><path d="m8.8 12.2 2.3 2.3 4.2-4.5"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   facebook: '<path d="M14 8h3V4.5h-3a4 4 0 0 0-4 4V11H7v3.5h3V21h3.5v-6.5h3L17 11h-3.5V8.5A.5.5 0 0 1 14 8z"/>',
   instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r=".8"/>'
@@ -348,6 +349,30 @@ function renderEvents(c) {
   }
 }
 
+/* --- Tippspiel-Teaser --- */
+function renderTippspiel(c) {
+  const t = c.tippspiel || {};
+  const sec = $('#tippspiel');
+  if (!t.enabled) {
+    sec.remove();
+    $$('[data-requires="tippspiel"]').forEach((el) => el.remove());
+    return;
+  }
+  sec.hidden = false;
+  $('#tipp-title').innerHTML = accentTitle(t.title || 'Tippspiel');
+  const text = $('#tipp-text');
+  if (t.text) text.innerHTML = HBS.paragraphs(t.text); else text.remove();
+  $('span', $('#tipp-btn')).textContent = t.buttonText || 'Zum Tippspiel';
+  const note = $('#tipp-note');
+  if (t.note) note.innerHTML = `${icon('shield')}<span>${esc(t.note)}</span>`; else note.remove();
+}
+
+/* Abschnittsnummern fortlaufend setzen (Sommer, Tippspiel und Galerie sind optional) */
+function renumberSections() {
+  $$('#main .eyebrow__num').forEach((el, i) => { el.textContent = String(i + 1).padStart(2, '0'); });
+  $$('#nav-list a').forEach((a, i) => a.setAttribute('data-idx', String(i + 1).padStart(2, '0')));
+}
+
 /* --- Öffnungszeiten --- */
 function renderHours(c) {
   const hours = Array.isArray(c.openingHours) ? c.openingHours : [];
@@ -396,8 +421,6 @@ function renderSummer(c) {
   if (!s.enabled) {
     sec.remove();
     if (navItem) navItem.remove();
-    $('#gallery-num').textContent = '04';
-    $('#contact-num').textContent = '05';
     return;
   }
   sec.hidden = false;
@@ -530,8 +553,8 @@ function initNav() {
   window.addEventListener('scroll', onScroll, { passive: true });
 
   // Aktiven Abschnitt markieren
-  const links = $$('#nav-list a');
-  const map = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const links = $$('#nav-list a[href^="#"]');
+  const map =new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
   const io = new IntersectionObserver((entries) => {
     entries.forEach((en) => {
       if (!en.isIntersecting) return;
@@ -725,7 +748,7 @@ function start() {
   initLightbox();
   HBS.load().then((content) => {
     C = content || {};
-    const steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderHours, renderSummer, renderGallery, renderContact, renderFooter];
+    const steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer, renderGallery, renderContact, renderFooter, renumberSections];
     steps.forEach((fn) => { try { fn(C); } catch (e) { console.error('[Render]', fn.name, e); } });
     requestAnimationFrame(() => $('#top').classList.add('is-in'));
     initReveal();
