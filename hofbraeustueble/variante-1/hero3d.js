@@ -47,7 +47,7 @@ function canvasTex(cv, srgb = true) {
 const V2 = THREE.Vector2;
 
 /* ------------------------------------------------- Glas-Geometrie */
-const G = { WALL: 0.028, BASE: 0.3, RIM: 3.24, FILL: 2.6, DOME: 0.17 };
+const G = { WALL: 0.028, BASE: 0.3, RIM: 3.24, FILL: 2.6, DOME: 0.24 };
 
 function buildProfile() {
   // Willibecher: schmaler Fuß, nach oben weiter werdend, leichte Taille, ausgestellter Rand
@@ -357,12 +357,25 @@ function backdropTexture(photo, rand, small) {
   g.addColorStop(1, 'rgba(8,6,4,.9)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
-  g = ctx.createLinearGradient(0, H * 0.6, 0, H);
+  g = ctx.createLinearGradient(0, H * 0.42, 0, H * 0.7);
   g.addColorStop(0, 'rgba(10,8,6,0)');
   g.addColorStop(1, 'rgba(10,8,6,1)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   return canvasTex(cv);
+}
+
+function fadeTexture() {
+  const S = 256;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createRadialGradient(S / 2, S / 2, S * 0.12, S / 2, S / 2, S * 0.36);
+  g.addColorStop(0, '#fff');
+  g.addColorStop(1, '#000');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, S, S);
+  return canvasTex(cv, false);
 }
 
 function causticTexture() {
@@ -505,9 +518,11 @@ export async function createHero(canvas, options) {
 
   /* ---------- Theke (Schiefer) */
   const slate = track(slateTexture(rand));
-  const counter = new THREE.Mesh(new THREE.PlaneGeometry(40, 26), new THREE.MeshStandardMaterial({
-    color: 0x232427, roughness: 0.42, metalness: 0.0, roughnessMap: slate, bumpMap: slate, bumpScale: 0.6, envMapIntensity: 0.55
+  const counter = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({
+    color: 0x232427, roughness: 0.6, metalness: 0.0, roughnessMap: slate, bumpMap: slate, bumpScale: 0.6, envMapIntensity: 0.55,
+    alphaMap: track(fadeTexture()), transparent: true, depthWrite: true
   }));
+  counter.renderOrder = -1;
   counter.rotation.x = -Math.PI / 2;
   counter.position.set(0, -0.036, 0);
   scene.add(counter);
@@ -578,7 +593,7 @@ export async function createHero(canvas, options) {
   for (let y = G.BASE + 0.03; y < G.FILL; y += 0.03) lp.push(new V2(innerR(y) - 0.006, y));
   lp.push(new V2(innerR(G.FILL) - 0.006, G.FILL), new V2(0.001, G.FILL + 0.002));
   const beerMat = new THREE.MeshPhysicalMaterial({
-    color: 0xb8640c, roughness: 0.16, metalness: 0, clearcoat: 0.4, clearcoatRoughness: 0.1,
+    color: 0x9a4a06, roughness: 0.16, metalness: 0, clearcoat: 0.4, clearcoatRoughness: 0.1,
     emissive: 0xffffff, emissiveIntensity: 1, envMapIntensity: 0.55
   });
   beerMat.onBeforeCompile = (sh) => {
@@ -590,9 +605,9 @@ export async function createHero(canvas, options) {
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
         float hgt = smoothstep(${G.BASE.toFixed(3)}, ${G.FILL.toFixed(3)}, vLY);
-        vec3 deep = vec3(0.30, 0.075, 0.004);
-        vec3 core = vec3(1.05, 0.50, 0.075);
-        vec3 top = vec3(1.25, 0.78, 0.2);
+        vec3 deep = vec3(0.16, 0.035, 0.0);
+        vec3 core = vec3(0.78, 0.30, 0.03);
+        vec3 top = vec3(0.98, 0.50, 0.09);
         vec3 glowC = mix(core, top, smoothstep(0.55, 1.0, hgt));
         totalEmissiveRadiance = mix(deep, glowC, pow(facing, 1.6) * (0.62 + 0.38 * hgt));
         diffuseColor.rgb *= 0.35 + 0.65 * (1.0 - facing);`);
@@ -607,7 +622,7 @@ export async function createHero(canvas, options) {
   const r0 = innerR(RIM) - 0.004;
   for (let k = 0; k <= 18; k++) {
     const a = (k / 18) * Math.PI / 2;
-    fp.push(new V2(Math.max(0.001, (r0 + 0.028 * Math.sin(a * 2)) * Math.pow(Math.cos(a), 0.5)), RIM + 0.002 + G.DOME * Math.sin(a)));
+    fp.push(new V2(Math.max(0.001, (r0 + 0.03 * Math.sin(a * 2)) * Math.pow(Math.cos(a), 0.78)), RIM + 0.002 + G.DOME * Math.sin(a)));
   }
   const foamGeo = new THREE.LatheGeometry(fp, small ? 64 : 96, 0, Math.PI * 2);
   {
@@ -622,10 +637,10 @@ export async function createHero(canvas, options) {
         const amp = Math.sin(Math.PI * Math.min(1, 0.25 + t)) ;
         const rr = Math.hypot(v.x, v.z);
         if (rr > 0.002) {
-          const s = 1 + (n * 0.07 + n2 * 0.025) * amp * (t > 0.05 ? 1 : 0.2);
+          const s = 1 + (n * 0.09 + n2 * 0.03) * amp * (t > 0.05 ? 1 : 0.2);
           v.x *= s; v.z *= s;
         }
-        v.y += (n * 0.05 + n2 * 0.02) * amp * t;
+        v.y += (n * 0.08 + n2 * 0.025) * amp * t;
         pos.setXYZ(i, v.x, v.y, v.z);
       }
     }
@@ -633,8 +648,8 @@ export async function createHero(canvas, options) {
   }
   const foamBump = track(foamBumpTexture(rand));
   const foam = new THREE.Mesh(foamGeo, new THREE.MeshStandardMaterial({
-    color: 0xfff1d8, roughness: 0.78, metalness: 0, bumpMap: foamBump, bumpScale: 1.2,
-    emissive: 0x5a3a18, emissiveIntensity: 0.45, envMapIntensity: 0.9
+    color: 0xfff6e8, roughness: 0.72, metalness: 0, bumpMap: foamBump, bumpScale: 1.1,
+    emissive: 0xd8b688, emissiveIntensity: 0.62, envMapIntensity: 1.1
   }));
   foam.renderOrder = 1;
   product.add(foam);
@@ -762,7 +777,7 @@ export async function createHero(canvas, options) {
     bulb: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.0, 0.86, 0.62), toneMapped: false })
   };
   const main = makePendant(mats, glowTex, { cable: 8, light: 6 });
-  main.group.position.set(-0.95, 4.62, -1.25);
+  main.group.position.set(-1.75, 4.0, -1.1);
   scene.add(main.group);
   const pendants = [main];
   [[-3.6, 5.1, -5.2, 0.9], [3.3, 5.5, -6.5, 0.9], [0.9, 6.3, -9.5, 0.9], [-6.2, 6.0, -9.8, 0.9]].forEach(([x, y, z, s]) => {
@@ -776,7 +791,7 @@ export async function createHero(canvas, options) {
 
   // Hauptlicht: Gegenlicht von der Pendelleuchte schräg hinten
   const key = new THREE.SpotLight(0xffb066, 55, 0, Math.PI / 6.5, 0.75, 2);
-  key.position.set(-0.95, 4.35, -1.25);
+  key.position.set(-1.75, 3.75, -1.1);
   key.target.position.set(0.1, 0.6, 0.2);
   scene.add(key, key.target);
   const rimLeft = new THREE.PointLight(0xff9238, 9, 0, 2);
@@ -788,7 +803,7 @@ export async function createHero(canvas, options) {
   scene.add(rimLeft, rimRight, fill);
 
   // Lichtkegel
-  const bulbWorld = new THREE.Vector3(-0.95, 4.62 - 0.2, -1.25);
+  const bulbWorld = new THREE.Vector3(-1.75, 4.0 - 0.2, -1.1);
   const floorPt = new THREE.Vector3(0.15, -0.03, 0.25);
   const coneLen = bulbWorld.distanceTo(floorPt);
   const coneGeo = new THREE.CylinderGeometry(0.12, 1.7, coneLen, 48, 1, true);
@@ -880,8 +895,8 @@ export async function createHero(canvas, options) {
       visH = 6.6;
       frame.offX = -w * 0.14; frame.offY = h * 0.02;
     } else {                      // Desktop: Glas rechts, Platz für Text
-      visH = 5.9;
-      frame.offX = -w * 0.19; frame.offY = h * 0.015;
+      visH = 6.5;
+      frame.offX = -w * 0.2; frame.offY = h * 0.03;
     }
     frame.dist = visH / (2 * tanH);
     camera.setViewOffset(w, h, frame.offX, frame.offY, w, h);

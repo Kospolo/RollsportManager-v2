@@ -14,19 +14,19 @@ const smooth = (e0, e1, x) => { const t = clamp01((x - e0) / (e1 - e0)); return 
 /* ---------- Farb-/Lichtkeyframes (t = 0 Golden Hour, .5 Dämmerung, 1 Nacht) ---------- */
 const PALETTES = {
   summer: {
-    skyTop: ['#5b97cf', '#34437f', '#070d24'],
-    skyMid: ['#f2d3b0', '#e0819a', '#141c44'],
-    skyHor: ['#ffb07a', '#ff9460', '#33285a'],
+    skyTop: ['#5b97cf', '#4a5898', '#070d24'],
+    skyMid: ['#f2d3b0', '#ec8f9c', '#141c44'],
+    skyHor: ['#ffb07a', '#ffa062', '#33285a'],
     fog: ['#efc49e', '#c98088', '#141a38'],
     sun: ['#ffc58e', '#ff8a52', '#8ea2e8'],
-    sunI: [3.8, 1.3, 0.35],
+    sunI: [3.8, 1.7, 0.35],
     sunElev: [13, 3, 38],
     sunAz: [-102, -98, 140],
-    hemiSky: ['#cde0f2', '#8577aa', '#24305e'],
-    hemiGround: ['#e2b98e', '#8c5a5c', '#1b1628'],
-    hemiI: [.85, .65, .42],
+    hemiSky: ['#cde0f2', '#b48cbc', '#24305e'],
+    hemiGround: ['#e2b98e', '#b0705e', '#1b1628'],
+    hemiI: [.85, .8, .42],
     sunGlow: [1, .75, 0],
-    exposure: [1.0, 1.0, 1.12],
+    exposure: [1.0, 1.08, 1.12],
     ground: ['#c9c2b7', '#c9c2b7', '#c9c2b7']
   },
   winter: {
@@ -431,7 +431,7 @@ export async function createHeroScene({ canvas, winter = false, reducedMotion = 
   const lampHead = new THREE.Mesh(new THREE.BoxGeometry(.6, .1, .25), lampHeadMat);
   lampHead.position.set(1.15, 5.88, 0);
   lampGroup.add(lampPole, lampArm, lampHead);
-  lampGroup.position.set(-6.4, 0, 3.8); lampGroup.rotation.y = -Math.PI / 4 - Math.PI / 2 + Math.PI;
+  lampGroup.position.set(-12.5, 0, -2.5); lampGroup.rotation.y = -Math.PI / 4 - Math.PI / 2 + Math.PI;
   scene.add(lampGroup);
   const lampLight = new THREE.PointLight('#ffcf9a', 0, 16, 2);
   lampGroup.updateMatrixWorld(true);
@@ -655,9 +655,11 @@ export async function createHeroScene({ canvas, winter = false, reducedMotion = 
   let width = 1, height = 1;
   function frame() {
     const a = width / height;
-    if (a >= 1.25) { camera.fov = 34; camBase.set(-10, 3.4, 22); lookBase.set(-3.6, 5.0, -3); }
-    else if (a >= .85) { camera.fov = 42; camBase.set(-6, 4.2, 25); lookBase.set(3.5, 6.4, -3); }
+    if (a >= 1.25) { camera.fov = 38; camBase.set(-9.5, 4.6, 19); lookBase.set(1.0, 4.25, -1); }
+    else if (a >= .85) { camera.fov = 46; camBase.set(-7, 5, 23); lookBase.set(2.8, 5.8, -1); }
     else { camera.fov = 56; camBase.set(-1.5, 6.4, 30); lookBase.set(5.2, 12.2, -3); }
+    const o = window.__HBS_CAM; // nur für Tests/Feinjustierung
+    if (o) { camera.fov = o.fov; camBase.fromArray(o.cam); lookBase.fromArray(o.look); }
     camera.aspect = a; camera.updateProjectionMatrix();
   }
   function resize() {

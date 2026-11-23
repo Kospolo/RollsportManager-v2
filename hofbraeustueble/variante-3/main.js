@@ -350,7 +350,7 @@ function makeSkyCutout(src) {
         const skyish = new Uint8Array(N);
         for (let i = 0; i < N; i++) {
           const r = d[i * 4], gg = d[i * 4 + 1], b = d[i * 4 + 2];
-          skyish[i] = (b > 95 && b > r + 28 && b > gg + 6) ? 1 : 0;
+          skyish[i] = (b > 55 && b > r + 22 && b > gg + 8) ? 1 : 0;
         }
         const sky = new Uint8Array(N);
         const stack = [];

@@ -397,7 +397,7 @@ button { font: inherit; color: inherit; }
 .hero__content > * { max-width: 640px; }
 .hero__eyebrow { margin-bottom: 1.8rem; color: var(--amber-hi); }
 .hero__title {
-  font-size: clamp(3rem, 8.6vw, 7.6rem);
+  font-size: clamp(3rem, 7.3vw, 7rem);
   font-weight: 700;
   line-height: .95;
   letter-spacing: -.025em;
