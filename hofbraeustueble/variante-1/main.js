@@ -384,7 +384,7 @@ function updateStatus() {
     if (!st) { el.hidden = true; return; }
     el.hidden = false;
     el.className = el.className.replace(/\bis-(open|soon|closed)\b/g, '').trim() + ' ' + st.cls;
-    el.innerHTML = st.html;
+    el.innerHTML = `<span>${st.html}</span>`;
   });
 }
 

@@ -202,6 +202,7 @@ button { font: inherit; color: inherit; }
   background: var(--muted);
 }
 .status-pill strong { color: var(--cream); font-weight: 500; }
+.status-pill > span { min-width: 0; }
 .status-pill.is-open::before { background: var(--green); box-shadow: 0 0 0 0 rgba(143, 199, 138, .6); animation: pulse 2.4s infinite; }
 .status-pill.is-soon::before { background: var(--amber); }
 .status-pill.is-closed::before { background: var(--red-hi); }
@@ -306,13 +307,16 @@ button { font: inherit; color: inherit; }
 
 @media (max-width: 1020px) {
   :root { --header-h: 66px; }
+  .brand, .nav__toggle { position: relative; z-index: 2; }
+  .banner__inner { font-size: .76rem; padding-block: .45rem; }
   .brand__mark { width: 36px; height: 36px; }
   .brand__name { font-size: 1.22rem; }
   .nav__toggle { display: block; }
   .nav__menu {
     position: fixed; inset: 0; z-index: 1;
-    flex-direction: column; align-items: stretch; justify-content: center; gap: 2.4rem;
-    padding: calc(var(--header-h) + 2rem) var(--gutter) max(2rem, env(safe-area-inset-bottom));
+    flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 2rem;
+    padding: calc(var(--header-h) + 1.5rem) var(--gutter) max(2rem, env(safe-area-inset-bottom));
+    overflow-y: auto; overscroll-behavior: contain;
     background:
       radial-gradient(120% 60% at 80% 0%, rgba(233, 162, 59, .18), transparent 60%),
       radial-gradient(80% 50% at 0% 100%, rgba(179, 38, 30, .14), transparent 60%),
@@ -326,7 +330,7 @@ button { font: inherit; color: inherit; }
   .nav__list li { overflow: hidden; border-bottom: 1px solid var(--line); }
   .nav__list a {
     display: flex; justify-content: space-between; align-items: baseline;
-    padding: .85rem 0; font-family: var(--serif); font-size: clamp(1.9rem, 8vw, 2.6rem);
+    padding: .7rem 0; font-family: var(--serif); font-size: clamp(1.7rem, 7.4vw, 2.4rem);
     letter-spacing: 0; text-transform: none; color: var(--cream);
     transform: translateY(105%); transition: transform .7s var(--ease-out), color .3s;
   }
@@ -456,16 +460,18 @@ button { font: inherit; color: inherit; }
   .hero { align-items: flex-end; }
   .hero__veil {
     background:
-      linear-gradient(0deg, var(--ink) 0%, rgba(12, 10, 8, .9) 30%, rgba(12, 10, 8, .25) 58%, rgba(12, 10, 8, 0) 72%),
+      linear-gradient(0deg, var(--ink) 0%, rgba(12, 10, 8, .92) 36%, rgba(12, 10, 8, .4) 50%, rgba(12, 10, 8, 0) 62%),
       linear-gradient(180deg, rgba(12, 10, 8, .5) 0%, rgba(12, 10, 8, 0) 14%);
   }
-  .hero__content { padding-bottom: 5.2rem; padding-top: 52vh; }
-  .hero__title { font-size: clamp(2.7rem, 13.2vw, 4.4rem); margin-bottom: 1.1rem; }
-  .hero__eyebrow { margin-bottom: 1.1rem; font-size: .68rem; letter-spacing: .22em; }
+  .hero__content { padding-bottom: max(1.6rem, env(safe-area-inset-bottom)); padding-top: 50svh; }
+  .hero__title { font-size: clamp(2.6rem, 12.6vw, 4.4rem); margin-bottom: .9rem; }
+  .hero__title-rule { margin-top: 1rem; width: 80px; }
+  .hero__eyebrow { margin-bottom: .8rem; font-size: .62rem; letter-spacing: .16em; }
   .hero__eyebrow::after { display: none; }
-  .hero__subtitle { font-size: 1.15rem; margin-bottom: 1.6rem; }
-  .hero__actions { margin-bottom: 1.4rem; }
-  .hero__actions .btn { flex: 1 1 auto; }
+  .hero__subtitle { font-size: 1.08rem; margin-bottom: 1.3rem; }
+  .hero__actions { margin-bottom: 1rem; gap: .6rem; flex-wrap: nowrap; }
+  .hero__actions .btn { flex: 1 1 0; --pad: .9rem .7rem; font-size: .7rem; letter-spacing: .1em; gap: .45rem; }
+  .hero__status { font-size: .76rem; }
   .hero__scroll { display: none; }
 }
 
@@ -660,6 +666,7 @@ button { font: inherit; color: inherit; }
 .hours { background: radial-gradient(70% 60% at 85% 30%, rgba(233, 162, 59, .09), transparent 70%), var(--ink); overflow: hidden; }
 .hours__grid { display: grid; gap: 3.5rem; align-items: center; }
 @media (min-width: 960px) { .hours__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(3rem, 7vw, 7rem); } }
+@media (max-width: 959px) { .lamp__cord { top: -20px; height: 82px; } .hours__board-wrap { padding-top: 96px; } .hours__grid { gap: 1.5rem; } }
 .hours__note { color: var(--muted); max-width: 40ch; font-style: italic; font-family: var(--serif); font-size: 1.15rem; }
 .hours__board-wrap { position: relative; padding-top: 110px; }
 .hours__board {
@@ -885,7 +892,8 @@ button { font: inherit; color: inherit; }
 .footer__col a:hover { text-decoration: underline; }
 .footer__links { display: grid; gap: .3rem; }
 .footer__links a { display: inline-block; padding: .2rem 0; }
-.footer__bottom { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding-block: 1.4rem max(1.4rem, env(safe-area-inset-bottom)); border-top: 1px solid rgba(214, 178, 110, .08); font-size: .8rem; }
+.footer__bottom { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding-block: 1.4rem max(1.4rem, env(safe-area-inset-bottom)); font-size: .8rem; }
+.footer__bottom::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); height: 1px; background: rgba(214, 178, 110, .1); }
 .footer__bottom p { margin: 0; }
 .footer__admin { color: rgba(163, 150, 127, .6); text-decoration: none; font-size: .75rem; letter-spacing: .08em; padding: .4rem 0; }
 .footer__admin:hover { color: var(--cream-dim); }

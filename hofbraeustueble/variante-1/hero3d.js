@@ -519,7 +519,7 @@ export async function createHero(canvas, options) {
   /* ---------- Theke (Schiefer) */
   const slate = track(slateTexture(rand));
   const counter = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({
-    color: 0x232427, roughness: 0.6, metalness: 0.0, roughnessMap: slate, bumpMap: slate, bumpScale: 0.6, envMapIntensity: 0.55,
+    color: 0x232427, roughness: 0.6, metalness: 0.0, roughnessMap: slate, bumpMap: slate, bumpScale: 0.6, envMapIntensity: 0.3,
     alphaMap: track(fadeTexture()), transparent: true, depthWrite: true
   }));
   counter.renderOrder = -1;
@@ -889,8 +889,8 @@ export async function createHero(canvas, options) {
     const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     let visH;
     if (aspect < 0.85) {          // Smartphone hochkant: Glas oben mittig
-      visH = Math.max(7.6, 3.1 / aspect);
-      frame.offX = 0; frame.offY = h * 0.16;
+      visH = Math.max(9.4, 3.4 / aspect);
+      frame.offX = -w * 0.02; frame.offY = h * 0.2;
     } else if (aspect < 1.3) {    // Tablet
       visH = 6.6;
       frame.offX = -w * 0.14; frame.offY = h * 0.02;
