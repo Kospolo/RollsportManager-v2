@@ -135,6 +135,7 @@ und in `config.php` bei `password_hash` eintragen.
 | Bereich              | Was man dort macht |
 |----------------------|--------------------|
 | **Termine**          | Neue Veranstaltungen anlegen, bearbeiten, duplizieren (z. B. wöchentlicher Stammtisch), löschen. Vergangene Termine sind grau unter „Vergangene Termine“ eingeklappt. |
+| **Tippspiel**        | Ergebnisse eintragen, Spiele & Wettbewerbe, Einladungen (Link, WhatsApp, QR-Code), Spieler, Punkte-Regeln, Website-Teaser – siehe Abschnitt „Tippspiel“. Wird pro Aktion **sofort** gespeichert (außer „Website-Teaser“). |
 | **Bilder**           | Fotos hochladen (auch mehrere), Bildunterschrift, Reihenfolge mit Pfeilen, löschen. |
 | **Startseite**       | Hinweis-Banner an/aus, Titelbild und Überschriften, „Über uns“ mit vier Highlights, Name/Beschreibung für Google. |
 | **Öffnungszeiten**   | Pro Tag: geöffnet (von – bis), Ruhetag oder eigener Text; zusätzlicher Hinweis. |
@@ -219,20 +220,35 @@ Mitmachen kann nur, wer eine **Einladung** hat.
 
 **So funktioniert's**
 
-- In der Verwaltung (Reiter „Tippspiel“) Wettbewerbe anlegen (z. B. „WM 2026“, optional mit Bonusfrage
-  „Wer wird Weltmeister?“), Spiele eintragen oder als Liste einfügen (je Zeile
-  `2026-06-14 21:00; Deutschland; Schottland; Gruppe A`) und nach dem Abpfiff die Ergebnisse eintragen.
-- Einladungen erzeugen: 8-stelliger Code, z. B. „persönlich“ (1× verwendbar) oder als Thekenaushang (z. B. 50×),
-  optional mit Ablaufdatum. Einladungslink: `https://ihre-domain.de/tippspiel/?code=XXXXXXXX`.
-- Gäste registrieren sich mit Code, Nickname und Passwort (E-Mail freiwillig) und tippen bis zum Anstoß.
+- Gäste registrieren sich mit Einladungscode, Nickname und Passwort (E-Mail freiwillig) und tippen bis zum Anstoß.
   Punkte: exaktes Ergebnis 4, richtige Tordifferenz 3, richtige Tendenz 2 (in der Verwaltung änderbar).
   Fremde Tipps und die „Community-Quote“ sind erst nach dem Anstoß sichtbar.
-- Passwort vergessen? In der Verwaltung beim Spieler „Passwort zurücksetzen“ – das angezeigte
-  vorläufige Passwort dem Gast persönlich geben.
+
+**Bedienung in der Verwaltung (Reiter „Tippspiel“)**
+
+Wichtig: Alles im Tippspiel wird **sofort beim Klick gespeichert** (grüner Hinweis oben im Reiter) – der
+Knopf „Speichern“ oben rechts ist dafür nicht nötig. Einzige Ausnahme ist „Website-Teaser“ (gelber Hinweis):
+Das sind Texte der Website, die wie alle anderen Inhalte erst mit „Speichern“ veröffentlicht werden.
+
+| Unterbereich | Was man dort macht |
+|---|---|
+| **Übersicht** | Anzahl Spieler, Tipps, kommende Spiele, gültige Einladungen; „3 Spiele warten auf ein Ergebnis“ mit Direktlink; Top 5 der Gesamtwertung. |
+| **Ergebnisse eintragen** | Der wichtigste Bildschirm für den Spieltag: Angepfiffene Spiele ohne Ergebnis stehen oben. Tore mit den großen **−/+**-Knöpfen oder per Zahl eingeben, „Ergebnis speichern“ – fertig, die Punkte rechnet das Tippspiel selbst. Bereits eingetragene Ergebnisse lassen sich ändern oder löschen. Ein Ergebnis geht erst ab Anstoß. |
+| **Spiele & Wettbewerbe** | Wettbewerbe anlegen/bearbeiten/löschen (Name, aktiv/Archiv, Reihenfolge, Bonusfrage z. B. „Wer wird Europameister?“, die richtige Antwort erst nach Turnierende eintragen, Bonuspunkte). Spiele einzeln anlegen (Datum, Uhrzeit, Runde, Heim, Gast) oder unter „Viele Spiele auf einmal einfügen“ als Liste, eine Zeile pro Spiel: `2028-06-14 21:00; Deutschland; Schottland; Gruppe A · 1. Spieltag` (Runde optional, auch Tabulator/Excel oder `14.06.2028 21:00`). Fehlerhafte Zeilen werden mit Zeilennummer gemeldet und bleiben zum Korrigieren im Feld stehen. |
+| **Einladungen** | Neue Einladung: Notiz, Anzahl Personen („1 Person“ = persönlich, „Thekenaushang 50“ = für viele), optional „Gültig bis“. Je Einladung: **Link kopieren**, **Per WhatsApp teilen** (öffnet WhatsApp mit fertigem Text), **QR-Code** (als PNG/SVG speichern oder als Aushang drucken: großer QR-Code + „Stüble-Tippspiel – scannen & mitmachen“ + Code) und **Zurückziehen**. Einladungslink: `https://ihre-domain.de/tippspiel/?code=XXXXXXXX`. |
+| **Spieler** | Liste mit E-Mail, Registrierung, letztem Login, Tipps und Punkten. Deaktivieren/Aktivieren (deaktivierte Spieler können sich nicht anmelden und fehlen in der Rangliste), **Neues Passwort** (Passwort vergessen: das angezeigte vorläufige Passwort wird nur einmal gezeigt – dem Gast persönlich geben), Löschen (mit allen Tipps). |
+| **Punkte-Regeln** | Punkte für exakt / Tordifferenz / Tendenz (exakt ≥ Differenz ≥ Tendenz) mit Live-Beispiel. Gilt sofort auch rückwirkend für die Rangliste. |
+| **Website-Teaser** | Abschnitt „Tippspiel“ auf der Website ein-/ausblenden, Überschrift, Text, Knopftext, Hinweis – danach „Speichern“. |
+
+Alle Löschungen fragen vorher nach. Im Demo-Modus der Verwaltung (ohne PHP) läuft der Tippspiel-Reiter mit
+erfundenen Beispieldaten; „Demo-Tippspiel zurücksetzen“ in der Übersicht stellt sie wieder her.
 
 **Technik**
 
 - Schnittstelle: `cms/tipp-api.php` (Beschreibung aller Aktionen in `tippspiel/SPEC.md`), App: `tippspiel/`.
+  Verwaltung: Reiter in `admin/` (nutzt `tippspiel/js/tipp-client.js`). QR-Codes werden lokal im Browser erzeugt
+  mit `assets/vendor/qrcode-generator.js` (npm-Paket `qrcode-generator` 2.0.4, MIT, Lizenz in
+  `assets/vendor/qrcode-generator-LICENSE.txt`) – keine externen Dienste.
 - Daten: **`cms/data/tippspiel.sqlite`** (SQLite-Datei, wird beim ersten Aufruf automatisch angelegt;
   daneben können kurzzeitig `tippspiel.sqlite-wal` und `-shm` liegen). Anmeldungen der Spieler liegen in
   `cms/data/tipp-sessions/`. Der Ordner `cms/data/` ist per `.htaccess` gesperrt und nicht im Git.

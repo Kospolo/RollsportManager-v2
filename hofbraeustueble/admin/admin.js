@@ -79,11 +79,25 @@
     history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
     wand: '<path d="M15 4V2M15 10V8M11 6h2M17 6h2M4 20L14 10"/>',
-    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>'
+    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    trophy: '<path d="M8 21h8M12 16v5M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+    ball: '<circle cx="12" cy="12" r="9"/><path d="M12 8l3.8 2.8-1.5 4.4H9.7l-1.5-4.4z"/><path d="M12 3v5M20.6 9.3l-4.8 1.5M17.3 19.3l-3-4.1M6.7 19.3l3-4.1M3.4 9.3l4.8 1.5"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>',
+    ticket: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M14 7v2M14 11v2M14 15v2"/>',
+    star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/>',
+    chat: '<path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/>',
+    printer: '<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.5-4.5L3 9"/><path d="M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15"/><path d="M21 20v-5h-5"/>',
+    minus: '<path d="M5 12h14"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'
   };
 
   var SECTIONS = [
     { id: 'termine', label: 'Termine', icon: 'calendar', render: renderEvents },
+    { id: 'tippspiel', label: 'Tippspiel', icon: 'trophy', render: renderTipp },
     { id: 'galerie', label: 'Bilder', icon: 'image', render: renderGallery },
     { id: 'startseite', label: 'Startseite', icon: 'home', render: renderHome },
     { id: 'zeiten', label: 'Öffnungszeiten', icon: 'clock', render: renderHours },
@@ -209,6 +223,7 @@
     out.gallery = out.gallery.filter(isObj).map(function (g) { return Object.assign({ src: '', caption: '' }, g); });
     out.banner.enabled = !!out.banner.enabled;
     out.summer.enabled = !!out.summer.enabled;
+    out.tippspiel.enabled = !!out.tippspiel.enabled;
     return out;
   }
 
@@ -885,6 +900,7 @@
       if (!ok) return;
       api('logout', { method: 'POST' }).catch(function () { /* egal */ }).then(function () {
         S.csrf = null; S.content = null; S.saved = ''; S.dirty = false; S.images = null;
+        T.data = null; T.loadedAt = 0;
         renderLogin('Sie wurden abgemeldet.');
       });
     });
@@ -893,8 +909,9 @@
   /* ================================================================ Hauptansicht */
 
   function renderApp() {
-    var hash = location.hash.replace('#', '');
-    if (SECTIONS.some(function (s) { return s.id === hash; })) S.section = hash;
+    var hash = location.hash.replace('#', '').split('/');
+    if (SECTIONS.some(function (s) { return s.id === hash[0]; })) S.section = hash[0];
+    if (hash[0] === 'tippspiel') setTippSub(hash[1]);
 
     var preview = h('details', { class: 'dropdown' },
       h('summary', { class: 'btn btn-preview', 'aria-label': 'Vorschau öffnen' }, icon('eye'), h('span', { class: 'lbl' }, 'Vorschau')),
@@ -928,7 +945,8 @@
   }
 
   function go(id) {
-    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    var hash = id === 'tippspiel' ? 'tippspiel/' + T.sub : id;
+    if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
     showSection(id);
   }
 
@@ -1514,6 +1532,996 @@
     return wrap;
   }
 
+  /* ================================================================ Bereich: Tippspiel */
+  /*
+   * Arbeitet mit window.TippAPI (../tippspiel/js/tipp-client.js). Alle Tippspiel-Daten werden pro Aktion
+   * SOFORT über cms/tipp-api.php gespeichert (bzw. im Demo-Modus im Browser) – nicht über „Speichern“.
+   * Einzige Ausnahme: der Unterbereich „Website-Teaser“ bearbeitet content.json (S.content.tippspiel)
+   * und läuft wie alle anderen Inhalte über den normalen „Speichern“-Knopf.
+   */
+
+  var TIPP_SUBS = [
+    { id: 'uebersicht', label: 'Übersicht', icon: 'trophy' },
+    { id: 'ergebnisse', label: 'Ergebnisse eintragen', icon: 'ball' },
+    { id: 'spiele', label: 'Spiele & Wettbewerbe', icon: 'calendar' },
+    { id: 'einladungen', label: 'Einladungen', icon: 'ticket' },
+    { id: 'spieler', label: 'Spieler', icon: 'users' },
+    { id: 'punkte', label: 'Punkte-Regeln', icon: 'star' },
+    { id: 'teaser', label: 'Website-Teaser', icon: 'home', content: true }
+  ];
+  var IMPORT_EXAMPLE = '# Datum Uhrzeit; Heim; Gast; Runde (optional)\n' +
+    '2028-06-14 21:00; Deutschland; Schottland; Gruppe A · 1. Spieltag\n' +
+    '2028-06-15 15:00; Ungarn; Schweiz; Gruppe A · 1. Spieltag\n' +
+    '2028-06-19 18:00; Deutschland; Ungarn; Gruppe A · 2. Spieltag';
+  var T = {
+    sub: 'uebersicht', data: null, loadedAt: 0, loading: null, error: null, ready: false,
+    root: null, nav: null, mode: null, body: null, compId: null, qrLoad: null, newInvite: null,
+    imp: {}, playerQuery: '', showAllDone: false
+  };
+
+  function setTippSub(id) { if (TIPP_SUBS.some(function (x) { return x.id === id; })) T.sub = id; }
+  function goTipp(id) {
+    setTippSub(id);
+    if (S.section !== 'tippspiel') { go('tippspiel'); return; }
+    history.replaceState(null, '', '#tippspiel/' + T.sub);
+    drawTippNav(); drawTippBody();
+    window.scrollTo(0, 0);
+  }
+  function tippVisible() { return S.section === 'tippspiel' && T.root && document.contains(T.root); }
+
+  /* ---------- API */
+
+  function tippInit() {
+    if (T.ready) return Promise.resolve();
+    if (!window.TippAPI) return Promise.reject(new Error('Das Tippspiel-Modul (tippspiel/js/tipp-client.js) wurde nicht gefunden.'));
+    return Promise.resolve(TippAPI.init({ base: '../cms/tipp-api.php', adminCsrf: S.csrf || '', mode: S.mode === 'demo' ? 'demo' : 'live' }))
+      .then(function () { T.ready = true; });
+  }
+  /** Admin-Aktion ausführen; bei abgelaufener Verwaltungs-Sitzung erneut anmelden und wiederholen. */
+  function tcall(action, data) {
+    return tippInit().then(function () {
+      if (TippAPI.mode === 'demo') return TippAPI.call(action, data);
+      return withAuth(function () { TippAPI.setAdminCsrf(S.csrf); return TippAPI.call(action, data); });
+    });
+  }
+  function tippLoad() {
+    if (T.loading) return T.loading;
+    T.loading = tcall('admin_overview').then(function (d) {
+      T.data = d; T.loadedAt = Date.now(); T.error = null; T.loading = null;
+      return d;
+    }, function (e) {
+      T.error = (e && e.message) || 'Das Tippspiel konnte nicht geladen werden.'; T.loading = null;
+      throw e;
+    });
+    return T.loading;
+  }
+  /** Nach einer Änderung: Daten neu laden und aktuellen Unterbereich neu zeichnen (Scrollposition bleibt). */
+  function tippRefresh() {
+    return tippLoad().then(function () { if (tippVisible()) { drawTippNav(); drawTippBody(true); } }, function (e) {
+      if (T.data) toast(e.message || 'Neu laden fehlgeschlagen.', 'error');
+      else if (tippVisible()) drawTippBody(true);
+    });
+  }
+  /** Aktion mit Button-Sperre, Erfolgsmeldung und Neuladen */
+  function tippAct(button, action, data, okMsg) {
+    if (button) button.disabled = true;
+    return tcall(action, data).then(function (r) {
+      if (okMsg) toast(typeof okMsg === 'function' ? okMsg(r) : okMsg, 'success');
+      return tippRefresh().then(function () { return r; });
+    }, function (e) {
+      if (button) button.disabled = false;
+      toast(e.message || 'Aktion fehlgeschlagen.', 'error');
+      throw e;
+    });
+  }
+
+  /* ---------- Formatierung */
+
+  function kParts(k) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(k || '');
+    return m ? { date: m[1] + '-' + m[2] + '-' + m[3], time: m[4] + ':' + m[5], y: +m[1], mo: +m[2], d: +m[3] } : null;
+  }
+  function tNow() {
+    try { return TippAPI.util.berlinNow().slice(0, 16); } catch (e) {
+      var d = new Date(); return todayISO() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+  }
+  function dayLabel(dateIso, withYear) {
+    var p = dateIso.split('-');
+    var today = tNow().slice(0, 10);
+    if (dateIso === today) return 'Heute';
+    if (dateIso === addDays(today, -1)) return 'Gestern';
+    if (dateIso === addDays(today, 1)) return 'Morgen';
+    return WD[new Date(+p[0], +p[1] - 1, +p[2]).getDay()] + ' ' + p[2] + '.' + p[1] + '.' + (withYear || p[0] !== today.slice(0, 4) ? p[0] : '');
+  }
+  function fmtKick(k) { var p = kParts(k); return p ? dayLabel(p.date) + ' · ' + p.time + ' Uhr' : (k || ''); }
+  function fmtDT(s) {
+    if (!s) return '–';
+    var p = kParts(s);
+    if (p) return pad(p.d) + '.' + pad(p.mo) + '.' + p.y + ', ' + p.time + ' Uhr';
+    return fmtD(s);
+  }
+  function fmtD(s) { if (!s) return '–'; var q = String(s).slice(0, 10).split('-'); return q.length === 3 ? q[2] + '.' + q[1] + '.' + q[0] : String(s); }
+  function hasRes(m) { return m.home_goals !== null && m.home_goals !== undefined; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  function compById(id) { return (T.data ? T.data.competitions : []).filter(function (c) { return c.id === id; })[0] || null; }
+  function pendingMatches(d) {
+    return d.matches.filter(function (m) { return m.locked && !hasRes(m); })
+      .sort(function (a, b) { return a.kickoff.localeCompare(b.kickoff) || a.id - b.id; });
+  }
+  function fmtCode(c) { return String(c || '').replace(/^(.{4})(.+)$/, '$1 $2'); }
+  function inviteUrl(code) { return new URL('../tippspiel/?code=' + encodeURIComponent(code), location.href).href; }
+  function inviteState(i) {
+    if (i.revoked) return ['Zurückgezogen', 'badge-muted'];
+    if (i.uses >= i.max_uses) return ['Aufgebraucht', 'badge-muted'];
+    if (!i.valid) return ['Abgelaufen', 'badge-muted'];
+    return ['Gültig', 'badge-ok'];
+  }
+
+  /* ---------- Hilfen: Kopieren, Herunterladen, Drucken, QR */
+
+  function copyText(text, what) {
+    function fallback() {
+      var ta = h('textarea', { class: 'sr-only', readonly: true, 'aria-hidden': 'true' });
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { ta.setSelectionRange(0, text.length); } catch (e) { /* */ }
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      ta.remove();
+      return ok;
+    }
+    var p = navigator.clipboard && window.isSecureContext
+      ? navigator.clipboard.writeText(text).then(function () { return true; }, function () { return fallback(); })
+      : Promise.resolve(fallback());
+    return p.then(function (ok) {
+      toast(ok ? (what || 'Text') + ' kopiert.' : 'Kopieren hat nicht geklappt – bitte den Text gedrückt halten und manuell kopieren.', ok ? 'success' : 'error', 3500);
+      return ok;
+    });
+  }
+  function downloadBlob(blob, name) {
+    var a = h('a', { href: URL.createObjectURL(blob), download: name });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  function loadQr() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    if (!T.qrLoad) {
+      T.qrLoad = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = '../assets/vendor/qrcode-generator.js';
+        s.onload = function () { if (window.qrcode) resolve(window.qrcode); else { T.qrLoad = null; reject(new Error('QR-Code-Modul fehlerhaft.')); } };
+        s.onerror = function () { T.qrLoad = null; s.remove(); reject(new Error('Das QR-Code-Modul konnte nicht geladen werden.')); };
+        document.head.appendChild(s);
+      });
+    }
+    return T.qrLoad;
+  }
+  function makeQr(text) { var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q; }
+  function qrSvg(q) { return q.createSvgTag({ cellSize: 8, margin: 32, scalable: true }); }
+  function qrPng(q, code) {
+    var cell = 16, n = q.getModuleCount(), margin = cell * 4, size = n * cell + margin * 2, extra = 96;
+    var cv = document.createElement('canvas');
+    cv.width = size; cv.height = size + extra;
+    var ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.fillStyle = '#000';
+    for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect(margin + c * cell, margin + r * cell, cell, cell);
+    ctx.textAlign = 'center';
+    ctx.font = '700 44px Inter, Arial, sans-serif';
+    ctx.fillText('Code: ' + fmtCode(code), size / 2, size + 30);
+    ctx.font = '400 26px Inter, Arial, sans-serif';
+    ctx.fillText('Stüble-Tippspiel – scannen & mitmachen', size / 2, size + 76);
+    return canvasBlob(cv, 'image/png');
+  }
+  function printNode(node) {
+    var area = h('div', { class: 'print-area' }, node.cloneNode(true));
+    document.body.appendChild(area);
+    document.body.classList.add('printing');
+    var done = false;
+    function cleanup() {
+      if (done) return; done = true;
+      area.remove(); document.body.classList.remove('printing');
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(function () { window.print(); setTimeout(cleanup, 1000); }, 50);
+  }
+
+  /* ---------- Bausteine */
+
+  /** Zahlenfeld mit großen −/+ Knöpfen. o: label, value, min, max, onChange, onEnter, cls */
+  function stepper(o) {
+    var id = nid();
+    var min = o.min || 0, max = o.max === undefined ? 20 : o.max;
+    var inp = h('input', { type: 'text', id: id, class: 'step-in', inputmode: 'numeric', pattern: '[0-9]*', maxlength: String(max).length, autocomplete: 'off', 'aria-label': o.aria || o.label });
+    inp.value = o.value === null || o.value === undefined ? '' : String(o.value);
+    function get() { var v = inp.value.trim(); return /^\d{1,3}$/.test(v) ? parseInt(v, 10) : null; }
+    function valid() { var v = get(); return v !== null && v >= min && v <= max; }
+    function fire() { inp.classList.toggle('invalid', inp.value.trim() !== '' && !valid()); if (o.onChange) o.onChange(); }
+    function step(d) {
+      var v = get();
+      v = v === null ? (d > 0 ? min + 1 : min) : Math.min(max, Math.max(min, v + d));
+      inp.value = String(v);
+      fire();
+    }
+    inp.addEventListener('input', function () { inp.value = inp.value.replace(/\D/g, ''); fire(); });
+    inp.addEventListener('focus', function () { setTimeout(function () { try { inp.select(); } catch (e) { /* */ } }, 0); });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && o.onEnter) { e.preventDefault(); o.onEnter(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); step(1); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); step(-1); }
+    });
+    var minus = h('button', { type: 'button', class: 'step-btn', 'aria-label': (o.aria || o.label) + ': eins weniger', onclick: function () { step(-1); } }, icon('minus'));
+    var plus = h('button', { type: 'button', class: 'step-btn', 'aria-label': (o.aria || o.label) + ': eins mehr', onclick: function () { step(1); } }, icon('plus'));
+    var el = h('div', { class: 'step-row' + (o.cls ? ' ' + o.cls : '') },
+      h('label', { class: 'step-label', for: id }, o.label),
+      h('div', { class: 'stepper' }, minus, inp, plus));
+    return { el: el, input: inp, get: get, valid: valid, set: function (v) { inp.value = v === null ? '' : String(v); fire(); } };
+  }
+
+  function switchEl(checked, label, onText, offText) {
+    var inp = h('input', { type: 'checkbox', role: 'switch' });
+    inp.checked = !!checked;
+    var st = h('span', { class: 'switch-state' });
+    function upd() { st.textContent = inp.checked ? onText : offText; }
+    inp.addEventListener('change', upd);
+    upd();
+    return { input: inp, el: h('label', { class: 'switch' }, inp, h('span', { class: 'track' }), h('span', null, h('span', { class: 'switch-label' }, label), st)) };
+  }
+
+  function cardHead(title, sub, actions) {
+    return h('div', { class: 'card-head' }, h('div', null, h('h3', null, title), sub ? h('p', { class: 'card-sub m0' }, sub) : null),
+      actions && actions.length ? h('div', { class: 'btn-row' }, actions) : null);
+  }
+
+  /* ---------- Gerüst */
+
+  function renderTipp() {
+    T.nav = h('nav', { class: 'subnav', 'aria-label': 'Tippspiel-Bereiche' });
+    T.mode = h('div', { class: 'save-mode', role: 'note' });
+    T.body = h('div', { class: 'tipp-body' });
+    T.root = h('div', { class: 'tipp' },
+      sectionHead('Tippspiel', 'Kostenloses Tippspiel für Stammgäste – nur Punkte und Rangliste, kein Geld.', [
+        h('a', { class: 'btn btn-sm', href: '../tippspiel/', target: '_blank', rel: 'noopener' }, icon('external'), h('span', { class: 'lbl' }, 'Tippspiel öffnen')),
+        btn('Aktualisieren', 'refresh', function (e) {
+          var b = e.currentTarget; b.disabled = true;
+          tippRefresh().then(function () { b.disabled = false; if (!T.error) toast('Tippspiel-Daten aktualisiert.', 'success', 2000); });
+        }, 'btn-sm')
+      ]),
+      T.nav, T.mode, T.body);
+    drawTippNav();
+    drawTippBody();
+    if (!T.data || Date.now() - T.loadedAt > 15000) {
+      var before = T.data ? JSON.stringify(T.data) : '';
+      tippLoad().then(function (d) {
+        if (!tippVisible()) return;
+        drawTippNav();
+        var after = JSON.parse(JSON.stringify(d)); delete after.serverTime;
+        var prev = before ? JSON.parse(before) : null; if (prev) delete prev.serverTime;
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(after)) drawTippBody(true);
+      }, function () { if (tippVisible()) drawTippBody(true); });
+    }
+    return T.root;
+  }
+
+  function drawTippNav() {
+    if (!T.nav) return;
+    var pending = T.data ? pendingMatches(T.data).length : 0;
+    T.nav.replaceChildren.apply(T.nav, TIPP_SUBS.map(function (x) {
+      return h('a', {
+        class: 'subnav-item', href: '#tippspiel/' + x.id, 'aria-current': x.id === T.sub ? 'page' : null,
+        onclick: function (e) { e.preventDefault(); goTipp(x.id); }
+      }, icon(x.icon), x.label,
+      x.id === 'ergebnisse' && pending ? h('span', { class: 'badge badge-warn', 'aria-label': pending + ' offen' }, String(pending)) : null,
+      x.content ? h('span', { class: 'badge badge-muted' }, 'Speichern') : null);
+    }));
+    var cur = T.nav.querySelector('[aria-current="page"]');
+    if (cur && cur.scrollIntoView && window.innerWidth <= 960) setTimeout(function () { cur.scrollIntoView({ block: 'nearest', inline: 'center' }); }, 0);
+    // Zähler auch im Hauptmenü
+    var navItem = document.querySelector('.nav-item[data-id="tippspiel"]');
+    if (navItem) {
+      var b = navItem.querySelector('.badge');
+      if (pending && !b) navItem.appendChild(b = h('span', { class: 'badge badge-warn' }));
+      if (b) { if (pending) { b.textContent = String(pending); b.title = plural(pending, 'Ergebnis fehlt', 'Ergebnisse fehlen'); } else b.remove(); }
+    }
+    // Hinweis: sofort gespeichert vs. über „Speichern“
+    var content = TIPP_SUBS.filter(function (x) { return x.id === T.sub; })[0].content;
+    T.mode.className = 'save-mode ' + (content ? 'is-content' : 'is-live');
+    T.mode.replaceChildren(icon(content ? 'save' : 'check'), content
+      ? h('div', null, h('strong', null, 'Website-Texte: '), 'Diese Felder gehören zur Website und werden erst mit „Speichern“ oben rechts veröffentlicht.')
+      : h('div', null, h('strong', null, 'Wird sofort gespeichert: '), 'Jede Aktion im Tippspiel ist direkt ' + (S.mode === 'demo' ? 'gespeichert (Demo: nur in diesem Browser)' : 'online') + ' – der Knopf „Speichern“ oben ist dafür nicht nötig.'));
+  }
+
+  function drawTippBody(keepScroll) {
+    if (!T.body) return;
+    var y = window.scrollY;
+    var el;
+    if (T.sub === 'teaser') el = tippTeaser();
+    else if (!T.data) {
+      el = T.error
+        ? h('div', null, notice('danger', 'alert', h('div', null, h('strong', null, 'Das Tippspiel konnte nicht geladen werden. '), T.error)),
+          btn('Erneut versuchen', 'refresh', function () { T.error = null; T.ready = false; drawTippBody(); tippRefresh(); }, 'btn-primary'))
+        : h('div', { class: 'tipp-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Tippspiel wird geladen …');
+    } else {
+      el = ({ uebersicht: tippOverview, ergebnisse: tippResults, spiele: tippMatches, einladungen: tippInvites, spieler: tippPlayers, punkte: tippPoints })[T.sub](T.data);
+    }
+    T.body.replaceChildren(el);
+    if (keepScroll) window.scrollTo(0, y);
+  }
+
+  /* ---------- Übersicht */
+
+  function tippOverview(d) {
+    var active = d.players.filter(function (p) { return p.active; });
+    var pending = pendingMatches(d);
+    var upcoming = d.matches.filter(function (m) { return !m.locked; });
+    var tips = d.players.reduce(function (s, p) { return s + (p.tips || 0); }, 0);
+    var validInv = d.invites.filter(function (i) { return i.valid; });
+    var wrap = h('div');
+
+    if (!d.competitions.length) {
+      wrap.appendChild(h('section', { class: 'card start-card' }, h('h3', null, icon('wand'), 'So geht’s los'),
+        h('ol', { class: 'steps' },
+          h('li', null, h('strong', null, 'Wettbewerb anlegen'), ' – z. B. „EM 2028“ mit Bonusfrage „Wer wird Europameister?“'),
+          h('li', null, h('strong', null, 'Spiele eintragen'), ' – einzeln oder als Liste einfügen'),
+          h('li', null, h('strong', null, 'Einladungen verteilen'), ' – per WhatsApp oder als QR-Code an der Theke'),
+          h('li', null, h('strong', null, 'Nach dem Abpfiff'), ' – Ergebnisse eintragen, die Punkte rechnet das Tippspiel selbst')),
+        btn('Ersten Wettbewerb anlegen', 'plus', function () { goTipp('spiele'); openCompEditor(null); }, 'btn-primary')));
+    }
+
+    // Offene Ergebnisse
+    if (pending.length) {
+      wrap.appendChild(h('section', { class: 'card pending-card' },
+        h('h3', null, icon('ball'), plural(pending.length, 'Spiel wartet', 'Spiele warten') + ' auf ein Ergebnis'),
+        h('ul', { class: 'pending-list' }, pending.slice(0, 4).map(function (m) {
+          return h('li', null, h('a', { href: '#tippspiel/ergebnisse', onclick: function (e) { e.preventDefault(); goTipp('ergebnisse'); } },
+            h('span', { class: 'pl-teams' }, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff))));
+        }), pending.length > 4 ? h('li', { class: 'more' }, '… und ' + (pending.length - 4) + ' weitere') : null),
+        btn('Ergebnisse jetzt eintragen', 'chevron', function () { goTipp('ergebnisse'); }, 'btn-primary btn-block')));
+    } else if (d.matches.length) {
+      wrap.appendChild(notice('success', 'check', 'Alle angepfiffenen Spiele haben ein Ergebnis – nichts zu tun.'));
+    }
+
+    // Kennzahlen
+    function tile(n, label, sub, target) {
+      return h('button', { type: 'button', class: 'stat', onclick: function () { goTipp(target); } },
+        h('span', { class: 'stat-n' }, String(n)), h('span', { class: 'stat-l' }, label), sub ? h('span', { class: 'stat-s' }, sub) : null);
+    }
+    var inactive = d.players.length - active.length;
+    wrap.appendChild(h('div', { class: 'stat-grid' },
+      tile(active.length, active.length === 1 ? 'Spieler' : 'Spieler', inactive ? inactive + ' deaktiviert' : 'aktiv', 'spieler'),
+      tile(tips, 'Tipps', 'insgesamt abgegeben', 'spieler'),
+      tile(upcoming.length, 'kommende Spiele', d.competitions.length ? plural(d.competitions.length, 'Wettbewerb', 'Wettbewerbe') : 'noch kein Wettbewerb', 'spiele'),
+      tile(validInv.length, 'gültige Einladungen', d.invites.length ? d.invites.length + ' insgesamt' : 'noch keine', 'einladungen')));
+
+    // Top 5
+    var ranked = active.slice().sort(function (a, b) { return b.points - a.points || a.nickname.localeCompare(b.nickname, 'de'); });
+    var lb = h('ol', { class: 'lb' });
+    ranked.slice(0, 5).forEach(function (p, i) {
+      var rank = i > 0 && ranked[i - 1].points === p.points ? lb.lastChild.getAttribute('data-rank') : String(i + 1);
+      lb.appendChild(h('li', { 'data-rank': rank, class: rank === '1' ? 'is-top' : null },
+        h('span', { class: 'lb-rank' }, rank + '.'), h('span', { class: 'lb-name' }, p.nickname),
+        h('span', { class: 'lb-pts' }, plural(p.points, 'Punkt', 'Punkte'))));
+    });
+    var next = upcoming.slice(0, 3);
+    wrap.appendChild(h('div', { class: 'grid-2 tipp-cols' },
+      card('Rangliste – Top 5', 'Gesamtwertung aller Wettbewerbe inkl. Bonuspunkte. Gleiche Punktzahl = gleicher Platz.',
+        ranked.length ? lb : h('p', { class: 'help m0' }, 'Noch keine Spieler. Verteile zuerst Einladungen.')),
+      card('Nächste Spiele', null,
+        next.length ? h('ul', { class: 'next-list' }, next.map(function (m) {
+          return h('li', null, h('strong', null, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff) + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
+        })) : h('p', { class: 'help m0' }, 'Keine kommenden Spiele eingetragen.'),
+        btn('Spiele verwalten', 'calendar', function () { goTipp('spiele'); }, 'btn-sm mt'))));
+
+    // Schnellzugriff
+    wrap.appendChild(card('Schnellzugriff', null, h('div', { class: 'quick' },
+      TIPP_SUBS.filter(function (x) { return x.id !== 'uebersicht'; }).map(function (x) {
+        return h('button', { type: 'button', class: 'quick-btn', onclick: function () { goTipp(x.id); } }, icon(x.icon), h('span', null, x.label));
+      }))));
+
+    if (S.mode === 'demo') {
+      wrap.appendChild(card('Demo-Daten', null,
+        h('p', { class: 'help' }, 'Im Demo-Modus ist das Tippspiel mit erfundenen Stammgästen gefüllt – alles bleibt nur in diesem Browser.'),
+        btn('Demo-Tippspiel zurücksetzen', 'history', function () {
+          confirmDialog('Alle Demo-Daten des Tippspiels (Spiele, Spieler, Einladungen) durch frische Beispieldaten ersetzen?', { title: 'Demo zurücksetzen', ok: 'Zurücksetzen', danger: true }).then(function (ok) {
+            if (!ok) return;
+            TippAPI.demoReset();
+            tippRefresh().then(function () { toast('Demo-Tippspiel zurückgesetzt.', 'success'); });
+          });
+        }, 'btn-danger btn-sm')));
+    }
+    return wrap;
+  }
+
+  /* ---------- Ergebnisse eintragen */
+
+  function tippResults(d) {
+    var multi = d.competitions.length > 1;
+    var pending = pendingMatches(d);
+    var done = d.matches.filter(function (m) { return hasRes(m); }).sort(function (a, b) { return b.kickoff.localeCompare(a.kickoff) || b.id - a.id; });
+    var upcoming = d.matches.filter(function (m) { return !m.locked; }).slice(0, 5);
+    var wrap = h('div');
+
+    wrap.appendChild(h('h3', { class: 'res-h' }, 'Warten auf ein Ergebnis', h('span', { class: 'badge ' + (pending.length ? 'badge-warn' : 'badge-ok') }, String(pending.length))));
+    if (pending.length) {
+      wrap.appendChild(h('div', { class: 'res-list' }, pending.map(function (m) { return resultRow(m, multi); })));
+    } else {
+      wrap.appendChild(notice('success', 'check', d.matches.length ? 'Alles erledigt – kein angepfiffenes Spiel wartet auf ein Ergebnis.' : 'Noch keine Spiele angelegt. Unter „Spiele & Wettbewerbe“ geht’s los.'));
+    }
+
+    if (done.length) {
+      var limit = T.showAllDone ? done.length : 6;
+      wrap.appendChild(h('h3', { class: 'res-h' }, 'Bereits eingetragen', h('span', { class: 'badge badge-muted' }, String(done.length))));
+      wrap.appendChild(h('div', { class: 'res-list' }, done.slice(0, limit).map(function (m) { return resultRow(m, multi); })));
+      if (done.length > limit) {
+        wrap.appendChild(h('div', { class: 'mt' }, btn('Alle ' + done.length + ' Ergebnisse anzeigen', 'list', function () { T.showAllDone = true; drawTippBody(true); }, 'btn-sm')));
+      }
+    }
+
+    if (upcoming.length) {
+      wrap.appendChild(h('h3', { class: 'res-h' }, 'Als Nächstes'));
+      wrap.appendChild(h('p', { class: 'help' }, 'Ergebnisse können erst ab Anstoß eingetragen werden.'));
+      wrap.appendChild(h('ul', { class: 'next-list card' }, upcoming.map(function (m) {
+        return h('li', null, h('strong', null, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff) + (m.round ? ' · ' + m.round : '') + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
+      })));
+    }
+    return wrap;
+  }
+
+  function resultRow(m, multi) {
+    var row = h('article', { class: 'res' });
+    var editing = !hasRes(m);
+    function draw(flash) {
+      row.className = 'res' + (hasRes(m) ? ' is-done' : ' is-open') + (flash ? ' flash' : '');
+      var comp = multi ? compById(m.competition_id) : null;
+      var running = !hasRes(m) && kParts(m.kickoff) && tNow() < addMinutes(m.kickoff, 115);
+      var meta = h('div', { class: 'res-meta' },
+        h('span', null, fmtKick(m.kickoff)),
+        m.round ? h('span', null, m.round) : null,
+        comp ? h('span', null, comp.name) : null,
+        running ? h('span', { class: 'badge badge-live' }, 'läuft evtl. noch') : null,
+        h('span', { class: 'res-tips' }, plural(m.tip_count || 0, 'Tipp', 'Tipps')));
+      if (!editing) {
+        row.replaceChildren(meta,
+          h('div', { class: 'res-final' },
+            h('span', { class: 't t-home' }, m.home), h('strong', { class: 'sc' }, m.home_goals + ' : ' + m.away_goals), h('span', { class: 't t-away' }, m.away)),
+          h('div', { class: 'res-actions' },
+            flash ? h('span', { class: 'saved-tag' }, icon('check'), 'Gespeichert') : null,
+            btn('Ändern', 'edit', function () { editing = true; draw(); row.querySelector('.step-in').focus(); }, 'btn-sm', { 'aria-label': 'Ergebnis ändern: ' + m.home + ' – ' + m.away }),
+            btn('Löschen', 'trash', clear, 'btn-sm btn-danger', { 'aria-label': 'Ergebnis löschen: ' + m.home + ' – ' + m.away })));
+        return;
+      }
+      var saveB = btn(hasRes(m) ? 'Änderung speichern' : 'Ergebnis speichern', 'check', doSave, 'btn-primary res-save');
+      var hs = stepper({ label: m.home, aria: 'Tore ' + m.home, value: hasRes(m) ? m.home_goals : null, onChange: upd, onEnter: function () { as.input.focus(); } });
+      var as = stepper({ label: m.away, aria: 'Tore ' + m.away, value: hasRes(m) ? m.away_goals : null, onChange: upd, onEnter: doSave });
+      function upd() { saveB.disabled = !(hs.valid() && as.valid()); }
+      upd();
+      function doSave() {
+        if (!(hs.valid() && as.valid())) { toast('Bitte für beide Mannschaften die Tore eingeben (0–20).', 'error'); return; }
+        saveB.disabled = true;
+        tcall('admin_result', { match_id: m.id, home_goals: hs.get(), away_goals: as.get() }).then(function (r) {
+          Object.assign(m, r.match);
+          editing = false;
+          draw(true);
+          drawTippNav();
+          toast('Ergebnis gespeichert: ' + m.home + ' ' + m.home_goals + ':' + m.away_goals + ' ' + m.away, 'success', 2500);
+        }, function (e) { upd(); toast(e.message || 'Speichern fehlgeschlagen.', 'error'); });
+      }
+      row.replaceChildren(meta, h('div', { class: 'res-steps' }, hs.el, as.el),
+        h('div', { class: 'res-actions' },
+          hasRes(m) ? btn('Abbrechen', null, function () { editing = false; draw(); }, 'btn-sm') : null,
+          saveB));
+    }
+    function clear() {
+      confirmDialog('Ergebnis von „' + m.home + ' – ' + m.away + '“ (' + m.home_goals + ':' + m.away_goals + ') löschen? Die Punkte für dieses Spiel werden dann wieder abgezogen, bis ein neues Ergebnis eingetragen ist.', { title: 'Ergebnis löschen', ok: 'Ergebnis löschen', danger: true }).then(function (ok) {
+        if (!ok) return;
+        tcall('admin_result', { match_id: m.id, home_goals: null, away_goals: null }).then(function (r) {
+          Object.assign(m, r.match);
+          editing = true; draw(); drawTippNav();
+          toast('Ergebnis gelöscht.', 'success', 2500);
+        }, function (e) { toast(e.message, 'error'); });
+      });
+    }
+    draw();
+    return row;
+  }
+  function addMinutes(k, n) {
+    var p = kParts(k);
+    var dt = new Date(Date.UTC(p.y, p.mo - 1, p.d, +p.time.slice(0, 2), +p.time.slice(3) + n));
+    return dt.getUTCFullYear() + '-' + pad(dt.getUTCMonth() + 1) + '-' + pad(dt.getUTCDate()) + ' ' + pad(dt.getUTCHours()) + ':' + pad(dt.getUTCMinutes());
+  }
+
+  /* ---------- Spiele & Wettbewerbe */
+
+  function tippMatches(d) {
+    var comps = d.competitions;
+    if (!comps.some(function (c) { return c.id === T.compId; })) {
+      T.compId = comps.length ? (comps.filter(function (c) { return c.active; })[0] || comps[0]).id : null;
+    }
+    var wrap = h('div');
+
+    // Wettbewerbe
+    var list = comps.length ? h('div', { class: 'comp-list' }, comps.map(function (c) {
+      var sel = c.id === T.compId;
+      return h('div', { class: 'comp' + (sel ? ' is-sel' : '') },
+        h('button', { type: 'button', class: 'comp-main', 'aria-pressed': sel ? 'true' : 'false', onclick: function () { T.compId = c.id; drawTippBody(true); } },
+          h('strong', null, c.name),
+          h('span', { class: 'comp-meta' },
+            h('span', { class: 'badge ' + (c.active ? 'badge-ok' : 'badge-muted') }, c.active ? 'Aktiv' : 'Archiv'),
+            h('span', null, plural(c.match_count || 0, 'Spiel', 'Spiele')),
+            c.bonus_question ? h('span', null, 'Bonus: ' + c.bonus_question + (c.bonus_answer ? ' → ' + c.bonus_answer : ' (Antwort offen)')) : null)),
+        h('div', { class: 'comp-actions' },
+          btn('Bearbeiten', 'edit', function () { openCompEditor(c); }, 'btn-sm', { 'aria-label': 'Wettbewerb bearbeiten: ' + c.name }),
+          btn('Löschen', 'trash', function () { deleteComp(c); }, 'btn-sm btn-danger', { 'aria-label': 'Wettbewerb löschen: ' + c.name })));
+    })) : h('div', { class: 'empty' }, icon('trophy'), h('p', null, 'Noch kein Wettbewerb angelegt.'));
+    wrap.appendChild(h('section', { class: 'card' },
+      cardHead('Wettbewerbe', 'z. B. „EM 2028“ oder „Bundesliga 28/29“. Inaktive Wettbewerbe sind für Spieler nur noch im Archiv sichtbar.',
+        [btn('Neuer Wettbewerb', 'plus', function () { openCompEditor(null); }, 'btn-primary btn-sm')]),
+      list));
+
+    var c = compById(T.compId);
+    if (!c) return wrap;
+    var ms = d.matches.filter(function (m) { return m.competition_id === c.id; });
+    var now = tNow();
+    var future = ms.filter(function (m) { return !m.locked; });
+    var past = ms.filter(function (m) { return m.locked; }).reverse();
+
+    function groups(arr) {
+      var out = [], last = null;
+      arr.forEach(function (m) {
+        var day = m.kickoff.slice(0, 10);
+        if (day !== last) { out.push(h('div', { class: 'm-day' }, dayLabel(day, true))); last = day; }
+        out.push(matchRow(m, now));
+      });
+      return out;
+    }
+    var matchesCard = h('section', { class: 'card' },
+      cardHead('Spiele: ' + c.name, plural(ms.length, 'Spiel', 'Spiele') + ' · ' + future.length + ' kommend',
+        [btn('Spiel hinzufügen', 'plus', function () { openMatchEditor(null, c.id); }, 'btn-primary btn-sm')]),
+      ms.length ? null : h('p', { class: 'help' }, 'Noch keine Spiele. Einzeln hinzufügen oder unten als Liste einfügen.'),
+      future.length ? h('div', { class: 'm-list' }, groups(future)) : (ms.length ? h('p', { class: 'help' }, 'Keine kommenden Spiele.') : null),
+      past.length ? h('details', { class: 'past-box' },
+        h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'Angepfiffene & beendete Spiele', h('span', { class: 'badge badge-muted' }, String(past.length))),
+        h('div', { class: 'past-inner m-list' }, groups(past))) : null);
+    wrap.appendChild(matchesCard);
+    wrap.appendChild(importCard(c));
+    return wrap;
+  }
+
+  function matchRow(m) {
+    return h('div', { class: 'm-row' + (m.locked ? ' is-locked' : '') },
+      h('div', { class: 'm-time' }, kParts(m.kickoff) ? kParts(m.kickoff).time : m.kickoff),
+      h('div', { class: 'm-main' },
+        h('div', { class: 'm-teams' }, m.home, h('span', { class: 'm-vs' }, hasRes(m) ? ' ' + m.home_goals + ':' + m.away_goals + ' ' : ' – '), m.away),
+        h('div', { class: 'm-sub' }, [m.round || null, plural(m.tip_count || 0, 'Tipp', 'Tipps'), m.locked && !hasRes(m) ? 'Ergebnis fehlt' : null].filter(Boolean).join(' · '))),
+      h('div', { class: 'm-actions' },
+        btn('', 'edit', function () { openMatchEditor(m, m.competition_id); }, 'btn-sm btn-icon', { 'aria-label': 'Spiel bearbeiten: ' + m.home + ' – ' + m.away, title: 'Bearbeiten' }),
+        btn('', 'trash', function () { deleteMatch(m); }, 'btn-sm btn-icon btn-danger', { 'aria-label': 'Spiel löschen: ' + m.home + ' – ' + m.away, title: 'Löschen' })));
+  }
+
+  function importCard(c) {
+    var st = T.imp[c.id] || (T.imp[c.id] = { text: '', result: null });
+    var ta = h('textarea', { rows: 6, class: 'mono', spellcheck: 'false', autocapitalize: 'off', placeholder: '2028-06-14 21:00; Deutschland; Schottland; Gruppe A · 1. Spieltag' });
+    ta.value = st.text;
+    ta.addEventListener('input', function () { st.text = ta.value; });
+    var out = h('div', { class: 'imp-out', 'aria-live': 'polite' });
+    function showResult() {
+      out.replaceChildren();
+      var r = st.result;
+      if (!r) return;
+      if (r.imported) out.appendChild(notice('success', 'check', plural(r.imported, 'Spiel', 'Spiele') + ' importiert.'));
+      if (r.errors.length) {
+        out.appendChild(h('div', { class: 'notice notice-danger' }, icon('alert'), h('div', null,
+          h('strong', null, plural(r.errors.length, 'Zeile wurde', 'Zeilen wurden') + ' nicht importiert'),
+          h('p', { class: 'm0' }, 'Sie stehen noch im Textfeld – korrigieren und erneut importieren.'),
+          h('ul', { class: 'imp-errors' }, r.errors.map(function (e) {
+            return h('li', null, h('strong', null, 'Zeile ' + e.line + ': '), e.message, e.text ? h('code', null, e.text) : null);
+          })))));
+      }
+      if (!r.imported && !r.errors.length) out.appendChild(notice('info', 'info', 'Keine Spiele gefunden – leere Zeilen und Zeilen mit # werden übersprungen.'));
+    }
+    showResult();
+    var go2 = btn('Spiele importieren', 'upload', function () {
+      if (!ta.value.trim()) { toast('Bitte zuerst Spiele ins Textfeld einfügen.', 'error'); ta.focus(); return; }
+      go2.disabled = true;
+      var lines = ta.value.split(/\r\n|\r|\n/);
+      tcall('admin_match_import', { competition_id: c.id, text: ta.value }).then(function (r) {
+        var errs = (r.errors || []).map(function (e) { return { line: e.line, message: e.message, text: (lines[e.line - 1] || '').trim() }; });
+        st.result = { imported: r.imported, errors: errs };
+        st.text = errs.map(function (e) { return e.text; }).join('\n');
+        if (r.imported) toast(plural(r.imported, 'Spiel', 'Spiele') + ' importiert.', 'success');
+        return tippRefresh();
+      }, function (e) { toast(e.message, 'error'); }).then(function () { go2.disabled = false; });
+    }, 'btn-primary');
+    return h('details', { class: 'card imp-card', open: st.text || st.result ? true : null },
+      h('summary', null, icon('list'), h('span', null, h('strong', null, 'Viele Spiele auf einmal einfügen'), h('small', null, 'Import in „' + c.name + '“ – z. B. den ganzen Spielplan'))),
+      h('div', { class: 'fields mt' },
+        h('div', { class: 'imp-help' },
+          h('p', { class: 'm0' }, h('strong', null, 'Eine Zeile pro Spiel:'), ' ', h('code', null, 'Datum Uhrzeit; Heim; Gast; Runde')),
+          h('ul', null,
+            h('li', null, 'Datum als ', h('code', null, '2028-06-14 21:00'), ' oder ', h('code', null, '14.06.2028 21:00'), ' (deutsche Zeit)'),
+            h('li', null, 'Getrennt durch Semikolon ', h('code', null, ';'), ' – oder Tabulator, z. B. direkt aus Excel kopiert'),
+            h('li', null, 'Runde ist optional (z. B. „Achtelfinale“ oder „12. Spieltag“)'),
+            h('li', null, 'Leere Zeilen und Zeilen mit # werden übersprungen, doppelte Spiele erkannt'))),
+        field('Spiele', ta),
+        h('div', { class: 'btn-row' }, go2,
+          btn('Beispiel einfügen', 'wand', function () { ta.value = IMPORT_EXAMPLE; st.text = ta.value; ta.focus(); }, 'btn-sm')),
+        out));
+  }
+
+  function openCompEditor(c) {
+    var isNew = !c;
+    var draft = c ? { name: c.name, sort: String(c.sort), bonus_question: c.bonus_question || '', bonus_answer: c.bonus_answer || '', bonus_points: String(c.bonus_points) }
+      : { name: '', sort: '0', bonus_question: '', bonus_answer: '', bonus_points: '10' };
+    var noop = function () {};
+    var nameIn = input(draft, 'name', { max: 80, placeholder: 'z. B. EM 2028', onInput: noop });
+    var act = switchEl(c ? c.active : true, 'Aktiv', 'Spieler sehen und tippen diesen Wettbewerb', 'Archiv – nur noch zum Nachschauen');
+    var sortIn = input(draft, 'sort', { type: 'number', inputmode: 'numeric', onInput: noop });
+    var bpIn = input(draft, 'bonus_points', { type: 'number', inputmode: 'numeric', onInput: noop });
+    var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
+    var body = h('div', { class: 'fields' }, err,
+      field('Name', nameIn),
+      act.el,
+      field('Reihenfolge', sortIn, { help: 'Kleinere Zahl = weiter oben. Meist einfach 0 lassen.' }),
+      h('div', { class: 'sub-box' },
+        h('h4', null, icon('star'), 'Bonusfrage', h('span', { class: 'opt' }, ' (optional)')),
+        tf('Frage', draft, 'bonus_question', { max: 150, placeholder: 'z. B. Wer wird Europameister?', onInput: noop, optional: true, help: 'Tippbar bis zum Anstoß des ersten Spiels.' }),
+        tf('Richtige Antwort', draft, 'bonus_answer', { max: 80, placeholder: 'erst nach Turnierende eintragen', onInput: noop, optional: true, help: 'Erst eintragen, wenn sie feststeht – dann bekommt jeder mit der gleichen Antwort die Bonuspunkte (Groß-/Kleinschreibung egal).' }),
+        field('Bonuspunkte', bpIn, { help: '0 bis 100, üblich sind 10.' })));
+    function submit() {
+      err.hidden = true;
+      var data = {
+        name: draft.name, active: act.input.checked, sort: draft.sort === '' ? 0 : draft.sort,
+        bonus_question: draft.bonus_question, bonus_answer: draft.bonus_answer, bonus_points: draft.bonus_points === '' ? 10 : draft.bonus_points
+      };
+      if (c) data.id = c.id;
+      saveB.disabled = true;
+      tcall('admin_competition_save', data).then(function (r) {
+        if (r.competition) T.compId = r.competition.id;
+        start = JSON.stringify(draft) + act.input.checked;
+        m.close();
+        toast(isNew ? 'Wettbewerb „' + r.competition.name + '“ angelegt – jetzt Spiele hinzufügen.' : 'Wettbewerb gespeichert.', 'success');
+        tippRefresh();
+      }, function (e) { err.hidden = false; err.textContent = e.message; saveB.disabled = false; m.body.scrollTop = 0; });
+    }
+    var start = JSON.stringify(draft) + act.input.checked;
+    var saveB = h('button', { type: 'button', class: 'btn btn-primary', onclick: submit }, icon('check'), isNew ? 'Anlegen' : 'Speichern');
+    var m = openModal({
+      title: isNew ? 'Neuer Wettbewerb' : 'Wettbewerb bearbeiten', body: body, full: true, backdropClose: false, focus: nameIn,
+      beforeClose: function () { return JSON.stringify(draft) + act.input.checked === start ? true : confirmDialog('Eingaben verwerfen?', { ok: 'Verwerfen', danger: true }); },
+      foot: [h('button', { type: 'button', class: 'btn', onclick: function () { m.requestClose(); } }, 'Abbrechen'), saveB]
+    });
+  }
+
+  function deleteComp(c) {
+    var tips = T.data.matches.filter(function (x) { return x.competition_id === c.id; }).reduce(function (s, x) { return s + (x.tip_count || 0); }, 0);
+    confirmDialog('Wettbewerb „' + c.name + '“ mit ' + plural(c.match_count || 0, 'Spiel', 'Spielen') + ' und ' + plural(tips, 'Tipp', 'Tipps') + ' endgültig löschen? Das kann nicht rückgängig gemacht werden.',
+      { title: 'Wettbewerb löschen', ok: 'Endgültig löschen', danger: true }).then(function (ok) {
+      if (!ok) return;
+      tippAct(null, 'admin_competition_delete', { id: c.id }, 'Wettbewerb „' + c.name + '“ gelöscht.').catch(function () { /* gemeldet */ });
+    });
+  }
+
+  function openMatchEditor(mt, compId) {
+    var isNew = !mt;
+    var d = T.data;
+    var kp = mt ? kParts(mt.kickoff) : null;
+    var lastOfComp = d.matches.filter(function (x) { return x.competition_id === compId; }).slice(-1)[0];
+    var draft = {
+      competition_id: String(compId),
+      date: kp ? kp.date : (lastOfComp && !lastOfComp.locked ? lastOfComp.kickoff.slice(0, 10) : addDays(tNow().slice(0, 10), 1)),
+      time: kp ? kp.time : '21:00',
+      round: mt ? mt.round : (lastOfComp ? lastOfComp.round : ''),
+      home: mt ? mt.home : '', away: mt ? mt.away : ''
+    };
+    var noop = function () {};
+    var compSel = h('select', null, d.competitions.map(function (c) { return h('option', { value: String(c.id) }, c.name + (c.active ? '' : ' (Archiv)')); }));
+    compSel.value = draft.competition_id;
+    compSel.addEventListener('change', function () { draft.competition_id = compSel.value; });
+    var teams = {}, rounds = {};
+    d.matches.forEach(function (x) { teams[x.home] = 1; teams[x.away] = 1; if (x.round && x.competition_id === compId) rounds[x.round] = 1; });
+    var tl = nid(), rl = nid();
+    var homeIn = input(draft, 'home', { max: 40, list: tl, placeholder: 'z. B. Deutschland', onInput: noop });
+    var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
+    var body = h('div', { class: 'fields' }, err,
+      mt && hasRes(mt) ? notice('info', 'info', 'Dieses Spiel hat schon ein Ergebnis (' + mt.home_goals + ':' + mt.away_goals + '). Der Anstoß kann nicht in die Zukunft verlegt werden.') : null,
+      field('Wettbewerb', compSel),
+      h('div', { class: 'grid-2' },
+        field('Datum', input(draft, 'date', { type: 'date', onInput: noop })),
+        field('Anstoß (deutsche Zeit)', input(draft, 'time', { type: 'time', onInput: noop }))),
+      tf('Runde', draft, 'round', { max: 60, list: rl, placeholder: 'z. B. Gruppe A · 1. Spieltag', onInput: noop, optional: true }),
+      h('div', { class: 'grid-2' },
+        field('Heim', homeIn),
+        tf('Gast', draft, 'away', { max: 40, list: tl, placeholder: 'z. B. Schottland', onInput: noop })),
+      h('datalist', { id: tl }, Object.keys(teams).sort().map(function (t) { return h('option', { value: t }); })),
+      h('datalist', { id: rl }, Object.keys(rounds).map(function (t) { return h('option', { value: t }); })));
+    var start = JSON.stringify(draft);
+    function submit() {
+      err.hidden = true;
+      if (!validDate(draft.date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.time)) { err.hidden = false; err.textContent = 'Bitte Datum und Uhrzeit des Anstoßes angeben.'; return; }
+      var data = { competition_id: +draft.competition_id, round: draft.round, kickoff: draft.date + ' ' + draft.time, home: draft.home, away: draft.away };
+      if (mt) data.id = mt.id;
+      saveB.disabled = true;
+      tcall('admin_match_save', data).then(function (r) {
+        start = JSON.stringify(draft);
+        T.compId = r.match.competition_id;
+        m.close();
+        toast(isNew ? 'Spiel ' + r.match.home + ' – ' + r.match.away + ' hinzugefügt.' : 'Spiel gespeichert.', 'success');
+        tippRefresh();
+      }, function (e) { err.hidden = false; err.textContent = e.message; saveB.disabled = false; m.body.scrollTop = 0; });
+    }
+    var saveB = h('button', { type: 'button', class: 'btn btn-primary', onclick: submit }, icon('check'), isNew ? 'Hinzufügen' : 'Speichern');
+    var m = openModal({
+      title: isNew ? 'Spiel hinzufügen' : 'Spiel bearbeiten', body: body, full: true, backdropClose: false, focus: homeIn,
+      beforeClose: function () { return JSON.stringify(draft) === start ? true : confirmDialog('Eingaben verwerfen?', { ok: 'Verwerfen', danger: true }); },
+      foot: [
+        mt ? h('button', { type: 'button', class: 'btn btn-danger', onclick: function () { deleteMatch(mt).then(function (ok) { if (ok) { start = JSON.stringify(draft); m.close(); } }); } }, icon('trash'), h('span', { class: 'lbl' }, 'Löschen')) : null,
+        h('span', { class: 'spacer' }),
+        h('button', { type: 'button', class: 'btn', onclick: function () { m.requestClose(); } }, 'Abbrechen'), saveB]
+    });
+  }
+
+  function deleteMatch(mt) {
+    return confirmDialog('Spiel „' + mt.home + ' – ' + mt.away + '“ (' + fmtKick(mt.kickoff) + ')' + (mt.tip_count ? ' mit ' + plural(mt.tip_count, 'Tipp', 'Tipps') : '') + ' endgültig löschen?',
+      { title: 'Spiel löschen', ok: 'Löschen', danger: true }).then(function (ok) {
+      if (!ok) return false;
+      return tippAct(null, 'admin_match_delete', { id: mt.id }, 'Spiel gelöscht.').then(function () { return true; }, function () { return false; });
+    });
+  }
+
+  /* ---------- Einladungen */
+
+  function tippInvites(d) {
+    var wrap = h('div');
+    var draft = { note: '', max: '1', expires: '' };
+    var noteIn = input(draft, 'note', { max: 100, placeholder: 'z. B. Kalle oder „Aushang Theke“', onInput: function () {} });
+    var maxIn = input(draft, 'max', { type: 'number', inputmode: 'numeric', onInput: function () { syncChips(); } });
+    maxIn.min = '1'; maxIn.max = '1000';
+    var expIn = input(draft, 'expires', { type: 'date', onInput: function () {} });
+    var presets = [['1', '1 Person'], ['50', 'Thekenaushang 50']];
+    var chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Vorlagen' }, presets.map(function (p) {
+      return h('button', { type: 'button', class: 'chip', 'data-v': p[0], onclick: function () { draft.max = p[0]; maxIn.value = p[0]; syncChips(); } }, p[1]);
+    }));
+    function syncChips() { chips.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-v') === String(maxIn.value).trim() ? 'true' : 'false'); }); }
+    syncChips();
+    var createB = btn('Einladung erstellen', 'plus', function () {
+      var n = parseInt(maxIn.value, 10);
+      if (!(n >= 1 && n <= 1000)) { toast('Max. Nutzungen: bitte eine Zahl von 1 bis 1000.', 'error'); maxIn.focus(); return; }
+      tippAct(createB, 'admin_invite_create', { note: draft.note, max_uses: n, expires: draft.expires || null }, function (r) {
+        T.newInvite = r.invite.code;
+        return 'Einladung ' + fmtCode(r.invite.code) + ' erstellt – jetzt teilen oder ausdrucken.';
+      }).then(function () {
+        var el = document.querySelector('.inv.is-new');
+        if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, function () { /* gemeldet */ });
+    }, 'btn-primary');
+    wrap.appendChild(h('section', { class: 'card' },
+      cardHead('Neue Einladung', 'Mitspielen kann nur, wer einen Einladungscode hat.'),
+      h('div', { class: 'fields' },
+        field('Notiz', noteIn, { optional: true, help: 'Nur für dich sichtbar – z. B. für wen die Einladung ist.' }),
+        h('div', { class: 'field' }, h('span', { class: 'label' }, 'Wie viele Personen dürfen den Code benutzen?'), chips,
+          h('div', { class: 'inline-num' }, maxIn, h('span', { class: 'help' }, 'Personen (1–1000)'))),
+        field('Gültig bis', expIn, { optional: true, help: 'Leer lassen = unbegrenzt gültig. Sonst gilt der Code bis zum Ende dieses Tages.' }),
+        h('div', null, createB))));
+
+    var good = d.invites.filter(function (i) { return i.valid; });
+    var bad = d.invites.filter(function (i) { return !i.valid; });
+    wrap.appendChild(h('h3', { class: 'res-h' }, 'Gültige Einladungen', h('span', { class: 'badge badge-ok' }, String(good.length))));
+    wrap.appendChild(good.length ? h('div', { class: 'inv-list' }, good.map(inviteCard))
+      : h('div', { class: 'empty' }, icon('ticket'), h('p', null, 'Keine gültige Einladung. Oben eine neue erstellen.')));
+    if (bad.length) {
+      wrap.appendChild(h('details', { class: 'past-box' },
+        h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'Abgelaufene, aufgebrauchte & zurückgezogene', h('span', { class: 'badge badge-muted' }, String(bad.length))),
+        h('div', { class: 'past-inner inv-list' }, bad.map(inviteCard))));
+    }
+    return wrap;
+  }
+
+  function inviteCard(i) {
+    var st = inviteState(i);
+    var url = inviteUrl(i.code);
+    var waText = 'Servus! Du bist zum Stüble-Tippspiel vom Hofbräustüble eingeladen – kostenlos, nur Punkte und Ruhm. ' +
+      'Hier anmelden: ' + url + ' (Einladungscode: ' + i.code + ')';
+    var left = Math.max(0, i.max_uses - i.uses);
+    var isNew = T.newInvite === i.code && i.valid;
+    return h('article', { class: 'inv' + (i.valid ? '' : ' is-off') + (isNew ? ' is-new' : '') },
+      h('div', { class: 'inv-top' },
+        h('div', { class: 'inv-code', 'aria-label': 'Code ' + i.code.split('').join(' ') }, fmtCode(i.code)),
+        h('span', { class: 'badge ' + st[1] }, st[0]),
+        isNew ? h('span', { class: 'badge badge-warn' }, 'Neu') : null),
+      i.note ? h('div', { class: 'inv-note' }, i.note) : null,
+      h('div', { class: 'inv-meta' },
+        h('span', null, i.uses + ' von ' + i.max_uses + ' genutzt' + (i.valid ? ' · noch ' + left + ' frei' : '')),
+        h('span', null, i.expires ? 'gültig bis ' + fmtDT(i.expires) : 'ohne Ablaufdatum'),
+        h('span', null, 'erstellt ' + fmtD(i.created))),
+      i.valid ? h('div', { class: 'inv-actions' },
+        btn('Link kopieren', 'copy', function () { copyText(url, 'Einladungslink'); }, 'btn-sm'),
+        h('a', { class: 'btn btn-sm btn-wa', href: 'https://wa.me/?text=' + encodeURIComponent(waText), target: '_blank', rel: 'noopener noreferrer' }, icon('chat'), h('span', { class: 'lbl' }, 'Per WhatsApp teilen')),
+        btn('QR-Code', 'qr', function () { openQr(i); }, 'btn-sm'),
+        btn('Zurückziehen', 'ban', function (e) { revokeInvite(i, e.currentTarget); }, 'btn-sm btn-danger')) : null);
+  }
+
+  function revokeInvite(i, b) {
+    confirmDialog('Einladung ' + fmtCode(i.code) + (i.note ? ' („' + i.note + '“)' : '') + ' zurückziehen? Danach kann sich niemand mehr damit anmelden. Bereits angemeldete Spieler bleiben dabei.',
+      { title: 'Einladung zurückziehen', ok: 'Zurückziehen', danger: true }).then(function (ok) {
+      if (ok) tippAct(b, 'admin_invite_revoke', { code: i.code }, 'Einladung zurückgezogen.').catch(function () { /* gemeldet */ });
+    });
+  }
+
+  function openQr(i) {
+    var url = inviteUrl(i.code);
+    var box = h('div', { class: 'qr-box', role: 'img', 'aria-label': 'QR-Code für den Einladungslink' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }));
+    var sheet = h('div', { class: 'qr-sheet' },
+      h('div', { class: 'qr-title' }, 'Stüble-Tippspiel – scannen & mitmachen'),
+      box,
+      h('div', { class: 'qr-code' }, 'Code: ', h('strong', null, fmtCode(i.code))),
+      h('div', { class: 'qr-url' }, url),
+      h('div', { class: 'qr-small' }, 'Kostenlos für unsere Stammgäste · nur Punkte & Ruhm · kein Geldeinsatz'));
+    var linkIn = h('input', { type: 'text', readonly: true, value: url, 'aria-label': 'Einladungslink' });
+    linkIn.addEventListener('focus', function () { linkIn.select(); });
+    var q = null;
+    var pngB = btn('QR-Code als Bild speichern', 'download', function () {
+      if (!q) return;
+      qrPng(q, i.code).then(function (b) { downloadBlob(b, 'tippspiel-einladung-' + i.code + '.png'); });
+    }, 'btn-primary', { disabled: true });
+    var svgB = btn('SVG', 'download', function () {
+      if (!q) return;
+      downloadBlob(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + qrSvg(q)], { type: 'image/svg+xml' }), 'tippspiel-einladung-' + i.code + '.svg');
+    }, '', { disabled: true, 'aria-label': 'QR-Code als SVG-Datei speichern', title: 'Als SVG speichern (beliebig groß druckbar)' });
+    var printB = btn('Drucken', 'printer', function () { printNode(sheet); }, '', { disabled: true });
+    openModal({
+      title: 'QR-Code für die Theke', size: 'sm',
+      body: [sheet, field('Einladungslink', h('div', { class: 'input-row' }, linkIn, btn('', 'copy', function () { copyText(url, 'Einladungslink'); }, 'btn-icon', { 'aria-label': 'Link kopieren', title: 'Link kopieren' })), { forId: linkIn.id || (linkIn.id = nid()), cls: 'mt' })],
+      foot: [h('div', { class: 'qr-foot' }, pngB, svgB, printB)]
+    });
+    loadQr().then(function () {
+      q = makeQr(url);
+      box.innerHTML = qrSvg(q);
+      [pngB, svgB, printB].forEach(function (b) { b.disabled = false; });
+    }, function (e) { box.replaceChildren(h('p', { class: 'help' }, e.message)); });
+  }
+
+  /* ---------- Spieler */
+
+  function tippPlayers(d) {
+    var wrap = h('div');
+    var list = h('div', { class: 'pl-list' });
+    var search = h('input', { type: 'search', placeholder: 'Spieler suchen …', 'aria-label': 'Spieler suchen', autocomplete: 'off' });
+    search.value = T.playerQuery;
+    function drawList() {
+      var q = T.playerQuery.trim().toLowerCase();
+      var arr = d.players.filter(function (p) { return !q || p.nickname.toLowerCase().indexOf(q) >= 0 || String(p.email || '').toLowerCase().indexOf(q) >= 0; });
+      list.replaceChildren();
+      if (!arr.length) list.appendChild(h('div', { class: 'empty' }, icon('users'), h('p', null, d.players.length ? 'Kein Spieler gefunden.' : 'Noch keine Spieler. Sobald jemand eine Einladung nutzt, erscheint er hier.')));
+      arr.forEach(function (p) { list.appendChild(playerCard(p)); });
+    }
+    search.addEventListener('input', function () { T.playerQuery = search.value; drawList(); });
+    drawList();
+    var active = d.players.filter(function (p) { return p.active; }).length;
+    wrap.appendChild(h('div', { class: 'pl-head' },
+      h('p', { class: 'help m0' }, plural(d.players.length, 'Spieler', 'Spieler') + ', davon ' + active + ' aktiv. Deaktivierte Spieler können sich nicht anmelden und erscheinen nicht in der Rangliste.'),
+      d.players.length > 5 ? search : null));
+    wrap.appendChild(list);
+    return wrap;
+  }
+
+  function playerCard(p) {
+    var toggleB = btn(p.active ? 'Deaktivieren' : 'Aktivieren', p.active ? 'ban' : 'check', function () {
+      tippAct(toggleB, 'admin_player_update', { id: p.id, active: !p.active }, p.nickname + (p.active ? ' deaktiviert.' : ' wieder aktiviert.')).catch(function () { /* gemeldet */ });
+    }, 'btn-sm');
+    var resetB = btn('Neues Passwort', 'key', function () {
+      confirmDialog('Für „' + p.nickname + '“ ein neues, vorläufiges Passwort erzeugen? Das alte Passwort gilt dann nicht mehr und ' + p.nickname + ' wird auf allen Geräten abgemeldet.', { title: 'Passwort zurücksetzen', ok: 'Neues Passwort erzeugen' }).then(function (ok) {
+        if (!ok) return;
+        resetB.disabled = true;
+        tcall('admin_player_reset', { id: p.id }).then(function (r) { resetB.disabled = false; showTempPw(p, r.temp_password); }, function (e) { resetB.disabled = false; toast(e.message, 'error'); });
+      });
+    }, 'btn-sm', { 'aria-label': 'Passwort zurücksetzen: ' + p.nickname });
+    var delB = btn('Löschen', 'trash', function () {
+      confirmDialog('Spieler „' + p.nickname + '“ mit ' + plural(p.tips || 0, 'Tipp', 'Tipps') + ' endgültig löschen? Er verschwindet aus der Rangliste. Das kann nicht rückgängig gemacht werden.', { title: 'Spieler löschen', ok: 'Endgültig löschen', danger: true }).then(function (ok) {
+        if (ok) tippAct(delB, 'admin_player_delete', { id: p.id }, 'Spieler „' + p.nickname + '“ gelöscht.').catch(function () { /* gemeldet */ });
+      });
+    }, 'btn-sm btn-danger', { 'aria-label': 'Spieler löschen: ' + p.nickname });
+    toggleB.setAttribute('aria-label', (p.active ? 'Deaktivieren: ' : 'Aktivieren: ') + p.nickname);
+    return h('article', { class: 'pl' + (p.active ? '' : ' is-off') },
+      h('div', { class: 'pl-top' },
+        h('strong', { class: 'pl-name' }, p.nickname),
+        h('span', { class: 'badge ' + (p.active ? 'badge-ok' : 'badge-muted') }, p.active ? 'Aktiv' : 'Deaktiviert'),
+        h('span', { class: 'pl-pts' }, plural(p.points || 0, 'Punkt', 'Punkte'))),
+      p.email ? h('div', { class: 'pl-mail' }, h('a', { href: 'mailto:' + p.email }, p.email)) : null,
+      h('dl', { class: 'pl-kv' },
+        h('div', null, h('dt', null, 'Registriert'), h('dd', null, fmtD(p.created))),
+        h('div', null, h('dt', null, 'Letzter Login'), h('dd', null, p.last_login ? fmtDT(p.last_login) : 'noch nie')),
+        h('div', null, h('dt', null, 'Tipps'), h('dd', null, String(p.tips || 0))),
+        h('div', null, h('dt', null, 'Einladung'), h('dd', null, p.invite_code ? fmtCode(p.invite_code) : '–'))),
+      h('div', { class: 'pl-actions' }, toggleB, resetB, delB));
+  }
+
+  function showTempPw(p, pw) {
+    var m = openModal({
+      title: 'Vorläufiges Passwort', size: 'sm', backdropClose: false,
+      body: [
+        h('p', null, 'Neues Passwort für ', h('strong', null, p.nickname), ':'),
+        h('div', { class: 'temp-pw', 'aria-label': 'Passwort ' + pw.split('').join(' ') }, pw),
+        notice('warn', 'lock', 'Wird nur jetzt angezeigt! Bitte notieren oder kopieren und dem Gast persönlich geben. Er kann es danach in der Tippspiel-App unter „Profil“ ändern.')
+      ],
+      foot: [btn('Kopieren', 'copy', function () { copyText(pw, 'Passwort'); }), h('button', { type: 'button', class: 'btn btn-primary', onclick: function () { m.close(); } }, 'Fertig')]
+    });
+  }
+
+  /* ---------- Punkte-Regeln */
+
+  function tippPoints(d) {
+    var s = d.settings;
+    var ex = document.createElement('div');
+    var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
+    var saveB = btn('Punkte-Regeln speichern', 'check', save2, 'btn-primary');
+    var st = {
+      exact: stepper({ label: 'Exaktes Ergebnis', value: s.points_exact, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
+      diff: stepper({ label: 'Richtige Tordifferenz', value: s.points_diff, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
+      tend: stepper({ label: ['Richtige Tendenz', h('small', null, 'Sieg / Remis / Niederlage')], aria: 'Richtige Tendenz', value: s.points_tendency, max: 50, onChange: upd, onEnter: save2, cls: 'pts' })
+    };
+    function vals() { return { points_exact: st.exact.get(), points_diff: st.diff.get(), points_tendency: st.tend.get() }; }
+    function check() {
+      var v = vals();
+      if (!st.exact.valid() || !st.diff.valid() || !st.tend.valid()) return 'Bitte überall eine Zahl von 0 bis 50 eingeben.';
+      if (!(v.points_exact >= v.points_diff && v.points_diff >= v.points_tendency)) return 'Bitte so wählen: exaktes Ergebnis ≥ Tordifferenz ≥ Tendenz.';
+      return '';
+    }
+    function upd() {
+      var msg = check(), v = vals();
+      var same = v.points_exact === s.points_exact && v.points_diff === s.points_diff && v.points_tendency === s.points_tendency;
+      err.hidden = !msg; err.textContent = msg;
+      saveB.disabled = !!msg || same;
+      ex.replaceChildren(example(msg ? s : v));
+    }
+    function save2() {
+      if (check()) return;
+      tippAct(saveB, 'admin_settings_save', vals(), 'Punkte-Regeln gespeichert – die Rangliste ist neu berechnet.').catch(function () { /* gemeldet */ });
+    }
+    function example(v) {
+      var rows = [['2:1', ['2:1', '3:2', '1:0', '3:0', '1:1', '0:2']], ['1:1', ['1:1', '0:0', '2:1']]];
+      var kinds = { exact: 'exakt', diff: 'Tordifferenz', tendency: 'Tendenz', miss: 'daneben' };
+      return h('div', { class: 'pts-ex' }, rows.map(function (r) {
+        var res = r[0].split(':');
+        return h('div', { class: 'pts-ex-block' },
+          h('div', { class: 'pts-ex-h' }, 'Ergebnis ', h('strong', null, r[0])),
+          h('ul', null, r[1].map(function (tp) {
+            var t = tp.split(':');
+            var sc = TippAPI.scoreTip({ home: +t[0], away: +t[1] }, { home_goals: +res[0], away_goals: +res[1] }, v);
+            return h('li', { class: 'k-' + sc.kind }, h('span', null, 'Tipp ' + tp), h('span', { class: 'k' }, kinds[sc.kind]), h('strong', null, plural(sc.points, 'Punkt', 'Punkte')));
+          })));
+      }));
+    }
+    upd();
+    return h('div', null,
+      h('section', { class: 'card' },
+        cardHead('Punkte pro Spiel', 'Gilt für alle Spiele – auch rückwirkend: Nach dem Speichern wird die Rangliste neu berechnet.'),
+        h('div', { class: 'fields' }, err, st.exact.el, st.diff.el, st.tend.el,
+          h('p', { class: 'help m0' }, 'Ein Unentschieden, das nicht exakt stimmt (z. B. 0:0 bei 1:1), zählt als Tendenz. Bonusfragen haben eigene Punkte je Wettbewerb.'),
+          h('div', { class: 'btn-row' }, saveB,
+            btn('Standard 4 / 3 / 2', 'history', function () { st.exact.set(4); st.diff.set(3); st.tend.set(2); }, 'btn-sm')))),
+      card('Beispiel', 'So viele Punkte gäbe es mit den eingestellten Werten:', ex));
+  }
+
+  /* ---------- Website-Teaser (läuft über den normalen Speichern-Knopf) */
+
+  function tippTeaser() {
+    var c = S.content.tippspiel;
+    return h('div', null,
+      card('Tippspiel-Abschnitt auf der Website', 'Kurzer Werbe-Abschnitt auf der Startseite mit Knopf zum Tippspiel.',
+        h('div', { class: 'fields' },
+          toggle(c, 'enabled', 'Abschnitt anzeigen', 'Wird auf der Website angezeigt', 'Ausgeblendet'),
+          tf('Überschrift', c, 'title', { max: 150, placeholder: 'z. B. Das Stüble-Tippspiel' }),
+          tf('Text', c, 'text', { multiline: true, rows: 5, max: 2000 }),
+          tf('Text auf dem Knopf', c, 'buttonText', { max: 60, placeholder: 'z. B. Zum Tippspiel' }),
+          tf('Kleiner Hinweis', c, 'note', { multiline: true, rows: 2, max: 500, optional: true, help: 'Wichtig: keine Einsätze oder Geldpreise versprechen – Sportwetten mit Einsatz sind ohne Lizenz verboten.' }))),
+      h('div', { class: 'btn-row' },
+        btn('Jetzt speichern', 'save', save, 'btn-primary'),
+        h('a', { class: 'btn', href: PREVIEWS[0][0] + '#tippspiel', target: '_blank', rel: 'noopener' }, icon('external'), h('span', { class: 'lbl' }, 'Vorschau (zuletzt gespeichert)'))));
+  }
+
   /* ================================================================ Globale Ereignisse */
 
   window.addEventListener('beforeunload', function (e) {
@@ -1526,8 +2534,14 @@
     document.querySelectorAll('details.dropdown[open]').forEach(function (d) { if (!d.contains(e.target)) d.open = false; });
   });
   window.addEventListener('hashchange', function () {
-    var id = location.hash.replace('#', '');
-    if (S.content && mainEl && id !== S.section && SECTIONS.some(function (s) { return s.id === id; })) showSection(id);
+    var parts = location.hash.replace('#', '').split('/');
+    var id = parts[0];
+    if (!S.content || !mainEl || !SECTIONS.some(function (s) { return s.id === id; })) return;
+    if (id === 'tippspiel' && parts[1] && parts[1] !== T.sub) {
+      setTippSub(parts[1]);
+      if (S.section === 'tippspiel') { drawTippNav(); drawTippBody(); return; }
+    }
+    if (id !== S.section) showSection(id);
   });
 
   boot();
