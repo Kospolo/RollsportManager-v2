@@ -1549,10 +1549,11 @@
     { id: 'punkte', label: 'Punkte-Regeln', icon: 'star' },
     { id: 'teaser', label: 'Website-Teaser', icon: 'home', content: true }
   ];
-  var IMPORT_EXAMPLE = '# Datum Uhrzeit; Heim; Gast; Runde (optional)\n' +
-    '2028-06-14 21:00; Deutschland; Schottland; Gruppe A · 1. Spieltag\n' +
-    '2028-06-15 15:00; Ungarn; Schweiz; Gruppe A · 1. Spieltag\n' +
-    '2028-06-19 18:00; Deutschland; Ungarn; Gruppe A · 2. Spieltag';
+  var IMPORT_EXAMPLE = '# Beispiel – Datum Uhrzeit; Heim; Gast; Runde (optional)\n' +
+    '2027-01-15 20:30; VfB Stuttgart; Eintracht Frankfurt; 17. Spieltag\n' +
+    '2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag\n' +
+    '2027-01-16 18:30; Bayern München; Bayer Leverkusen; 17. Spieltag\n' +
+    '2027-01-17 17:30; SC Freiburg; RB Leipzig; 17. Spieltag';
   var T = {
     sub: 'uebersicht', data: null, loadedAt: 0, loading: null, error: null, ready: false,
     root: null, nav: null, mode: null, body: null, compId: null, qrLoad: null, newInvite: null,
@@ -2103,7 +2104,7 @@
 
   function importCard(c) {
     var st = T.imp[c.id] || (T.imp[c.id] = { text: '', result: null });
-    var ta = h('textarea', { rows: 6, class: 'mono', spellcheck: 'false', autocapitalize: 'off', placeholder: '2028-06-14 21:00; Deutschland; Schottland; Gruppe A · 1. Spieltag' });
+    var ta = h('textarea', { rows: 6, class: 'mono', spellcheck: 'false', autocapitalize: 'off', placeholder: '2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag' });
     ta.value = st.text;
     ta.addEventListener('input', function () { st.text = ta.value; });
     var out = h('div', { class: 'imp-out', 'aria-live': 'polite' });
@@ -2234,7 +2235,7 @@
       tf('Runde', draft, 'round', { max: 60, list: rl, placeholder: 'z. B. Gruppe A · 1. Spieltag', onInput: noop, optional: true }),
       h('div', { class: 'grid-2' },
         field('Heim', homeIn),
-        tf('Gast', draft, 'away', { max: 40, list: tl, placeholder: 'z. B. Schottland', onInput: noop })),
+        tf('Gast', draft, 'away', { max: 40, list: tl, placeholder: 'z. B. Borussia Dortmund', onInput: noop })),
       h('datalist', { id: tl }, Object.keys(teams).sort().map(function (t) { return h('option', { value: t }); })),
       h('datalist', { id: rl }, Object.keys(rounds).map(function (t) { return h('option', { value: t }); })));
     var start = JSON.stringify(draft);

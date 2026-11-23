@@ -93,7 +93,8 @@ await TippAPI.call(action, data?)   // GET-Aktionen: data als Query; POST: JSON-
 TippAPI.demoReset()     // Demo-Daten neu erzeugen
 ```
 
-**Demo-Modus** (für die Vorschau ohne PHP, localStorage-Key `hbs_tipp_demo`): implementiert ALLE Spieler- und Admin-Aktionen mit identischer Logik (Punkte, Sperren, Tendenz, Rangliste, Statistik). Seed relativ zum aktuellen Datum, damit die Demo immer lebendig wirkt:
+**Demo-Modus** (für die Vorschau ohne PHP, localStorage-Key `hbs_tipp_demo_v2`): implementiert ALLE Spieler- und Admin-Aktionen mit identischer Logik (Punkte, Sperren, Tendenz, Rangliste, Statistik). Seed relativ zum aktuellen Datum, damit die Demo immer lebendig wirkt:
+- Zusätzlich Wettbewerb „Bundesliga 2026/27“ (Bonusfrage „Wer wird Deutscher Meister?“): 12. Spieltag (letztes Wochenende, mit Ergebnissen) und 13. Spieltag (nächstes Wochenende, Fr 20:30 / Sa 15:30 + 18:30 / So 15:30 + 17:30).
 - Wettbewerb „Demo-Turnier“ mit Bonusfrage „Wer gewinnt das Turnier?“, Nationalteams (Deutschland, Frankreich, Spanien, Italien, Niederlande, Portugal, England, Österreich, Schweiz, Belgien, Kroatien, Dänemark …), ~18 Spiele: einige vergangene mit Ergebnis, eines „läuft gerade“ (Anstoß vor 30 Min., gesperrt, ohne Ergebnis), mehrere kommende in den nächsten Tagen.
 - 8–10 erfundene Stammgäste mit Spitznamen (z. B. „Kalle“, „Uschi_66“, „Theken-Toni“) und plausiblen Tipps, damit Rangliste und Tendenz gefüllt sind.
 - Einladungscode `DEMO2026` (gültig). Demo-Login: Registrierung mit diesem Code, oder Nickname „Gast“ / Passwort „demo1234“.

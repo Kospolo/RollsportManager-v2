@@ -15,7 +15,7 @@
 (function (global) {
   'use strict';
 
-  var DEMO_KEY = 'hbs_tipp_demo';
+  var DEMO_KEY = 'hbs_tipp_demo_v2'; // v2: Demo enthält Bundesliga-Saison
   var DEMO_VERSION = 1;
   var DEMO_MAX_AGE_MS = 3 * 24 * 3600 * 1000; // ältere Demo-Daten werden neu erzeugt (damit „kommende Spiele“ kommend bleiben)
   var DEFAULT_SETTINGS = { points_exact: 4, points_diff: 3, points_tendency: 2 };
@@ -519,6 +519,36 @@
     });
     db.seq.matches = plan.length;
 
+    // Bundesliga-Saison: letzter (abgeschlossener) und nächster Spieltag, Fr–So wie im echten Spielplan
+    db.competitions[0].sort = 1;
+    db.competitions.push({ id: 2, name: 'Bundesliga 2026/27', active: 1, sort: 0, bonus_question: 'Wer wird Deutscher Meister?', bonus_answer: null, bonus_points: 10, created: created });
+    db.seq.competitions = 2;
+    var dow = new Date(Date.UTC(+now.slice(0, 4), +now.slice(5, 7) - 1, +now.slice(8, 10))).getUTCDay();
+    var nextFri = (5 - dow + 7) % 7 || 7;
+    var lastFri = nextFri - 7;
+    if (lastFri + 2 >= 0) lastFri -= 7;
+    var blSlots = function (fri) {
+      return [at(fri, 20, 30), at(fri + 1, 15, 30), at(fri + 1, 15, 30), at(fri + 1, 15, 30), at(fri + 1, 15, 30), at(fri + 1, 15, 30),
+        at(fri + 1, 18, 30), at(fri + 2, 15, 30), at(fri + 2, 17, 30)];
+    };
+    var past = blSlots(lastFri), next = blSlots(nextFri);
+    var bl = [
+      [past[0], 'Eintracht Frankfurt', 'Mainz 05', 2, 1], [past[1], 'Bayern München', 'SC Freiburg', 3, 0],
+      [past[2], 'VfB Stuttgart', 'TSG Hoffenheim', 2, 2], [past[3], 'Werder Bremen', 'VfL Wolfsburg', 1, 0],
+      [past[4], 'FC Augsburg', 'Union Berlin', 0, 0], [past[5], '1. FC Heidenheim', 'Mönchengladbach', 1, 3],
+      [past[6], 'Borussia Dortmund', 'RB Leipzig', 2, 1], [past[7], 'FC St. Pauli', '1. FC Köln', 1, 1],
+      [past[8], 'Hamburger SV', 'Bayer Leverkusen', 0, 2],
+      [next[0], 'TSG Hoffenheim', 'Werder Bremen', null, null], [next[1], 'RB Leipzig', 'Bayern München', null, null],
+      [next[2], 'SC Freiburg', 'VfB Stuttgart', null, null], [next[3], 'VfL Wolfsburg', 'FC Augsburg', null, null],
+      [next[4], 'Union Berlin', '1. FC Heidenheim', null, null], [next[5], 'Mainz 05', 'FC St. Pauli', null, null],
+      [next[6], 'Bayer Leverkusen', 'Borussia Dortmund', null, null], [next[7], '1. FC Köln', 'Eintracht Frankfurt', null, null],
+      [next[8], 'Mönchengladbach', 'Hamburger SV', null, null]
+    ];
+    bl.forEach(function (p, i) {
+      db.matches.push({ id: db.seq.matches + 1, competition_id: 2, round: (i < 9 ? 12 : 13) + '. Spieltag', kickoff: p[0], home: p[1], away: p[2], home_goals: p[3], away_goals: p[4] });
+      db.seq.matches++;
+    });
+
     db.invites.push({ code: 'DEMO2026', note: 'Demo-Einladung (für alle)', max_uses: 100, uses: 9, expires: null, revoked: 0, created: created });
     db.invites.push({ code: 'THEKE4UH', note: 'Aushang an der Theke', max_uses: 50, uses: 0, expires: at(30, 0).slice(0, 10), revoked: 0, created: created });
     db.invites.push({ code: 'KALLE7KX', note: 'Kalle (persönlich)', max_uses: 1, uses: 1, expires: null, revoked: 0, created: created });
@@ -526,6 +556,7 @@
 
     var names = ['Gast', 'Kalle', 'Uschi_66', 'Theken-Toni', 'Moni', 'Schorsch', 'Jürgen W.', 'Biggi', 'Hansi', 'Dr. Elfmeter'];
     var champs = ['Deutschland', 'Frankreich', 'Spanien', 'Deutschland', 'England', 'Portugal', 'Deutschland', 'Niederlande', 'Spanien', 'Frankreich'];
+    var blChamps = ['Bayern München', 'Bayern München', 'Borussia Dortmund', 'Bayern München', 'Bayer Leverkusen', 'VfB Stuttgart', 'Bayern München', 'RB Leipzig', 'Bayer Leverkusen', 'Borussia Dortmund'];
     var goals = [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
     var firstKick = db.matches[0].kickoff;
     var nowFullStr = now;
@@ -537,10 +568,11 @@
         created: created, last_login: lastLogin, invite_code: id === 2 ? 'KALLE7KX' : 'DEMO2026'
       });
       db.bonus_tips.push({ player_id: id, competition_id: 1, answer: champs[i], updated: fmtNaive(naiveMs(firstKick) - (i + 2) * 3600000) + ':00' });
+      db.bonus_tips.push({ player_id: id, competition_id: 2, answer: blChamps[i], updated: fmtNaive(naiveMs(past[0]) - (i + 30) * 3600000) + ':00' });
       db.matches.forEach(function (m, mi) {
         var upcoming = m.kickoff > nowFullStr.slice(0, 16);
         if (n === 'Gast') {
-          if (upcoming && mi > 11) return;         // ein paar kommende Spiele bleiben zum Ausprobieren offen
+          if (upcoming && (mi > 11 || m.competition_id === 2)) return; // ein paar kommende Spiele bleiben zum Ausprobieren offen
           if (!upcoming && mi === 4) return;       // einmal vergessen
         } else if (upcoming ? rnd() < 0.35 : rnd() < 0.08) {
           return;
