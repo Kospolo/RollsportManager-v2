@@ -657,7 +657,7 @@ export async function createHeroScene({ canvas, winter = false, reducedMotion = 
     const a = width / height;
     if (a >= 1.25) { camera.fov = 38; camBase.set(-9.5, 4.6, 19); lookBase.set(1.0, 4.25, -1); }
     else if (a >= .85) { camera.fov = 46; camBase.set(-7, 5, 23); lookBase.set(2.8, 5.8, -1); }
-    else { camera.fov = 56; camBase.set(-1.5, 6.4, 30); lookBase.set(5.2, 12.2, -3); }
+    else { camera.fov = 56; camBase.set(-1.5, 6.4, 30); lookBase.set(5.2, 13.4, -3); }
     const o = window.__HBS_CAM; // nur für Tests/Feinjustierung
     if (o) { camera.fov = o.fov; camBase.fromArray(o.cam); lookBase.fromArray(o.look); }
     camera.aspect = a; camera.updateProjectionMatrix();
