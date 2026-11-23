@@ -1,0 +1,134 @@
+{
+  "meta": {
+    "siteName": "Hofbräustüble",
+    "tagline": "Gemütliche Raucherbar in Neckarsulm-Amorbach",
+    "seoDescription": "Hofbräustüble in Neckarsulm-Amorbach: gemütliche Raucherbar mit Stuttgarter Hofbräu vom Fass, Live-Fußball auf Sky und Außenbereich im Sommer.",
+    "lastUpdated": "2026-11-23"
+  },
+  "banner": {
+    "enabled": true,
+    "text": "Darts & Fußball live auf Sky – jetzt in der warmen Stube!"
+  },
+  "hero": {
+    "title": "Hofbräustüble",
+    "subtitle": "Dei Stammkneipe in Amorbach – frisch gezapft, gemütlich, ehrlich.",
+    "image": "assets/img/nische.jpg",
+    "ctaText": "Nächste Termine"
+  },
+  "about": {
+    "title": "Willkommen in der Stube",
+    "text": "Kleine Bar, großes Herz: Im Hofbräustüble trifft sich Amorbach auf ein frisch gezapftes Stuttgarter Hofbräu, ein gutes Gespräch und die Spiele der Woche. Ob nach Feierabend an der Theke oder mit Freunden in der gemütlichen Fensternische – bei uns ist jeder Gast ein Stammgast.",
+    "highlights": [
+      { "icon": "beer", "title": "Stuttgarter Hofbräu", "text": "Frisch vom Fass" },
+      { "icon": "tv", "title": "Sky Sport live", "text": "Bundesliga, Champions League, Darts" },
+      { "icon": "smoke", "title": "Raucherbar", "text": "Rauchen erlaubt – Zutritt ab 18" },
+      { "icon": "sun", "title": "Außenbereich", "text": "Im Sommer draußen sitzen" }
+    ]
+  },
+  "openingHours": [
+    { "day": "Montag", "hours": "Ruhetag" },
+    { "day": "Dienstag", "hours": "16:00 – 24:00" },
+    { "day": "Mittwoch", "hours": "16:00 – 24:00" },
+    { "day": "Donnerstag", "hours": "16:00 – 24:00" },
+    { "day": "Freitag", "hours": "16:00 – 01:00" },
+    { "day": "Samstag", "hours": "14:00 – 01:00" },
+    { "day": "Sonntag", "hours": "14:00 – 23:00" }
+  ],
+  "hoursNote": "Bei Live-Übertragungen auch länger geöffnet.",
+  "summer": {
+    "enabled": true,
+    "title": "Sommer im Außenbereich",
+    "text": "Sobald die Sonne rauskommt, stellen wir Tische und Schirme raus. Ein kühles Hofbräu unter freiem Himmel, laue Abende mit Freunden – Sommer in Amorbach, wie er sein soll.",
+    "image": "assets/img/aussen.jpg",
+    "season": "Mai bis September, bei schönem Wetter"
+  },
+  "events": [
+    {
+      "id": "ev-2026-11-28-bundesliga",
+      "date": "2026-11-28",
+      "time": "15:30",
+      "title": "Bundesliga-Konferenz live",
+      "description": "Alle Samstagsspiele in der Konferenz auf Sky – mit Bier vom Fass und bester Stimmung.",
+      "category": "Sport",
+      "image": ""
+    },
+    {
+      "id": "ev-2026-12-04-skat",
+      "date": "2026-12-04",
+      "time": "19:00",
+      "title": "Skat- & Kartenabend",
+      "description": "Gemütliche Runde für alle Kartenfreunde. Anfänger willkommen!",
+      "category": "Stammtisch",
+      "image": ""
+    },
+    {
+      "id": "ev-2026-12-12-darts",
+      "date": "2026-12-12",
+      "time": "19:30",
+      "title": "Darts-WM live",
+      "description": "Die Darts-WM auf großer Leinwand – One Hundred and Eightyyy!",
+      "category": "Sport",
+      "image": ""
+    },
+    {
+      "id": "ev-2026-12-19-weihnacht",
+      "date": "2026-12-19",
+      "time": "18:00",
+      "title": "Weihnachts-Stammtisch",
+      "description": "Glühwein, Lebkuchen und gute Laune – wir feiern zusammen das Jahresende.",
+      "category": "Feier",
+      "image": "assets/img/nische.jpg"
+    },
+    {
+      "id": "ev-2026-12-31-silvester",
+      "date": "2026-12-31",
+      "time": "20:00",
+      "title": "Silvesterparty",
+      "description": "Rutscht mit uns ins neue Jahr! Musik, Sekt um Mitternacht und Stimmung bis spät.",
+      "category": "Feier",
+      "image": "assets/img/theke.jpg"
+    },
+    {
+      "id": "ev-2027-05-01-sommerstart",
+      "date": "2027-05-01",
+      "time": "14:00",
+      "title": "Saisonstart Außenbereich",
+      "description": "Die Tische stehen draußen – wir eröffnen die Sommersaison.",
+      "category": "Sommer",
+      "image": "assets/img/aussen.jpg"
+    }
+  ],
+  "gallery": [
+    { "src": "assets/img/theke.jpg", "caption": "Unsere Theke – Bier frisch vom Fass" },
+    { "src": "assets/img/nische.jpg", "caption": "Die gemütliche Fensternische" },
+    { "src": "assets/img/aussen.jpg", "caption": "Das Hofbräustüble in Amorbach" }
+  ],
+  "contact": {
+    "street": "Musterstraße 1",
+    "zip": "74172",
+    "city": "Neckarsulm",
+    "district": "Amorbach",
+    "phone": "07132 000000",
+    "email": "info@hofbraeustueble.de",
+    "mapsUrl": "https://www.google.com/maps/search/?api=1&query=Hofbr%C3%A4ust%C3%BCble+Neckarsulm+Amorbach",
+    "note": "Parkplätze in den umliegenden Straßen."
+  },
+  "social": {
+    "facebook": "",
+    "instagram": ""
+  },
+  "impressum": {
+    "owner": "[Vorname Nachname – bitte im CMS eintragen]",
+    "businessName": "Hofbräustüble",
+    "street": "Musterstraße 1",
+    "zipCity": "74172 Neckarsulm",
+    "phone": "07132 000000",
+    "email": "info@hofbraeustueble.de",
+    "vatId": "",
+    "responsible": "[Vorname Nachname], Anschrift wie oben",
+    "extraText": "Verbraucherstreitbeilegung: Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen."
+  },
+  "datenschutz": {
+    "text": "Verantwortlich für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Betreiber.\n\nDiese Website setzt keine Cookies zu Werbe- oder Analysezwecken und bindet keine externen Dienste (z. B. Schriftarten, Karten, Tracking) ein. Beim Aufruf der Seite verarbeitet unser Hosting-Anbieter technisch notwendige Daten (IP-Adresse, Datum/Uhrzeit, aufgerufene Seite, Browser) in Server-Logfiles zur Sicherstellung des Betriebs (Art. 6 Abs. 1 lit. f DSGVO).\n\nWenn Sie uns per E-Mail oder Telefon kontaktieren, verarbeiten wir Ihre Angaben ausschließlich zur Bearbeitung Ihrer Anfrage.\n\nSie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit sowie ein Beschwerderecht bei der Aufsichtsbehörde (Landesbeauftragter für den Datenschutz Baden-Württemberg).\n\n[Bitte vor Veröffentlichung um die Angaben Ihres Hosting-Anbieters ergänzen und rechtlich prüfen lassen.]"
+  }
+}
