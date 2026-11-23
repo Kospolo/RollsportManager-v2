@@ -241,7 +241,7 @@ button { font: inherit; color: inherit; }
 }
 .banner__close:hover { opacity: 1; background: rgba(0, 0, 0, .15); }
 .banner__close svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
-.site-header.is-scrolled .banner { max-height: 0; opacity: 0; }
+.site-header.is-scrolled .banner, .site-header.is-menu-open .banner { max-height: 0; opacity: 0; }
 
 .nav {
   position: relative;
@@ -472,6 +472,8 @@ button { font: inherit; color: inherit; }
   .hero__actions { margin-bottom: 1rem; gap: .6rem; flex-wrap: nowrap; }
   .hero__actions .btn { flex: 1 1 0; --pad: .9rem .7rem; font-size: .7rem; letter-spacing: .1em; gap: .45rem; }
   .hero__status { font-size: .76rem; }
+  .hero__actions .btn { white-space: nowrap; font-size: .68rem; letter-spacing: .08em; }
+  .hero__actions .btn svg { display: none; }
   .hero__scroll { display: none; }
 }
 
@@ -666,7 +668,7 @@ button { font: inherit; color: inherit; }
 .hours { background: radial-gradient(70% 60% at 85% 30%, rgba(233, 162, 59, .09), transparent 70%), var(--ink); overflow: hidden; }
 .hours__grid { display: grid; gap: 3.5rem; align-items: center; }
 @media (min-width: 960px) { .hours__grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(3rem, 7vw, 7rem); } }
-@media (max-width: 959px) { .lamp__cord { top: -20px; height: 82px; } .hours__board-wrap { padding-top: 96px; } .hours__grid { gap: 1.5rem; } }
+@media (max-width: 959px) { .lamp .lamp__cord { top: -10px; height: 72px; } .hours__board-wrap { padding-top: 96px; } .hours__grid { gap: 1.5rem; } }
 .hours__note { color: var(--muted); max-width: 40ch; font-style: italic; font-family: var(--serif); font-size: 1.15rem; }
 .hours__board-wrap { position: relative; padding-top: 110px; }
 .hours__board {

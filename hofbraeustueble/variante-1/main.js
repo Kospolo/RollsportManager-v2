@@ -507,6 +507,7 @@ function initNav() {
     label.textContent = open ? 'Menü schließen' : 'Menü öffnen';
     menu.classList.toggle('is-open', open);
     doc.body.classList.toggle('is-locked', open);
+    header.classList.toggle('is-menu-open', open);
     if (open) { const first = $('a', menu); if (first) setTimeout(() => first.focus({ preventScroll: true }), 50); }
   };
   toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));

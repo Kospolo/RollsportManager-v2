@@ -338,7 +338,7 @@ function backdropTexture(photo, rand, small) {
   for (let i = 0; i < 54; i++) {
     const x = rand() * W;
     const y = H * (0.06 + Math.pow(rand(), 1.3) * 0.62);
-    const r = (10 + Math.pow(rand(), 2) * 70) * k;
+    const r = (8 + Math.pow(rand(), 2.4) * 52) * k;
     const hue = 26 + rand() * 16;
     const a = 0.05 + rand() * 0.2;
     const gr = ctx.createRadialGradient(x, y, 0, x, y, r);
@@ -426,7 +426,7 @@ function buildEnvScene() {
   const front = new THREE.Mesh(new THREE.PlaneGeometry(12, 4), emit(0.4, 0.26, 0.14));
   front.position.set(0, 2.5, 12); front.lookAt(0, 2, 0); s.add(front);
   [[-3, 6, -4], [2.5, 7, -6], [-0.8, 5.2, -1.4]].forEach((p) => {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8), emit(12, 7, 2.6));
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 8), emit(5, 3, 1.1));
     b.position.set(p[0], p[1], p[2]);
     s.add(b);
   });
@@ -889,8 +889,8 @@ export async function createHero(canvas, options) {
     const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
     let visH;
     if (aspect < 0.85) {          // Smartphone hochkant: Glas oben mittig
-      visH = Math.max(9.4, 3.4 / aspect);
-      frame.offX = -w * 0.02; frame.offY = h * 0.2;
+      visH = Math.max(10.2, 3.5 / aspect);
+      frame.offX = -w * 0.11; frame.offY = h * 0.17;
     } else if (aspect < 1.3) {    // Tablet
       visH = 6.6;
       frame.offX = -w * 0.14; frame.offY = h * 0.02;
