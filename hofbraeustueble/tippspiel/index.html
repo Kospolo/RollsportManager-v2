@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stüble-Tippspiel · Hofbräustüble Amorbach</title>
+  <meta name="description" content="Das kostenlose Tippspiel für die Stammgäste vom Hofbräustüble in Neckarsulm-Amorbach – Ergebnisse tippen, Punkte sammeln, Ruhm an der Theke. Kein Geldeinsatz.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#111214">
+  <meta name="color-scheme" content="dark">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="preload" href="../assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/fonts/bebas-neue-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="../assets/fonts/oswald-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <a class="skip" href="#main">Zum Inhalt springen</a>
+
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5l4 2.9-1.5 4.7h-5L8 10.4z"/><path d="M12 3v4.5M16 10.4l4.3-1.6M14.5 15.1l2.7 3.8M9.5 15.1l-2.7 3.8M8 10.4L3.7 8.8"/></symbol>
+    <symbol id="i-table" viewBox="0 0 24 24"><path d="M8 21V11H3v10zM15 21V5H9v16zM21 21v-7h-5v7z"/><path d="M12 2.5l.6 1.2 1.3.2-1 .9.3 1.3-1.2-.6-1.2.6.3-1.3-1-.9 1.3-.2z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-6"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-house" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3 3.9M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.9 0 3.6-.6 5-1.4"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-retry" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="14" r="4"/><path d="M11 11l9-9M16 6l3 3M14 8l2 2"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-beer" viewBox="0 0 24 24"><path d="M6 8h10l-1 13H7z"/><path d="M16 11h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2.4"/><path d="M5.5 8a2.5 2.5 0 0 1 2.7-3.4A3 3 0 0 1 13.5 4a2.5 2.5 0 0 1 3 4"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+    <symbol id="i-question" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 0 1 5 .9c0 1.8-2.5 2.1-2.5 3.8M12 17v.4"/></symbol>
+  </svg>
+
+  <div class="demo-ribbon" id="demo-ribbon" hidden>
+    <div class="demo-ribbon__inner">
+      <p class="demo-ribbon__text"><strong>Demo-Modus</strong><span class="demo-ribbon__more"> – erfundene Daten, nur in diesem Browser gespeichert</span></p>
+      <div class="demo-ribbon__actions">
+        <button type="button" class="btn btn--tiny btn--light" id="demo-guest">Als Gast einloggen</button>
+        <button type="button" class="btn btn--tiny btn--ghost-light" id="demo-reset">Demo zurücksetzen</button>
+      </div>
+    </div>
+  </div>
+
+  <header class="topbar" id="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#/tippen" id="brand-link" aria-label="Stüble-Tippspiel – Startseite der App">
+        <span class="brand__mark" aria-hidden="true"><img src="icon.svg" alt="" width="34" height="34"></span>
+        <span class="brand__text">
+          <span class="brand__name">Hofbräustüble</span>
+          <span class="brand__sub">Stüble-Tippspiel</span>
+        </span>
+      </a>
+      <nav class="topnav" id="topnav" aria-label="Hauptnavigation" hidden>
+        <a href="#/tippen" data-route="tippen"><svg class="ico"><use href="#i-ball"/></svg>Tippen</a>
+        <a href="#/rangliste" data-route="rangliste"><svg class="ico"><use href="#i-table"/></svg>Rangliste</a>
+        <a href="#/statistik" data-route="statistik"><svg class="ico"><use href="#i-chart"/></svg>Statistik</a>
+        <a href="#/profil" data-route="profil"><svg class="ico"><use href="#i-user"/></svg>Profil</a>
+      </nav>
+      <a class="site-link" href="../" aria-label="Zur Website vom Hofbräustüble">
+        <svg class="ico" aria-hidden="true"><use href="#i-house"/></svg><span>Zur Website</span>
+      </a>
+    </div>
+  </header>
+
+  <main id="main" class="main" tabindex="-1">
+    <div id="view" class="view-root">
+      <div class="boot" role="status">
+        <span class="boot__glass" aria-hidden="true"><span></span></span>
+        <span>Wird eingeschenkt …</span>
+      </div>
+    </div>
+    <noscript>
+      <div class="card notice">Das Tippspiel braucht JavaScript. Bitte aktiviere es in deinem Browser.</div>
+    </noscript>
+  </main>
+
+  <nav class="tabbar" id="tabbar" aria-label="Hauptnavigation" hidden>
+    <a href="#/tippen" data-route="tippen"><svg class="ico" aria-hidden="true"><use href="#i-ball"/></svg><span>Tippen</span></a>
+    <a href="#/rangliste" data-route="rangliste"><svg class="ico" aria-hidden="true"><use href="#i-table"/></svg><span>Rangliste</span></a>
+    <a href="#/statistik" data-route="statistik"><svg class="ico" aria-hidden="true"><use href="#i-chart"/></svg><span>Statistik</span></a>
+    <a href="#/profil" data-route="profil"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span>Profil</span></a>
+  </nav>
+
+  <div id="sheet-root"></div>
+  <div class="toasts" id="toasts" role="status" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="js/tipp-client.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
