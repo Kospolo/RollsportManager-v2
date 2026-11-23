@@ -1037,7 +1037,7 @@
     var listId = nid();
     var dl = h('datalist', { id: listId }, knownCategories().map(function (c) { return h('option', { value: c }); }));
     var noop = function () {};
-    var titleIn = input(draft, 'title', { max: 150, placeholder: 'z. B. Darts-Abend', onInput: noop });
+    var titleIn = input(draft, 'title', { max: 150, placeholder: 'z. B. Skat-Abend', onInput: noop });
     var dateIn = input(draft, 'date', { type: 'date', onInput: noop });
     var timeIn = input(draft, 'time', { type: 'time', onInput: noop });
     var errBox = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });

@@ -7,7 +7,7 @@
   },
   "banner": {
     "enabled": true,
-    "text": "Darts & Fußball live auf Sky – jetzt in der warmen Stube!"
+    "text": "Fußball live auf Sky – jetzt in der warmen Stube!"
   },
   "hero": {
     "title": "Hofbräustüble",
@@ -20,7 +20,7 @@
     "text": "Kleine Bar, großes Herz: Im Hofbräustüble trifft sich Amorbach auf ein frisch gezapftes Stuttgarter Hofbräu, ein gutes Gespräch und die Spiele der Woche. Ob nach Feierabend an der Theke oder mit Freunden in der gemütlichen Fensternische – bei uns ist jeder Gast ein Stammgast.",
     "highlights": [
       { "icon": "beer", "title": "Stuttgarter Hofbräu", "text": "Frisch vom Fass" },
-      { "icon": "tv", "title": "Sky Sport live", "text": "Bundesliga, Champions League, Darts" },
+      { "icon": "tv", "title": "Sky Sport live", "text": "Bundesliga & Champions League" },
       { "icon": "smoke", "title": "Raucherbar", "text": "Rauchen erlaubt – Zutritt ab 18" },
       { "icon": "sun", "title": "Außenbereich", "text": "Im Sommer draußen sitzen" }
     ]
@@ -62,11 +62,11 @@
       "image": ""
     },
     {
-      "id": "ev-2026-12-12-darts",
-      "date": "2026-12-12",
-      "time": "19:30",
-      "title": "Darts-WM live",
-      "description": "Die Darts-WM auf großer Leinwand – One Hundred and Eightyyy!",
+      "id": "ev-2026-12-09-championsleague",
+      "date": "2026-12-09",
+      "time": "21:00",
+      "title": "Champions League live",
+      "description": "Flutlicht-Abend in der Stube: Champions League live auf Sky – mit frisch gezapftem Hofbräu.",
       "category": "Sport",
       "image": ""
     },
