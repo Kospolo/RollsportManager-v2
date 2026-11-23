@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="520" viewBox="0 0 520 520">
+  <filter id="p" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035 0.05" numOctaves="4" seed="7" stitchTiles="stitch" result="n"/>
+    <feDiffuseLighting in="n" surfaceScale="3.2" lighting-color="#ffffff" result="l">
+      <feDistantLight azimuth="235" elevation="38"/>
+    </feDiffuseLighting>
+    <feColorMatrix in="l" type="matrix" values="0 0 0 0 0.85  0 0 0 0 0.9  0 0 0 0 0.95  0.11 0.11 0.11 0 -0.085"/>
+  </filter>
+  <rect width="520" height="520" filter="url(#p)"/>
+</svg>
