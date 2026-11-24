@@ -20,11 +20,20 @@ settings(key TEXT PK, value TEXT)                 -- points_exact=4, points_diff
 competitions(id INTEGER PK, name TEXT, active INT 0/1, sort INT,
              bonus_question TEXT NULL,            -- z. B. "Wer wird Europameister?"
              bonus_answer TEXT NULL,              -- vom Admin nach Turnierende gesetzt
-             bonus_points INT DEFAULT 10, created TEXT)
+             bonus_points INT DEFAULT 10, created TEXT,
+             source TEXT NULL,                    -- NULL = von Hand, 'openligadb' = automatischer Abruf
+             source_league TEXT NULL,             -- OpenLigaDB-Kürzel, z. B. bl1, bl2, dfb, ucl
+             source_season INT NULL,              -- Startjahr: 2026 = Saison 2026/27
+             sync_window_days INT DEFAULT 14,     -- neue Spiele der nächsten N Tage anlegen (1–90)
+             last_sync TEXT NULL,                 -- "YYYY-MM-DD HH:MM:SS" letzter Abruf(-versuch)
+             last_sync_status TEXT NULL)          -- "OK – 9 neu, 2 Ergebnisse" | "Fehler: …"
 matches(id INTEGER PK, competition_id INT, round TEXT,   -- "Gruppe A · 1. Spieltag", "Achtelfinale", "12. Spieltag"
         kickoff TEXT,                           -- "YYYY-MM-DD HH:MM" Ortszeit Europe/Berlin
         home TEXT, away TEXT,
-        home_goals INT NULL, away_goals INT NULL)   -- NULL = noch kein Ergebnis
+        home_goals INT NULL, away_goals INT NULL,   -- NULL = noch kein Ergebnis
+        external_id TEXT NULL,                  -- matchID bei OpenLigaDB, eindeutig je Wettbewerb
+        external_group INT NULL,                -- intern: groupOrderID (Spieltag) für gezielten Ergebnis-Abruf
+        result_source TEXT NULL)                -- 'manual' | 'auto' | NULL (kein Ergebnis)
 players(id INTEGER PK, nickname TEXT UNIQUE COLLATE NOCASE, password_hash TEXT,
         email TEXT NULL, active INT DEFAULT 1, created TEXT, last_login TEXT NULL, invite_code TEXT)
 invites(code TEXT PK, note TEXT, max_uses INT, uses INT DEFAULT 0, expires TEXT NULL, revoked INT DEFAULT 0, created TEXT)
@@ -33,7 +42,7 @@ bonus_tips(player_id INT, competition_id INT, answer TEXT, updated TEXT, PRIMARY
 attempts(k TEXT PK, count INT, first INT, last INT, locked_until INT)   -- intern: Brute-Force-Zähler (nur Hash der IP)
 ```
 
-IDs sind `AUTOINCREMENT` (werden nach dem Löschen nie wiederverwendet), Fremdschlüssel mit `ON DELETE CASCADE`, `PRAGMA user_version` = Schema-Version, WAL-Modus.
+IDs sind `AUTOINCREMENT` (werden nach dem Löschen nie wiederverwendet), Fremdschlüssel mit `ON DELETE CASCADE`, `PRAGMA user_version` = Schema-Version (2), WAL-Modus. Migration 1 → 2 ist idempotent (`PRAGMA table_info` + `ALTER TABLE … ADD COLUMN`, Index `UNIQUE(competition_id, external_id) WHERE external_id IS NOT NULL`); vorhandene Ergebnisse bekommen `result_source='manual'`. `settings` enthält zusätzlich intern `cron_last` (JSON des letzten Cronjob-Aufrufs).
 
 ## Regeln
 
@@ -70,7 +79,11 @@ JSON rein/raus. Antwort immer `{ ok: true, ... }` oder `{ ok: false, error: "Deu
 | Aktion | Eingabe |
 |---|---|
 | `admin_overview` GET | → `{ competitions, matches (alle, inkl. inaktiver), players:[{id,nickname,email,active,created,last_login,tips,points}], invites, settings }` |
-| `admin_competition_save` POST | `{id?, name, active, sort, bonus_question, bonus_answer, bonus_points}` |
+| `admin_competition_save` POST | `{id?, name, active, sort, bonus_question, bonus_answer, bonus_points, source?, source_league?, source_season?, sync_window_days?}` |
+| `admin_source_preview` GET | `league, season` → `{ league, season, season_label, league_name, match_count, round_count, team_count, finished, first_kickoff, last_kickoff, current_group:{name,order}\|null, matches:[{kickoff,home,away,round,result}] }` (die nächsten 5 Spiele) |
+| `admin_sync` POST | `{competition_id, scope:'window'\|'season'}` → `{ inserted, updated, results, skipped_manual, errors:[{message}], last_sync, last_sync_status }` |
+| `admin_cron_info` GET | → `{ url_with_token, last_cron:{time,ok,status}\|null }` |
+| `admin_cron_token_reset` POST | → wie `admin_cron_info` (neuer Token) |
 | `admin_competition_delete` POST | `{id}` (löscht Spiele + Tipps; Bestätigung im UI) |
 | `admin_match_save` POST | `{id?, competition_id, round, kickoff, home, away}` |
 | `admin_match_delete` POST | `{id}` |
@@ -83,6 +96,11 @@ JSON rein/raus. Antwort immer `{ ok: true, ... }` oder `{ ok: false, error: "Deu
 | `admin_player_delete` POST | `{id}` |
 | `admin_settings_save` POST | `{points_exact, points_diff, points_tendency}` |
 
+### Cronjob (ohne Anmeldung)
+| Aktion | Eingabe | Antwort |
+|---|---|---|
+| `cron_sync` GET | `token` (48 Hex-Zeichen) | `{ time, competitions:[{id,name,ok,inserted,updated,results,skipped_manual,errors,status}], summary }` – 403 bei falschem Token (nach 10 Fehlversuchen je IP 15 Min. Sperre, 429) |
+
 ## JS-Client `tippspiel/js/tipp-client.js`
 
 ```js
@@ -93,8 +111,8 @@ await TippAPI.call(action, data?)   // GET-Aktionen: data als Query; POST: JSON-
 TippAPI.demoReset()     // Demo-Daten neu erzeugen
 ```
 
-**Demo-Modus** (für die Vorschau ohne PHP, localStorage-Key `hbs_tipp_demo_v2`): implementiert ALLE Spieler- und Admin-Aktionen mit identischer Logik (Punkte, Sperren, Tendenz, Rangliste, Statistik). Seed relativ zum aktuellen Datum, damit die Demo immer lebendig wirkt:
-- Zusätzlich Wettbewerb „Bundesliga 2026/27“ (Bonusfrage „Wer wird Deutscher Meister?“): 12. Spieltag (letztes Wochenende, mit Ergebnissen) und 13. Spieltag (nächstes Wochenende, Fr 20:30 / Sa 15:30 + 18:30 / So 15:30 + 17:30).
+**Demo-Modus** (für die Vorschau ohne PHP, localStorage-Key `hbs_tipp_demo_v3`): implementiert ALLE Spieler- und Admin-Aktionen mit identischer Logik (Punkte, Sperren, Tendenz, Rangliste, Statistik). Seed relativ zum aktuellen Datum, damit die Demo immer lebendig wirkt:
+- Zusätzlich Wettbewerb „Bundesliga 2026/27“ (Bonusfrage „Wer wird Deutscher Meister?“, automatischer Abruf `openligadb`/`bl1`/2026, Ergebnisse `result_source='auto'`, Spiele mit `external_id`): 12. Spieltag (letztes Wochenende, mit Ergebnissen) und 13. Spieltag (nächstes Wochenende, Fr 20:30 / Sa 15:30 + 18:30 / So 15:30 + 17:30).
 - Wettbewerb „Demo-Turnier“ mit Bonusfrage „Wer gewinnt das Turnier?“, Nationalteams (Deutschland, Frankreich, Spanien, Italien, Niederlande, Portugal, England, Österreich, Schweiz, Belgien, Kroatien, Dänemark …), ~18 Spiele: einige vergangene mit Ergebnis, eines „läuft gerade“ (Anstoß vor 30 Min., gesperrt, ohne Ergebnis), mehrere kommende in den nächsten Tagen.
 - 8–10 erfundene Stammgäste mit Spitznamen (z. B. „Kalle“, „Uschi_66“, „Theken-Toni“) und plausiblen Tipps, damit Rangliste und Tendenz gefüllt sind.
 - Einladungscode `DEMO2026` (gültig). Demo-Login: Registrierung mit diesem Code, oder Nickname „Gast“ / Passwort „demo1234“.
@@ -140,3 +158,29 @@ TippAPI.demoReset()     // Demo-Daten neu erzeugen
 - Zusätzlich: `TippAPI.setAdminCsrf(token)`, `TippAPI.player`, `TippAPI.csrf`, `TippAPI.settings`, `TippAPI.error`, `TippAPI.util` (reine Funktionen `tally, rankRows, tendency, leaderboard, stats, ratio, bonusNorm, berlinNow, parseKickoff`).
 - `TippAPI.scoreTip(tip, result, settings)` → `{points, kind}` oder `null` (Tipp/Ergebnis fehlt). `tip` = `{home, away}`, `result` = Spiel-Objekt mit `home_goals/away_goals` (oder `{home, away}` mit Zahlen); ohne `settings` gelten 4/3/2.
 - `demoReset({empty:true})` erzeugt eine leere Demo (für Tests). Demo-Daten älter als 3 Tage werden automatisch neu erzeugt. Demo-`status` enthält zusätzlich `demo:true`. Fehlermeldungen und Statuscodes im Demo-Modus = Live; im Demo-Modus kein Brute-Force-Schutz und keine CSRF-Prüfung. Demo-Seed: Wettbewerb „Demo-Turnier“, 18 Spiele (9 mit Ergebnis, 1 läuft, 8 kommend), 10 Stammgäste inkl. „Gast“/`demo1234`, Einladungen `DEMO2026` (gültig), `THEKE4UH` (gültig), `KALLE7KX` (aufgebraucht), `ALT3RCDE` (zurückgezogen).
+
+## Ergänzung: Automatischer Abruf von Spielplan und Ergebnissen (OpenLigaDB)
+
+Quelle: OpenLigaDB (`https://api.openligadb.de`, kostenlos, ohne Schlüssel, Community-gepflegt). Anfragen gehen **nur** an diese feste Adresse; `source_league` muss `^[A-Za-z0-9_-]{1,40}$`, `source_season` `^\d{4}$` (2000–2100) entsprechen und wird nur als Pfadteil eingesetzt. Nur für Tests: serverseitig Konstante oder Umgebungsvariable `HBS_OLDB_BASE` (nie aus der Anfrage). HTTP: curl-Erweiterung, sonst `file_get_contents` mit Stream-Kontext; User-Agent `HBS-Tippspiel/1.0`; Zeitlimit 8 s (Verwaltung, Cronjob) bzw. 5 s (nebenbei); max. 8 MB. Fehler (keine Verbindung, Zeitüberschreitung, HTTP ≠ 200, kein gültiges JSON, unbekannte Liga = leere Liste) → deutsche Meldung; `admin_sync`/`admin_source_preview` antworten dann mit **502** (`admin_sync` zusätzlich `last_sync`, `last_sync_status`), unbekannte Liga/Saison in der Vorschau mit 404.
+
+**Felder:** `competitions.source/source_league/source_season/sync_window_days/last_sync/last_sync_status` erscheinen in `admin_overview` und `admin_competition_save` (Antwort). Spieler-Aktionen (`matches`) liefern je Wettbewerb nur `source` (`'openligadb'|null`). Spiele haben überall (`matches`, `admin_overview`, `admin_result`, `admin_match_save`, `player_tips`) `result_source` (`'manual'|'auto'|null`), in `admin_overview` zusätzlich `external_id`.
+
+**`admin_competition_save`:** Die Quell-Felder werden nur verarbeitet, wenn `source` im JSON vorkommt (sonst bleiben sie unverändert). `source:'openligadb'` (oder `true`) verlangt gültiges `source_league` + `source_season`; leer/`null`/`false` schaltet ab (gültige Kürzel/Saison bleiben gespeichert). `sync_window_days` 1–90, Standard 14.
+
+**Zuordnung (OpenLigaDB → Spiel):** `matchID` → `external_id`; `team1/team2.teamName` → `home/away` (gesäubert, max. 40 Zeichen; Paarungen ohne Namen werden übersprungen); `group.groupName` → `round` (max. 60); `matchDateTimeUTC` → `kickoff` in Europe/Berlin (Ersatz: `matchDateTime`). **Ergebnis = `matchResults[resultTypeID=2]` (Endergebnis nach 90 Minuten)** – Verlängerung (4) und Elfmeterschießen (5) zählen nicht. Übernommen nur ab Anstoß und wenn `matchIsFinished` (Live-Zwischenstände nie); ohne dieses Kennzeichen erst 4 Std. nach Anstoß.
+
+**`admin_sync` (Upsert über `external_id`):**
+- `scope:'window'`: neue Spiele mit Anstoß zwischen jetzt und jetzt + `sync_window_days` anlegen; `scope:'season'`: alle Spiele der Saison anlegen (vergangene mit Ergebnis). Ein vorhandenes Spiel ohne `external_id` mit gleichem Anstoß + Heim + Gast wird übernommen statt doppelt angelegt.
+- Vorhandene, **noch nicht angepfiffene** Spiele: Anstoß, Mannschaften, Runde aktualisieren (`updated`). Angepfiffene Spiele werden nie verschoben; bei einer Verlegung laut OpenLigaDB (ohne Ergebnis) gibt es einen Hinweis in `errors`.
+- Ergebnisse: `result_source='manual'` wird **nie** überschrieben (`skipped_manual` zählt abweichende Hand-Ergebnisse); sonst Ergebnis setzen/korrigieren mit `result_source='auto'` (`results`).
+- Speichert `last_sync` + `last_sync_status` (`"OK – 18 neu, 3 Ergebnisse"` bzw. `"Fehler: …"`). Gleichzeitige Abrufe verhindert eine Dateisperre (`cms/data/tipp-sync.lock`); wartet bis 15 s, sonst 409.
+
+**`admin_result`:** setzt `result_source='manual'`; Löschen (`null/null`) setzt `result_source=NULL`, damit der Abruf das Ergebnis wieder eintragen darf.
+
+**Nebenbei-Abruf (lazy):** bei `status`, `matches`, `leaderboard`: Gibt es einen aktiven Wettbewerb mit Quelle, in dem ein Spiel mit `external_id` vor ≥ 110 Min. (und höchstens 3 Tagen) angepfiffen wurde und kein Ergebnis hat, und ist `last_sync` älter als 10 Min., werden nur die Ergebnisse der betroffenen Spieltage (`/getmatchdata/{league}/{season}/{groupOrderID}`, bei > 3 Spieltagen die ganze Saison) geholt – nicht blockierende Dateisperre, 5 s Zeitlimit, höchstens 2 Wettbewerbe je Aufruf. Fehler landen nur in `last_sync_status`; die Spieler-Antwort ist davon unberührt. Die Spieler-Session wird vorher geschlossen.
+
+**Cronjob:** `GET cms/tipp-api.php?action=cron_sync&token=…` (empfohlen alle 15 Min.) führt für jeden aktiven Wettbewerb mit Quelle einen `window`-Abruf aus. Der Token (48 Hex-Zeichen) wird beim ersten `admin_cron_info` zufällig erzeugt und in `cms/data/tipp-cron-token.php` gespeichert (PHP-Datei, die beim direkten Aufruf 404 liefert; nicht in `content.json`). Der letzte Aufruf steht in `settings.cron_last`.
+
+**Demo-Modus (`tipp-client.js`):** gleiche Aktionen und Felder, aber ohne Netzwerk. `admin_sync`/`cron_sync` simulieren den Abruf: angepfiffene Spiele ohne Hand-Ergebnis bekommen ein plausibles, je Spiel gleichbleibendes Ergebnis (`result_source='auto'`), `inserted/updated` = 0, zusätzlich `message: "Demo: Abruf simuliert – im echten Betrieb kommen die Daten von OpenLigaDB"`. `admin_source_preview` liefert feste Beispieldaten für `bl1`, `bl2`, `dfb`, `ucl` (sonst 404). Der Nebenbei-Abruf wird mit denselben Schwellen (110 Min., 10 Min., 3 Tage) nachgebildet. `admin_cron_info` liefert eine Demo-Adresse.
+
+**Admin-Oberfläche:** Wettbewerb-Dialog mit Bereich „Spielplan automatisch abrufen (OpenLigaDB)“ (Schalter, Auswahl 1. Bundesliga / 2. Bundesliga / DFB-Pokal / Champions League / eigenes Kürzel, Saison = laufende Saison (ab Juli das aktuelle Jahr, sonst Vorjahr) als „2026/27“, Zeitraum in Tagen, „Vorschau“, „Jetzt abrufen“, „Ganze Saison importieren“), Stand je Wettbewerb in der Wettbewerbsliste und in der Übersicht, Badges „automatisch“/„von Hand“ an Ergebnissen, Übersicht-Karte mit Cronjob-Adresse (Kopieren, Kurzanleitung IONOS/Strato/all-inkl, „Token neu erzeugen“). **Spieler-App:** unter der Spieleliste „Spielplan & Ergebnisse: OpenLigaDB“, sobald ein Wettbewerb eine Quelle hat.

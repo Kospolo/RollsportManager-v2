@@ -1557,7 +1557,8 @@
   var T = {
     sub: 'uebersicht', data: null, loadedAt: 0, loading: null, error: null, ready: false,
     root: null, nav: null, mode: null, body: null, compId: null, qrLoad: null, newInvite: null,
-    imp: {}, playerQuery: '', showAllDone: false
+    imp: {}, playerQuery: '', showAllDone: false,
+    cron: null, cronLoading: false, cronError: null, syncing: {}
   };
 
   function setTippSub(id) { if (TIPP_SUBS.some(function (x) { return x.id === id; })) T.sub = id; }
@@ -1657,6 +1658,65 @@
     if (i.uses >= i.max_uses) return ['Aufgebraucht', 'badge-muted'];
     if (!i.valid) return ['Abgelaufen', 'badge-muted'];
     return ['Gültig', 'badge-ok'];
+  }
+
+  /* ---------- Automatischer Abruf (OpenLigaDB) */
+
+  var OLDB_PRESETS = [
+    { id: 'bl1', label: '1. Bundesliga', name: 'Bundesliga' },
+    { id: 'bl2', label: '2. Bundesliga', name: '2. Bundesliga' },
+    { id: 'dfb', label: 'DFB-Pokal', name: 'DFB-Pokal' },
+    { id: 'ucl', label: 'Champions League', name: 'Champions League' }
+  ];
+  /** Laufende Saison: ab Juli die neue (2026/27 = 2026) */
+  function currentSeason() { var n = tNow(); return +n.slice(5, 7) >= 7 ? +n.slice(0, 4) : +n.slice(0, 4) - 1; }
+  function seasonLabel(y) { y = +y; return y + '/' + pad((y + 1) % 100); }
+  function presetOf(league) { var l = String(league || '').toLowerCase(); return OLDB_PRESETS.filter(function (p) { return p.id === l; })[0] || null; }
+  function sourceLabel(c) { var p = presetOf(c.source_league); return (p ? p.label : 'Kürzel „' + c.source_league + '“') + ' ' + seasonLabel(c.source_season); }
+  function syncFailed(c) { return !!c.last_sync_status && !/^OK/.test(c.last_sync_status); }
+  function syncText(c) {
+    if (!c.last_sync) return 'Noch nicht abgerufen';
+    var st = String(c.last_sync_status || '').replace(/^OK( \(Ergebnisse\))? – /, '');
+    return 'Zuletzt abgerufen: ' + fmtKick(c.last_sync) + (st ? ' – ' + st : '');
+  }
+  function syncSummary(r) {
+    var parts = [];
+    if (r.inserted) parts.push(plural(r.inserted, 'neues Spiel', 'neue Spiele'));
+    if (r.updated) parts.push(plural(r.updated, 'Spiel geändert', 'Spiele geändert'));
+    if (r.results) parts.push(plural(r.results, 'Ergebnis', 'Ergebnisse') + ' eingetragen');
+    if (r.skipped_manual) parts.push(plural(r.skipped_manual, 'Ergebnis', 'Ergebnisse') + ' von Hand behalten');
+    return parts.length ? parts.join(', ') + '.' : 'Alles aktuell – keine Änderungen.';
+  }
+  /** Badge zur Herkunft eines Ergebnisses (nur bei Wettbewerben mit Abruf bzw. automatischen Ergebnissen) */
+  function resBadge(m) {
+    if (!hasRes(m)) return null;
+    var c = compById(m.competition_id);
+    if (m.result_source === 'auto') return h('span', { class: 'badge badge-auto', title: 'Von OpenLigaDB übernommen' }, 'automatisch');
+    if (c && c.source) return h('span', { class: 'badge badge-muted', title: 'Von Hand eingetragen – wird vom Abruf nicht überschrieben' }, 'von Hand');
+    return null;
+  }
+  /** Abruf für einen Wettbewerb starten (Knopf wird gesperrt), Ergebnis als Meldung */
+  function runSync(c, scope, button) {
+    if (T.syncing[c.id]) return Promise.resolve(null);
+    T.syncing[c.id] = true;
+    if (button) { button.disabled = true; button.classList.add('is-busy'); }
+    return tcall('admin_sync', { competition_id: c.id, scope: scope || 'window' }).then(function (r) {
+      toast(c.name + ': ' + syncSummary(r) + (r.message ? ' (' + r.message + ')' : ''), 'success', 5000);
+      return r;
+    }, function (e) {
+      toast(c.name + ': ' + (e.message || 'Abruf fehlgeschlagen.'), 'error');
+      return null;
+    }).then(function (r) {
+      delete T.syncing[c.id];
+      if (button) { button.disabled = false; button.classList.remove('is-busy'); }
+      return tippRefresh().then(function () { return r; });
+    });
+  }
+  function loadCron(force) {
+    if (T.cronLoading || (T.cron && !force)) return;
+    T.cronLoading = true;
+    tcall('admin_cron_info').then(function (r) { T.cron = r; T.cronError = null; }, function (e) { T.cronError = e.message || 'Fehler'; })
+      .then(function () { T.cronLoading = false; if (tippVisible() && T.sub === 'uebersicht') drawTippBody(true); });
   }
 
   /* ---------- Hilfen: Kopieren, Herunterladen, Drucken, QR */
@@ -1885,6 +1945,8 @@
       wrap.appendChild(notice('success', 'check', 'Alle angepfiffenen Spiele haben ein Ergebnis – nichts zu tun.'));
     }
 
+    if (d.competitions.length) wrap.appendChild(autoCard(d));
+
     // Kennzahlen
     function tile(n, label, sub, target) {
       return h('button', { type: 'button', class: 'stat', onclick: function () { goTipp(target); } },
@@ -1936,6 +1998,69 @@
     return wrap;
   }
 
+  /** Übersicht: automatischer Abruf je Wettbewerb + Cronjob-Adresse */
+  function autoCard(d) {
+    var src = d.competitions.filter(function (c) { return c.source; });
+    if (!src.length) {
+      var first = d.competitions.filter(function (c) { return c.active; })[0] || d.competitions[0];
+      return h('section', { class: 'card auto-card' },
+        cardHead('Spielplan & Ergebnisse automatisch', null, null),
+        h('p', { class: 'help' }, 'Für Bundesliga, 2. Bundesliga, DFB-Pokal und Champions League kann das Tippspiel Spiele und Ergebnisse selbst von OpenLigaDB holen – dann musst du nichts mehr eintippen.'),
+        btn('Einrichten', 'wand', function () { goTipp('spiele'); openCompEditor(first); }, 'btn-sm'));
+    }
+    var list = h('ul', { class: 'sync-list' }, src.map(function (c) {
+      var b = btn('Jetzt abrufen', 'refresh', function () { runSync(c, 'window', b); }, 'btn-sm', { 'aria-label': 'Jetzt abrufen: ' + c.name });
+      if (T.syncing[c.id]) b.disabled = true;
+      return h('li', { class: 'sync-item' + (syncFailed(c) ? ' is-err' : '') },
+        h('div', null, h('strong', null, c.name), h('small', null, 'OpenLigaDB · ' + sourceLabel(c) + (c.active ? '' : ' · Archiv')),
+          h('small', { class: 'sync-st' }, syncFailed(c) ? icon('alert') : icon('check'), syncText(c))),
+        b);
+    }));
+    if (!T.cron && !T.cronError) loadCron();
+    var cronBody;
+    if (T.cron) {
+      var urlIn = h('input', { type: 'text', readonly: true, value: T.cron.url_with_token, class: 'mono', 'aria-label': 'Cronjob-Adresse', spellcheck: 'false' });
+      urlIn.addEventListener('focus', function () { urlIn.select(); });
+      var lc = T.cron.last_cron;
+      cronBody = h('div', { class: 'fields' },
+        field('Adresse für den Cronjob', h('div', { class: 'input-row' }, urlIn,
+          btn('Kopieren', 'copy', function () { copyText(T.cron.url_with_token, 'Cronjob-Adresse'); }, 'btn-sm', { 'aria-label': 'Cronjob-Adresse kopieren' })),
+          { forId: urlIn.id || (urlIn.id = nid()), help: 'Geheim halten – wer die Adresse kennt, kann nur einen Abruf auslösen, sonst nichts.' }),
+        h('p', { class: 'help m0' }, lc ? (lc.ok ? 'Letzter Cronjob-Aufruf: ' : 'Letzter Cronjob-Aufruf (mit Fehler): ') + fmtKick(lc.time) : 'Der Cronjob hat sich noch nicht gemeldet.'),
+        T.cron.demo ? h('p', { class: 'help m0' }, 'Demo: Im echten Betrieb steht hier die Adresse deiner Website.') : null,
+        h('details', { class: 'past-box cron-how' },
+          h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'So richtest du den Cronjob beim Hoster ein'),
+          h('div', { class: 'past-inner' },
+            h('p', { class: 'm0' }, 'Im Kundenmenü deines Webhosters einen „Cronjob“ anlegen, der die Adresse oben ', h('strong', null, 'alle 15 Minuten'), ' aufruft. Die Menüs heißen je nach Tarif etwas anders:'),
+            h('ul', null,
+              h('li', null, h('strong', null, 'IONOS: '), 'Hosting → Cronjobs → „Cronjob anlegen“ → Adresse (URL) aufrufen, alle 15 Minuten.'),
+              h('li', null, h('strong', null, 'Strato: '), 'Hosting → Einstellungen → Cronjob-Verwaltung → neuer Cronjob, Adresse eintragen, alle 15 Minuten.'),
+              h('li', null, h('strong', null, 'all-inkl: '), 'KAS → Tools → Cronjobs → „Cronjob hinzufügen“, Protokoll https, Adresse einfügen, Zeitplan alle 15 Minuten.'),
+              h('li', null, 'Kann man dort nur einen Befehl eintragen: ', h('code', null, 'curl -s "ADRESSE" > /dev/null')),
+              h('li', null, 'Kein Cronjob im Tarif? Ein kostenloser Dienst wie cron-job.org kann die Adresse ebenfalls aufrufen.')),
+            h('p', { class: 'help m0' }, 'Ohne Cronjob klappt es auch: Dann holt das Tippspiel fehlende Ergebnisse, sobald jemand reinschaut (frühestens knapp 2 Stunden nach Anpfiff).'))),
+        h('div', { class: 'btn-row' }, btn('Token neu erzeugen', 'key', function (e) {
+          var b = e.currentTarget;
+          confirmDialog('Eine neue geheime Adresse erzeugen? Die alte funktioniert danach nicht mehr – trag die neue dann im Cronjob beim Hoster ein.', { title: 'Token neu erzeugen', ok: 'Neu erzeugen', danger: true }).then(function (ok) {
+            if (!ok) return;
+            b.disabled = true;
+            tcall('admin_cron_token_reset').then(function (r) { T.cron = r; toast('Neue Cronjob-Adresse erzeugt – bitte beim Hoster eintragen.', 'success'); drawTippBody(true); },
+              function (er) { b.disabled = false; toast(er.message, 'error'); });
+          });
+        }, 'btn-sm btn-danger')));
+    } else {
+      cronBody = T.cronError
+        ? h('div', null, notice('danger', 'alert', 'Cronjob-Adresse konnte nicht geladen werden: ' + T.cronError), btn('Erneut versuchen', 'refresh', function () { T.cronError = null; loadCron(true); drawTippBody(true); }, 'btn-sm'))
+        : h('div', { class: 'tipp-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Cronjob-Adresse wird geladen …');
+    }
+    return h('section', { class: 'card auto-card' },
+      cardHead('Automatischer Abruf', 'Spielplan & Ergebnisse von OpenLigaDB. Ein von Hand eingetragenes Ergebnis hat immer Vorrang.', null),
+      list,
+      h('h4', { class: 'cron-h' }, icon('clock'), 'Regelmäßig abrufen (Cronjob)'),
+      cronBody,
+      h('p', { class: 'src-credit' }, 'Daten: OpenLigaDB (openligadb.de), Community-gepflegt – ohne Gewähr. Gewertet wird das Ergebnis nach 90 Minuten.'));
+  }
+
   /* ---------- Ergebnisse eintragen */
 
   function tippResults(d) {
@@ -1946,6 +2071,18 @@
     var wrap = h('div');
 
     wrap.appendChild(h('h3', { class: 'res-h' }, 'Warten auf ein Ergebnis', h('span', { class: 'badge ' + (pending.length ? 'badge-warn' : 'badge-ok') }, String(pending.length))));
+    var autoPend = pending.filter(function (m) { var c = compById(m.competition_id); return c && c.source; });
+    if (autoPend.length) {
+      var autoComps = d.competitions.filter(function (c) { return c.source && autoPend.some(function (m) { return m.competition_id === c.id; }); });
+      var syncAll = btn('Jetzt abrufen', 'refresh', function () {
+        syncAll.disabled = true;
+        autoComps.reduce(function (p, c) { return p.then(function () { return runSync(c, 'window'); }); }, Promise.resolve()).then(function () { syncAll.disabled = false; });
+      }, 'btn-sm');
+      wrap.appendChild(h('div', { class: 'notice notice-info' }, icon('refresh'), h('div', null,
+        h('p', null, (autoPend.length === pending.length ? (pending.length === 1 ? 'Dieses Ergebnis kommt' : 'Diese Ergebnisse kommen') : plural(autoPend.length, 'Ergebnis kommt', 'Ergebnisse kommen')) +
+          ' automatisch von OpenLigaDB – meist etwa 2 Stunden nach Anpfiff. Du kannst trotzdem selbst eintragen; dein Ergebnis hat dann Vorrang.'),
+        syncAll)));
+    }
     if (pending.length) {
       wrap.appendChild(h('div', { class: 'res-list' }, pending.map(function (m) { return resultRow(m, multi); })));
     } else {
@@ -1973,6 +2110,8 @@
 
   function resultRow(m, multi) {
     var row = h('article', { class: 'res' });
+    var srcComp = compById(m.competition_id);
+    srcComp = srcComp && srcComp.source ? srcComp : null;
     var editing = !hasRes(m);
     function draw(flash) {
       row.className = 'res' + (hasRes(m) ? ' is-done' : ' is-open') + (flash ? ' flash' : '');
@@ -1983,6 +2122,7 @@
         m.round ? h('span', null, m.round) : null,
         comp ? h('span', null, comp.name) : null,
         running ? h('span', { class: 'badge badge-live' }, 'läuft evtl. noch') : null,
+        !hasRes(m) && srcComp ? h('span', { class: 'badge badge-auto', title: 'Wird von OpenLigaDB abgerufen' }, 'kommt automatisch') : resBadge(m),
         h('span', { class: 'res-tips' }, plural(m.tip_count || 0, 'Tipp', 'Tipps')));
       if (!editing) {
         row.replaceChildren(meta,
@@ -2007,7 +2147,7 @@
           editing = false;
           draw(true);
           drawTippNav();
-          toast('Ergebnis gespeichert: ' + m.home + ' ' + m.home_goals + ':' + m.away_goals + ' ' + m.away, 'success', 2500);
+          toast('Ergebnis gespeichert: ' + m.home + ' ' + m.home_goals + ':' + m.away_goals + ' ' + m.away + (srcComp ? ' (von Hand – der automatische Abruf ändert es nicht mehr)' : ''), 'success', srcComp ? 4500 : 2500);
         }, function (e) { upd(); toast(e.message || 'Speichern fehlgeschlagen.', 'error'); });
       }
       row.replaceChildren(meta, h('div', { class: 'res-steps' }, hs.el, as.el),
@@ -2016,7 +2156,7 @@
           saveB));
     }
     function clear() {
-      confirmDialog('Ergebnis von „' + m.home + ' – ' + m.away + '“ (' + m.home_goals + ':' + m.away_goals + ') löschen? Die Punkte für dieses Spiel werden dann wieder abgezogen, bis ein neues Ergebnis eingetragen ist.', { title: 'Ergebnis löschen', ok: 'Ergebnis löschen', danger: true }).then(function (ok) {
+      confirmDialog('Ergebnis von „' + m.home + ' – ' + m.away + '“ (' + m.home_goals + ':' + m.away_goals + ') löschen? Die Punkte für dieses Spiel werden dann wieder abgezogen, bis ein neues Ergebnis eingetragen ist.' + (srcComp ? ' Beim nächsten automatischen Abruf wird das Ergebnis von OpenLigaDB übernommen.' : ''), { title: 'Ergebnis löschen', ok: 'Ergebnis löschen', danger: true }).then(function (ok) {
         if (!ok) return;
         tcall('admin_result', { match_id: m.id, home_goals: null, away_goals: null }).then(function (r) {
           Object.assign(m, r.match);
@@ -2052,8 +2192,12 @@
           h('span', { class: 'comp-meta' },
             h('span', { class: 'badge ' + (c.active ? 'badge-ok' : 'badge-muted') }, c.active ? 'Aktiv' : 'Archiv'),
             h('span', null, plural(c.match_count || 0, 'Spiel', 'Spiele')),
-            c.bonus_question ? h('span', null, 'Bonus: ' + c.bonus_question + (c.bonus_answer ? ' → ' + c.bonus_answer : ' (Antwort offen)')) : null)),
+            c.source ? h('span', { class: 'badge badge-auto' }, 'Automatisch') : null,
+            c.source ? h('span', null, 'OpenLigaDB · ' + sourceLabel(c)) : null,
+            c.bonus_question ? h('span', null, 'Bonus: ' + c.bonus_question + (c.bonus_answer ? ' → ' + c.bonus_answer : ' (Antwort offen)')) : null),
+          c.source ? h('span', { class: 'comp-sync' + (syncFailed(c) ? ' is-err' : '') }, syncFailed(c) ? icon('alert') : null, syncText(c)) : null),
         h('div', { class: 'comp-actions' },
+          c.source ? (function () { var b = btn('Abrufen', 'refresh', function () { runSync(c, 'window', b); }, 'btn-sm', { 'aria-label': 'Jetzt abrufen: ' + c.name, title: 'Spiele und Ergebnisse jetzt von OpenLigaDB holen' }); b.disabled = !!T.syncing[c.id]; return b; })() : null,
           btn('Bearbeiten', 'edit', function () { openCompEditor(c); }, 'btn-sm', { 'aria-label': 'Wettbewerb bearbeiten: ' + c.name }),
           btn('Löschen', 'trash', function () { deleteComp(c); }, 'btn-sm btn-danger', { 'aria-label': 'Wettbewerb löschen: ' + c.name })));
     })) : h('div', { class: 'empty' }, icon('trophy'), h('p', null, 'Noch kein Wettbewerb angelegt.'));
@@ -2081,7 +2225,9 @@
     var matchesCard = h('section', { class: 'card' },
       cardHead('Spiele: ' + c.name, plural(ms.length, 'Spiel', 'Spiele') + ' · ' + future.length + ' kommend',
         [btn('Spiel hinzufügen', 'plus', function () { openMatchEditor(null, c.id); }, 'btn-primary btn-sm')]),
-      ms.length ? null : h('p', { class: 'help' }, 'Noch keine Spiele. Einzeln hinzufügen oder unten als Liste einfügen.'),
+      c.source ? notice('info', 'refresh', h('span', null, 'Die Spiele kommen automatisch von OpenLigaDB (' + sourceLabel(c) + '): neue Spiele der nächsten ' + plural(c.sync_window_days || 14, 'Tag', 'Tage') +
+        ', geänderte Anstoßzeiten und Ergebnisse. Ein von Hand eingetragenes Ergebnis hat immer Vorrang.')) : null,
+      ms.length ? null : h('p', { class: 'help' }, c.source ? 'Noch keine Spiele – oben bei „Abrufen“ holen oder im Wettbewerb „Ganze Saison importieren“.' : 'Noch keine Spiele. Einzeln hinzufügen oder unten als Liste einfügen.'),
       future.length ? h('div', { class: 'm-list' }, groups(future)) : (ms.length ? h('p', { class: 'help' }, 'Keine kommenden Spiele.') : null),
       past.length ? h('details', { class: 'past-box' },
         h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'Angepfiffene & beendete Spiele', h('span', { class: 'badge badge-muted' }, String(past.length))),
@@ -2096,7 +2242,7 @@
       h('div', { class: 'm-time' }, kParts(m.kickoff) ? kParts(m.kickoff).time : m.kickoff),
       h('div', { class: 'm-main' },
         h('div', { class: 'm-teams' }, m.home, h('span', { class: 'm-vs' }, hasRes(m) ? ' ' + m.home_goals + ':' + m.away_goals + ' ' : ' – '), m.away),
-        h('div', { class: 'm-sub' }, [m.round || null, plural(m.tip_count || 0, 'Tipp', 'Tipps'), m.locked && !hasRes(m) ? 'Ergebnis fehlt' : null].filter(Boolean).join(' · '))),
+        h('div', { class: 'm-sub' }, [m.round || null, plural(m.tip_count || 0, 'Tipp', 'Tipps'), m.locked && !hasRes(m) ? 'Ergebnis fehlt' : null].filter(Boolean).join(' · '), resBadge(m))),
       h('div', { class: 'm-actions' },
         btn('', 'edit', function () { openMatchEditor(m, m.competition_id); }, 'btn-sm btn-icon', { 'aria-label': 'Spiel bearbeiten: ' + m.home + ' – ' + m.away, title: 'Bearbeiten' }),
         btn('', 'trash', function () { deleteMatch(m); }, 'btn-sm btn-icon btn-danger', { 'aria-label': 'Spiel löschen: ' + m.home + ' – ' + m.away, title: 'Löschen' })));
@@ -2154,44 +2300,171 @@
 
   function openCompEditor(c) {
     var isNew = !c;
+    var cur = c; // gespeicherter Stand (wird nach „Anlegen“ im offenen Dialog gesetzt)
     var draft = c ? { name: c.name, sort: String(c.sort), bonus_question: c.bonus_question || '', bonus_answer: c.bonus_answer || '', bonus_points: String(c.bonus_points) }
       : { name: '', sort: '0', bonus_question: '', bonus_answer: '', bonus_points: '10' };
+    var savedLeague = c && c.source_league ? c.source_league : '';
+    draft.custom = savedLeague && !presetOf(savedLeague) ? savedLeague : '';
+    draft.window = String(c && c.sync_window_days ? c.sync_window_days : 14);
     var noop = function () {};
     var nameIn = input(draft, 'name', { max: 80, placeholder: 'z. B. EM 2028', onInput: noop });
     var act = switchEl(c ? c.active : true, 'Aktiv', 'Spieler sehen und tippen diesen Wettbewerb', 'Archiv – nur noch zum Nachschauen');
     var sortIn = input(draft, 'sort', { type: 'number', inputmode: 'numeric', onInput: noop });
     var bpIn = input(draft, 'bonus_points', { type: 'number', inputmode: 'numeric', onInput: noop });
     var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
+
+    /* --- Automatischer Abruf */
+    var srcSw = switchEl(!!(c && c.source), 'Spielplan automatisch abrufen', 'An – Spiele und Ergebnisse kommen von OpenLigaDB', 'Aus – Spiele und Ergebnisse trägst du selbst ein');
+    var presetSel = h('select', null, OLDB_PRESETS.map(function (p) { return h('option', { value: p.id }, p.label); }), h('option', { value: 'custom' }, 'Eigenes Kürzel …'));
+    presetSel.value = savedLeague ? (presetOf(savedLeague) ? savedLeague.toLowerCase() : 'custom') : 'bl1';
+    var customIn = input(draft, 'custom', { max: 40, placeholder: 'z. B. bl3', onInput: function () { resetPreview(); autoName(); } });
+    customIn.setAttribute('autocapitalize', 'off'); customIn.setAttribute('spellcheck', 'false');
+    var customField = field('Eigenes Liga-Kürzel', customIn, { help: 'Das Kürzel aus der Adresse bei openligadb.de (z. B. „bl3“ für die 3. Liga). Andere Ligen pflegen Freiwillige – bitte mit „Vorschau“ prüfen.' });
+    var cs = currentSeason();
+    var seasons = [cs - 1, cs, cs + 1];
+    if (c && c.source_season && seasons.indexOf(c.source_season) < 0) seasons.push(c.source_season);
+    seasons.sort();
+    var seasonSel = h('select', null, seasons.map(function (y) { return h('option', { value: String(y) }, seasonLabel(y) + (y === cs ? ' (aktuell)' : '')); }));
+    seasonSel.value = String(c && c.source_season ? c.source_season : cs);
+    var winIn = input(draft, 'window', { type: 'number', inputmode: 'numeric', onInput: noop });
+    winIn.min = '1'; winIn.max = '90';
+    var pvOut = h('div', { class: 'src-out', 'aria-live': 'polite' });
+    var syncOut = h('div', { class: 'src-out', 'aria-live': 'polite' });
+    var statusLine = h('p', { class: 'help m0 src-status' });
+    var lastPreview = null;
+    var lastAuto = null; // zuletzt vorgeschlagener Name
+    function league() { return presetSel.value === 'custom' ? draft.custom.trim() : presetSel.value; }
+    function autoNameText() {
+      var p = presetOf(league());
+      return (p ? p.name : (league() || 'Liga')) + ' ' + seasonLabel(seasonSel.value);
+    }
+    function autoName() { // Name vorschlagen, solange er leer ist oder noch der letzte Vorschlag
+      if (!srcSw.input.checked) return;
+      if (draft.name.trim() === '' || draft.name === lastAuto) { draft.name = nameIn.value = lastAuto = autoNameText(); }
+    }
+    function resetPreview() { lastPreview = null; pvOut.replaceChildren(); }
+    function drawStatus() {
+      statusLine.replaceChildren();
+      if (cur && cur.source && cur.last_sync) statusLine.append(syncFailed(cur) ? icon('alert') : icon('check'), syncText(cur));
+      statusLine.classList.toggle('is-err', !!(cur && syncFailed(cur)));
+      statusLine.hidden = !(cur && cur.source && cur.last_sync);
+    }
+    var pvBtn = btn('Vorschau', 'eye', doPreview, 'btn-sm');
+    var syncBtn = btn('Jetzt abrufen', 'refresh', function () { doSync('window'); }, 'btn-primary btn-sm');
+    var seasonBtn = btn('Ganze Saison importieren', 'download', function () { doSync('season'); }, 'btn-sm');
+    var srcFields = h('div', { class: 'src-fields' },
+      h('div', { class: 'grid-2' }, field('Wettbewerb', presetSel), field('Saison', seasonSel)),
+      customField,
+      field('Neue Spiele anlegen für die nächsten … Tage', winIn, { help: 'Standard 14. „Jetzt abrufen“ und der automatische Abruf legen Spiele an, sobald sie in diesem Zeitraum liegen.' }),
+      h('div', { class: 'btn-row' }, pvBtn), pvOut,
+      h('div', { class: 'src-sync' },
+        h('p', { class: 'help m0' }, '„Jetzt abrufen“ holt die Spiele der nächsten Tage und fehlende Ergebnisse. „Ganze Saison importieren“ legt alle Spiele der Saison auf einmal an (bereits gespielte mit Ergebnis).'),
+        h('div', { class: 'btn-row' }, syncBtn, seasonBtn), statusLine, syncOut),
+      h('p', { class: 'src-credit m0' }, 'Daten: OpenLigaDB (openligadb.de), Community-gepflegt. Gewertet wird das Ergebnis nach 90 Minuten (ohne Verlängerung/Elfmeterschießen). Ein von Hand eingetragenes Ergebnis wird nie überschrieben.'));
+    function showSrc() {
+      srcFields.hidden = !srcSw.input.checked;
+      customField.hidden = presetSel.value !== 'custom';
+    }
+    srcSw.input.addEventListener('change', function () { showSrc(); autoName(); });
+    presetSel.addEventListener('change', function () { showSrc(); resetPreview(); autoName(); if (presetSel.value === 'custom') customIn.focus(); });
+    seasonSel.addEventListener('change', function () { resetPreview(); autoName(); });
+    showSrc(); drawStatus();
+
+    function busy(el, text) { el.replaceChildren(h('div', { class: 'tipp-loading src-busy', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), text)); }
+    function doPreview() {
+      if (!league()) { toast('Bitte ein Liga-Kürzel eingeben.', 'error'); customIn.focus(); return; }
+      pvBtn.disabled = true;
+      busy(pvOut, 'Frage OpenLigaDB …');
+      var lg = league(), se = seasonSel.value;
+      tcall('admin_source_preview', { league: lg, season: se }).then(function (p) {
+        lastPreview = p;
+        pvOut.replaceChildren(h('div', { class: 'notice notice-success' }, icon('check'), h('div', null,
+          h('strong', null, p.league_name || (lg + ' ' + seasonLabel(se))),
+          h('p', { class: 'm0' }, plural(p.match_count, 'Spiel', 'Spiele') + ' · ' + plural(p.round_count, 'Runde', 'Runden') + ' · ' + plural(p.team_count, 'Mannschaft', 'Mannschaften') +
+            (p.current_group && p.current_group.name ? ' · aktuell: ' + p.current_group.name : '')),
+          p.matches && p.matches.length ? h('ul', { class: 'src-pv-list' }, p.matches.map(function (x) {
+            return h('li', null, h('span', { class: 'src-pv-k' }, fmtKick(x.kickoff)), h('span', null, x.home + ' – ' + x.away));
+          })) : null,
+          p.demo ? h('p', { class: 'help m0' }, 'Demo: Beispieldaten – im echten Betrieb kommen sie direkt von OpenLigaDB.') : null)));
+      }, function (e) {
+        pvOut.replaceChildren(notice('danger', 'alert', e.message || 'Vorschau fehlgeschlagen.'));
+      }).then(function () { pvBtn.disabled = false; });
+    }
+    function doSync(scope) {
+      if (!league()) { toast('Bitte ein Liga-Kürzel eingeben.', 'error'); customIn.focus(); return; }
+      var ask = scope === 'season'
+        ? confirmDialog('Alle ' + (lastPreview && lastPreview.league === league() && String(lastPreview.season) === seasonSel.value ? lastPreview.match_count + ' ' : '') +
+          'Spiele der Saison ' + seasonLabel(seasonSel.value) + ' anlegen? Bereits gespielte Spiele kommen mit Ergebnis dazu, vorhandene werden nicht doppelt angelegt.', { title: 'Ganze Saison importieren', ok: 'Importieren' })
+        : Promise.resolve(true);
+      ask.then(function (ok) {
+        if (!ok) return;
+        syncBtn.disabled = seasonBtn.disabled = true;
+        busy(syncOut, (snapshot() !== start || !cur ? 'Speichere und rufe' : 'Rufe') + ' OpenLigaDB ab …');
+        var saved = snapshot() !== start || !cur || !cur.source ? save(true) : Promise.resolve(cur);
+        saved.then(function (sc) {
+          if (!sc) { syncOut.replaceChildren(); return; }
+          return tcall('admin_sync', { competition_id: sc.id, scope: scope }).then(function (r) {
+            cur.last_sync = r.last_sync; cur.last_sync_status = r.last_sync_status; drawStatus();
+            syncOut.replaceChildren(h('div', { class: 'notice notice-success' }, icon('check'), h('div', null,
+              h('strong', null, syncSummary(r)),
+              r.message ? h('p', { class: 'm0' }, r.message) : null,
+              r.errors && r.errors.length ? h('ul', { class: 'imp-errors' }, r.errors.slice(0, 8).map(function (x) { return h('li', null, x.message); })) : null)));
+            toast(cur.name + ': ' + syncSummary(r), 'success');
+          }, function (e) {
+            if (e.data && e.data.last_sync) { cur.last_sync = e.data.last_sync; cur.last_sync_status = e.data.last_sync_status; drawStatus(); }
+            syncOut.replaceChildren(notice('danger', 'alert', e.message || 'Abruf fehlgeschlagen.'));
+          }).then(function () { tippRefresh(); });
+        }).then(function () { syncBtn.disabled = seasonBtn.disabled = false; });
+      });
+    }
+
     var body = h('div', { class: 'fields' }, err,
       field('Name', nameIn),
       act.el,
       field('Reihenfolge', sortIn, { help: 'Kleinere Zahl = weiter oben. Meist einfach 0 lassen.' }),
+      h('div', { class: 'sub-box src-box' },
+        h('h4', null, icon('refresh'), 'Spielplan automatisch abrufen (OpenLigaDB)', h('span', { class: 'opt' }, ' (optional)')),
+        srcSw.el, srcFields),
       h('div', { class: 'sub-box' },
         h('h4', null, icon('star'), 'Bonusfrage', h('span', { class: 'opt' }, ' (optional)')),
         tf('Frage', draft, 'bonus_question', { max: 150, placeholder: 'z. B. Wer wird Europameister?', onInput: noop, optional: true, help: 'Tippbar bis zum Anstoß des ersten Spiels.' }),
         tf('Richtige Antwort', draft, 'bonus_answer', { max: 80, placeholder: 'erst nach Turnierende eintragen', onInput: noop, optional: true, help: 'Erst eintragen, wenn sie feststeht – dann bekommt jeder mit der gleichen Antwort die Bonuspunkte (Groß-/Kleinschreibung egal).' }),
         field('Bonuspunkte', bpIn, { help: '0 bis 100, üblich sind 10.' })));
-    function submit() {
+    function snapshot() { return JSON.stringify(draft) + act.input.checked + srcSw.input.checked + presetSel.value + seasonSel.value; }
+    /** Speichern; keepOpen = Dialog bleibt offen (für den Abruf). Liefert den gespeicherten Wettbewerb oder null. */
+    function save(keepOpen) {
       err.hidden = true;
+      if (srcSw.input.checked && !league()) { err.hidden = false; err.textContent = 'Bitte ein Liga-Kürzel für den automatischen Abruf eingeben.'; m.body.scrollTop = 0; return Promise.resolve(null); }
       var data = {
         name: draft.name, active: act.input.checked, sort: draft.sort === '' ? 0 : draft.sort,
-        bonus_question: draft.bonus_question, bonus_answer: draft.bonus_answer, bonus_points: draft.bonus_points === '' ? 10 : draft.bonus_points
+        bonus_question: draft.bonus_question, bonus_answer: draft.bonus_answer, bonus_points: draft.bonus_points === '' ? 10 : draft.bonus_points,
+        source: srcSw.input.checked ? 'openligadb' : '', source_league: league(), source_season: seasonSel.value,
+        sync_window_days: draft.window === '' ? 14 : draft.window
       };
-      if (c) data.id = c.id;
+      if (cur) data.id = cur.id;
       saveB.disabled = true;
-      tcall('admin_competition_save', data).then(function (r) {
-        if (r.competition) T.compId = r.competition.id;
-        start = JSON.stringify(draft) + act.input.checked;
-        m.close();
-        toast(isNew ? 'Wettbewerb „' + r.competition.name + '“ angelegt – jetzt Spiele hinzufügen.' : 'Wettbewerb gespeichert.', 'success');
-        tippRefresh();
-      }, function (e) { err.hidden = false; err.textContent = e.message; saveB.disabled = false; m.body.scrollTop = 0; });
+      return tcall('admin_competition_save', data).then(function (r) {
+        var wasNew = !cur;
+        cur = r.competition;
+        T.compId = cur.id;
+        start = snapshot();
+        saveB.disabled = false;
+        if (keepOpen) {
+          if (wasNew) { saveB.replaceChildren(icon('check'), 'Speichern'); m.el.querySelector('.modal-head h3').textContent = 'Wettbewerb bearbeiten'; }
+          tippRefresh();
+        } else {
+          m.close();
+          toast(isNew && wasNew ? 'Wettbewerb „' + cur.name + '“ angelegt – ' + (cur.source ? 'jetzt „Abrufen“ drücken.' : 'jetzt Spiele hinzufügen.') : 'Wettbewerb gespeichert.', 'success');
+          tippRefresh();
+        }
+        return cur;
+      }, function (e) { err.hidden = false; err.textContent = e.message; saveB.disabled = false; m.body.scrollTop = 0; return null; });
     }
-    var start = JSON.stringify(draft) + act.input.checked;
-    var saveB = h('button', { type: 'button', class: 'btn btn-primary', onclick: submit }, icon('check'), isNew ? 'Anlegen' : 'Speichern');
+    var start = snapshot();
+    var saveB = h('button', { type: 'button', class: 'btn btn-primary', onclick: function () { save(false); } }, icon('check'), isNew ? 'Anlegen' : 'Speichern');
     var m = openModal({
       title: isNew ? 'Neuer Wettbewerb' : 'Wettbewerb bearbeiten', body: body, full: true, backdropClose: false, focus: nameIn,
-      beforeClose: function () { return JSON.stringify(draft) + act.input.checked === start ? true : confirmDialog('Eingaben verwerfen?', { ok: 'Verwerfen', danger: true }); },
+      beforeClose: function () { return snapshot() === start ? true : confirmDialog('Eingaben verwerfen?', { ok: 'Verwerfen', danger: true }); },
       foot: [h('button', { type: 'button', class: 'btn', onclick: function () { m.requestClose(); } }, 'Abbrechen'), saveB]
     });
   }

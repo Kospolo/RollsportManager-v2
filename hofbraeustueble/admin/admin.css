@@ -661,3 +661,42 @@ input.step-in.invalid { border-color: var(--danger); }
   .print-area .qr-url { font-size: 12pt; color: #000; }
   .print-area .qr-small { font-size: 12pt; color: #000; }
 }
+
+/* Tippspiel: automatischer Abruf (OpenLigaDB) */
+.badge-auto { background: var(--info-soft); color: #1f4f7a; }
+.m-sub .badge, .res-meta .badge { margin-left: 2px; }
+.m-sub .badge { margin-left: 6px; font-size: 11.5px; padding: 1px 7px; }
+.comp-sync { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.comp-sync.is-err, .src-status.is-err { color: var(--danger); }
+.src-box .switch { margin: 0; }
+.src-fields { display: grid; gap: 14px; }
+.src-fields[hidden] { display: none; }
+.src-sync { display: grid; gap: 10px; border-top: 1px dashed var(--line-strong); padding-top: 14px; }
+.src-status { display: flex; align-items: center; gap: 6px; }
+.src-out:empty { display: none; }
+.src-out .notice { margin: 0; }
+.src-busy { padding: 10px 0; justify-content: flex-start; }
+.src-pv-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; font-size: 14px; }
+.src-pv-list li { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.src-pv-k { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 150px; }
+.src-credit { font-size: 12.5px; color: var(--muted); margin: 14px 0 0; }
+.auto-card .card-head { margin-bottom: 10px; }
+.sync-list { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.sync-item { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--surface-2); }
+.sync-item > div { display: grid; gap: 2px; min-width: 0; flex: 1 1 240px; }
+.sync-item small { color: var(--muted); font-size: 13px; }
+.sync-st { display: flex; align-items: center; gap: 6px; }
+.sync-st svg.i { width: 15px; height: 15px; flex: none; color: var(--success); }
+.sync-item.is-err .sync-st { color: var(--danger); }
+.sync-item.is-err .sync-st svg.i { color: var(--danger); }
+.cron-h { display: flex; align-items: center; gap: 8px; font-size: 16px; margin: 4px 0 10px; }
+.cron-how { margin-top: 0; }
+.cron-how ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; }
+.cron-how code { background: #efe7dc; padding: 1px 5px; border-radius: 4px; font-size: 13px; overflow-wrap: anywhere; }
+.btn.is-busy svg.i { animation: spin .8s linear infinite; }
+@media (max-width: 560px) {
+  .sync-item .btn { width: 100%; }
+  .src-pv-k { min-width: 0; width: 100%; }
+}
+.comp-actions { flex-wrap: wrap; }
+.auto-card p.help, .src-box p.help { font-size: 14px; color: var(--muted); }

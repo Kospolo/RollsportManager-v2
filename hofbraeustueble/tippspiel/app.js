@@ -643,6 +643,10 @@
         html += '<div class="card empty">' + emptyArt('whistle') + '<h2>Noch keine Ergebnisse</h2><p>Sobald die ersten Spiele angepfiffen sind, findest du hier Ergebnisse, deine Punkte und die Stammtisch-Quote.</p></div>';
       }
     }
+    // Quellenangabe, wenn Spielplan/Ergebnisse automatisch von OpenLigaDB kommen
+    if (S.comps.some(function (c) { return c.source; })) {
+      html += '<p class="foot-note">Spielplan &amp; Ergebnisse: <a href="https://www.openligadb.de/" target="_blank" rel="noopener">OpenLigaDB</a></p>';
+    }
     box.innerHTML = html;
   }
 

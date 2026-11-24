@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 define('HBS_CMS', true); // erlaubt das Einlesen von cms/config.php (Sitzungsdauer)
 
-const TIPP_DB_VERSION        = 1;
+const TIPP_DB_VERSION        = 2;      // 2: automatischer Abruf (OpenLigaDB)
 const TIPP_SESSION_NAME      = 'HBS_TIPP';
 const TIPP_SESSION_DAYS      = 60;      // so lange bleibt man am Handy angemeldet
 const TIPP_CMS_SESSION_NAME  = 'HBSCMS';
@@ -27,9 +27,24 @@ const TIPP_PW_ALPHABET       = 'abcdefghjkmnpqrstuvwxyz23456789';
 const TIPP_NICK_RE           = '/^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/u';
 const TIPP_DEFAULT_SETTINGS  = ['points_exact' => 4, 'points_diff' => 3, 'points_tendency' => 2];
 
+// Automatischer Abruf von Spielplan und Ergebnissen (OpenLigaDB, kostenlos, ohne Schlüssel)
+const TIPP_OLDB_BASE         = 'https://api.openligadb.de'; // fest – Nutzereingaben ergeben NIE eine URL
+const TIPP_OLDB_UA           = 'HBS-Tippspiel/1.0';
+const TIPP_OLDB_MAX_BYTES    = 8388608;  // 8 MB
+const TIPP_SYNC_ADMIN_TIMEOUT = 8;       // Sekunden (Verwaltung, Cronjob)
+const TIPP_SYNC_LAZY_TIMEOUT = 5;        // Sekunden (nebenbei beim Öffnen des Tippspiels)
+const TIPP_SYNC_LAZY_AFTER   = 110;      // Minuten nach Anstoß wird ein fehlendes Ergebnis nachgeschaut …
+const TIPP_SYNC_LAZY_EVERY   = 10;       // … höchstens alle 10 Minuten je Wettbewerb
+const TIPP_SYNC_LAZY_DAYS    = 3;        // Spiele, die länger her sind, lösen keinen Abruf mehr aus (z. B. abgesagt)
+const TIPP_SYNC_STALE_MIN    = 240;      // Ergebnis ohne „beendet“-Kennzeichen erst 4 Std. nach Anstoß übernehmen
+const TIPP_SYNC_WINDOW_MAX   = 90;
+const TIPP_LEAGUE_RE         = '/^[A-Za-z0-9_-]{1,40}$/';
+
 define('TIPP_CMS_DIR', __DIR__);
 define('TIPP_DATA_DIR', __DIR__ . '/data');
 define('TIPP_DB_FILE', TIPP_DATA_DIR . '/tippspiel.sqlite');
+define('TIPP_CRON_FILE', TIPP_DATA_DIR . '/tipp-cron-token.php'); // geheimer Token für den Cronjob-Aufruf
+define('TIPP_SYNC_LOCK', TIPP_DATA_DIR . '/tipp-sync.lock');
 
 date_default_timezone_set('Europe/Berlin');
 error_reporting(E_ALL);
@@ -455,10 +470,43 @@ function migrate(PDO $pdo): void
             }
             $pdo->exec('PRAGMA user_version = 1');
         }
+        if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < 2) {
+            // Automatischer Abruf (OpenLigaDB) – auch für bestehende Datenbanken (idempotent)
+            add_columns($pdo, 'competitions', [
+                'source' => 'TEXT NULL',                       // NULL = von Hand, 'openligadb'
+                'source_league' => 'TEXT NULL',                // z. B. bl1
+                'source_season' => 'INTEGER NULL',             // Startjahr, z. B. 2026 für 2026/27
+                'sync_window_days' => 'INTEGER NOT NULL DEFAULT 14',
+                'last_sync' => 'TEXT NULL',
+                'last_sync_status' => 'TEXT NULL',
+            ]);
+            add_columns($pdo, 'matches', [
+                'external_id' => 'TEXT NULL',                  // matchID bei OpenLigaDB
+                'external_group' => 'INTEGER NULL',            // intern: groupOrderID (Spieltag) für gezielten Ergebnis-Abruf
+                'result_source' => 'TEXT NULL',                // 'manual' | 'auto' | NULL
+            ]);
+            $pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_matches_ext ON matches(competition_id, external_id) WHERE external_id IS NOT NULL');
+            $pdo->exec("UPDATE matches SET result_source = 'manual' WHERE home_goals IS NOT NULL AND result_source IS NULL");
+            $pdo->exec('PRAGMA user_version = 2');
+        }
         $pdo->exec('COMMIT');
     } catch (Throwable $e) {
         $pdo->exec('ROLLBACK');
         throw $e;
+    }
+}
+
+/** Spalten ergänzen, falls sie fehlen (PRAGMA table_info + ALTER TABLE ADD COLUMN) */
+function add_columns(PDO $pdo, string $table, array $cols): void
+{
+    $have = [];
+    foreach ($pdo->query('PRAGMA table_info(' . $table . ')')->fetchAll() as $c) {
+        $have[strtolower((string)$c['name'])] = true;
+    }
+    foreach ($cols as $name => $def) {
+        if (!isset($have[strtolower($name)])) {
+            $pdo->exec("ALTER TABLE $table ADD COLUMN $name $def");
+        }
     }
 }
 
@@ -801,6 +849,19 @@ function comp_out(array $c, array $firstKick): array
         'bonus_answer' => $c['bonus_answer'] !== null ? (string)$c['bonus_answer'] : null,
         'bonus_points' => (int)$c['bonus_points'],
         'bonus_locked' => bonus_locked((int)$c['id'], $firstKick),
+        'source' => ($c['source'] ?? null) !== null ? (string)$c['source'] : null,
+    ];
+}
+
+/** Wettbewerb für die Verwaltung: zusätzlich die Einstellungen des automatischen Abrufs */
+function comp_admin_out(array $c, array $firstKick): array
+{
+    return comp_out($c, $firstKick) + [
+        'source_league' => ($c['source_league'] ?? null) !== null ? (string)$c['source_league'] : null,
+        'source_season' => ($c['source_season'] ?? null) !== null ? (int)$c['source_season'] : null,
+        'sync_window_days' => (int)($c['sync_window_days'] ?? 14),
+        'last_sync' => ($c['last_sync'] ?? null) !== null ? (string)$c['last_sync'] : null,
+        'last_sync_status' => ($c['last_sync_status'] ?? null) !== null ? (string)$c['last_sync_status'] : null,
     ];
 }
 
@@ -816,6 +877,7 @@ function match_base(array $m): array
         'home_goals' => int_or_null($m['home_goals']),
         'away_goals' => int_or_null($m['away_goals']),
         'locked' => now_min() >= (string)$m['kickoff'],
+        'result_source' => ($m['result_source'] ?? null) !== null ? (string)$m['result_source'] : null,
     ];
 }
 
@@ -1211,6 +1273,496 @@ function opt_comp_id(): ?int
     return $id;
 }
 
+/* ============================================= Automatischer Abruf (OpenLigaDB) */
+/*
+ * Spielplan und Ergebnisse kommen von OpenLigaDB (https://www.openligadb.de, Community-gepflegt, ohne Schlüssel).
+ * Anfragen gehen NUR an TIPP_OLDB_BASE; Liga-Kürzel und Saison werden streng geprüft und nur als Pfadteile
+ * eingesetzt. Für Tests kann serverseitig (Konstante oder Umgebungsvariable HBS_OLDB_BASE) ein lokaler
+ * Ersatz-Server eingestellt werden – nie über Eingaben einer Anfrage.
+ * Gewertet wird das Ergebnis nach 90 Minuten (resultTypeID 2 „Endergebnis“) – Verlängerung/Elfmeterschießen zählen nicht.
+ */
+
+final class OldbException extends RuntimeException
+{
+}
+
+function oldb_base(): string
+{
+    $b = defined('HBS_OLDB_BASE') ? (string)constant('HBS_OLDB_BASE') : (string)(getenv('HBS_OLDB_BASE') ?: '');
+    $b = rtrim(trim($b), '/');
+    return $b !== '' && preg_match('~^https?://[A-Za-z0-9.\-]+(:\d{1,5})?(/[A-Za-z0-9._\-/]*)?$~', $b) ? $b : TIPP_OLDB_BASE;
+}
+
+function v_league(mixed $v): string
+{
+    $l = is_string($v) ? trim($v) : '';
+    if (!preg_match(TIPP_LEAGUE_RE, $l)) {
+        fail('Liga-Kürzel: bitte nur Buchstaben, Ziffern, _ und - (z. B. bl1).', 400);
+    }
+    return $l;
+}
+
+function v_season(mixed $v): int
+{
+    $s = is_int($v) ? (string)$v : (is_string($v) ? trim($v) : '');
+    if (!preg_match('/^\d{4}$/', $s) || (int)$s < 2000 || (int)$s > 2100) {
+        fail('Saison: bitte das Startjahr angeben (z. B. 2026 für 2026/27).', 400);
+    }
+    return (int)$s;
+}
+
+function season_label(int $y): string
+{
+    return $y . '/' . str_pad((string)(($y + 1) % 100), 2, '0', STR_PAD_LEFT);
+}
+
+/** GET auf OpenLigaDB → dekodiertes JSON. Wirft OldbException mit deutscher Meldung. */
+function oldb_get(string $path, int $timeout): mixed
+{
+    $url = oldb_base() . $path;
+    $status = 0;
+    $body = '';
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        $buf = '';
+        curl_setopt_array($ch, [
+            CURLOPT_WRITEFUNCTION => function ($ch, string $chunk) use (&$buf): int {
+                $buf .= $chunk;
+                return strlen($buf) > TIPP_OLDB_MAX_BYTES ? 0 : strlen($chunk);
+            },
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => min($timeout, 4),
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_USERAGENT => TIPP_OLDB_UA,
+            CURLOPT_HTTPHEADER => ['Accept: application/json'],
+            CURLOPT_ENCODING => '',
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+        ]);
+        $ok = curl_exec($ch);
+        $errno = curl_errno($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        unset($ch);
+        if ($ok === false) {
+            if ($errno === 28) {
+                throw new OldbException('OpenLigaDB antwortet gerade nicht (Zeitüberschreitung nach ' . $timeout . ' Sekunden). Bitte später erneut versuchen.');
+            }
+            if ($errno === 23) {
+                throw new OldbException('OpenLigaDB hat ungewöhnlich viele Daten geschickt – Abruf abgebrochen.');
+            }
+            throw new OldbException('OpenLigaDB ist gerade nicht erreichbar (keine Verbindung). Bitte später erneut versuchen.');
+        }
+        $body = $buf;
+    } elseif (filter_var(ini_get('allow_url_fopen'), FILTER_VALIDATE_BOOLEAN)) {
+        $ctx = stream_context_create(['http' => [
+            'method' => 'GET', 'timeout' => $timeout, 'ignore_errors' => true, 'follow_location' => 0,
+            'user_agent' => TIPP_OLDB_UA, 'header' => "Accept: application/json\r\n",
+        ]]);
+        $res = @file_get_contents($url, false, $ctx, 0, TIPP_OLDB_MAX_BYTES + 1);
+        $headers = function_exists('http_get_last_response_headers') ? (http_get_last_response_headers() ?? []) : ($http_response_header ?? []);
+        if ($res === false || !$headers) {
+            throw new OldbException('OpenLigaDB ist gerade nicht erreichbar (keine Verbindung oder Zeitüberschreitung). Bitte später erneut versuchen.');
+        }
+        if (strlen($res) > TIPP_OLDB_MAX_BYTES) {
+            throw new OldbException('OpenLigaDB hat ungewöhnlich viele Daten geschickt – Abruf abgebrochen.');
+        }
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#', (string)$headers[0], $m)) {
+            $status = (int)$m[1];
+        }
+        $body = $res;
+    } else {
+        throw new OldbException('Der Server darf keine Daten aus dem Internet abrufen (PHP-Erweiterung „curl“ fehlt und „allow_url_fopen“ ist aus). Bitte im Kundenmenü des Hosters aktivieren.');
+    }
+    if ($status !== 200) {
+        throw new OldbException(match (true) {
+            $status === 404 => 'OpenLigaDB kennt diese Liga oder Saison nicht (Fehler 404). Bitte Kürzel und Saison prüfen.',
+            $status === 429 => 'OpenLigaDB meldet zu viele Anfragen. Bitte in ein paar Minuten erneut versuchen.',
+            $status >= 500 => 'OpenLigaDB hat gerade technische Probleme (Fehler ' . $status . '). Bitte später erneut versuchen.',
+            default => 'OpenLigaDB hat mit Fehler ' . $status . ' geantwortet.',
+        });
+    }
+    $data = json_decode($body, true, 64);
+    if ($data === null) {
+        throw new OldbException('OpenLigaDB hat keine gültigen Daten geliefert. Bitte später erneut versuchen.');
+    }
+    return $data;
+}
+
+/** Spiele-Liste von OpenLigaDB holen (ganze Saison oder ein Spieltag) */
+function oldb_matches(string $league, int $season, ?int $group, int $timeout): array
+{
+    $path = '/getmatchdata/' . rawurlencode($league) . '/' . $season . ($group !== null ? '/' . $group : '');
+    $data = oldb_get($path, $timeout);
+    if (!is_array($data) || ($data !== [] && !array_is_list($data))) {
+        throw new OldbException('OpenLigaDB hat keine gültigen Daten geliefert. Bitte später erneut versuchen.');
+    }
+    return $data;
+}
+
+/** Text aus fremden Daten säubern (Steuerzeichen, Leerraum) und kürzen */
+function oldb_text(mixed $v, int $max): string
+{
+    if (!is_string($v) || preg_match('//u', $v) !== 1) {
+        return '';
+    }
+    $v = (string)preg_replace('/[\x00-\x1F\x7F\x{200B}-\x{200F}\x{202A}-\x{202E}\x{2066}-\x{2069}\x{FEFF}]/u', ' ', $v);
+    $v = trim((string)preg_replace('/\s+/u', ' ', $v));
+    if (str_len($v) > $max) {
+        $v = rtrim(implode('', array_slice(preg_split('//u', $v, -1, PREG_SPLIT_NO_EMPTY) ?: [], 0, $max)));
+    }
+    return $v;
+}
+
+/** Anstoß aus matchDateTimeUTC (bevorzugt) bzw. matchDateTime → "YYYY-MM-DD HH:MM" Europe/Berlin */
+function oldb_kickoff(array $m): ?string
+{
+    $utc = $m['matchDateTimeUTC'] ?? null;
+    if (is_string($utc) && preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2}(\.\d+)?)?Z?$/', $utc, $x)) {
+        try {
+            $dt = new DateTimeImmutable($x[1] . ' ' . $x[2] . ':00', new DateTimeZone('UTC'));
+            return parse_kickoff($dt->setTimezone(new DateTimeZone('Europe/Berlin'))->format('Y-m-d H:i'));
+        } catch (Throwable) {
+            // weiter mit Ortszeit
+        }
+    }
+    $loc = $m['matchDateTime'] ?? null;
+    if (is_string($loc) && preg_match('/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/', $loc, $x)) {
+        return parse_kickoff($x[1] . ' ' . $x[2]);
+    }
+    return null;
+}
+
+/**
+ * Ein Spiel von OpenLigaDB normalisieren.
+ * → ['id','kickoff','home','away','round','group','finished','result'=>[h,a]|null] oder ['error'=>…] oder null (überspringen)
+ */
+function oldb_match(mixed $m): ?array
+{
+    if (!is_array($m) || !isset($m['matchID']) || !is_int($m['matchID']) || $m['matchID'] <= 0) {
+        return ['error' => 'Ein Datensatz ohne gültige Spiel-ID wurde übersprungen.'];
+    }
+    $home = oldb_text($m['team1']['teamName'] ?? '', 40) ?: oldb_text($m['team1']['shortName'] ?? '', 40);
+    $away = oldb_text($m['team2']['teamName'] ?? '', 40) ?: oldb_text($m['team2']['shortName'] ?? '', 40);
+    if ($home === '' || $away === '') {
+        return null; // Paarung steht noch nicht fest (z. B. spätere Pokalrunde)
+    }
+    $kick = oldb_kickoff($m);
+    if ($kick === null) {
+        return ['error' => "$home – $away: Anstoßzeit fehlt oder ist ungültig, übersprungen."];
+    }
+    if (lower($home) === lower($away)) {
+        return ['error' => "$home – $away: gleiche Mannschaft zweimal, übersprungen."];
+    }
+    $result = null;
+    foreach (is_array($m['matchResults'] ?? null) ? $m['matchResults'] : [] as $r) {
+        if (is_array($r) && ($r['resultTypeID'] ?? null) === 2 // 2 = Endergebnis nach 90 Minuten
+            && is_int($r['pointsTeam1'] ?? null) && is_int($r['pointsTeam2'] ?? null)
+            && $r['pointsTeam1'] >= 0 && $r['pointsTeam1'] <= 99 && $r['pointsTeam2'] >= 0 && $r['pointsTeam2'] <= 99) {
+            $result = [$r['pointsTeam1'], $r['pointsTeam2']];
+        }
+    }
+    $g = $m['group']['groupOrderID'] ?? null;
+    return [
+        'id' => (string)$m['matchID'],
+        'kickoff' => $kick,
+        'home' => $home,
+        'away' => $away,
+        'round' => oldb_text($m['group']['groupName'] ?? '', 60),
+        'group' => is_int($g) && $g >= 0 && $g < 100000 ? $g : null,
+        'finished' => ($m['matchIsFinished'] ?? false) === true,
+        'result' => $result,
+    ];
+}
+
+/** Ergebnis übernehmen? Nur wenn als beendet markiert (live-Zwischenstände nie) – oder lange vorbei. */
+function oldb_final(array $x, string $kickoff): ?array
+{
+    if ($x['result'] === null || now_min() < $kickoff) {
+        return null;
+    }
+    if ($x['finished']) {
+        return $x['result'];
+    }
+    return date('Y-m-d H:i', time() - TIPP_SYNC_STALE_MIN * 60) >= $kickoff ? $x['result'] : null;
+}
+
+/**
+ * Abgerufene Spiele in die Datenbank übernehmen (Upsert über external_id).
+ * $mode 'window': neue Spiele mit Anstoß in den nächsten sync_window_days Tagen anlegen; 'season': alle;
+ * 'results': nur Ergebnisse vorhandener Spiele. Vorhandene, noch nicht angepfiffene Spiele: Anstoß/Mannschaften/Runde
+ * aktualisieren (nicht bei 'results'). Ergebnisse von Hand (result_source='manual') werden NIE überschrieben.
+ */
+function sync_apply(array $comp, array $list, string $mode): array
+{
+    $cid = (int)$comp['id'];
+    $now = now_min();
+    $days = max(1, min(TIPP_SYNC_WINDOW_MAX, (int)($comp['sync_window_days'] ?? 14)));
+    $windowEnd = date('Y-m-d H:i', time() + $days * 86400);
+    return tx(function (PDO $pdo) use ($cid, $list, $mode, $now, $windowEnd) {
+        $st = ['inserted' => 0, 'updated' => 0, 'results' => 0, 'skipped_manual' => 0, 'errors' => []];
+        $byExt = $byKey = [];
+        $sel = $pdo->prepare('SELECT * FROM matches WHERE competition_id = ?');
+        $sel->execute([$cid]);
+        foreach ($sel->fetchAll() as $r) {
+            if ($r['external_id'] !== null) {
+                $byExt[(string)$r['external_id']] = $r;
+            } else {
+                $byKey[$r['kickoff'] . '|' . lower((string)$r['home']) . '|' . lower((string)$r['away'])] = $r;
+            }
+        }
+        $upd = $pdo->prepare('UPDATE matches SET kickoff = ?, home = ?, away = ?, round = ?, external_id = ?, external_group = ? WHERE id = ?');
+        $res = $pdo->prepare("UPDATE matches SET home_goals = ?, away_goals = ?, result_source = 'auto' WHERE id = ?");
+        $ins = $pdo->prepare('INSERT INTO matches (competition_id, round, kickoff, home, away, home_goals, away_goals, external_id, external_group, result_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $seen = [];
+        $addErr = function (string $msg) use (&$st): void {
+            if (count($st['errors']) < 25) {
+                $st['errors'][] = ['message' => $msg];
+            }
+        };
+        foreach ($list as $raw) {
+            $x = oldb_match($raw);
+            if ($x === null) {
+                continue;
+            }
+            if (isset($x['error'])) {
+                $addErr($x['error']);
+                continue;
+            }
+            if (isset($seen[$x['id']])) {
+                continue;
+            }
+            $seen[$x['id']] = true;
+            $row = $byExt[$x['id']] ?? null;
+            $key = $x['kickoff'] . '|' . lower($x['home']) . '|' . lower($x['away']);
+            if ($row === null && $mode !== 'results' && isset($byKey[$key])) {
+                $row = $byKey[$key]; // von Hand angelegtes, identisches Spiel übernehmen statt doppelt anlegen
+                unset($byKey[$key]);
+                $row['external_id'] = null;
+            }
+            if ($row !== null) {
+                $id = (int)$row['id'];
+                $kick = (string)$row['kickoff'];
+                $new = ['kickoff' => $kick, 'home' => (string)$row['home'], 'away' => (string)$row['away'], 'round' => (string)$row['round']];
+                if ($mode !== 'results') {
+                    if ($now < $kick) { // noch nicht angepfiffen: Anstoß, Mannschaften, Runde übernehmen
+                        $new = ['kickoff' => $x['kickoff'], 'home' => $x['home'], 'away' => $x['away'], 'round' => $x['round']];
+                    } elseif ($x['kickoff'] !== $kick && $row['home_goals'] === null && $x['kickoff'] > $now) {
+                        $addErr($row['home'] . ' – ' . $row['away'] . ': laut OpenLigaDB verlegt auf ' . preg_replace('/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/', '$3.$2.$1, $4', $x['kickoff']) . ' Uhr. Bereits angepfiffene Spiele werden nicht automatisch verschoben – bei Bedarf von Hand ändern.');
+                    }
+                }
+                $changed = $new['kickoff'] !== $kick || $new['home'] !== (string)$row['home'] || $new['away'] !== (string)$row['away'] || $new['round'] !== (string)$row['round'];
+                if ($changed || $row['external_id'] === null || (int)$row['external_group'] !== (int)$x['group'] || ($row['external_group'] === null) !== ($x['group'] === null)) {
+                    $upd->execute([$new['kickoff'], $new['home'], $new['away'], $new['round'], $x['id'], $x['group'], $id]);
+                    if ($changed) {
+                        $st['updated']++;
+                    }
+                }
+                $final = oldb_final($x, $new['kickoff']);
+                if ($final !== null) {
+                    $same = $row['home_goals'] !== null && (int)$row['home_goals'] === $final[0] && (int)$row['away_goals'] === $final[1];
+                    if ($row['result_source'] === 'manual' && $row['home_goals'] !== null) {
+                        if (!$same) {
+                            $st['skipped_manual']++;
+                        }
+                    } elseif (!$same || $row['result_source'] !== 'auto') {
+                        $res->execute([$final[0], $final[1], $id]);
+                        $st['results']++;
+                    }
+                }
+                continue;
+            }
+            if ($mode === 'season' || ($mode === 'window' && $x['kickoff'] > $now && $x['kickoff'] <= $windowEnd)) {
+                $final = oldb_final($x, $x['kickoff']);
+                $ins->execute([$cid, $x['round'], $x['kickoff'], $x['home'], $x['away'], $final[0] ?? null, $final[1] ?? null, $x['id'], $x['group'], $final !== null ? 'auto' : null]);
+                $st['inserted']++;
+                if ($final !== null) {
+                    $st['results']++;
+                }
+            }
+        }
+        return $st;
+    });
+}
+
+function sync_status_text(array $r, string $mode): string
+{
+    $parts = [];
+    if ($r['inserted']) $parts[] = $r['inserted'] . ' neu';
+    if ($r['updated']) $parts[] = $r['updated'] . ' geändert';
+    if ($r['results']) $parts[] = $r['results'] . ($r['results'] === 1 ? ' Ergebnis' : ' Ergebnisse');
+    if ($r['skipped_manual']) $parts[] = $r['skipped_manual'] . ' von Hand behalten';
+    if ($r['errors']) $parts[] = count($r['errors']) . ' Hinweis' . (count($r['errors']) === 1 ? '' : 'e');
+    return 'OK' . ($mode === 'results' ? ' (Ergebnisse)' : '') . ' – ' . ($parts ? implode(', ', $parts) : 'keine Änderungen');
+}
+
+/**
+ * Abruf für einen Wettbewerb ausführen und last_sync/last_sync_status speichern.
+ * $scope: 'window' | 'season' | 'results' (nur fällige Spieltage, nur Ergebnisse). Wirft OldbException.
+ */
+function run_sync(array $comp, string $scope, int $timeout): array
+{
+    $cid = (int)$comp['id'];
+    $league = (string)($comp['source_league'] ?? '');
+    $season = (int)($comp['source_season'] ?? 0);
+    try {
+        if (($comp['source'] ?? null) !== 'openligadb' || !preg_match(TIPP_LEAGUE_RE, $league) || $season < 2000 || $season > 2100) {
+            throw new OldbException('Der automatische Abruf ist für diesen Wettbewerb nicht vollständig eingerichtet (Liga-Kürzel und Saison).');
+        }
+        if ($scope === 'results') {
+            $groups = [];
+            $whole = false;
+            foreach (q('SELECT DISTINCT external_group FROM matches WHERE competition_id = ? AND external_id IS NOT NULL AND home_goals IS NULL AND kickoff <= ? AND kickoff >= ?',
+                [$cid, date('Y-m-d H:i', time() - TIPP_SYNC_LAZY_AFTER * 60), date('Y-m-d H:i', time() - TIPP_SYNC_LAZY_DAYS * 86400)])->fetchAll() as $r) {
+                if ($r['external_group'] === null) {
+                    $whole = true;
+                } else {
+                    $groups[] = (int)$r['external_group'];
+                }
+            }
+            $list = [];
+            if ($whole || count($groups) > 3) {
+                $list = oldb_matches($league, $season, null, $timeout);
+            } else {
+                foreach ($groups as $g) {
+                    array_push($list, ...oldb_matches($league, $season, $g, $timeout));
+                }
+            }
+        } else {
+            $list = oldb_matches($league, $season, null, $timeout);
+            if ($list === []) {
+                throw new OldbException('OpenLigaDB kennt für „' . $league . '“ in der Saison ' . season_label($season) . ' keine Spiele. Bitte Kürzel und Saison prüfen.');
+            }
+        }
+        $r = sync_apply($comp, $list, $scope);
+        $status = sync_status_text($r, $scope);
+    } catch (OldbException $e) {
+        q('UPDATE competitions SET last_sync = ?, last_sync_status = ? WHERE id = ?', [now_full(), 'Fehler: ' . $e->getMessage(), $cid]);
+        throw $e;
+    }
+    $when = now_full();
+    q('UPDATE competitions SET last_sync = ?, last_sync_status = ? WHERE id = ?', [$when, $status, $cid]);
+    return $r + ['last_sync' => $when, 'last_sync_status' => $status];
+}
+
+/** Sperre gegen gleichzeitige Abrufe (Datei-Lock). $wait=false: sofort aufgeben, wenn belegt. */
+function sync_lock(bool $wait): mixed
+{
+    $fh = @fopen(TIPP_SYNC_LOCK, 'c');
+    if (!$fh) {
+        return $wait ? true : null; // ohne Lock-Datei trotzdem arbeiten (Verwaltung) bzw. auslassen (nebenbei)
+    }
+    if ($wait) {
+        $until = microtime(true) + 15;
+        while (!flock($fh, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) > $until) {
+                fclose($fh);
+                fail('Gerade läuft schon ein Abruf. Bitte gleich noch einmal versuchen.', 409);
+            }
+            usleep(200000);
+        }
+        return $fh;
+    }
+    if (!flock($fh, LOCK_EX | LOCK_NB)) {
+        fclose($fh);
+        return null;
+    }
+    return $fh;
+}
+
+function sync_unlock(mixed $fh): void
+{
+    if (is_resource($fh)) {
+        flock($fh, LOCK_UN);
+        fclose($fh);
+    }
+}
+
+/**
+ * „Nebenbei“-Abruf beim Öffnen des Tippspiels: Gibt es in einem Wettbewerb mit automatischem Abruf ein Spiel, das vor
+ * ≥ 110 Min. angepfiffen wurde und noch kein Ergebnis hat, und war der letzte Abruf vor > 10 Min., werden die
+ * Ergebnisse der betroffenen Spieltage geholt (kurzes Zeitlimit, nicht blockierend). Fehler werden nur gespeichert.
+ */
+function lazy_sync(): void
+{
+    try {
+        $t = time();
+        $due = q("SELECT c.* FROM competitions c WHERE c.source = 'openligadb' AND c.active = 1
+                  AND (c.last_sync IS NULL OR c.last_sync <= ?)
+                  AND EXISTS (SELECT 1 FROM matches m WHERE m.competition_id = c.id AND m.external_id IS NOT NULL
+                              AND m.home_goals IS NULL AND m.kickoff <= ? AND m.kickoff >= ?)
+                  ORDER BY c.last_sync LIMIT 2",
+            [date('Y-m-d H:i:s', $t - TIPP_SYNC_LAZY_EVERY * 60), date('Y-m-d H:i', $t - TIPP_SYNC_LAZY_AFTER * 60), date('Y-m-d H:i', $t - TIPP_SYNC_LAZY_DAYS * 86400)])->fetchAll();
+        if (!$due) {
+            return;
+        }
+        $fh = sync_lock(false);
+        if ($fh === null) {
+            return; // ein anderer Aufruf holt gerade
+        }
+        try {
+            $deadline = microtime(true) + 6;
+            foreach ($due as $c) {
+                $last = q('SELECT last_sync FROM competitions WHERE id = ?', [(int)$c['id']])->fetchColumn();
+                if ($last !== null && $last !== false && (string)$last > date('Y-m-d H:i:s', $t - TIPP_SYNC_LAZY_EVERY * 60)) {
+                    continue; // inzwischen von einem anderen Aufruf erledigt
+                }
+                q('UPDATE competitions SET last_sync = ? WHERE id = ?', [now_full(), (int)$c['id']]); // Versuch vormerken
+                try {
+                    run_sync($c, 'results', TIPP_SYNC_LAZY_TIMEOUT);
+                } catch (OldbException $e) {
+                    // Status ist gespeichert – Spieler merken davon nichts
+                }
+                if (microtime(true) > $deadline) {
+                    break;
+                }
+            }
+        } finally {
+            sync_unlock($fh);
+        }
+    } catch (Throwable $e) {
+        error_log('[hbs-tipp] lazy_sync: ' . $e->getMessage());
+    }
+}
+
+/* ---------- Cronjob-Token */
+
+function cron_token(): string
+{
+    $raw = is_file(TIPP_CRON_FILE) ? (string)@file_get_contents(TIPP_CRON_FILE) : '';
+    if (preg_match('/^TOKEN=([a-f0-9]{48})$/m', $raw, $m)) {
+        return $m[1];
+    }
+    return cron_token_reset();
+}
+
+function cron_token_reset(): string
+{
+    $token = bin2hex(random_bytes(24));
+    // als PHP-Datei, damit der Token auch ohne .htaccess-Schutz nie im Browser lesbar ist
+    $content = "<?php http_response_code(404); exit; ?>\n# Geheimer Token für den Cronjob-Aufruf des Tippspiels (cms/tipp-api.php?action=cron_sync&token=…)\nTOKEN=$token\n";
+    if (@file_put_contents(TIPP_CRON_FILE, $content, LOCK_EX) === false) {
+        fail('Der Cronjob-Token konnte nicht gespeichert werden (cms/data nicht beschreibbar).', 500, ['setup' => 'data_dir']);
+    }
+    @chmod(TIPP_CRON_FILE, 0640);
+    return $token;
+}
+
+function cron_url(string $token): string
+{
+    $host = (string)($_SERVER['HTTP_HOST'] ?? '');
+    if (!preg_match('/^[A-Za-z0-9.\-]+(:\d{1,5})?$|^\[[0-9A-Fa-f:.]+\](:\d{1,5})?$/', $host)) {
+        $host = (string)($_SERVER['SERVER_NAME'] ?? 'localhost');
+    }
+    $path = (string)($_SERVER['SCRIPT_NAME'] ?? '/cms/tipp-api.php');
+    return (is_https() ? 'https' : 'http') . '://' . $host . $path . '?action=cron_sync&token=' . $token;
+}
+
+function cron_info(): array
+{
+    $last = q("SELECT value FROM settings WHERE key = 'cron_last'")->fetchColumn();
+    $lastData = is_string($last) ? json_decode($last, true) : null;
+    return ['url_with_token' => cron_url(cron_token()), 'last_cron' => is_array($lastData) ? $lastData : null];
+}
+
 /* ================================================================= Router */
 
 $action = (string)($_GET['action'] ?? '');
@@ -1232,7 +1784,10 @@ switch ($action) {
 
     case 'status':
         require_method('GET');
-        respond(status_payload(current_player()));
+        $p = current_player();
+        session_close_any(); // Sitzung nicht während des Abrufs sperren
+        lazy_sync();
+        respond(status_payload($p));
 
     case 'invite_check':
         require_method('GET');
@@ -1347,6 +1902,8 @@ switch ($action) {
         require_method('GET');
         $me = require_player();
         $cid = opt_comp_id();
+        session_close_any();
+        lazy_sync();
         $comps = $cid !== null
             ? q('SELECT * FROM competitions WHERE id = ?', [$cid])->fetchAll()
             : q('SELECT * FROM competitions WHERE active = 1 ORDER BY sort, id')->fetchAll();
@@ -1463,7 +2020,10 @@ switch ($action) {
     case 'leaderboard':
         require_method('GET');
         $me = require_player();
-        respond(leaderboard(opt_comp_id(), $me['id']));
+        $cid = opt_comp_id();
+        session_close_any();
+        lazy_sync();
+        respond(leaderboard($cid, $me['id']));
 
     case 'stats':
         require_method('GET');
@@ -1557,7 +2117,7 @@ switch ($action) {
             $mc[(int)$r['competition_id']] = (int)$r['n'];
         }
         foreach (q('SELECT * FROM competitions ORDER BY sort, id')->fetchAll() as $c) {
-            $comps[] = comp_out($c, $firstKick) + ['created' => (string)$c['created'], 'match_count' => $mc[(int)$c['id']] ?? 0];
+            $comps[] = comp_admin_out($c, $firstKick) + ['created' => (string)$c['created'], 'match_count' => $mc[(int)$c['id']] ?? 0];
         }
         $tc = [];
         foreach (q('SELECT match_id, COUNT(*) AS n FROM tips GROUP BY match_id')->fetchAll() as $r) {
@@ -1565,7 +2125,7 @@ switch ($action) {
         }
         $matches = [];
         foreach (q('SELECT * FROM matches ORDER BY kickoff, id')->fetchAll() as $m) {
-            $matches[] = match_base($m) + ['tip_count' => $tc[(int)$m['id']] ?? 0];
+            $matches[] = match_base($m) + ['tip_count' => $tc[(int)$m['id']] ?? 0, 'external_id' => $m['external_id'] !== null ? (string)$m['external_id'] : null];
         }
         $sc = load_scope(null, false);
         $tally = tally($sc['players'], scored_matches($sc['matches']), $sc['tips'], $sc['comps'], $sc['bonus'], settings());
@@ -1596,14 +2156,40 @@ switch ($action) {
         $bq = v_opt_str(inp('bonus_question'), 150, 'Bonusfrage');
         $ba = v_opt_str(inp('bonus_answer'), 80, 'Bonus-Antwort');
         $bp = inp('bonus_points') === null || inp('bonus_points') === '' ? 10 : v_int(inp('bonus_points'), 0, 100, 'Bonuspunkte');
+        $old = $id !== null ? competition_or_404($id) : null;
+        // Automatischer Abruf: nur ändern, wenn „source“ mitgeschickt wird (ältere Oberflächen lassen ihn unverändert)
+        $src = ['source' => $old['source'] ?? null, 'source_league' => $old['source_league'] ?? null,
+                'source_season' => $old['source_season'] ?? null, 'sync_window_days' => (int)($old['sync_window_days'] ?? 14)];
+        if (array_key_exists('source', body())) {
+            $sv = inp('source');
+            $on = $sv === 'openligadb' || $sv === true;
+            if (!$on && !in_array($sv, [null, '', false, 0, '0', 'false', 'manual'], true)) {
+                fail('Quelle: nur „openligadb“ oder leer (von Hand) möglich.', 400);
+            }
+            $lg = inp('source_league');
+            $se = inp('source_season');
+            if ($on) {
+                $src['source_league'] = v_league($lg);
+                $src['source_season'] = v_season($se);
+            } else { // ausgeschaltet: Angaben merken, falls gültig
+                $src['source_league'] = is_string($lg) && preg_match(TIPP_LEAGUE_RE, trim($lg)) ? trim($lg) : null;
+                $src['source_season'] = (is_int($se) || is_string($se)) && preg_match('/^\d{4}$/', trim((string)$se)) ? (int)trim((string)$se) : null;
+            }
+            $src['source'] = $on ? 'openligadb' : null;
+            $wd = inp('sync_window_days');
+            $src['sync_window_days'] = $wd === null || $wd === '' ? 14 : v_int($wd, 1, TIPP_SYNC_WINDOW_MAX, 'Zeitraum (Tage)');
+        }
         if ($id !== null) {
-            competition_or_404($id);
-            q('UPDATE competitions SET name = ?, active = ?, sort = ?, bonus_question = ?, bonus_answer = ?, bonus_points = ? WHERE id = ?', [$name, $active, $sort, $bq, $ba, $bp, $id]);
+            q('UPDATE competitions SET name = ?, active = ?, sort = ?, bonus_question = ?, bonus_answer = ?, bonus_points = ?,
+               source = ?, source_league = ?, source_season = ?, sync_window_days = ? WHERE id = ?',
+                [$name, $active, $sort, $bq, $ba, $bp, $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days'], $id]);
         } else {
-            q('INSERT INTO competitions (name, active, sort, bonus_question, bonus_answer, bonus_points, created) VALUES (?, ?, ?, ?, ?, ?, ?)', [$name, $active, $sort, $bq, $ba, $bp, now_full()]);
+            q('INSERT INTO competitions (name, active, sort, bonus_question, bonus_answer, bonus_points, created, source, source_league, source_season, sync_window_days)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$name, $active, $sort, $bq, $ba, $bp, now_full(), $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days']]);
             $id = (int)db()->lastInsertId();
         }
-        respond(['competition' => comp_out(competition_or_404($id), first_kickoffs())]);
+        respond(['competition' => comp_admin_out(competition_or_404($id), first_kickoffs())]);
 
     case 'admin_competition_delete':
         require_method('POST');
@@ -1722,14 +2308,15 @@ switch ($action) {
         $hg = inp('home_goals');
         $ag = inp('away_goals');
         if (($hg === null || $hg === '') && ($ag === null || $ag === '')) {
-            q('UPDATE matches SET home_goals = NULL, away_goals = NULL WHERE id = ?', [$id]);
+            // gelöscht: ein automatischer Abruf darf das Ergebnis wieder eintragen
+            q('UPDATE matches SET home_goals = NULL, away_goals = NULL, result_source = NULL WHERE id = ?', [$id]);
         } else {
             $hg = v_goals($hg, 'Tore Heim');
             $ag = v_goals($ag, 'Tore Gast');
             if (now_min() < (string)$m['kickoff']) {
                 fail('Das Spiel hat noch nicht begonnen – ein Ergebnis kann erst nach dem Anstoß eingetragen werden.', 409);
             }
-            q('UPDATE matches SET home_goals = ?, away_goals = ? WHERE id = ?', [$hg, $ag, $id]);
+            q("UPDATE matches SET home_goals = ?, away_goals = ?, result_source = 'manual' WHERE id = ?", [$hg, $ag, $id]);
         }
         respond(['match' => match_base(match_or_404($id))]);
 
@@ -1806,6 +2393,146 @@ switch ($action) {
             }
         });
         respond(['settings' => settings()]);
+
+    /* ------------------------------------------- Automatischer Abruf (OpenLigaDB) */
+
+    case 'admin_source_preview':
+        require_method('GET');
+        require_admin();
+        $league = v_league(inp('league'));
+        $season = v_season(inp('season'));
+        session_close_any();
+        set_time_limit(60);
+        try {
+            $list = oldb_matches($league, $season, null, TIPP_SYNC_ADMIN_TIMEOUT);
+        } catch (OldbException $e) {
+            fail($e->getMessage(), 502);
+        }
+        if ($list === []) {
+            fail('OpenLigaDB kennt für „' . $league . '“ in der Saison ' . season_label($season) . ' keine Spiele. Bitte Kürzel und Saison prüfen.', 404);
+        }
+        $norm = [];
+        $rounds = [];
+        $teams = [];
+        $finished = 0;
+        $leagueName = null;
+        foreach ($list as $raw) {
+            $x = oldb_match($raw);
+            if ($x === null || isset($x['error'])) {
+                continue;
+            }
+            $leagueName ??= oldb_text($raw['leagueName'] ?? '', 80) ?: null;
+            $rounds[$x['round']] = true;
+            $teams[lower($x['home'])] = true;
+            $teams[lower($x['away'])] = true;
+            if ($x['finished']) {
+                $finished++;
+            }
+            $norm[] = $x;
+        }
+        usort($norm, fn($a, $b) => strcmp($a['kickoff'], $b['kickoff']));
+        $now = now_min();
+        $upcoming = array_values(array_filter($norm, fn($x) => $x['kickoff'] > $now));
+        $current = null;
+        try {
+            $cg = oldb_get('/getcurrentgroup/' . rawurlencode($league), TIPP_SYNC_LAZY_TIMEOUT);
+            if (is_array($cg) && isset($cg['groupName'])) {
+                $current = ['name' => oldb_text($cg['groupName'], 60), 'order' => is_int($cg['groupOrderID'] ?? null) ? $cg['groupOrderID'] : null];
+            }
+        } catch (OldbException) {
+            // optional
+        }
+        $pv = fn($x) => ['kickoff' => $x['kickoff'], 'home' => $x['home'], 'away' => $x['away'], 'round' => $x['round'],
+            'result' => ($f = oldb_final($x, $x['kickoff'])) !== null ? ['home' => $f[0], 'away' => $f[1]] : null];
+        respond([
+            'league' => $league,
+            'season' => $season,
+            'season_label' => season_label($season),
+            'league_name' => $leagueName,
+            'match_count' => count($norm),
+            'round_count' => count($rounds),
+            'team_count' => count($teams),
+            'finished' => $finished,
+            'first_kickoff' => $norm[0]['kickoff'] ?? null,
+            'last_kickoff' => $norm ? $norm[count($norm) - 1]['kickoff'] : null,
+            'current_group' => $current,
+            'matches' => array_map($pv, array_slice($upcoming ?: $norm, 0, 5)),
+        ]);
+
+    case 'admin_sync':
+        require_method('POST');
+        require_admin();
+        $cid = v_id(inp('competition_id'), 'Wettbewerb');
+        $scope = inp('scope') ?? 'window';
+        if (!in_array($scope, ['window', 'season'], true)) {
+            fail('Umfang: „window“ oder „season“.', 400);
+        }
+        $c = competition_or_404($cid);
+        if (($c['source'] ?? null) !== 'openligadb') {
+            fail('Für diesen Wettbewerb ist kein automatischer Abruf eingerichtet.', 400);
+        }
+        set_time_limit(90);
+        $fh = sync_lock(true);
+        $err = null;
+        try {
+            $r = run_sync(competition_or_404($cid), $scope, TIPP_SYNC_ADMIN_TIMEOUT);
+        } catch (OldbException $e) {
+            $err = $e->getMessage();
+        } finally {
+            sync_unlock($fh);
+        }
+        if ($err !== null) {
+            $c = competition_or_404($cid);
+            fail($err, 502, ['last_sync' => $c['last_sync'], 'last_sync_status' => $c['last_sync_status']]);
+        }
+        respond($r);
+
+    case 'admin_cron_info':
+        require_method('GET');
+        require_admin();
+        respond(cron_info());
+
+    case 'admin_cron_token_reset':
+        require_method('POST');
+        require_admin();
+        cron_token_reset();
+        respond(cron_info());
+
+    case 'cron_sync':
+        // Für den Cronjob des Webhosters (alle 15 Min.): …/cms/tipp-api.php?action=cron_sync&token=…
+        require_method('GET');
+        $lock = bf_locked([bf_key('cron')]);
+        if ($lock > 0) {
+            fail_locked($lock);
+        }
+        $tok = inp('token');
+        $have = is_file(TIPP_CRON_FILE) ? cron_token() : '';
+        if ($have === '' || !is_string($tok) || !hash_equals($have, $tok)) {
+            bf_fail(bf_key('cron'), 10);
+            usleep(random_int(200000, 500000));
+            fail('Ungültiger Token.', 403);
+        }
+        set_time_limit(300);
+        $fh = sync_lock(true);
+        $out = [];
+        try {
+            foreach (q("SELECT * FROM competitions WHERE source = 'openligadb' AND active = 1 ORDER BY sort, id")->fetchAll() as $c) {
+                try {
+                    $r = run_sync($c, 'window', TIPP_SYNC_ADMIN_TIMEOUT);
+                    $out[] = ['id' => (int)$c['id'], 'name' => (string)$c['name'], 'ok' => true, 'inserted' => $r['inserted'], 'updated' => $r['updated'],
+                        'results' => $r['results'], 'skipped_manual' => $r['skipped_manual'], 'errors' => count($r['errors']), 'status' => $r['last_sync_status']];
+                } catch (OldbException $e) {
+                    $out[] = ['id' => (int)$c['id'], 'name' => (string)$c['name'], 'ok' => false, 'status' => 'Fehler: ' . $e->getMessage()];
+                }
+            }
+        } finally {
+            sync_unlock($fh);
+        }
+        $summary = $out ? implode(' · ', array_map(fn($o) => $o['name'] . ': ' . $o['status'], $out)) : 'Kein aktiver Wettbewerb mit automatischem Abruf.';
+        $okAll = !array_filter($out, fn($o) => !$o['ok']);
+        q("INSERT INTO settings (key, value) VALUES ('cron_last', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            [json_encode(['time' => now_full(), 'ok' => $okAll, 'status' => $summary], JSON_UNESCAPED_UNICODE)]);
+        respond(['time' => now_full(), 'competitions' => $out, 'summary' => $summary]);
 
     default:
         fail('Unbekannte Aktion.', 400);

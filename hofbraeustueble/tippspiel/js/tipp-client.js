@@ -9,13 +9,14 @@
  *   TippAPI.scoreTip(tip, result, settings)  // → {points, kind} | null
  *
  * Live-Modus: fetch auf cms/tipp-api.php (Cookies, X-CSRF-Token).
- * Demo-Modus: vollständige Nachbildung im Browser (localStorage "hbs_tipp_demo") mit denselben Regeln.
+ * Demo-Modus: vollständige Nachbildung im Browser (localStorage "hbs_tipp_demo_v3") mit denselben Regeln.
+ * Automatischer Abruf (OpenLigaDB) wird im Demo-Modus nur simuliert – keine Netzwerkanfragen.
  * Keine Abhängigkeiten, läuft per einfachem <script>-Tag.
  */
 (function (global) {
   'use strict';
 
-  var DEMO_KEY = 'hbs_tipp_demo_v2'; // v2: Demo enthält Bundesliga-Saison
+  var DEMO_KEY = 'hbs_tipp_demo_v3'; // v3: Bundesliga-Wettbewerb mit automatischem Abruf (OpenLigaDB)
   var DEMO_VERSION = 1;
   var DEMO_MAX_AGE_MS = 3 * 24 * 3600 * 1000; // ältere Demo-Daten werden neu erzeugt (damit „kommende Spiele“ kommend bleiben)
   var DEFAULT_SETTINGS = { points_exact: 4, points_diff: 3, points_tendency: 2 };
@@ -24,7 +25,12 @@
   var PW_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
   var NICK_RE = /^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/;
   var NICK_HAS_ALNUM = /[A-Za-z0-9ÄÖÜäöüß]/;
-  var GET_ACTIONS = { status: 1, invite_check: 1, matches: 1, leaderboard: 1, stats: 1, player_tips: 1, admin_overview: 1 };
+  var GET_ACTIONS = { status: 1, invite_check: 1, matches: 1, leaderboard: 1, stats: 1, player_tips: 1, admin_overview: 1,
+    admin_source_preview: 1, admin_cron_info: 1, cron_sync: 1 };
+  var LEAGUE_RE = /^[A-Za-z0-9_-]{1,40}$/;
+  var SYNC_WINDOW_MAX = 90;
+  var SYNC_LAZY_AFTER = 110, SYNC_LAZY_EVERY = 10, SYNC_LAZY_DAYS = 3; // Minuten / Minuten / Tage – wie im PHP-Backend
+  var DEMO_SYNC_MSG = 'Demo: Abruf simuliert – im echten Betrieb kommen die Daten von OpenLigaDB';
 
   /* ================================================================ Hilfen */
 
@@ -471,7 +477,8 @@
   function emptyDb() {
     return {
       v: DEMO_VERSION, seededAt: Date.now(), seq: { competitions: 0, matches: 0, players: 0 },
-      settings: clone(DEFAULT_SETTINGS), competitions: [], matches: [], players: [], invites: [], tips: [], bonus_tips: [], session: null
+      settings: clone(DEFAULT_SETTINGS), competitions: [], matches: [], players: [], invites: [], tips: [], bonus_tips: [], session: null,
+      cron_token: null, cron_last: null
     };
   }
 
@@ -485,7 +492,8 @@
     var at = function (dayOffset, hh, mm) { return fmtNaive(todayMs + dayOffset * day + (hh * 60 + (mm || 0)) * 60000); };
     var created = fmtNaive(todayMs - 20 * day + 19 * 3600000) + ':00';
 
-    db.competitions.push({ id: 1, name: 'Demo-Turnier', active: 1, sort: 0, bonus_question: 'Wer gewinnt das Turnier?', bonus_answer: null, bonus_points: 10, created: created });
+    db.competitions.push({ id: 1, name: 'Demo-Turnier', active: 1, sort: 0, bonus_question: 'Wer gewinnt das Turnier?', bonus_answer: null, bonus_points: 10, created: created,
+      source: null, source_league: null, source_season: null, sync_window_days: 14, last_sync: null, last_sync_status: null });
     db.seq.competitions = 1;
 
     var A = 'Gruppe A · 1. Spieltag', B = 'Gruppe B · 1. Spieltag', A2 = 'Gruppe A · 2. Spieltag', B2 = 'Gruppe B · 2. Spieltag',
@@ -515,13 +523,17 @@
       [at(5, 21), 'Dänemark', 'Niederlande', B3, null, null]
     ];
     plan.forEach(function (p, i) {
-      db.matches.push({ id: i + 1, competition_id: 1, round: p[3], kickoff: p[0], home: p[1], away: p[2], home_goals: p[4], away_goals: p[5] });
+      db.matches.push({ id: i + 1, competition_id: 1, round: p[3], kickoff: p[0], home: p[1], away: p[2], home_goals: p[4], away_goals: p[5],
+        external_id: null, external_group: null, result_source: p[4] !== null ? 'manual' : null });
     });
     db.seq.matches = plan.length;
 
     // Bundesliga-Saison: letzter (abgeschlossener) und nächster Spieltag, Fr–So wie im echten Spielplan
     db.competitions[0].sort = 1;
-    db.competitions.push({ id: 2, name: 'Bundesliga 2026/27', active: 1, sort: 0, bonus_question: 'Wer wird Deutscher Meister?', bonus_answer: null, bonus_points: 10, created: created });
+    // … mit automatischem Abruf (im Demo-Modus nur simuliert)
+    db.competitions.push({ id: 2, name: 'Bundesliga 2026/27', active: 1, sort: 0, bonus_question: 'Wer wird Deutscher Meister?', bonus_answer: null, bonus_points: 10, created: created,
+      source: 'openligadb', source_league: 'bl1', source_season: 2026, sync_window_days: 14,
+      last_sync: fmtNaive(nowMs - 25 * 60000) + ':00', last_sync_status: 'OK – keine Änderungen' });
     db.seq.competitions = 2;
     var dow = new Date(Date.UTC(+now.slice(0, 4), +now.slice(5, 7) - 1, +now.slice(8, 10))).getUTCDay();
     var nextFri = (5 - dow + 7) % 7 || 7;
@@ -545,7 +557,8 @@
       [next[8], 'Mönchengladbach', 'Hamburger SV', null, null]
     ];
     bl.forEach(function (p, i) {
-      db.matches.push({ id: db.seq.matches + 1, competition_id: 2, round: (i < 9 ? 12 : 13) + '. Spieltag', kickoff: p[0], home: p[1], away: p[2], home_goals: p[3], away_goals: p[4] });
+      db.matches.push({ id: db.seq.matches + 1, competition_id: 2, round: (i < 9 ? 12 : 13) + '. Spieltag', kickoff: p[0], home: p[1], away: p[2], home_goals: p[3], away_goals: p[4],
+        external_id: String(83240 + i), external_group: i < 9 ? 12 : 13, result_source: p[3] !== null ? 'auto' : null });
       db.seq.matches++;
     });
 
@@ -640,13 +653,22 @@
   function compOut(c, fk) {
     return {
       id: c.id, name: c.name, active: !!c.active, sort: c.sort, bonus_question: c.bonus_question, bonus_answer: c.bonus_answer,
-      bonus_points: c.bonus_points, bonus_locked: bonusLocked(c.id, fk)
+      bonus_points: c.bonus_points, bonus_locked: bonusLocked(c.id, fk), source: c.source || null
     };
+  }
+  function compAdminOut(c, fk) {
+    var o = compOut(c, fk);
+    o.source_league = c.source_league == null ? null : c.source_league;
+    o.source_season = c.source_season == null ? null : +c.source_season;
+    o.sync_window_days = c.sync_window_days == null ? 14 : +c.sync_window_days;
+    o.last_sync = c.last_sync || null;
+    o.last_sync_status = c.last_sync_status || null;
+    return o;
   }
   function matchBase(m) {
     return {
       id: m.id, competition_id: m.competition_id, round: m.round, kickoff: m.kickoff, home: m.home, away: m.away,
-      home_goals: m.home_goals, away_goals: m.away_goals, locked: nowMin() >= m.kickoff
+      home_goals: m.home_goals, away_goals: m.away_goals, locked: nowMin() >= m.kickoff, result_source: m.result_source || null
     };
   }
   function inviteValid(inv) {
@@ -714,11 +736,92 @@
   }
   function ok(obj) { var o = { ok: true }; for (var k in obj) o[k] = obj[k]; return o; }
 
+  /* --- Automatischer Abruf (Demo: Simulation ohne Netzwerk) */
+
+  function vLeague(v) {
+    var l = typeof v === 'string' ? v.trim() : '';
+    if (!LEAGUE_RE.test(l)) fail('Liga-Kürzel: bitte nur Buchstaben, Ziffern, _ und - (z. B. bl1).', 400);
+    return l;
+  }
+  function vSeason(v) {
+    var s = typeof v === 'number' ? String(v) : (typeof v === 'string' ? v.trim() : '');
+    if (!/^\d{4}$/.test(s) || +s < 2000 || +s > 2100) fail('Saison: bitte das Startjahr angeben (z. B. 2026 für 2026/27).', 400);
+    return +s;
+  }
+  function seasonLabel(y) { return y + '/' + pad((y + 1) % 100); }
+  function demoStatusText(r, mode) {
+    var parts = [];
+    if (r.inserted) parts.push(r.inserted + ' neu');
+    if (r.updated) parts.push(r.updated + ' geändert');
+    if (r.results) parts.push(r.results + (r.results === 1 ? ' Ergebnis' : ' Ergebnisse'));
+    if (r.skipped_manual) parts.push(r.skipped_manual + ' von Hand behalten');
+    if (r.errors && r.errors.length) parts.push(r.errors.length + ' Hinweis' + (r.errors.length === 1 ? '' : 'e'));
+    return 'OK' + (mode === 'results' ? ' (Ergebnisse)' : '') + ' – ' + (parts.length ? parts.join(', ') : 'keine Änderungen');
+  }
+  /** Plausibles (für jedes Spiel immer gleiches) Ergebnis */
+  function demoResult(m) {
+    var r = mulberry32(7919 * m.id + 20261124);
+    var g = [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4];
+    return [g[Math.floor(r() * g.length)], g[Math.floor(r() * g.length)]];
+  }
+  /** Simulierter Abruf: angepfiffene Spiele ohne Ergebnis bekommen eines – von Hand eingetragene bleiben unangetastet. */
+  function demoSimulate(db, c, minAfterKickoff, minKickoff) {
+    var now = nowMin(), nowMs = naiveMs(now);
+    var res = { results: 0, skipped_manual: 0 };
+    db.matches.forEach(function (m) {
+      if (m.competition_id !== c.id || now < m.kickoff) return;
+      if (naiveMs(m.kickoff) + minAfterKickoff * 60000 > nowMs) return;
+      if (minKickoff && m.kickoff < minKickoff) return;
+      if (m.result_source === 'manual' && m.home_goals !== null) {
+        var r0 = demoResult(m);
+        if (r0[0] !== m.home_goals || r0[1] !== m.away_goals) res.skipped_manual++;
+        return;
+      }
+      if (m.home_goals !== null) return;
+      var r = demoResult(m);
+      m.home_goals = r[0]; m.away_goals = r[1]; m.result_source = 'auto';
+      res.results++;
+    });
+    return res;
+  }
+  /** wie lazy_sync() im PHP-Backend: fehlende Ergebnisse ≥ 110 Min. nach Anstoß, höchstens alle 10 Min. je Wettbewerb */
+  function demoLazySync(db) {
+    var nowMs = naiveMs(berlinNow());
+    var limit = fmtNaive(nowMs - SYNC_LAZY_AFTER * 60000), oldest = fmtNaive(nowMs - SYNC_LAZY_DAYS * 24 * 3600000);
+    var every = fmtNaive(nowMs - SYNC_LAZY_EVERY * 60000) + ':' + berlinNow().slice(17, 19);
+    db.competitions.forEach(function (c) {
+      if (c.source !== 'openligadb' || !c.active || (c.last_sync && c.last_sync > every)) return;
+      var due = db.matches.some(function (m) {
+        return m.competition_id === c.id && m.external_id && m.home_goals === null && m.kickoff <= limit && m.kickoff >= oldest;
+      });
+      if (!due) return;
+      var r = demoSimulate(db, c, SYNC_LAZY_AFTER, oldest);
+      c.last_sync = nowFull();
+      c.last_sync_status = demoStatusText({ inserted: 0, updated: 0, results: r.results, skipped_manual: 0, errors: [] }, 'results');
+    });
+  }
+  function demoCronInfo(db) {
+    if (!db.cron_token) db.cron_token = randomString('0123456789abcdef', 48);
+    var base = 'https://www.example.de/cms/tipp-api.php';
+    try { if (global.location && /^https?:$/.test(global.location.protocol)) base = new URL(state.base, global.location.href).href.split('?')[0]; } catch (e) { /* Standard */ }
+    return { url_with_token: base + '?action=cron_sync&token=' + db.cron_token, last_cron: db.cron_last ? clone(db.cron_last) : null, demo: true };
+  }
+  var DEMO_PREVIEWS = {
+    bl1: { name: '1. Fußball-Bundesliga %S', count: 306, rounds: 34, teams: 18, finished: 90, first: '-08-28 20:30', last: [1, '-05-22 15:30'], current: '10. Spieltag', order: 10, round: '11. Spieltag',
+      next: [[3, 1230, 'SV Werder Bremen', 'Borussia Mönchengladbach'], [4, 930, 'FC Bayern München', 'VfL Wolfsburg'], [4, 930, 'Bayer 04 Leverkusen', '1. FC Köln'], [4, 1110, 'Borussia Dortmund', 'VfB Stuttgart'], [5, 930, 'Eintracht Frankfurt', 'SC Freiburg']] },
+    bl2: { name: '2. Fußball-Bundesliga %S', count: 306, rounds: 34, teams: 18, finished: 108, first: '-08-07 20:30', last: [1, '-05-23 15:30'], current: '13. Spieltag', order: 13, round: '14. Spieltag',
+      next: [[3, 1110, 'Hertha BSC', 'FC Schalke 04'], [4, 780, 'Hannover 96', '1. FC Nürnberg'], [4, 780, 'Fortuna Düsseldorf', 'Karlsruher SC'], [5, 810, 'SV Darmstadt 98', 'SC Paderborn 07'], [5, 810, 'Holstein Kiel', 'Hamburger SV']] },
+    dfb: { name: 'DFB Pokal %S', count: 56, rounds: 3, teams: 64, finished: 48, first: '-08-21 18:00', last: [0, '-12-02 20:45'], current: 'Achtelfinale', order: 3, round: 'Achtelfinale',
+      next: [[7, 1080, 'VfB Stuttgart', 'Dynamo Dresden'], [7, 1245, 'FC Bayern München', 'Hertha BSC'], [8, 1080, 'SC Freiburg', 'Eintracht Frankfurt'], [8, 1245, 'Borussia Dortmund', 'Werder Bremen']] },
+    ucl: { name: 'Champions League %S', count: 144, rounds: 8, teams: 36, finished: 74, first: '-09-08 18:45', last: [1, '-01-27 21:00'], current: '5.Spieltag', order: 5, round: '5.Spieltag',
+      next: [[1, 1125, 'Sabah', 'FC Barcelona'], [1, 1260, 'FC Bayern München', 'Inter Mailand'], [1, 1260, 'Bayer 04 Leverkusen', 'FC Liverpool'], [2, 1125, 'Paris Saint-Germain', 'Borussia Dortmund'], [2, 1260, 'Real Madrid', 'Juventus Turin']] }
+  };
+
   var demoActions = {
 
     /* ----------------------------------------------------------- Spieler */
 
-    status: function (db) { return demoStatus(db, demoCurrentPlayer(db)); },
+    status: function (db) { var p = demoCurrentPlayer(db); demoLazySync(db); return demoStatus(db, p); },
 
     invite_check: function (db, d) {
       var code = normCode(d.code);
@@ -758,6 +861,7 @@
     matches: function (db, d) {
       var me = requirePlayer(db);
       var cid = optCompId(db, d);
+      demoLazySync(db);
       var s = dbSettings(db);
       var comps = cid != null ? [findComp(db, cid)] : compsSorted(db).filter(function (c) { return c.active; });
       var fk = firstKickoffs(db);
@@ -823,7 +927,9 @@
 
     leaderboard: function (db, d) {
       var me = requirePlayer(db);
-      return ok(leaderboardOf(scopeOf(db, optCompId(db, d), true), dbSettings(db), me.id));
+      var cid = optCompId(db, d);
+      demoLazySync(db);
+      return ok(leaderboardOf(scopeOf(db, cid, true), dbSettings(db), me.id));
     },
 
     stats: function (db, d) {
@@ -890,9 +996,9 @@
       db.matches.forEach(function (m) { mc[m.competition_id] = (mc[m.competition_id] || 0) + 1; });
       db.tips.forEach(function (t) { tc[t.match_id] = (tc[t.match_id] || 0) + 1; ptc[t.player_id] = (ptc[t.player_id] || 0) + 1; });
       var comps = compsSorted(db).map(function (c) {
-        var o = compOut(c, fk); o.created = c.created; o.match_count = mc[c.id] || 0; return o;
+        var o = compAdminOut(c, fk); o.created = c.created; o.match_count = mc[c.id] || 0; return o;
       });
-      var matches = sortMatches(db.matches).map(function (m) { var o = matchBase(m); o.tip_count = tc[m.id] || 0; return o; });
+      var matches = sortMatches(db.matches).map(function (m) { var o = matchBase(m); o.tip_count = tc[m.id] || 0; o.external_id = m.external_id || null; return o; });
       var sc = scopeOf(db, null, false);
       var t = tally(sc.players, sc.matches.filter(hasResult), sc.tips, sc.comps, sc.bonus, dbSettings(db));
       var players = db.players.slice().sort(function (a, b) { return cmpStr(lower(a.nickname), lower(b.nickname)); }).map(function (p) {
@@ -913,15 +1019,33 @@
       var bq = vOptStr(d.bonus_question, 150, 'Bonusfrage');
       var ba = vOptStr(d.bonus_answer, 80, 'Bonus-Antwort');
       var bp = d.bonus_points === undefined || d.bonus_points === null || d.bonus_points === '' ? 10 : vInt(d.bonus_points, 0, 100, 'Bonuspunkte');
-      var c;
-      if (id !== null) {
-        c = compOr404(db, id);
-      } else {
-        c = { id: ++db.seq.competitions, created: nowFull() };
+      var old = id !== null ? compOr404(db, id) : null;
+      var src = {
+        source: old ? old.source || null : null, source_league: old ? (old.source_league == null ? null : old.source_league) : null,
+        source_season: old ? (old.source_season == null ? null : old.source_season) : null, sync_window_days: old && old.sync_window_days != null ? old.sync_window_days : 14
+      };
+      if (Object.prototype.hasOwnProperty.call(d, 'source')) {
+        var sv = d.source;
+        var on = sv === 'openligadb' || sv === true;
+        if (!on && [null, '', false, 0, '0', 'false', 'manual'].indexOf(sv) < 0) fail('Quelle: nur „openligadb“ oder leer (von Hand) möglich.', 400);
+        if (on) {
+          src.source_league = vLeague(d.source_league);
+          src.source_season = vSeason(d.source_season);
+        } else {
+          src.source_league = typeof d.source_league === 'string' && LEAGUE_RE.test(d.source_league.trim()) ? d.source_league.trim() : null;
+          src.source_season = (typeof d.source_season === 'number' || typeof d.source_season === 'string') && /^\d{4}$/.test(String(d.source_season).trim()) ? +String(d.source_season).trim() : null;
+        }
+        src.source = on ? 'openligadb' : null;
+        src.sync_window_days = d.sync_window_days === undefined || d.sync_window_days === null || d.sync_window_days === '' ? 14 : vInt(d.sync_window_days, 1, SYNC_WINDOW_MAX, 'Zeitraum (Tage)');
+      }
+      var c = old;
+      if (!c) {
+        c = { id: ++db.seq.competitions, created: nowFull(), last_sync: null, last_sync_status: null };
         db.competitions.push(c);
       }
       c.name = name; c.active = active; c.sort = sort; c.bonus_question = bq; c.bonus_answer = ba; c.bonus_points = bp;
-      return ok({ competition: compOut(c, firstKickoffs(db)) });
+      c.source = src.source; c.source_league = src.source_league; c.source_season = src.source_season; c.sync_window_days = src.sync_window_days;
+      return ok({ competition: compAdminOut(c, firstKickoffs(db)) });
     },
 
     admin_competition_delete: function (db, d) {
@@ -950,7 +1074,7 @@
         m = matchOr404(db, id);
         if (m.home_goals !== null && kick > nowMin()) fail('Das Spiel hat schon ein Ergebnis – der Anstoß kann nicht in die Zukunft verlegt werden. Bitte zuerst das Ergebnis löschen.', 409);
       } else {
-        m = { id: ++db.seq.matches, home_goals: null, away_goals: null };
+        m = { id: ++db.seq.matches, home_goals: null, away_goals: null, external_id: null, external_group: null, result_source: null };
         db.matches.push(m);
       }
       m.competition_id = cid; m.round = round; m.kickoff = kick; m.home = home; m.away = away;
@@ -991,7 +1115,8 @@
         else { seen[key] = 1; rows.push({ round: round, kickoff: kick, home: home, away: away }); }
       });
       rows.forEach(function (r) {
-        db.matches.push({ id: ++db.seq.matches, competition_id: cid, round: r.round, kickoff: r.kickoff, home: r.home, away: r.away, home_goals: null, away_goals: null });
+        db.matches.push({ id: ++db.seq.matches, competition_id: cid, round: r.round, kickoff: r.kickoff, home: r.home, away: r.away, home_goals: null, away_goals: null,
+          external_id: null, external_group: null, result_source: null });
       });
       return ok({ imported: rows.length, errors: errors });
     },
@@ -1001,12 +1126,12 @@
       var m = matchOr404(db, id);
       var hg = d.home_goals, ag = d.away_goals;
       if ((hg === null || hg === undefined || hg === '') && (ag === null || ag === undefined || ag === '')) {
-        m.home_goals = null; m.away_goals = null;
+        m.home_goals = null; m.away_goals = null; m.result_source = null; // ein automatischer Abruf darf es wieder eintragen
       } else {
         hg = vGoals(hg, 'Tore Heim');
         ag = vGoals(ag, 'Tore Gast');
         if (nowMin() < m.kickoff) fail('Das Spiel hat noch nicht begonnen – ein Ergebnis kann erst nach dem Anstoß eingetragen werden.', 409);
-        m.home_goals = hg; m.away_goals = ag;
+        m.home_goals = hg; m.away_goals = ag; m.result_source = 'manual';
       }
       return ok({ match: matchBase(m) });
     },
@@ -1050,6 +1175,61 @@
       playerOr404(db, id);
       removePlayer(db, id);
       return ok({});
+    },
+
+    /* ------------------------------------- Automatischer Abruf (im Demo-Modus simuliert) */
+
+    admin_source_preview: function (db, d) {
+      var league = vLeague(d.league);
+      var season = vSeason(d.season);
+      var key = league.toLowerCase();
+      var P = DEMO_PREVIEWS[key];
+      if (!P) fail('Demo: Vorschau nur für bl1, bl2, dfb und ucl – im echten Betrieb wird jedes Kürzel direkt bei OpenLigaDB geprüft.', 404);
+      var base = naiveMs(berlinNow().slice(0, 10) + ' 00:00');
+      var matches = P.next.map(function (x) { // [Tage ab heute, Minuten ab Mitternacht, Heim, Gast]
+        return { kickoff: fmtNaive(base + x[0] * 24 * 3600000 + x[1] * 60000), home: x[2], away: x[3], round: P.round, result: null };
+      });
+      return ok({
+        league: league, season: season, season_label: seasonLabel(season), league_name: P.name.replace('%S', season + '/' + (season + 1)),
+        match_count: P.count, round_count: P.rounds, team_count: P.teams, finished: P.finished,
+        first_kickoff: season + P.first, last_kickoff: (season + P.last[0]) + P.last[1],
+        current_group: { name: P.current, order: P.order }, matches: matches.slice(0, 5), demo: true
+      });
+    },
+
+    admin_sync: function (db, d) {
+      var cid = vId(d.competition_id, 'Wettbewerb');
+      var scope = d.scope === undefined || d.scope === null ? 'window' : d.scope;
+      if (scope !== 'window' && scope !== 'season') fail('Umfang: „window“ oder „season“.', 400);
+      var c = compOr404(db, cid);
+      if (c.source !== 'openligadb') fail('Für diesen Wettbewerb ist kein automatischer Abruf eingerichtet.', 400);
+      var r = demoSimulate(db, c, 0);
+      var res = { inserted: 0, updated: 0, results: r.results, skipped_manual: r.skipped_manual, errors: [] };
+      c.last_sync = nowFull();
+      c.last_sync_status = demoStatusText(res, scope);
+      res.last_sync = c.last_sync; res.last_sync_status = c.last_sync_status; res.message = DEMO_SYNC_MSG; res.demo = true;
+      return ok(res);
+    },
+
+    admin_cron_info: function (db) { return ok(demoCronInfo(db)); },
+
+    admin_cron_token_reset: function (db) {
+      db.cron_token = randomString('0123456789abcdef', 48);
+      return ok(demoCronInfo(db));
+    },
+
+    cron_sync: function (db, d) {
+      if (!db.cron_token || typeof d.token !== 'string' || d.token !== db.cron_token) fail('Ungültiger Token.', 403);
+      var out = [];
+      compsSorted(db).filter(function (c) { return c.source === 'openligadb' && c.active; }).forEach(function (c) {
+        var r = demoSimulate(db, c, 0);
+        var res = { inserted: 0, updated: 0, results: r.results, skipped_manual: r.skipped_manual, errors: [] };
+        c.last_sync = nowFull(); c.last_sync_status = demoStatusText(res, 'window');
+        out.push({ id: c.id, name: c.name, ok: true, inserted: 0, updated: 0, results: r.results, skipped_manual: r.skipped_manual, errors: 0, status: c.last_sync_status });
+      });
+      var summary = out.length ? out.map(function (o) { return o.name + ': ' + o.status; }).join(' · ') : 'Kein aktiver Wettbewerb mit automatischem Abruf.';
+      db.cron_last = { time: nowFull(), ok: true, status: summary };
+      return ok({ time: db.cron_last.time, competitions: out, summary: summary, demo: true });
     },
 
     admin_settings_save: function (db, d) {

@@ -232,9 +232,9 @@ Das sind Texte der Website, die wie alle anderen Inhalte erst mit „Speichern�
 
 | Unterbereich | Was man dort macht |
 |---|---|
-| **Übersicht** | Anzahl Spieler, Tipps, kommende Spiele, gültige Einladungen; „3 Spiele warten auf ein Ergebnis“ mit Direktlink; Top 5 der Gesamtwertung. |
-| **Ergebnisse eintragen** | Der wichtigste Bildschirm für den Spieltag: Angepfiffene Spiele ohne Ergebnis stehen oben. Tore mit den großen **−/+**-Knöpfen oder per Zahl eingeben, „Ergebnis speichern“ – fertig, die Punkte rechnet das Tippspiel selbst. Bereits eingetragene Ergebnisse lassen sich ändern oder löschen. Ein Ergebnis geht erst ab Anstoß. |
-| **Spiele & Wettbewerbe** | Wettbewerbe anlegen/bearbeiten/löschen (Name, aktiv/Archiv, Reihenfolge, Bonusfrage z. B. „Wer wird Deutscher Meister?“, die richtige Antwort erst nach Turnierende eintragen, Bonuspunkte). Spiele einzeln anlegen (Datum, Uhrzeit, Runde, Heim, Gast) oder unter „Viele Spiele auf einmal einfügen“ als Liste, eine Zeile pro Spiel: `2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag` (Runde optional, auch Tabulator/Excel oder `16.01.2027 15:30`). Funktioniert genauso für Bundesliga, Champions League, EM oder WM. Fehlerhafte Zeilen werden mit Zeilennummer gemeldet und bleiben zum Korrigieren im Feld stehen. |
+| **Übersicht** | Anzahl Spieler, Tipps, kommende Spiele, gültige Einladungen; „3 Spiele warten auf ein Ergebnis“ mit Direktlink; Top 5 der Gesamtwertung. Karte **„Automatischer Abruf“**: Stand je Wettbewerb mit „Jetzt abrufen“, die Cronjob-Adresse (Kopieren-Knopf, Kurzanleitung, „Token neu erzeugen“). |
+| **Ergebnisse eintragen** | Der wichtigste Bildschirm für den Spieltag: Angepfiffene Spiele ohne Ergebnis stehen oben. Tore mit den großen **−/+**-Knöpfen oder per Zahl eingeben, „Ergebnis speichern“ – fertig, die Punkte rechnet das Tippspiel selbst. Bereits eingetragene Ergebnisse lassen sich ändern oder löschen. Ein Ergebnis geht erst ab Anstoß. Bei Wettbewerben mit automatischem Abruf steht an jedem Ergebnis **„automatisch“** oder **„von Hand“**; offene Spiele sind mit „kommt automatisch“ markiert. |
+| **Spiele & Wettbewerbe** | Wettbewerbe anlegen/bearbeiten/löschen (Name, aktiv/Archiv, Reihenfolge, **Spielplan automatisch abrufen** – siehe unten, Bonusfrage z. B. „Wer wird Deutscher Meister?“, die richtige Antwort erst nach Turnierende eintragen, Bonuspunkte). Spiele einzeln anlegen (Datum, Uhrzeit, Runde, Heim, Gast) oder unter „Viele Spiele auf einmal einfügen“ als Liste, eine Zeile pro Spiel: `2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag` (Runde optional, auch Tabulator/Excel oder `16.01.2027 15:30`). Funktioniert genauso für Bundesliga, Champions League, EM oder WM. Fehlerhafte Zeilen werden mit Zeilennummer gemeldet und bleiben zum Korrigieren im Feld stehen. |
 | **Einladungen** | Neue Einladung: Notiz, Anzahl Personen („1 Person“ = persönlich, „Thekenaushang 50“ = für viele), optional „Gültig bis“. Je Einladung: **Link kopieren**, **Per WhatsApp teilen** (öffnet WhatsApp mit fertigem Text), **QR-Code** (als PNG/SVG speichern oder als Aushang drucken: großer QR-Code + „Stüble-Tippspiel – scannen & mitmachen“ + Code) und **Zurückziehen**. Einladungslink: `https://ihre-domain.de/tippspiel/?code=XXXXXXXX`. |
 | **Spieler** | Liste mit E-Mail, Registrierung, letztem Login, Tipps und Punkten. Deaktivieren/Aktivieren (deaktivierte Spieler können sich nicht anmelden und fehlen in der Rangliste), **Neues Passwort** (Passwort vergessen: das angezeigte vorläufige Passwort wird nur einmal gezeigt – dem Gast persönlich geben), Löschen (mit allen Tipps). |
 | **Punkte-Regeln** | Punkte für exakt / Tordifferenz / Tendenz (exakt ≥ Differenz ≥ Tendenz) mit Live-Beispiel. Gilt sofort auch rückwirkend für die Rangliste. |
@@ -242,6 +242,58 @@ Das sind Texte der Website, die wie alle anderen Inhalte erst mit „Speichern�
 
 Alle Löschungen fragen vorher nach. Im Demo-Modus der Verwaltung (ohne PHP) läuft der Tippspiel-Reiter mit
 erfundenen Beispieldaten; „Demo-Tippspiel zurücksetzen“ in der Übersicht stellt sie wieder her.
+
+**Spielplan & Ergebnisse automatisch (OpenLigaDB)**
+
+Für 1. Bundesliga, 2. Bundesliga, DFB-Pokal und Champions League muss niemand mehr Spiele oder Ergebnisse
+eintippen. Die Daten kommen kostenlos und ohne Anmeldung von **OpenLigaDB** (openligadb.de).
+
+1. „Spiele & Wettbewerbe“ → Wettbewerb anlegen oder bearbeiten → Bereich **„Spielplan automatisch abrufen
+   (OpenLigaDB)“** einschalten.
+2. Wettbewerb wählen (1. Bundesliga / 2. Bundesliga / DFB-Pokal / Champions League oder „Eigenes Kürzel“, z. B.
+   `bl3` für die 3. Liga) und die Saison (vorausgewählt ist die laufende, z. B. „2026/27“). Ist der Name leer,
+   wird er vorgeschlagen („Bundesliga 2026/27“).
+3. **„Vorschau“** zeigt, was OpenLigaDB kennt (Anzahl Spiele, Spieltage, die nächsten Partien) – so sieht man
+   vor dem Speichern, ob Kürzel und Saison stimmen.
+4. **„Jetzt abrufen“** legt alle Spiele der nächsten 14 Tage an (Zeitraum einstellbar, 1–90 Tage) und holt
+   fehlende Ergebnisse. **„Ganze Saison importieren“** legt alle Spiele der Saison auf einmal an – bereits
+   gespielte mit Ergebnis. Doppelte Spiele gibt es nicht: Jedes Spiel wird über seine OpenLigaDB-Nummer erkannt
+   (ein vorher von Hand angelegtes, identisches Spiel – gleicher Anstoß, gleiche Namen – wird übernommen).
+
+Danach läuft alles von selbst:
+
+- **Anstoßzeiten, Mannschaften, Runde** werden bei jedem Abruf aktualisiert, solange das Spiel noch nicht
+  angepfiffen ist. Ein bereits angepfiffenes Spiel wird nie verschoben (wie beim Bearbeiten von Hand); wurde es
+  laut OpenLigaDB verlegt, erscheint ein Hinweis zum Ändern von Hand. Änderungen von Hand an noch nicht
+  angepfiffenen, automatisch abgerufenen Spielen werden beim nächsten Abruf wieder überschrieben.
+- **Ergebnisse** kommen von selbst: Öffnet jemand das Tippspiel und ein Spiel ist seit knapp 2 Stunden
+  (110 Min.) angepfiffen und hat noch kein Ergebnis, holt das Tippspiel nebenbei die Ergebnisse dieses Spieltags
+  (höchstens alle 10 Minuten, kurzes Zeitlimit von 5 Sekunden – klappt es nicht, merkt der Spieler nichts davon,
+  der Fehler steht dann in der Verwaltung beim Wettbewerb). Zusätzlich kann der Webhoster per **Cronjob**
+  regelmäßig abrufen (siehe unten).
+- **Es zählt das Ergebnis nach 90 Minuten** (OpenLigaDB „Endergebnis“) – Verlängerung und Elfmeterschießen im
+  Pokal zählen nicht, das ist die übliche Tippspiel-Regel. Übernommen wird ein Ergebnis erst, wenn OpenLigaDB das
+  Spiel als beendet markiert (Zwischenstände während des Spiels nie); fehlt diese Markierung, erst 4 Stunden
+  nach Anstoß.
+- **Von Hand hat Vorrang:** Ein in „Ergebnisse eintragen“ selbst eingetragenes oder geändertes Ergebnis
+  („von Hand“) wird vom Abruf **nie überschrieben**. Wird es gelöscht, darf der nächste Abruf es wieder
+  automatisch eintragen.
+- Andere Ligen bei OpenLigaDB werden von Freiwilligen angelegt und gepflegt – Qualität unterschiedlich, daher
+  vorher die Vorschau ansehen. *Daten: OpenLigaDB (openligadb.de), Community-gepflegt, ohne Gewähr.* In der
+  Spieler-App steht dann unter den Spielen „Spielplan & Ergebnisse: OpenLigaDB“.
+
+**Cronjob einrichten (empfohlen, alle 15 Minuten)**
+
+In „Tippspiel → Übersicht → Automatischer Abruf“ steht die geheime Adresse, z. B.
+`https://ihre-domain.de/cms/tipp-api.php?action=cron_sync&token=…` (Knopf „Kopieren“). Diese Adresse im
+Kundenmenü des Webhosters als Cronjob eintragen, der sie **alle 15 Minuten** aufruft – z. B. IONOS: Hosting →
+Cronjobs; Strato: Einstellungen → Cronjob-Verwaltung; all-inkl: KAS → Tools → Cronjobs (Menünamen je nach
+Tarif). Kann man nur einen Befehl eintragen: `curl -s "ADRESSE" > /dev/null`. Ohne Cronjob im Tarif geht auch ein
+kostenloser Dienst wie cron-job.org. Der Aufruf holt für jeden aktiven Wettbewerb mit Abruf neue Spiele (Zeitraum
+wie eingestellt), Zeitänderungen und Ergebnisse und antwortet mit einer kurzen Zusammenfassung (JSON).
+Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-token.php` (nicht in `content.json`);
+„Token neu erzeugen“ macht die alte Adresse ungültig. Falsche Tokens werden nach 10 Versuchen je IP für
+15 Minuten gesperrt.
 
 **Technik**
 
@@ -251,7 +303,10 @@ erfundenen Beispieldaten; „Demo-Tippspiel zurücksetzen“ in der Übersicht s
   `assets/vendor/qrcode-generator-LICENSE.txt`) – keine externen Dienste.
 - Daten: **`cms/data/tippspiel.sqlite`** (SQLite-Datei, wird beim ersten Aufruf automatisch angelegt;
   daneben können kurzzeitig `tippspiel.sqlite-wal` und `-shm` liegen). Anmeldungen der Spieler liegen in
-  `cms/data/tipp-sessions/`. Der Ordner `cms/data/` ist per `.htaccess` gesperrt und nicht im Git.
+  `cms/data/tipp-sessions/`, der Cronjob-Token in `cms/data/tipp-cron-token.php`, dazu die Sperrdatei
+  `cms/data/tipp-sync.lock` (verhindert gleichzeitige Abrufe). Der Ordner `cms/data/` ist per `.htaccess`
+  gesperrt und nicht im Git. Bestehende Datenbanken werden beim ersten Aufruf automatisch ergänzt
+  (neue Spalten, vorhandene Ergebnisse gelten als „von Hand“).
 - **Sicherung:** einfach `cms/data/tippspiel.sqlite` per FTP herunterladen (am besten, wenn gerade niemand
   tippt). Wiederherstellen: Datei zurückkopieren (vorhandene `-wal`/`-shm`-Dateien vorher löschen).
 - Voraussetzung: PHP 8 mit der Erweiterung **pdo_sqlite** – bei IONOS, Strato, all-inkl & Co.
@@ -259,7 +314,14 @@ erfundenen Beispieldaten; „Demo-Tippspiel zurücksetzen“ in der Übersicht s
   PHP-Erweiterung pdo_sqlite“). Eine MySQL-Datenbank wird nicht benötigt.
 - Ohne PHP (z. B. lokale Vorschau mit `python3 -m http.server`) läuft das Tippspiel im **Demo-Modus** mit
   erfundenen Stammgästen; Anmeldung mit „Gast“ / „demo1234“ oder Registrierung mit Code `DEMO2026`.
-  Die Demo-Daten liegen nur im Browser (`localStorage`: `hbs_tipp_demo`).
+  Die Demo-Daten liegen nur im Browser (`localStorage`: `hbs_tipp_demo_v3`). Der automatische Abruf wird in der
+  Demo nur simuliert (keine Verbindung zu OpenLigaDB; Vorschau mit Beispieldaten für bl1/bl2/dfb/ucl).
+- Automatischer Abruf: Anfragen gehen nur an `https://api.openligadb.de` (fest eingestellt; Liga-Kürzel und
+  Saison werden streng geprüft, nie eine frei eingegebene Adresse). Der Server braucht dafür die PHP-Erweiterung
+  **curl** oder `allow_url_fopen` (Standard bei den üblichen Hostern), Zeitlimit 8 Sekunden (Verwaltung/Cronjob)
+  bzw. 5 Sekunden (nebenbei), User-Agent `HBS-Tippspiel/1.0`. Für Tests lässt sich serverseitig per Konstante
+  oder Umgebungsvariable `HBS_OLDB_BASE` ein lokaler Ersatz-Server einstellen, z. B.
+  `HBS_OLDB_BASE=http://127.0.0.1:8091 php -S 127.0.0.1:8090 -t hofbraeustueble`.
 - Schutz: Admin-Aktionen nur mit angemeldeter Verwaltung, Sperre nach mehreren falschen Anmeldungen,
   Tippschluss wird auf dem Server geprüft (Zeitzone Europe/Berlin).
 - Wichtig: Das Tippspiel ist ein reines Spaß-Spiel. Keine Einsätze oder Geldpreise ausloben –
