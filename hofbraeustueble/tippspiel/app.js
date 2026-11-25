@@ -658,8 +658,8 @@
     var html = '';
     if (S.comps.length > 1) {
       html += '<div class="tabs" role="group" aria-label="Wettbewerb">' +
-        '<button type="button" class="tab" data-comp="all" aria-selected="' + (S.compFilter === 'all') + '">Alle Wettbewerbe</button>' +
-        S.comps.map(function (c) { return '<button type="button" class="tab" data-comp="' + c.id + '" aria-selected="' + (S.compFilter === c.id) + '">' + esc(c.name) + '</button>'; }).join('') + '</div>';
+        '<button type="button" class="tab" data-comp="all" aria-selected="' + (S.compFilter === 'all') + '">Alle</button>' +
+        S.comps.map(function (c) { return '<button type="button" class="tab" data-comp="' + c.id + '" aria-selected="' + (S.compFilter === c.id) + '" title="' + esc(c.name) + '">' + esc(tabLabel(c.name)) + '</button>'; }).join('') + '</div>';
     }
     html += '<div class="segmented" role="group" aria-label="Spiele filtern">' +
       fbtn('offen', 'Offen', nOpen + nLive) + fbtn('alle', 'Alle', null) + fbtn('ergebnisse', 'Ergebnisse', nRes) + '</div>';
@@ -1380,9 +1380,11 @@
     tabs.push({ id: 'all', name: 'Gesamt' });
     return '<div class="tabs" role="tablist" aria-label="Wettbewerb wählen" data-tabs="' + name + '">' + tabs.map(function (t) {
       var sel = String(t.id) === String(current);
-      return '<button type="button" class="tab" role="tab" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '" aria-controls="' + name + '-panel" data-tab="' + t.id + '">' + esc(t.name) + '</button>';
+      return '<button type="button" class="tab" role="tab" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '" aria-controls="' + name + '-panel" data-tab="' + t.id + '" title="' + esc(t.name) + '">' + esc(tabLabel(t.name)) + '</button>';
     }).join('') + '</div>';
   }
+  /** Kurzer Reitername: „Bundesliga 2026/27“ → „Bundesliga“ (Saison steht im Titel/Tooltip) */
+  function tabLabel(name) { return String(name || '').replace(/\s+\d{4}\s*\/\s*\d{2,4}$/, '') || String(name || ''); }
   function bindTabs(root, onPick) {
     var list = $('[role=tablist]', root);
     if (!list) return;
