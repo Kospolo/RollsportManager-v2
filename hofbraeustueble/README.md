@@ -360,3 +360,12 @@ Danach ist die Vorschau unter **https://hofbraeustueble.kospolo.de/** erreichbar
 **Daten:** Inhalte, Passwort, hochgeladene Bilder, Backups und die Tippspiel-Datenbank liegen im Docker-Volume `hofbraeustueble-state` und überleben jedes Update (`deploy.sh` erneut ausführen). Ergebnisse holt der Container selbst alle 15 Minuten, ein Cronjob ist nicht nötig. Alles zurücksetzen: `docker compose -f hofbraeustueble/deploy/compose.yml down -v` (löscht alle Daten!).
 
 **Vorschau-Schutz:** Jede Antwort trägt `X-Robots-Tag: noindex, nofollow`, damit Suchmaschinen die Platzhalter-Inhalte (Adresse, Impressum) nicht aufnehmen. Vor einem echten Start diese Zeile in `deploy/apache-site.conf` entfernen und Impressum/Datenschutz ausfüllen.
+
+### Weitere Ligen anlegen (Vorschau auf dem Mac Studio)
+
+```bash
+./hofbraeustueble/deploy/ligen-anlegen.sh              # DFB-Pokal, Champions League, Frauen-Bundesliga
+./hofbraeustueble/deploy/ligen-anlegen.sh bl2 wcl dfbf # 2. Bundesliga, Frauen-Champions-League, DFB-Pokal Frauen
+```
+
+Vorhandene Ligen werden übersprungen. Läuft die Saison schon, wird keine Bonusfrage angelegt (sie wäre nur bis zum ersten Spiel tippbar). Im CMS geht dasselbe unter Tippspiel → Spiele & Wettbewerbe → „Neuer Wettbewerb“; die Frauen-Ligen stehen dort jetzt auch in der Auswahl.

@@ -915,7 +915,12 @@
     dfb: { name: 'DFB Pokal %S', count: 56, rounds: 3, teams: 64, finished: 48, first: '-08-21 18:00', last: [0, '-12-02 20:45'], current: 'Achtelfinale', order: 3, round: 'Achtelfinale',
       next: [[7, 1080, 'VfB Stuttgart', 'Dynamo Dresden'], [7, 1245, 'FC Bayern München', 'Hertha BSC'], [8, 1080, 'SC Freiburg', 'Eintracht Frankfurt'], [8, 1245, 'Borussia Dortmund', 'Werder Bremen']] },
     ucl: { name: 'Champions League %S', count: 144, rounds: 8, teams: 36, finished: 74, first: '-09-08 18:45', last: [1, '-01-27 21:00'], current: '5.Spieltag', order: 5, round: '5.Spieltag',
-      next: [[1, 1125, 'Sabah', 'FC Barcelona'], [1, 1260, 'FC Bayern München', 'Inter Mailand'], [1, 1260, 'Bayer 04 Leverkusen', 'FC Liverpool'], [2, 1125, 'Paris Saint-Germain', 'Borussia Dortmund'], [2, 1260, 'Real Madrid', 'Juventus Turin']] }
+      next: [[1, 1125, 'Sabah', 'FC Barcelona'], [1, 1260, 'FC Bayern München', 'Inter Mailand'], [1, 1260, 'Bayer 04 Leverkusen', 'FC Liverpool'], [2, 1125, 'Paris Saint-Germain', 'Borussia Dortmund'], [2, 1260, 'Real Madrid', 'Juventus Turin']] },
+    ffb1: { name: '1. Frauen Fußballbundesliga %S', count: 182, rounds: 26, teams: 14, finished: 77, first: '-08-21 18:20', last: [1, '-05-23 15:30'], current: '11. Spieltag', order: 11, round: '12. Spieltag',
+      next: [[16, 1110, 'FC Bayern München Frauen', '1. FC Nürnberg Frauen'], [17, 720, 'SV Werder Bremen Frauen', 'Eintracht Frankfurt Frauen'], [17, 840, 'TSG 1899 Hoffenheim Frauen', 'Hamburger SV Frauen'], [18, 960, 'SC Freiburg Frauen', 'VfL Wolfsburg Frauen']] },
+    wcl: { name: "UEFA Women's Champions League %S", count: 54, rounds: 6, teams: 18, finished: 45, first: '-09-22 21:00', last: [0, '-12-16 21:00'], current: '5. Spieltag', order: 5, round: '6. Spieltag',
+      next: [[21, 1260, 'FC Bayern München Frauen', 'FC Barcelona Women'], [21, 1260, 'A.S. Roma Women', 'Real Madrid (Women)'], [21, 1260, 'Inter Milan (Women)', 'Arsenal W.F.C. (Women)']] },
+    dfbf: { name: 'DFB-Pokal Frauen %S', count: 40, rounds: 3, teams: 48, finished: 40, first: '-08-15 11:00', last: [0, '-11-02 18:00'], current: 'Achtelfinale', order: 3, round: 'Achtelfinale', next: [] }
   };
 
   var demoActions = {
@@ -1327,7 +1332,7 @@
       var season = vSeason(d.season);
       var key = league.toLowerCase();
       var P = DEMO_PREVIEWS[key];
-      if (!P) fail('Demo: Vorschau nur für bl1, bl2, dfb und ucl – im echten Betrieb wird jedes Kürzel direkt bei OpenLigaDB geprüft.', 404);
+      if (!P) fail('Demo: Vorschau nur für bl1, bl2, dfb, ucl, ffb1, wcl und dfbf – im echten Betrieb wird jedes Kürzel direkt bei OpenLigaDB geprüft.', 404);
       var base = naiveMs(berlinNow().slice(0, 10) + ' 00:00');
       var matches = P.next.map(function (x) { // [Tage ab heute, Minuten ab Mitternacht, Heim, Gast]
         return { kickoff: fmtNaive(base + x[0] * 24 * 3600000 + x[1] * 60000), home: x[2], away: x[3], round: P.round, result: null };

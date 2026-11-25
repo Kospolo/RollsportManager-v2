@@ -1668,7 +1668,10 @@
     { id: 'bl1', label: '1. Bundesliga', name: 'Bundesliga' },
     { id: 'bl2', label: '2. Bundesliga', name: '2. Bundesliga' },
     { id: 'dfb', label: 'DFB-Pokal', name: 'DFB-Pokal' },
-    { id: 'ucl', label: 'Champions League', name: 'Champions League' }
+    { id: 'ucl', label: 'Champions League', name: 'Champions League' },
+    { id: 'ffb1', label: 'Frauen-Bundesliga', name: 'Frauen-Bundesliga' },
+    { id: 'wcl', label: 'Frauen-Champions-League', name: 'Frauen-Champions-League' },
+    { id: 'dfbf', label: 'DFB-Pokal Frauen', name: 'DFB-Pokal Frauen' }
   ];
   /** Laufende Saison: ab Juli die neue (2026/27 = 2026) */
   function currentSeason() { var n = tNow(); return +n.slice(5, 7) >= 7 ? +n.slice(0, 4) : +n.slice(0, 4) - 1; }

@@ -20,7 +20,7 @@ RUN a2enmod headers rewrite \
 COPY deploy/apache-site.conf /etc/apache2/conf-enabled/zz-hbs.conf
 COPY deploy/php.ini "$PHP_INI_DIR/conf.d/zz-hbs.ini"
 COPY deploy/docker-entrypoint.sh /usr/local/bin/hbs-entrypoint
-COPY deploy/seed.php deploy/cron.php /usr/local/lib/hbs/
+COPY deploy/seed.php deploy/cron.php deploy/ligen.php /usr/local/lib/hbs/
 
 # Die Website selbst (ohne Deploy-Dateien, Entwurfs-Screenshots und Doku)
 COPY . /var/www/html/
