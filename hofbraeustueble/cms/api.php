@@ -89,6 +89,14 @@ function load_config(): array
 /** Datei atomar schreiben: temporäre Datei im selben Ordner + rename(). */
 function atomic_write(string $file, string $data, int $mode = 0644): void
 {
+    // Ist die Datei ein Symlink (z. B. im Docker-Container auf ein Daten-Volume),
+    // ins Ziel schreiben – sonst würde rename() den Link durch eine Datei ersetzen.
+    if (is_link($file)) {
+        $real = realpath($file);
+        if ($real !== false) {
+            $file = $real;
+        }
+    }
     $dir = dirname($file);
     $tmp = @tempnam($dir, '.tmp-');
     if ($tmp === false) {

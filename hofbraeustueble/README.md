@@ -326,3 +326,28 @@ Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-toke
   Tippschluss wird auf dem Server geprüft (Zeitzone Europe/Berlin).
 - Wichtig: Das Tippspiel ist ein reines Spaß-Spiel. Keine Einsätze oder Geldpreise ausloben –
   Sportwetten mit Einsatz sind ohne Lizenz verboten.
+
+## Vorschau auf kospolo.de (Mac Studio, Docker)
+
+Für die Präsentation beim Eigentümer läuft die komplette Seite (Website, CMS, Tippspiel mit echtem Bundesliga-Spielplan) als ein Docker-Container auf dem Mac Studio. Davor sitzt wie bei `beta.rollsportmanager.de` der Nginx Proxy Manager. Alle Dateien liegen in `deploy/`.
+
+**Einmalig: DNS.** Beim DNS-Anbieter von kospolo.de einen A-Record `hofbraeustueble.kospolo.de` auf die öffentliche IP des Anschlusses anlegen (genau wie bei `jochen.kospolo.de`).
+
+**Ausrollen** (im Repo auf dem Mac Studio, aus dem letzten Commit):
+
+```bash
+git pull
+./hofbraeustueble/deploy/deploy.sh          # baut das Image, startet den Container auf Port 8097
+./hofbraeustueble/deploy/npm-proxy.sh       # einmalig: Proxy-Host + Let's-Encrypt-Zertifikat
+```
+
+Danach ist die Vorschau unter **https://hofbraeustueble.kospolo.de/** erreichbar. Port oder Name ändern: `HBS_PORT=8099 ./hofbraeustueble/deploy/deploy.sh` bzw. `DOMAIN=… HBS_PORT=… ./hofbraeustueble/deploy/npm-proxy.sh`.
+
+**Beim ersten Start** passiert automatisch:
+- Statt des öffentlich dokumentierten Start-Passworts wird ein **zufälliges CMS-Passwort** erzeugt.
+- Im Tippspiel wird „Bundesliga 2026/27“ mit dem echten Spielplan von OpenLigaDB angelegt, dazu ein Einladungscode für bis zu 25 Personen.
+- `deploy.sh` zeigt diese Zugangsdaten am Ende an. Später nachlesen: `docker exec hofbraeustueble-preview cat /srv/hbs-state/ZUGANGSDATEN.txt`
+
+**Daten:** Inhalte, Passwort, hochgeladene Bilder, Backups und die Tippspiel-Datenbank liegen im Docker-Volume `hofbraeustueble-state` und überleben jedes Update (`deploy.sh` erneut ausführen). Ergebnisse holt der Container selbst alle 15 Minuten, ein Cronjob ist nicht nötig. Alles zurücksetzen: `docker compose -f hofbraeustueble/deploy/compose.yml down -v` (löscht alle Daten!).
+
+**Vorschau-Schutz:** Jede Antwort trägt `X-Robots-Tag: noindex, nofollow`, damit Suchmaschinen die Platzhalter-Inhalte (Adresse, Impressum) nicht aufnehmen. Vor einem echten Start diese Zeile in `deploy/apache-site.conf` entfernen und Impressum/Datenschutz ausfüllen.

@@ -1,0 +1,29 @@
+# Hofbräustüble-Vorschau — hofbraeustueble.kospolo.de
+#
+# Starten/aktualisieren: ./hofbraeustueble/deploy/deploy.sh   (baut aus dem letzten Commit)
+#
+# Davor liegt der Nginx Proxy Manager auf demselben Rechner (Mac Studio,
+# 192.168.1.220): hofbraeustueble.kospolo.de → http://192.168.1.220:8097
+# (einrichten mit ./hofbraeustueble/deploy/npm-proxy.sh). Er bringt das
+# Let's-Encrypt-Zertifikat mit; dieser Container spricht nur HTTP.
+#
+# Website + CMS + Tippspiel in einem PHP/Apache-Container. Alle Daten
+# (Inhalte, Passwort, Bilder, Backups, Tippspiel-Datenbank) liegen im Volume
+# „hofbraeustueble-state“ und überleben jedes Update.
+services:
+  hofbraeustueble:
+    image: hofbraeustueble-preview:latest
+    container_name: hofbraeustueble-preview
+    # Wie die anderen Seiten auf dieser Maschine: kommt nach einem Neustart von
+    # selbst wieder hoch; bewusst angehalten bleibt angehalten.
+    restart: unless-stopped
+    # Auf der LAN-Adresse, nicht nur 127.0.0.1 — der Proxy Manager läuft in
+    # einem eigenen Container und erreicht den Host sonst nicht.
+    ports:
+      - "${HBS_PORT:-8097}:80"
+    volumes:
+      - hofbraeustueble-state:/srv/hbs-state
+
+volumes:
+  hofbraeustueble-state:
+    name: hofbraeustueble-state

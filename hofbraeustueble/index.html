@@ -2,49 +2,89 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hofbräustüble – Entwürfe</title>
-<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hofbräustüble – Website-Entwürfe</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="tippspiel/icon.svg" type="image/svg+xml">
 <style>
   @font-face { font-family: "Playfair Display"; src: url("assets/fonts/playfair-display-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
   @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
   @font-face { font-family: "Inter"; src: url("assets/fonts/inter-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
-  :root { --bg: #17171a; --card: #222226; --text: #f3ece0; --muted: #b3aa9c; --gold: #d9a441; }
+  /* Kneipen-Tafel: dunkler Grund, zwei Entwürfe nebeneinander, darunter Tippspiel und CMS */
+  :root {
+    color-scheme: dark;
+    --bg: #141210; --card: #201c18; --line: #3a322a;
+    --fg: #f3ece0; --muted: #b8ad9c; --brass: #d9a441; --brass-ink: #1b1408;
+    --display: "Playfair Display", Georgia, serif; --body: Inter, system-ui, sans-serif;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 50% -20%, #3a2a14, var(--bg) 60%); color: var(--text); font: 16px/1.6 Inter, system-ui, sans-serif; padding: 48px 16px; }
-  main { max-width: 1100px; margin: 0 auto; }
-  h1 { font: 700 clamp(2.2rem, 6vw, 3.6rem)/1.1 "Playfair Display", Georgia, serif; margin: 0 0 8px; }
-  .lead { color: var(--muted); margin: 0 0 40px; max-width: 640px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-  a.card { display: block; background: var(--card); border-radius: 16px; overflow: hidden; color: inherit; text-decoration: none; border: 1px solid #ffffff14; transition: transform .3s, border-color .3s; }
-  a.card:hover, a.card:focus-visible { transform: translateY(-4px); border-color: var(--gold); outline: none; }
-  .thumb { aspect-ratio: 16/10; background: #000 center top / cover no-repeat; }
-  .body { padding: 20px; }
-  .num { color: var(--gold); font-weight: 700; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; }
-  h2 { font: 700 1.5rem/1.2 "Playfair Display", Georgia, serif; margin: 6px 0 8px; }
-  p { margin: 0; color: var(--muted); }
-  .admin { margin-top: 40px; display: inline-flex; gap: 10px; align-items: center; padding: 14px 22px; border-radius: 999px; background: var(--gold); color: #1b1408; font-weight: 700; text-decoration: none; }
+  body { margin: 0; background: radial-gradient(120% 60% at 50% -10%, #3a2912, var(--bg) 62%) var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+  main { max-width: 1080px; margin: 0 auto; padding-block: 48px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+  .eyebrow { color: var(--brass); font-weight: 700; font-size: .78rem; letter-spacing: .16em; text-transform: uppercase; margin: 0; }
+  h1 { font: 700 clamp(2.3rem, 7vw, 3.8rem)/1.05 var(--display); margin: 6px 0 10px; text-wrap: balance; }
+  .lead { color: var(--muted); margin: 0; max-width: 62ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+  a.card { display: grid; grid-template-rows: auto 1fr; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none; transition: transform .25s, border-color .25s; }
+  a.card:hover, a.card:focus-visible { transform: translateY(-4px); border-color: var(--brass); outline: none; }
+  a.card img { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 10; object-fit: cover; object-position: top; }
+  .card-body { padding: 18px 20px 22px; display: grid; gap: 6px; align-content: start; }
+  h2 { font: 700 1.5rem/1.2 var(--display); margin: 0; }
+  .card-body p, .panel p { margin: 0; color: var(--muted); }
+  .open { margin-top: 8px; color: var(--brass); font-weight: 700; }
+  .panel { display: grid; grid-template-columns: 1fr auto; gap: 16px 24px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .panel h2 { font-size: 1.3rem; margin-bottom: 6px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 13px 22px; border-radius: 999px; background: var(--brass); color: var(--brass-ink); font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .btn.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+  .btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .note { color: var(--muted); font-size: .9rem; margin: 0; }
+  @media (max-width: 640px) { .panel { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { a.card { transition: none; } a.card:hover { transform: none; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Hofbräustüble</h1>
-  <p class="lead">Drei Design-Entwürfe für die neue Website – alle greifen auf dieselben Inhalte zu, die über das CMS gepflegt werden.</p>
+  <header>
+    <p class="eyebrow">Raucherbar · Neckarsulm-Amorbach</p>
+    <h1>Hofbräustüble</h1>
+    <p class="lead">Zwei Entwürfe für die neue Website, zum Durchklicken auf Handy oder Computer. Beide holen ihre Inhalte aus demselben CMS: Termine, Bilder, Öffnungszeiten und Adresse lassen sich dort selbst ändern.</p>
+  </header>
   <div class="grid">
     <a class="card" href="variante-1/">
-      <div class="thumb" style="background-image:url(variante-1/screenshots/desktop.png)"></div>
-      <div class="body"><span class="num">Entwurf 1</span><h2>Bernstein &amp; Messing</h2><p>Warm und edel – 3D-Bierglas mit aufsteigender Kohlensäure im Hero.</p></div>
+      <img src="assets/img/entwurf-1.jpg" alt="Entwurf 1: dunkle Bernstein-Optik mit 3D-Bierglas">
+      <div class="card-body">
+        <p class="eyebrow">Entwurf 1</p>
+        <h2>Bernstein &amp; Messing</h2>
+        <p>Warm und edel. Ein 3D-Bierglas mit aufsteigender Kohlensäure unter der Hängelampe.</p>
+        <span class="open">Entwurf ansehen →</span>
+      </div>
     </a>
     <a class="card" href="variante-2/">
-      <div class="thumb" style="background-image:url(variante-2/screenshots/desktop.png)"></div>
-      <div class="body"><span class="num">Entwurf 2</span><h2>Anpfiff</h2><p>Urbane Sportsbar – 3D-Schriftzug, Foto-Prisma und Termine als Flip-Karten.</p></div>
-    </a>
-    <a class="card" href="variante-3/">
-      <div class="thumb" style="background-image:url(variante-3/screenshots/desktop.png)"></div>
-      <div class="body"><span class="num">Entwurf 3</span><h2>Sommerabend</h2><p>3D-Terrasse mit Lichterkette – beim Scrollen wird aus Tag Nacht.</p></div>
+      <img src="assets/img/entwurf-2.jpg" alt="Entwurf 2: Sportsbar-Optik mit 3D-Schriftzug und Flutlicht">
+      <div class="card-body">
+        <p class="eyebrow">Entwurf 2</p>
+        <h2>Anpfiff</h2>
+        <p>Urbane Sportsbar. 3D-Schriftzug unter Flutlicht, Termine als Spielplan, Anzeigetafel für die Öffnungszeiten.</p>
+        <span class="open">Entwurf ansehen →</span>
+      </div>
     </a>
   </div>
-  <a class="admin" href="admin/">CMS / Verwaltung öffnen →</a>
+  <section class="panel">
+    <div>
+      <p class="eyebrow">Für die Stammgäste</p>
+      <h2>Stüble-Tippspiel</h2>
+      <p>Jedes Bundesliga-Spiel tippen, Punkte sammeln, Rangliste und Statistik. Kostenlos und nur mit Einladungscode. Spielplan und Ergebnisse kommen automatisch.</p>
+    </div>
+    <a class="btn" href="tippspiel/">Tippspiel öffnen →</a>
+  </section>
+  <section class="panel">
+    <div>
+      <p class="eyebrow">Für den Wirt</p>
+      <h2>Verwaltung (CMS)</h2>
+      <p>Termine, Bilder, Öffnungszeiten, Impressum und das Tippspiel pflegen, auch vom Handy. Das Passwort gibt es persönlich.</p>
+    </div>
+    <a class="btn ghost" href="admin/">CMS öffnen →</a>
+  </section>
+  <p class="note">Vorschau: Adresse, Telefon, Öffnungszeiten und Impressum sind noch Platzhalter. Diese Seite ist für Suchmaschinen gesperrt.</p>
 </main>
 </body>
 </html>
