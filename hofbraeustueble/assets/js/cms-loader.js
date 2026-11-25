@@ -298,6 +298,36 @@
     return { iso: m[1], time: m[2], dayLabel: m[1] === t ? 'Heute · ' + rest : m[1] === tm ? 'Morgen · ' + rest : rest };
   }
 
+  /* ---------------------------------------------------------------- Bewegung anhalten (WCAG 2.2.2) */
+
+  /**
+   * Gemeinsamer Schalter „Bewegung anhalten“ für alle Varianten. Der Zustand wird im Browser gemerkt
+   * (localStorage „hbs_motion_paused“) und als Klasse „hbs-still“ am <html> gesetzt – die Stylesheets
+   * halten damit alle Endlos-Animationen an, die Skripte fragen HBS.motion.paused() ab.
+   * Bei „Bewegung reduzieren“ im Betriebssystem bewegt sich ohnehin nichts von selbst.
+   */
+  var MOTION_KEY = 'hbs_motion_paused';
+  var motionListeners = [];
+  var mqReduce = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  function motionPaused() {
+    try { return localStorage.getItem(MOTION_KEY) === '1'; } catch (e) { return document.documentElement.classList.contains('hbs-still'); }
+  }
+  function applyMotionClass(p) { document.documentElement.classList.toggle('hbs-still', !!p); }
+  var motion = {
+    paused: motionPaused,
+    reduced: function () { return !!(mqReduce && mqReduce.matches); },
+    /** true, wenn sich nichts von selbst bewegen soll (System-Einstellung oder Knopf) */
+    still: function () { return motion.reduced() || motionPaused(); },
+    set: function (p) {
+      p = !!p;
+      try { if (p) localStorage.setItem(MOTION_KEY, '1'); else localStorage.removeItem(MOTION_KEY); } catch (e) { /* nur für diese Seite */ }
+      applyMotionClass(p);
+      motionListeners.slice().forEach(function (fn) { try { fn(p); } catch (e) { /* egal */ } });
+    },
+    onChange: function (fn) { if (typeof fn === 'function') motionListeners.push(fn); }
+  };
+  applyMotionClass(motionPaused());
+
   window.HBS = {
     ROOT: ROOT,
     load: load,
@@ -327,6 +357,8 @@
     signupStatus: signupStatus,
     signupEnabled: signupEnabled,
     programm: programm,
-    formatKickoff: formatKickoff
+    formatKickoff: formatKickoff,
+    // Bewegung anhalten
+    motion: motion
   };
 })();

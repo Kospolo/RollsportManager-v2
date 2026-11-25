@@ -468,9 +468,12 @@ function makePendant(mats, glowTex, { cable = 8, light = 0 } = {}) {
 /* =================================================================== */
 export async function createHero(canvas, options) {
   const o = Object.assign({
-    reducedMotion: false, siteName: '', district: '', backdropImage: null,
+    reducedMotion: false, paused: false, siteName: '', district: '', backdropImage: null,
     getScroll: () => 0, onFirstFrame() {}, onFail() {}
   }, options);
+  // „Bewegung anhalten“: Nach dem kurzen Einschalt-Effekt (unter 3 s) steht das Glas still (WCAG 2.2.2)
+  let paused = !!o.paused;
+  const INTRO_MS = 2800;
   const small = Math.min(window.innerWidth, window.innerHeight) < 640 || window.matchMedia('(pointer: coarse)').matches;
   const rand = mulberry(1873);
 
@@ -983,6 +986,7 @@ export async function createHero(canvas, options) {
     const dt = Math.min(0.05, Math.max(0, raw));
     update(dt, (now - startT) / 2600);
     renderFrame();
+    if (paused && now - startT > INTRO_MS) { running = false; cancelAnimationFrame(raf); return; }
     // Adaptive Qualität: bei dauerhaft < ~28 fps Pixeldichte reduzieren
     if (!degraded && frames < 120) {
       frames++;
@@ -993,7 +997,8 @@ export async function createHero(canvas, options) {
     }
   }
   function setRunning() {
-    const should = !dead && !o.reducedMotion && inView && !document.hidden;
+    const introDone = performance.now() - startT > INTRO_MS;
+    const should = !dead && !o.reducedMotion && inView && !document.hidden && (!paused || !introDone);
     if (should && !running) { running = true; last = performance.now(); raf = requestAnimationFrame(loop); }
     else if (!should && running) { running = false; cancelAnimationFrame(raf); }
   }
@@ -1017,6 +1022,11 @@ export async function createHero(canvas, options) {
   if (o.reducedMotion) renderStatic(); else setRunning();
 
   return {
+    /** Glas anhalten (true) bzw. weiterdrehen lassen (false) */
+    setPaused(p) {
+      paused = !!p;
+      setRunning();
+    },
     dispose() {
       dead = true; setRunning();
       ro.disconnect(); io.disconnect();

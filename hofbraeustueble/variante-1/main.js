@@ -382,6 +382,7 @@ function renderExtras(c) {
 function renumberSections() {
   $$('#main .eyebrow__num').forEach((el, i) => { el.textContent = String(i + 1).padStart(2, '0'); });
   $$('#nav-list a').forEach((a, i) => a.setAttribute('data-idx', String(i + 1).padStart(2, '0')));
+  checkNavFit();
 }
 
 /* --- Öffnungszeiten --- */
@@ -529,6 +530,24 @@ function renderFooter(c) {
 }
 
 /* ----------------------------------------------------------- Navigation */
+/* Passt die Menüleiste (ab 1280 px) wegen größerer Systemschrift oder Zoom nicht in eine Zeile,
+   wird das Klappmenü verwendet (html.nav-compact, siehe style.css). */
+const mqDesktopNav = window.matchMedia('(min-width: 1280px)');
+function checkNavFit() {
+  const root = doc.documentElement;
+  const inner = $('.nav__inner');
+  if (!inner) return;
+  const was = root.classList.contains('nav-compact');
+  root.classList.remove('nav-compact');
+  let tight = false;
+  if (mqDesktopNav.matches) {
+    const list = $('#nav-list');
+    const tops = new Set($$('#nav-list a').map((a) => Math.round(a.getBoundingClientRect().top)));
+    tight = inner.scrollWidth > inner.clientWidth + 1 || tops.size > 1 || (list && list.scrollWidth > list.clientWidth + 1);
+  }
+  root.classList.toggle('nav-compact', tight);
+  if (was && !tight && $('#nav-menu').classList.contains('is-open')) $('#nav-toggle').click();
+}
 function initNav() {
   const header = $('#site-header');
   const toggle = $('#nav-toggle');
@@ -557,7 +576,10 @@ function initNav() {
     if (e.shiftKey && doc.activeElement === first) { e.preventDefault(); last.focus(); }
     else if (!e.shiftKey && doc.activeElement === last) { e.preventDefault(); first.focus(); }
   });
-  window.matchMedia('(min-width: 1021px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+  mqDesktopNav.addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+  let fitT = 0;
+  window.addEventListener('resize', () => { clearTimeout(fitT); fitT = setTimeout(checkNavFit, 120); });
+  if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(checkNavFit);
 
   const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 24);
   onScroll();
@@ -717,6 +739,24 @@ function webglAvailable() {
     return !!(window.WebGLRenderingContext && (cv.getContext('webgl2') || cv.getContext('webgl')));
   } catch (e) { return false; }
 }
+/* „Bewegung anhalten“ – ein Knopf für alles, was sich von selbst bewegt (Glas, Lampe, Siegel, Karte).
+   Der Zustand liegt in HBS.motion (gemeinsam mit Variante 2) und wird im Browser gemerkt. */
+function motionApi() { return HBS.motion || { paused: () => false, set() {}, onChange() {} }; }
+function initMotionButton() {
+  const btn = $('#motion-btn');
+  if (!btn) return;
+  const M = motionApi();
+  if (reduceMotion() || !HBS.motion) { btn.hidden = true; return; }
+  const sync = (p) => {
+    btn.dataset.paused = String(p);
+    $('span', btn).textContent = p ? 'Bewegung fortsetzen' : 'Bewegung anhalten';
+  };
+  btn.hidden = false;
+  sync(M.paused());
+  btn.addEventListener('click', () => M.set(!M.paused()));
+  M.onChange(sync);
+}
+
 async function initHero3D(c) {
   const hero = $('#top');
   const canvas = $('#hero-canvas');
@@ -725,8 +765,10 @@ async function initHero3D(c) {
   try {
     const mod = await import('./hero3d.js');
     const ct = c.contact || {};
-    await mod.createHero(canvas, {
+    const M = motionApi();
+    const h3 = await mod.createHero(canvas, {
       reducedMotion: reduceMotion(),
+      paused: M.paused(),
       siteName: (c.meta && c.meta.siteName) || (c.hero && c.hero.title) || '',
       district: ct.district || ct.city || '',
       backdropImage: c.hero && c.hero.image ? HBS.asset(c.hero.image) : null,
@@ -734,6 +776,7 @@ async function initHero3D(c) {
       onFirstFrame: () => hero.classList.add('is-3d'),
       onFail: () => { hero.classList.remove('is-3d'); hero.classList.add('no-3d'); }
     });
+    if (h3 && typeof h3.setPaused === 'function') M.onChange((p) => h3.setPaused(p));
   } catch (err) {
     console.warn('[Hero 3D] Fallback aktiv:', err && err.message);
     hero.classList.remove('is-3d');
@@ -762,6 +805,8 @@ function start() {
     const steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer, renderGallery, renderContact, renderFooter, renderExtras, renumberSections];
     steps.forEach((fn) => { try { fn(C); } catch (e) { console.error('[Render]', fn.name, e); } });
     requestAnimationFrame(() => $('#top').classList.add('is-in'));
+    checkNavFit();
+    initMotionButton();
     initReveal();
     initTilt();
     initParallax();

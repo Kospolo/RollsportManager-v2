@@ -39,6 +39,10 @@
     if (window.console) console.warn('Inhalte konnten nicht geladen werden:', err);
   });
 
+  // Gemeinsamer Schalter „Bewegung anhalten“ (cms-loader.js); Fallback für ältere Loader
+  var M = H.motion || { paused: function () { return false; }, still: function () { return reduced; }, set: function () {}, onChange: function () {} };
+  function still() { return reduced || M.paused(); }
+
   function render() {
     var steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer,
       renderGallery, renderContact, renderFooter, renderLegal, renderExtras, buildNav];
@@ -48,6 +52,9 @@
     document.body.classList.remove('is-loading');
     initNav();
     initDialogs();
+    initMotion();
+    initTicker();
+    initFixturesMore();
     initFlipCards();
     initTippBoard();
     initPrism();
@@ -167,6 +174,35 @@
     var html = '';
     for (var i = 0; i < 8; i++) html += item;
     $('#tickerTrack').innerHTML = html;
+  }
+
+  /* „Bewegung anhalten“ (Knopf im Hero): hält Laufband, Flutlicht, Schriftzug-Schwenk und Prisma an */
+  function initMotion() {
+    var btn = $('#motionBtn');
+    if (!btn) return;
+    if (reduced || !H.motion) { btn.hidden = true; return; }
+    function sync(p) {
+      btn.setAttribute('data-paused', String(p));
+      $('span', btn).textContent = p ? 'Bewegung fortsetzen' : 'Bewegung anhalten';
+    }
+    btn.hidden = false;
+    sync(M.paused());
+    btn.addEventListener('click', function () { M.set(!M.paused()); });
+    M.onChange(sync);
+  }
+
+  /* Laufband: Pause-Knopf und Tippen aufs Band (WCAG 2.2.2) – nicht nur beim Darüberfahren mit der Maus */
+  function initTicker() {
+    var tk = $('#ticker'), btn = $('#tickerPause');
+    if (!tk || tk.hidden || !btn) return;
+    function set(p) {
+      tk.classList.toggle('is-paused', p);
+      $('#tickerPauseText').textContent = p ? 'Weiter' : 'Anhalten';
+      btn.setAttribute('aria-label', p ? 'Laufband weiterlaufen lassen' : 'Laufband anhalten');
+    }
+    set(M.paused());
+    tk.addEventListener('click', function () { if (!reduced) set(!tk.classList.contains('is-paused')); });
+    M.onChange(function (p) { set(p); });
   }
 
   /* ------------------------------------------------------------------ */
@@ -332,7 +368,24 @@
         '</li>';
     }).join('');
     renderCountdownShell();
-    if (mqNarrow.matches && events.length > 1) $('#eventsHint').textContent = 'Wischen · Karte antippen für Details';
+    $('#eventsHint').textContent = 'Auf „Details“ tippen – die Karte dreht sich um';
+  }
+
+  /* Handy: Termine untereinander; ab dem 4. Termin erst nach „Alle Termine anzeigen“ (CSS blendet aus) */
+  var FX_FIRST = 3;
+  function initFixturesMore() {
+    var list = $('#fixtures'), more = $('#fxMore'), btn = $('#fxMoreBtn');
+    if (!list || !more || events.length <= FX_FIRST) return;
+    $$('.fx', list).forEach(function (li, i) { if (i >= FX_FIRST) li.classList.add('is-extra'); });
+    btn.textContent = 'Alle ' + events.length + ' Termine anzeigen';
+    more.hidden = false;
+    btn.addEventListener('click', function () {
+      list.classList.add('is-all');
+      more.hidden = true;
+      var next = $$('.fx', list)[FX_FIRST];
+      var b = next && $('.fx-open', next);
+      if (b) b.focus();
+    });
   }
 
   function nextCountdownEvent() {
@@ -367,7 +420,8 @@
       cdTarget = null;
     } else {
       cdTarget = eventStart(e).getTime();
-      var units = [['d', 'Tage'], ['h', 'Std'], ['m', 'Min'], ['s', 'Sek']];
+      // Ohne Sekunden: nichts tickt im Sekundentakt (WCAG 2.2.2), die Anzeige ändert sich höchstens einmal pro Minute
+      var units = [['d', 'Tage'], ['h', 'Stunden'], ['m', 'Minuten']];
       digits = '<div class="cd-digits" role="timer" aria-live="off" id="cdDigits">' + units.map(function (u, k) {
         return (k ? '<span class="cd-sep" aria-hidden="true">:</span>' : '') +
           '<div class="cd-unit"><div class="cd-num" data-u="' + u[0] + '" aria-hidden="true"><span class="cd-d"><span>0</span></span><span class="cd-d"><span>0</span></span></div><span class="cd-cap" aria-hidden="true">' + u[1] + '</span></div>';
@@ -383,8 +437,8 @@
     if (!cdTarget) return;
     var diff = cdTarget - Date.now();
     if (diff <= 0) { renderCountdownShell(); return; }
-    var s = Math.floor(diff / 1000);
-    var vals = { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600), m: Math.floor(s % 3600 / 60), s: s % 60 };
+    var mins = Math.ceil(diff / 60000);
+    var vals = { d: Math.floor(mins / 1440), h: Math.floor((mins % 1440) / 60), m: mins % 60 };
     var str = '';
     $$('#cdDigits .cd-num').forEach(function (num) {
       var u = num.getAttribute('data-u');
@@ -395,7 +449,7 @@
         var span = ds[k].firstChild;
         if (span.textContent !== v[k]) {
           span.textContent = v[k];
-          if (!reduced && cdPrev) { ds[k].classList.remove('tick'); void ds[k].offsetWidth; ds[k].classList.add('tick'); }
+          if (!still() && cdPrev) { ds[k].classList.remove('tick'); void ds[k].offsetWidth; ds[k].classList.add('tick'); }
         }
       }
     });
@@ -479,7 +533,7 @@
     if (!window.HBSExtras) return;
     window.HBSExtras.render(C, {
       privacyDialog: 'dlgDatenschutz',
-      onChange: function () { buildNav(); }
+      onChange: function () { buildNav(); checkNavFit(); }
     });
   }
 
@@ -631,7 +685,9 @@
     var m = faces.length;        // Prisma-Flächen
     var step = 360 / Math.max(m, 1);
     var angle = 0, current = 0, radius = 0;
-    var autoTimer = null, inView = false, hovering = false;
+    // Auto-Drehung: nur einmal rundherum, solange niemand das Prisma bedient hat; danach nie wieder (WCAG 2.2.2)
+    var autoTimer = null, autoDone = false, autoSteps = 0;
+    var autoBox = $('#prismAuto'), autoBtn = $('#prismAutoBtn');
 
     function layout() {
       var w = stage.clientWidth;
@@ -676,7 +732,7 @@
       if (e.button !== 0) return;
       drag = { x: e.clientX, y: e.clientY, a: angle, moved: false, id: e.pointerId, lastX: e.clientX, lastT: performance.now(), v: 0 };
       prism.classList.remove('is-snapping');
-      stopAuto();
+      endAuto();
     });
     stage.addEventListener('pointermove', function (e) {
       if (!drag || e.pointerId !== drag.id) return;
@@ -705,34 +761,47 @@
       }
       angle += clamp(d.v * 160, -step * 0.9, step * 0.9) * (step / 120);
       snap();
-      startAuto();
     }
     stage.addEventListener('pointerup', end);
     stage.addEventListener('pointercancel', end);
     stage.addEventListener('lostpointercapture', function (e) { if (drag && drag.moved) end(e); });
 
     stage.addEventListener('keydown', function (e) {
-      if (e.key === 'ArrowRight') { e.preventDefault(); go(1); stopAuto(); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); stopAuto(); }
-      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(current); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(1); endAuto(); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); endAuto(); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); endAuto(); openLightbox(current); }
     });
-    $('#prismPrev').addEventListener('click', function () { go(-1); stopAuto(); });
-    $('#prismNext').addEventListener('click', function () { go(1); stopAuto(); });
-    if (n < 2) { $('#prismPrev').hidden = true; $('#prismNext').hidden = true; $('.prism-help').hidden = true; }
+    $('#prismPrev').addEventListener('click', function () { go(-1); endAuto(); });
+    $('#prismNext').addEventListener('click', function () { go(1); endAuto(); });
+    if (n < 2) { $('#prismPrev').hidden = true; $('#prismNext').hidden = true; $('#prismHelp').textContent = 'Bild antippen zum Vergrößern'; }
 
-    // Auto-Drehung nur ohne reduzierte Bewegung, nur sichtbar & ohne Interaktion
     function startAuto() {
-      stopAuto();
-      if (reduced || n < 2 || !inView || hovering) return;
-      autoTimer = setInterval(function () { if (!document.hidden) go(1); }, 4800);
+      if (autoDone || autoTimer || still() || n < 2) return;
+      autoBox.hidden = false;
+      autoTimer = setInterval(function () {
+        if (document.hidden) return;
+        go(1);
+        if (++autoSteps >= n) endAuto();
+      }, 4800);
     }
-    function stopAuto() { clearInterval(autoTimer); autoTimer = null; }
-    stage.addEventListener('mouseenter', function () { hovering = true; stopAuto(); });
-    stage.addEventListener('mouseleave', function () { hovering = false; startAuto(); });
-    stage.addEventListener('focusin', function () { hovering = true; stopAuto(); });
-    stage.addEventListener('focusout', function () { hovering = false; startAuto(); });
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (en) { inView = en[0].isIntersecting; if (inView) startAuto(); else stopAuto(); }, { threshold: .4 }).observe(stage);
+    // Beendet die Auto-Drehung endgültig (erste Bedienung, Knopf, aus dem Bild gescrollt, „Bewegung anhalten“)
+    function endAuto() {
+      clearInterval(autoTimer); autoTimer = null; autoDone = true;
+      if (autoBox) {
+        if (autoBox.contains(document.activeElement)) $('#prismNext').focus({ preventScroll: true });
+        autoBox.hidden = true;
+      }
+    }
+    autoBtn.addEventListener('click', endAuto);
+    stage.addEventListener('focusin', endAuto);
+    M.onChange(function (p) { if (p) endAuto(); });
+    if ('IntersectionObserver' in window && !still()) {
+      var seen = false;
+      var ioP = new IntersectionObserver(function (en) {
+        if (en[0].isIntersecting) { seen = true; startAuto(); }
+        else if (seen) { endAuto(); ioP.disconnect(); }
+      }, { threshold: .4 });
+      ioP.observe(stage);
     }
 
     // Lightbox
@@ -854,8 +923,28 @@
     $('#mmenuFoot').innerHTML = foot;
   }
 
+  /* Passt die Menüleiste wegen größerer Systemschrift oder Zoom nicht in eine Zeile, gilt das Klappmenü (html.nav-compact) */
+  var mqWideNav = window.matchMedia('(min-width: 961px)');
+  function checkNavFit() {
+    var root = document.documentElement, inner = $('.nav-inner');
+    if (!inner) return;
+    root.classList.remove('nav-compact');
+    var tight = false;
+    if (mqWideNav.matches) {
+      var tops = {};
+      $$('#navList a').forEach(function (a) { tops[Math.round(a.getBoundingClientRect().top)] = 1; });
+      tight = inner.scrollWidth > inner.clientWidth + 1 || Object.keys(tops).length > 1;
+    }
+    root.classList.toggle('nav-compact', tight);
+    if (!tight && mqWideNav.matches && !$('#mmenu').hidden) $('#burger').click();
+  }
+
   function initNav() {
     var nav = $('#nav'), burger = $('#burger'), menu = $('#mmenu');
+    checkNavFit();
+    var fitT;
+    window.addEventListener('resize', function () { clearTimeout(fitT); fitT = setTimeout(checkNavFit, 120); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(checkNavFit);
     function setOpen(open) {
       burger.setAttribute('aria-expanded', String(open));
       $('#burgerLabel').textContent = open ? 'Menü schließen' : 'Menü öffnen';
@@ -870,7 +959,7 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !menu.hidden) { setOpen(false); burger.focus(); }
     });
-    onMQ(window.matchMedia('(min-width: 961px)'), function (e) { if (e.matches && !menu.hidden) setOpen(false); });
+    onMQ(mqWideNav, function (e) { if (e.matches && !menu.hidden && !document.documentElement.classList.contains('nav-compact')) setOpen(false); });
 
     var onScroll = function () { if (menu.hidden) nav.classList.toggle('is-solid', window.scrollY > 40); };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -897,7 +986,7 @@
     var hero = $('.hero'), h = $('#h3d'), beams = $('#beams'), pitch = $('#pitch');
     var tx = 0, ty = 0, cx = 0, cy = 0, lastInput = 0, gyro = false, visible = true, running = false;
 
-    function staticPose() { h.style.transform = 'rotateX(10deg) rotateY(-14deg)'; }
+    function staticPose() { h.style.transform = 'rotateX(10deg) rotateY(-14deg)'; beams.style.transform = ''; pitch.style.transform = ''; }
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (en) { visible = en[0].isIntersecting; if (visible) start(); }, { threshold: 0 }).observe(hero);
     }
@@ -917,25 +1006,15 @@
       lastInput = performance.now();
       start();
     }
-    // Gyroskop nur als progressive Erweiterung auf Touch-Geräten
-    if (!mqFine.matches && typeof window.DeviceOrientationEvent !== 'undefined') {
-      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        var gb = $('#gyroBtn');
-        if (!reduced) gb.hidden = false;
-        gb.addEventListener('click', function () {
-          DeviceOrientationEvent.requestPermission().then(function (p) {
-            if (p === 'granted') window.addEventListener('deviceorientation', onOrient);
-            gb.hidden = true;
-          }).catch(function () { gb.hidden = true; });
-        });
-      } else {
-        window.addEventListener('deviceorientation', onOrient);
-      }
+    // Gyroskop nur als stille Erweiterung auf Touch-Geräten, die keine Erlaubnis-Abfrage brauchen
+    // (der frühere Knopf „3D-Neigung aktivieren“ für iPhones ist bewusst entfallen)
+    if (!mqFine.matches && typeof window.DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+      window.addEventListener('deviceorientation', onOrient);
     }
 
-    function start() { if (!running && visible && !reduced) { running = true; requestAnimationFrame(frame); } }
+    function start() { if (!running && visible && !still()) { running = true; requestAnimationFrame(frame); } }
     function frame(t) {
-      if (!visible || reduced) { running = false; if (reduced) staticPose(); return; }
+      if (!visible || still()) { running = false; if (still()) staticPose(); return; }
       var ix = tx, iy = ty;
       if (!gyro && t - lastInput > 2600) { // Idle: sanfter Kameraschwenk
         ix = Math.sin(t / 2600) * .8;
@@ -949,8 +1028,9 @@
       pitch.style.transform = 'rotateX(' + (68 + cy * 3).toFixed(2) + 'deg) rotateZ(' + (cx * -3).toFixed(2) + 'deg)';
       requestAnimationFrame(frame);
     }
-    if (reduced) staticPose(); else start();
-    onMQ(mqReduced, function () { if (reduced) staticPose(); else start(); });
+    if (still()) staticPose(); else start();
+    onMQ(mqReduced, function () { if (still()) staticPose(); else start(); });
+    M.onChange(function () { if (still()) staticPose(); else start(); });
   }
 
   /* ------------------------------------------------------------------ */

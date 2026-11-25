@@ -7,14 +7,6 @@
 .x-ico { width: 1.25em; height: 1.25em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .x-locked { overflow: hidden; }
 
-/* Menü mit neun Punkten auf schmalen Desktop-Breiten etwas enger */
-@media (min-width: 1021px) and (max-width: 1260px) {
-  .nav__list { gap: .75rem; }
-  .nav__list a { font-size: .68rem; letter-spacing: .08em; }
-}
-@media (min-width: 1021px) and (max-width: 1120px) {
-  .nav__extra { display: none; }
-}
 
 /* ---------- Knöpfe ---------- */
 .x-btn {
@@ -43,14 +35,14 @@
 .x-live-match:first-child { border-top: 0; }
 .x-live-time { font: 700 1.35rem/1 var(--serif); color: var(--cream); display: flex; flex-direction: column; gap: .2rem; }
 .x-live-time small { font: 500 1rem/1 var(--sans); color: var(--muted); }
-.x-live-badge { align-self: flex-start; padding: .15rem .5rem; border-radius: 99px; background: var(--red); color: #fff; font: 700 .8rem/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
+.x-live-badge { align-self: flex-start; padding: .15rem .55rem; border-radius: 99px; background: var(--red); color: #fff; font: 700 .875rem/1.2 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
 .x-live-teams { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; font-weight: 600; min-width: 0; }
 .x-live-team { display: inline-flex; align-items: center; gap: .55rem; min-width: 0; }
 .x-live-vs { color: var(--brass); }
 .x-live-comp { grid-column: 2; font-size: 1rem; color: var(--muted); }
 .x-live-ask { grid-column: 3; grid-row: 1 / span 2; min-height: 48px; padding: .6rem 1rem; font-size: 1rem; }
-.x-logo { width: 32px; height: 32px; object-fit: contain; flex: none; }
-.x-logo--txt { display: inline-grid; place-items: center; border-radius: 50%; background: var(--slate-3); border: 1px solid var(--line-strong); color: var(--cream-dim); font: 700 .66rem/1 var(--sans); letter-spacing: .02em; }
+.x-logo { width: 2.5rem; height: 2.5rem; object-fit: contain; flex: none; }
+.x-logo--txt { display: inline-grid; place-items: center; border-radius: 50%; background: var(--slate-3); border: 1px solid var(--line-strong); color: var(--cream-dim); font: 700 .875rem/1 var(--sans); letter-spacing: 0; }
 .x-empty { display: flex; gap: .8rem; align-items: center; margin: 0; padding: 1.4rem; border: 1px dashed var(--line-strong); border-radius: var(--radius); color: var(--cream-dim); font-size: 1.0625rem; }
 .x-note { margin: 0; color: var(--muted); font-size: 1rem; }
 @media (max-width: 640px) {
@@ -73,7 +65,7 @@
 .x-menu-name { min-width: 0; flex: 0 1 auto; }
 .x-menu-item { font-size: 1.125rem; font-weight: 600; color: var(--cream); }
 .x-menu-note { display: block; font-size: 1rem; color: var(--muted); }
-.x-badge { display: inline-block; margin-left: .3rem; padding: .1rem .55rem; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--amber-hi); font-size: .9rem; font-weight: 500; vertical-align: .12em; white-space: nowrap; }
+.x-badge { display: inline-block; margin-left: .3rem; padding: .1rem .55rem; border-radius: 99px; border: 1px solid var(--line-strong); color: var(--amber-hi); font-size: .9375rem; font-weight: 500; vertical-align: .12em; white-space: nowrap; }
 .x-menu-dots { flex: 1 1 1.5rem; min-width: 1rem; margin-bottom: .45rem; border-bottom: 2px dotted rgba(214, 178, 110, .35); }
 .x-menu-prices { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; flex: none; }
 .x-menu-price { display: inline-flex; gap: .7rem; align-items: baseline; white-space: nowrap; font-size: 1.0625rem; }
@@ -88,7 +80,7 @@
 .x-reserve-text { font-size: 1.0625rem; color: var(--cream-dim); }
 .x-steps { list-style: none; margin: 1.8rem 0; padding: 0; display: grid; gap: .8rem; }
 .x-steps li { display: flex; align-items: center; gap: .9rem; font-size: 1.0625rem; color: var(--cream); }
-.x-steps-no { display: inline-grid; place-items: center; width: 2.4rem; height: 2.4rem; border-radius: 50%; background: rgba(233, 162, 59, .12); border: 1px solid var(--amber); color: var(--amber-hi); font: 700 1.1rem/1 var(--serif); flex: none; }
+.x-steps-no { display: inline-grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: rgba(233, 162, 59, .12); border: 1px solid var(--amber); color: var(--amber-hi); font: 700 1.1rem/1 var(--serif); flex: none; }
 .x-call-box { margin-top: 1.5rem; }
 .x-call-label { margin: 0 0 .5rem; color: var(--muted); font-size: 1rem; }
 .x-call { font-size: 1.2rem; }
