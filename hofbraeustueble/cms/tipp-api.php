@@ -2552,9 +2552,13 @@ function logo_validate(string $bytes): array
 /** Mit GD: neu als PNG (max. 128 px, Seitenverhältnis + Transparenz bleiben). Ohne GD: geprüftes Original. → [bytes, ext] */
 function logo_finalize(string $bytes, array $info): array
 {
-    $types = function_exists('imagetypes') ? imagetypes() : 0;
+    // Ohne GD (Erweiterung fehlt) sind auch die IMG_*-Konstanten nicht definiert – dann geprüftes Original behalten.
+    if (!function_exists('imagetypes') || !function_exists('imagecreatefromstring') || !function_exists('imagepng') || !defined('IMG_PNG')) {
+        return [$bytes, $info['ext']];
+    }
+    $types = imagetypes();
     $need = ['image/png' => IMG_PNG, 'image/jpeg' => IMG_JPG, 'image/gif' => IMG_GIF, 'image/webp' => defined('IMG_WEBP') ? IMG_WEBP : 0][$info['mime']];
-    if (!function_exists('imagecreatefromstring') || !function_exists('imagepng') || !($types & IMG_PNG) || !$need || !($types & $need)) {
+    if (!($types & IMG_PNG) || !$need || !($types & $need)) {
         return [$bytes, $info['ext']];
     }
     $src = @imagecreatefromstring($bytes);

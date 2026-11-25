@@ -73,6 +73,9 @@ chmod 600 "$STATE/ZUGANGSDATEN.txt" 2>/dev/null || true
 # Hintergrund: einmalige Einrichtung des Tippspiels, danach alle 15 Minuten Ergebnisse holen
 (
   php /usr/local/lib/hbs/seed.php || echo "[hbs] Tippspiel-Einrichtung übersprungen (siehe oben)"
+  # Gleich nach dem Start einmal abrufen (Spielplan, Ergebnisse, fehlende Vereinslogos) – nicht erst nach 15 Minuten
+  sleep 20
+  php /usr/local/lib/hbs/cron.php || true
   while true; do
     sleep 900
     php /usr/local/lib/hbs/cron.php || true
