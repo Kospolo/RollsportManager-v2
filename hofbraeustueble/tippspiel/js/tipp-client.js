@@ -28,7 +28,14 @@
   var NICK_RE = /^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/;
   var NICK_HAS_ALNUM = /[A-Za-z0-9ÄÖÜäöüß]/;
   var GET_ACTIONS = { status: 1, invite_check: 1, matches: 1, leaderboard: 1, stats: 1, player_tips: 1, admin_overview: 1,
-    admin_source_preview: 1, admin_cron_info: 1, cron_sync: 1, admin_stats: 1, admin_match_tips: 1 };
+    admin_source_preview: 1, admin_cron_info: 1, cron_sync: 1, admin_stats: 1, admin_match_tips: 1, kasse: 1, admin_kasse: 1 };
+  // Globale Schalter (content.json → features): fehlt einer, gilt tippspiel = an, preise/kasse = aus
+  var DEFAULT_FEATURES = { tippspiel: true, preise: false, kasse: false };
+  var OFF_MESSAGE = 'Das Tippspiel ist im Moment ausgeschaltet.';
+  // Spieler-Aktionen, die bei ausgeschaltetem Tippspiel 403 liefern (Lese-Aktionen: siehe requireReader)
+  var NEEDS_ON = { invite_check: 1, register: 1, login: 1, tip: 1, bonus_tip: 1, stats: 1, change_password: 1 };
+  var KASSE_MAX_CENTS = 10000000;
+  var KASSE_OFF_ADMIN = 'Die Stammtischkasse ist ausgeschaltet – einschalten unter „Funktionen“.';
   var DEMO_OWNER_KEY = 'hbs_tipp_demo_owner'; // sessionStorage: Demo-Wirt „angemeldet“ (Wirt-Ansicht)
   var LEAGUE_RE = /^[A-Za-z0-9_-]{1,40}$/;
   var SYNC_WINDOW_MAX = 90;
@@ -446,8 +453,22 @@
     player: null,
     admin: false,
     settings: clone(DEFAULT_SETTINGS),
+    features: clone(DEFAULT_FEATURES),
+    featuresSet: false, // Demo: per setFeatures() vorgegeben (z. B. von der Verwaltung)
     status: null
   };
+
+  /** Schalter normalisieren (wie features() in PHP) */
+  function normFeatures(src) {
+    src = src && typeof src === 'object' ? src : {};
+    var on = function (v) { return v === true || v === 1 || v === '1' || v === 'true'; };
+    var off = function (v) { return v === false || v === 0 || v === '0' || v === 'false'; };
+    return {
+      tippspiel: !(Object.prototype.hasOwnProperty.call(src, 'tippspiel') && off(src.tippspiel)),
+      preise: Object.prototype.hasOwnProperty.call(src, 'preise') && on(src.preise),
+      kasse: Object.prototype.hasOwnProperty.call(src, 'kasse') && on(src.kasse)
+    };
+  }
 
   function buildQuery(data) {
     var parts = [];
@@ -465,6 +486,7 @@
       state.csrf = res.csrf || null;
       if ('admin' in res) state.admin = !!res.admin;
       if (res.settings) state.settings = res.settings;
+      if (res.features) state.features = normFeatures(res.features);
       state.status = res;
     }
   }
@@ -549,7 +571,8 @@
     return {
       v: DEMO_VERSION, seededAt: Date.now(), seq: { competitions: 0, matches: 0, players: 0 },
       settings: clone(DEFAULT_SETTINGS), competitions: [], matches: [], players: [], invites: [], tips: [], bonus_tips: [], session: null,
-      cron_token: null, cron_last: null
+      cron_token: null, cron_last: null,
+      kasse: { seq: 0, entries: [], purpose: '', show_names: false }
     };
   }
 
@@ -670,6 +693,19 @@
       });
     });
     db.seq.players = names.length;
+
+    // Preise (sichtbar nur mit features.preise) – vom Haus spendiert
+    db.competitions[1].prize_1 = '30-€-Gutschein fürs Stüble';
+    db.competitions[1].prize_2 = 'Eine Runde aufs Haus';
+    db.competitions[1].prize_3 = 'Ein Stüble-Bierkrug';
+    db.competitions[1].prize_note = 'Übergabe bei der Saisonabschluss-Feier';
+    // Stammtischkasse (sichtbar nur mit features.kasse) – ohne jeden Bezug zum Tippspiel
+    var kd = function (off) { return at(off, 0).slice(0, 10); };
+    db.kasse = { seq: 3, purpose: 'für die Saisonabschluss-Feier', show_names: false, entries: [
+      { id: 1, kind: 'in', amount_cents: 5000, day: kd(-20), name: 'Stammtisch-Runde', purpose: '', note: 'Sparschwein an der Theke', created: created, updated: created },
+      { id: 2, kind: 'in', amount_cents: 2000, day: kd(-12), name: 'Kalle', purpose: '', note: '', created: created, updated: created },
+      { id: 3, kind: 'in', amount_cents: 1500, day: kd(-6), name: 'Uschi_66', purpose: '', note: '', created: created, updated: created }
+    ] };
     return db;
   }
 
@@ -747,8 +783,18 @@
   function compOut(c, fk) {
     return {
       id: c.id, name: c.name, active: !!c.active, sort: c.sort, bonus_question: c.bonus_question, bonus_answer: c.bonus_answer,
-      bonus_points: c.bonus_points, bonus_locked: bonusLocked(c.id, fk), source: c.source || null
+      bonus_points: c.bonus_points, bonus_locked: bonusLocked(c.id, fk), source: c.source || null, prizes: prizesOut(c)
     };
+  }
+  /** Preise nur mit features.preise und wenn mindestens ein Preis eingetragen ist (wie prizes_out in PHP) */
+  function prizesOut(c) {
+    if (!state.features.preise) return null;
+    var p = {};
+    [['first', 'prize_1'], ['second', 'prize_2'], ['third', 'prize_3'], ['note', 'prize_note']].forEach(function (x) {
+      var v = c[x[1]];
+      p[x[0]] = v != null && String(v).trim() !== '' ? String(v) : null;
+    });
+    return p.first === null && p.second === null && p.third === null ? null : p;
   }
   function compAdminOut(c, fk) {
     var o = compOut(c, fk);
@@ -757,6 +803,10 @@
     o.sync_window_days = c.sync_window_days == null ? 14 : +c.sync_window_days;
     o.last_sync = c.last_sync || null;
     o.last_sync_status = c.last_sync_status || null;
+    o.prize_1 = c.prize_1 == null ? null : c.prize_1;
+    o.prize_2 = c.prize_2 == null ? null : c.prize_2;
+    o.prize_3 = c.prize_3 == null ? null : c.prize_3;
+    o.prize_note = c.prize_note == null ? null : c.prize_note;
     return o;
   }
   function matchBase(m) {
@@ -804,7 +854,7 @@
     return {
       ok: true, api: 'hbs-tipp',
       player: p ? { id: p.id, nickname: p.nickname, email: p.email } : null,
-      csrf: p ? db.session.csrf : null, settings: dbSettings(db), serverTime: nowFull(), admin: demoOwner(), demo: true
+      csrf: p ? db.session.csrf : null, settings: dbSettings(db), features: clone(state.features), serverTime: nowFull(), admin: demoOwner(), demo: true
     };
   }
   function demoLogin(db, p) {
@@ -818,6 +868,10 @@
   /** wie require_reader() in PHP: Spieler hat Vorrang; ohne Spieler oder mit view=owner → Wirt-Ansicht (nur lesen) */
   function requireReader(db, d) {
     var force = d && d.view === 'owner';
+    if (!state.features.tippspiel) {
+      if (demoOwner()) return { player: null, owner: true };
+      fail(OFF_MESSAGE, 403, { disabled: true });
+    }
     if (!force) {
       var p = demoCurrentPlayer(db);
       if (p) return { player: p, owner: false };
@@ -1169,7 +1223,7 @@
         };
       });
       var invites = db.invites.slice().sort(function (a, b) { return cmpStr(b.created, a.created) || cmpStr(a.code, b.code); }).map(inviteOut);
-      return ok({ competitions: comps, matches: matches, players: players, invites: invites, settings: dbSettings(db), serverTime: nowFull(), logos: demoLogoStats(db) });
+      return ok({ competitions: comps, matches: matches, players: players, invites: invites, settings: dbSettings(db), serverTime: nowFull(), logos: demoLogoStats(db), features: clone(state.features) });
     },
 
     admin_competition_save: function (db, d) {
@@ -1199,6 +1253,11 @@
         src.source = on ? 'openligadb' : null;
         src.sync_window_days = d.sync_window_days === undefined || d.sync_window_days === null || d.sync_window_days === '' ? 14 : vInt(d.sync_window_days, 1, SYNC_WINDOW_MAX, 'Zeitraum (Tage)');
       }
+      // Preise: nur ändern, wenn mitgeschickt
+      var pz = {};
+      [['prize_1', 'Preis Platz 1'], ['prize_2', 'Preis Platz 2'], ['prize_3', 'Preis Platz 3'], ['prize_note', 'Hinweis zu den Preisen']].forEach(function (x) {
+        pz[x[0]] = Object.prototype.hasOwnProperty.call(d, x[0]) ? vOptStr(d[x[0]], x[0] === 'prize_note' ? 200 : 80, x[1]) : (old && old[x[0]] != null ? old[x[0]] : null);
+      });
       var c = old;
       if (!c) {
         c = { id: ++db.seq.competitions, created: nowFull(), last_sync: null, last_sync_status: null };
@@ -1206,6 +1265,7 @@
       }
       c.name = name; c.active = active; c.sort = sort; c.bonus_question = bq; c.bonus_answer = ba; c.bonus_points = bp;
       c.source = src.source; c.source_league = src.source_league; c.source_season = src.source_season; c.sync_window_days = src.sync_window_days;
+      c.prize_1 = pz.prize_1; c.prize_2 = pz.prize_2; c.prize_3 = pz.prize_3; c.prize_note = pz.prize_note;
       return ok({ competition: compAdminOut(c, firstKickoffs(db)) });
     },
 
@@ -1419,12 +1479,97 @@
       var r = demoLogoRun();
       r.logos = demoLogoStats(db); r.message = DEMO_LOGO_MSG; r.demo = true;
       return ok(r);
+    },
+
+    /* ----------------------------------------------- Stammtischkasse (nur mit features.kasse) */
+
+    kasse: function (db, d) {
+      requireReader(db, d);
+      if (!state.features.kasse) fail('Die Stammtischkasse ist ausgeschaltet.', 403, { featureOff: 'kasse' });
+      return ok(kassePublic(db));
+    },
+    admin_kasse: function (db) { kasseOn(); return ok(kasseAdmin(db)); },
+    admin_kasse_save: function (db, d) {
+      kasseOn();
+      var k = kasseDb(db);
+      var id = present(d, 'id') ? vId(d.id, 'ID') : null;
+      if (d.kind !== 'in' && d.kind !== 'out') fail('Art: bitte „Einzahlung“ oder „Ausgabe“ wählen.', 400);
+      var cents = vInt(d.amount_cents, 1, KASSE_MAX_CENTS, 'Betrag (in Cent)');
+      var day = vDay(d.day);
+      var name = d.kind === 'in' ? vStr(d.name, 1, 60, 'einen Namen (wer hat eingezahlt?)') : '';
+      var purpose = d.kind === 'out' ? vStr(d.purpose, 1, 80, 'einen Zweck (wofür?)') : '';
+      var note = vStr(d.note, 0, 200, 'Notiz');
+      var now = nowFull(), e;
+      if (id !== null) {
+        e = k.entries.filter(function (x) { return x.id === id; })[0];
+        if (!e) fail('Buchung nicht gefunden.', 404);
+      } else {
+        e = { id: ++k.seq, created: now };
+        k.entries.push(e);
+      }
+      e.kind = d.kind; e.amount_cents = cents; e.day = day; e.name = name; e.purpose = purpose; e.note = note; e.updated = now;
+      var out = kasseAdmin(db);
+      out.entry = kasseEntryOut(e);
+      return ok(out);
+    },
+    admin_kasse_delete: function (db, d) {
+      kasseOn();
+      var k = kasseDb(db);
+      var id = vId(d.id);
+      if (!k.entries.some(function (x) { return x.id === id; })) fail('Buchung nicht gefunden.', 404);
+      k.entries = k.entries.filter(function (x) { return x.id !== id; });
+      return ok(kasseAdmin(db));
+    },
+    admin_kasse_settings: function (db, d) {
+      kasseOn();
+      var k = kasseDb(db);
+      var purpose = vStr(d.purpose, 0, 120, 'Zweck der Kasse');
+      var show = d.show_names === undefined || d.show_names === null ? 0 : vBool(d.show_names, 'Namen zeigen');
+      k.purpose = purpose; k.show_names = !!show;
+      return ok(kasseAdmin(db));
     }
   };
+
+  /* --- Stammtischkasse (Demo): keine Verknüpfung zu Spielern, Tipps, Rangliste oder Preisen */
+  function kasseOn() { if (!state.features.kasse) fail(KASSE_OFF_ADMIN, 403, { featureOff: 'kasse' }); }
+  function kasseDb(db) {
+    if (!db.kasse || !Array.isArray(db.kasse.entries)) db.kasse = { seq: 0, entries: [], purpose: '', show_names: false };
+    return db.kasse;
+  }
+  function vDay(v) {
+    v = typeof v === 'string' ? v.trim() : '';
+    var m, y, mo, d;
+    if ((m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+    else if ((m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(v))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+    else fail('Datum: bitte im Format JJJJ-MM-TT angeben (z. B. 2026-11-25).', 400);
+    if (y < 2000 || y > 2100 || !checkDate(y, mo, d)) fail('Datum: das gibt es nicht – bitte prüfen.', 400);
+    return y + '-' + pad(mo) + '-' + pad(d);
+  }
+  function kasseEntryOut(e) {
+    return { id: e.id, kind: e.kind, amount_cents: e.amount_cents, day: e.day, name: e.name || '', purpose: e.purpose || '', note: e.note || '', created: e.created, updated: e.updated };
+  }
+  function kasseAdmin(db) {
+    var k = kasseDb(db);
+    var entries = k.entries.slice().sort(function (a, b) { return cmpStr(b.day, a.day) || (b.id - a.id); }).map(kasseEntryOut);
+    var inn = 0, out = 0;
+    entries.forEach(function (e) { if (e.kind === 'in') inn += e.amount_cents; else out += e.amount_cents; });
+    return { entries: entries, total_in_cents: inn, total_out_cents: out, balance_cents: inn - out, settings: { purpose: k.purpose || '', show_names: !!k.show_names } };
+  }
+  function kassePublic(db) {
+    var a = kasseAdmin(db), names = null;
+    if (a.settings.show_names) {
+      var seen = {};
+      names = [];
+      a.entries.forEach(function (e) { if (e.kind === 'in' && e.name !== '' && !seen[lower(e.name)]) { seen[lower(e.name)] = 1; names.push(e.name); } });
+      names.sort(function (x, y) { return cmpStr(lower(x), lower(y)); });
+    }
+    return { balance_cents: a.balance_cents, purpose: a.settings.purpose, names: names };
+  }
 
   async function demoCall(action, data) {
     var fn = Object.prototype.hasOwnProperty.call(demoActions, action) ? demoActions[action] : null;
     if (!fn) fail('Unbekannte Aktion.', 400);
+    if (NEEDS_ON[action] && !state.features.tippspiel) fail(OFF_MESSAGE, 403, { disabled: true });
     var db = demoLoad();
     var input = (data && typeof data === 'object') ? clone(data) : {};
     // Kopie bearbeiten: bei einem Fehler bleibt der gespeicherte Stand unverändert (wie eine Transaktion)
@@ -1456,6 +1601,7 @@
     var forced = options.mode || options.force || null; // 'demo' | 'live' (optional)
     if (forced === 'demo') {
       state.mode = 'demo';
+      await demoLoadFeatures();
       return demoCall('status', {});
     }
     var r = null;
@@ -1482,7 +1628,31 @@
     }
     state.mode = 'demo';
     TippAPI.error = null;
+    await demoLoadFeatures();
     return demoCall('status', {});
+  }
+
+  /**
+   * Demo: Schalter wie die Website – zuerst die im Browser gespeicherten Demo-Inhalte der Verwaltung
+   * (localStorage hbs_demo_content, wenn hbs_demo_mode = 1), sonst cms/content.json. Fehlt beides: Standard.
+   */
+  async function demoLoadFeatures() {
+    if (state.featuresSet) return;
+    try {
+      if (global.localStorage && global.localStorage.getItem('hbs_demo_mode') === '1') {
+        var c = JSON.parse(global.localStorage.getItem('hbs_demo_content') || 'null');
+        if (c && typeof c === 'object') { state.features = normFeatures(c.features); return; }
+      }
+    } catch (e) { /* gesperrt/kaputt */ }
+    if (typeof fetch !== 'function') return;
+    try {
+      var url = state.base.replace(/[^/]*$/, '') + 'content.json';
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var t = ctrl ? setTimeout(function () { ctrl.abort(); }, 3000) : null;
+      var r = await fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+      if (t) clearTimeout(t);
+      if (r.ok) { var j = await r.json(); if (j && typeof j === 'object') state.features = normFeatures(j.features); }
+    } catch (e) { /* kein Inhalt → Standard */ }
   }
 
   async function call(action, data) {
@@ -1501,6 +1671,8 @@
     demoReset: demoReset,
     scoreTip: scoreTip,
     setAdminCsrf: function (token) { state.adminCsrf = token || null; },
+    /** Schalter vorgeben (Demo-Modus, z. B. aus der Verwaltung). Im Live-Modus entscheidet der Server (content.json). */
+    setFeatures: function (f) { state.features = normFeatures(f); state.featuresSet = true; return clone(state.features); },
     demoSetOwner: demoSetOwner,
     error: null,
     /** reine Hilfsfunktionen (auch für Tests) */
@@ -1514,6 +1686,7 @@
   Object.defineProperty(TippAPI, 'csrf', { enumerable: true, get: function () { return state.csrf; } });
   Object.defineProperty(TippAPI, 'admin', { enumerable: true, get: function () { return !!state.admin; } });
   Object.defineProperty(TippAPI, 'settings', { enumerable: true, get: function () { return clone(state.settings); } });
+  Object.defineProperty(TippAPI, 'features', { enumerable: true, get: function () { return clone(state.features); } });
   Object.defineProperty(TippAPI, 'base', { enumerable: true, get: function () { return state.base; } });
 
   global.TippAPI = TippAPI;

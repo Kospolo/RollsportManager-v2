@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 define('HBS_CMS', true); // erlaubt das Einlesen von cms/config.php (Sitzungsdauer)
 
-const TIPP_DB_VERSION        = 3;      // 2: automatischer Abruf (OpenLigaDB), 3: Vereinslogos
+const TIPP_DB_VERSION        = 4;      // 2: automatischer Abruf (OpenLigaDB), 3: Vereinslogos, 4: Preise + Stammtischkasse
 const TIPP_SESSION_NAME      = 'HBS_TIPP';
 const TIPP_SESSION_DAYS      = 60;      // so lange bleibt man am Handy angemeldet
 const TIPP_CMS_SESSION_NAME  = 'HBSCMS';
@@ -39,6 +39,10 @@ const TIPP_SYNC_LAZY_DAYS    = 3;        // Spiele, die länger her sind, lösen
 const TIPP_SYNC_STALE_MIN    = 240;      // Ergebnis ohne „beendet“-Kennzeichen erst 4 Std. nach Anstoß übernehmen
 const TIPP_SYNC_WINDOW_MAX   = 90;
 const TIPP_LEAGUE_RE         = '/^[A-Za-z0-9_-]{1,40}$/';
+
+// Stammtischkasse (nur mit features.kasse): Beträge immer in ganzen Cent, nie mit Tipps/Rangliste/Preisen verknüpft
+const TIPP_KASSE_MAX_CENTS   = 10000000; // 100.000 € je Buchung
+const TIPP_OFF_MESSAGE       = 'Das Tippspiel ist im Moment ausgeschaltet.';
 
 // Vereinslogos: einmal von der Quelle aus OpenLigaDB (teamIconUrl) laden, von UNSEREM Server ausliefern (DSGVO)
 const TIPP_LOGO_UA           = 'HBS-Tippspiel/1.0 (Vereinslogos; +https://openligadb.de)';
@@ -526,6 +530,33 @@ function migrate(PDO $pdo): void
             $pdo->exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('show_logos', '1')");
             $pdo->exec('PRAGMA user_version = 3');
         }
+        if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < 4) {
+            // Preise je Wettbewerb (vom Wirt spendiert, Teilnahme kostenlos) + Stammtischkasse (idempotent)
+            add_columns($pdo, 'competitions', [
+                'prize_1' => 'TEXT NULL',
+                'prize_2' => 'TEXT NULL',
+                'prize_3' => 'TEXT NULL',
+                'prize_note' => 'TEXT NULL',
+            ]);
+            // Die Kasse hat bewusst KEINEN Bezug zu Spielern, Tipps, Rangliste oder Preisen (keine Fremdschlüssel).
+            $pdo->exec(<<<SQL
+                CREATE TABLE IF NOT EXISTS kasse (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    kind TEXT NOT NULL CHECK (kind IN ('in', 'out')),   -- in = Einzahlung, out = Ausgabe
+                    amount_cents INTEGER NOT NULL CHECK (amount_cents > 0),
+                    day TEXT NOT NULL,                                   -- YYYY-MM-DD
+                    name TEXT NOT NULL DEFAULT '',                       -- Einzahlung: wer (freier Text)
+                    purpose TEXT NOT NULL DEFAULT '',                    -- Ausgabe: wofür
+                    note TEXT NOT NULL DEFAULT '',
+                    created TEXT NOT NULL,
+                    updated TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_kasse_day ON kasse(day, id);
+            SQL);
+            $pdo->exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('kasse_purpose', '')");
+            $pdo->exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('kasse_show_names', '0')");
+            $pdo->exec('PRAGMA user_version = 4');
+        }
         $pdo->exec('COMMIT');
     } catch (Throwable $e) {
         $pdo->exec('ROLLBACK');
@@ -584,6 +615,120 @@ function settings(): array
     }
     $s['show_logos'] = (bool)$s['show_logos']; // Ja/Nein-Feld → Boolean (wie überall in den Antworten)
     return $s;
+}
+
+/* ============================================ Schalter aus der Website-Verwaltung */
+
+/**
+ * Globale Schalter aus cms/content.json → features (Bereich „Funktionen“ der Verwaltung).
+ * Fehlt der Schalter oder ist die Datei kaputt: tippspiel = an, preise = aus, kasse = aus.
+ */
+function features(): array
+{
+    static $f = null;
+    if ($f !== null) {
+        return $f;
+    }
+    $file = TIPP_CMS_DIR . '/content.json';
+    $raw = is_file($file) ? @file_get_contents($file, false, null, 0, 4 * 1024 * 1024) : false;
+    $d = is_string($raw) ? json_decode($raw, true) : null;
+    $src = is_array($d) && isset($d['features']) && is_array($d['features']) ? $d['features'] : [];
+    $on = fn(mixed $v): bool => $v === true || $v === 1 || $v === '1' || $v === 'true';
+    $off = fn(mixed $v): bool => $v === false || $v === 0 || $v === '0' || $v === 'false';
+    return $f = [
+        'tippspiel' => !(array_key_exists('tippspiel', $src) && $off($src['tippspiel'])),
+        'preise' => array_key_exists('preise', $src) && $on($src['preise']),
+        'kasse' => array_key_exists('kasse', $src) && $on($src['kasse']),
+    ];
+}
+
+/** Spieler-Aktionen nur, wenn das Tippspiel eingeschaltet ist (Cronjob, Abruf und Verwaltung laufen weiter) */
+function require_tipp_on(): void
+{
+    if (!features()['tippspiel']) {
+        fail(TIPP_OFF_MESSAGE, 403, ['disabled' => true]);
+    }
+}
+
+function require_feature(string $key, string $message): void
+{
+    if (empty(features()[$key])) {
+        fail($message, 403, ['featureOff' => $key]);
+    }
+}
+
+/* ================================================== Stammtischkasse (Hilfen) */
+
+/** Datum einer Buchung: "YYYY-MM-DD" (auch "TT.MM.JJJJ") */
+function v_day(mixed $v): string
+{
+    $v = is_string($v) ? trim($v) : '';
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m)) {
+        [$y, $mo, $d] = [(int)$m[1], (int)$m[2], (int)$m[3]];
+    } elseif (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $v, $m)) {
+        [$d, $mo, $y] = [(int)$m[1], (int)$m[2], (int)$m[3]];
+    } else {
+        fail('Datum: bitte im Format JJJJ-MM-TT angeben (z. B. 2026-11-25).', 400);
+    }
+    if ($y < 2000 || $y > 2100 || !checkdate($mo, $d, $y)) {
+        fail('Datum: das gibt es nicht – bitte prüfen.', 400);
+    }
+    return sprintf('%04d-%02d-%02d', $y, $mo, $d);
+}
+
+function kasse_settings(): array
+{
+    $out = ['purpose' => '', 'show_names' => false];
+    foreach (q("SELECT key, value FROM settings WHERE key IN ('kasse_purpose', 'kasse_show_names')")->fetchAll() as $r) {
+        if ($r['key'] === 'kasse_purpose') {
+            $out['purpose'] = (string)$r['value'];
+        } else {
+            $out['show_names'] = (string)$r['value'] === '1';
+        }
+    }
+    return $out;
+}
+
+function kasse_entry_out(array $r): array
+{
+    return [
+        'id' => (int)$r['id'], 'kind' => (string)$r['kind'], 'amount_cents' => (int)$r['amount_cents'], 'day' => (string)$r['day'],
+        'name' => (string)$r['name'], 'purpose' => (string)$r['purpose'], 'note' => (string)$r['note'],
+        'created' => (string)$r['created'], 'updated' => (string)$r['updated'],
+    ];
+}
+
+/** Verwaltung: alle Buchungen (neueste zuerst), Summen, Stand und Einstellungen */
+function kasse_admin_payload(): array
+{
+    $entries = array_map('kasse_entry_out', q('SELECT * FROM kasse ORDER BY day DESC, id DESC')->fetchAll());
+    $in = $out = 0;
+    foreach ($entries as $e) {
+        if ($e['kind'] === 'in') {
+            $in += $e['amount_cents'];
+        } else {
+            $out += $e['amount_cents'];
+        }
+    }
+    return ['entries' => $entries, 'total_in_cents' => $in, 'total_out_cents' => $out, 'balance_cents' => $in - $out, 'settings' => kasse_settings()];
+}
+
+/** Spieler-App: nur Stand, Zweck und – falls freigegeben – die Namen der Einzahler (ohne Beträge) */
+function kasse_public_payload(): array
+{
+    $a = kasse_admin_payload();
+    $names = null;
+    if ($a['settings']['show_names']) {
+        $set = [];
+        foreach ($a['entries'] as $e) {
+            if ($e['kind'] === 'in' && $e['name'] !== '') {
+                $set[lower($e['name'])] ??= $e['name'];
+            }
+        }
+        $names = array_values($set);
+        usort($names, fn($x, $y) => strcmp(lower($x), lower($y)));
+    }
+    return ['balance_cents' => $a['balance_cents'], 'purpose' => $a['settings']['purpose'], 'names' => $names];
 }
 
 /* ============================================================ Punkte-Logik */
@@ -1006,7 +1151,22 @@ function comp_out(array $c, array $firstKick): array
         'bonus_points' => (int)$c['bonus_points'],
         'bonus_locked' => bonus_locked((int)$c['id'], $firstKick),
         'source' => ($c['source'] ?? null) !== null ? (string)$c['source'] : null,
+        'prizes' => prizes_out($c),
     ];
+}
+
+/** Preise (nur mit features.preise und wenn mindestens ein Preis eingetragen ist) – sonst null */
+function prizes_out(array $c): ?array
+{
+    if (!features()['preise']) {
+        return null;
+    }
+    $p = [];
+    foreach (['first' => 'prize_1', 'second' => 'prize_2', 'third' => 'prize_3', 'note' => 'prize_note'] as $k => $col) {
+        $v = $c[$col] ?? null;
+        $p[$k] = $v !== null && trim((string)$v) !== '' ? (string)$v : null;
+    }
+    return $p['first'] === null && $p['second'] === null && $p['third'] === null ? null : $p;
 }
 
 /** Wettbewerb für die Verwaltung: zusätzlich die Einstellungen des automatischen Abrufs */
@@ -1018,6 +1178,10 @@ function comp_admin_out(array $c, array $firstKick): array
         'sync_window_days' => (int)($c['sync_window_days'] ?? 14),
         'last_sync' => ($c['last_sync'] ?? null) !== null ? (string)$c['last_sync'] : null,
         'last_sync_status' => ($c['last_sync_status'] ?? null) !== null ? (string)$c['last_sync_status'] : null,
+        'prize_1' => ($c['prize_1'] ?? null) !== null ? (string)$c['prize_1'] : null,
+        'prize_2' => ($c['prize_2'] ?? null) !== null ? (string)$c['prize_2'] : null,
+        'prize_3' => ($c['prize_3'] ?? null) !== null ? (string)$c['prize_3'] : null,
+        'prize_note' => ($c['prize_note'] ?? null) !== null ? (string)$c['prize_note'] : null,
     ];
 }
 
@@ -1252,6 +1416,7 @@ function status_payload(?array $p): array
         'player' => $p ? ['id' => $p['id'], 'nickname' => $p['nickname'], 'email' => $p['email']] : null,
         'csrf' => $p ? (string)($_SESSION['csrf'] ?? '') : null,
         'settings' => settings(),
+        'features' => features(),
         'serverTime' => now_full(),
     ];
 }
@@ -1345,6 +1510,13 @@ function require_admin(): void
 function require_reader(): array
 {
     $forceOwner = (string)($_GET['view'] ?? '') === 'owner';
+    if (!features()['tippspiel']) {
+        // ausgeschaltet: Gäste sehen nichts mehr, der Wirt (Verwaltung angemeldet) weiterhin die Wirt-Ansicht
+        if (cms_admin_state()['auth']) {
+            return ['player' => null, 'owner' => true];
+        }
+        fail(TIPP_OFF_MESSAGE, 403, ['disabled' => true]);
+    }
     if (!$forceOwner) {
         $p = current_player();
         if ($p !== null) {
@@ -2705,6 +2877,7 @@ switch ($action) {
 
     case 'invite_check':
         require_method('GET');
+        require_tipp_on();
         $lock = bf_locked([bf_key('code')]);
         if ($lock > 0) {
             fail_locked($lock);
@@ -2719,6 +2892,7 @@ switch ($action) {
 
     case 'register':
         require_method('POST');
+        require_tipp_on();
         $lock = bf_locked([bf_key('code'), bf_key('ip')]);
         if ($lock > 0) {
             fail_locked($lock);
@@ -2762,6 +2936,7 @@ switch ($action) {
 
     case 'login':
         require_method('POST');
+        require_tipp_on();
         $nickRaw = inp('nickname');
         $nick = is_string($nickRaw) ? trim((string)preg_replace('/\s+/u', ' ', $nickRaw)) : '';
         $pw = inp('password');
@@ -2884,6 +3059,7 @@ switch ($action) {
 
     case 'tip':
         require_method('POST');
+        require_tipp_on();
         $me = require_player();
         $mid = v_id(inp('match_id'), 'Spiel');
         $h = v_goals(inp('home'), 'Tore Heim');
@@ -2920,6 +3096,7 @@ switch ($action) {
 
     case 'bonus_tip':
         require_method('POST');
+        require_tipp_on();
         $me = require_player();
         $cid = v_id(inp('competition_id'), 'Wettbewerb');
         $answer = v_str(inp('answer'), 1, 80, 'eine Antwort');
@@ -2964,6 +3141,7 @@ switch ($action) {
 
     case 'stats':
         require_method('GET');
+        require_tipp_on();
         $me = require_player();
         respond(stats(opt_comp_id(), $me['id']));
 
@@ -3014,6 +3192,7 @@ switch ($action) {
 
     case 'change_password':
         require_method('POST');
+        require_tipp_on();
         $me = require_player();
         $old = inp('old');
         if (!is_string($old) || strlen($old) > 200 || !password_verify($old, $me['password_hash'])) {
@@ -3085,7 +3264,7 @@ switch ($action) {
             ];
         }
         $invites = array_map('invite_out', q('SELECT * FROM invites ORDER BY created DESC, code')->fetchAll());
-        respond(['competitions' => $comps, 'matches' => $matches, 'players' => $players, 'invites' => $invites, 'settings' => settings(), 'serverTime' => now_full(), 'logos' => logo_stats()]);
+        respond(['competitions' => $comps, 'matches' => $matches, 'players' => $players, 'invites' => $invites, 'settings' => settings(), 'serverTime' => now_full(), 'logos' => logo_stats(), 'features' => features()]);
 
     case 'admin_stats':
         // Wirt-Ansicht: Stammtisch-Statistik (alle aktiven Spieler)
@@ -3164,14 +3343,21 @@ switch ($action) {
             $wd = inp('sync_window_days');
             $src['sync_window_days'] = $wd === null || $wd === '' ? 14 : v_int($wd, 1, TIPP_SYNC_WINDOW_MAX, 'Zeitraum (Tage)');
         }
+        // Preise (vom Haus spendiert): nur ändern, wenn mitgeschickt – sonst bleiben sie unverändert
+        $pz = [];
+        foreach (['prize_1' => 'Preis Platz 1', 'prize_2' => 'Preis Platz 2', 'prize_3' => 'Preis Platz 3', 'prize_note' => 'Hinweis zu den Preisen'] as $k => $label) {
+            $pz[$k] = array_key_exists($k, body()) ? v_opt_str(inp($k), $k === 'prize_note' ? 200 : 80, $label) : ($old[$k] ?? null);
+        }
         if ($id !== null) {
             q('UPDATE competitions SET name = ?, active = ?, sort = ?, bonus_question = ?, bonus_answer = ?, bonus_points = ?,
-               source = ?, source_league = ?, source_season = ?, sync_window_days = ? WHERE id = ?',
-                [$name, $active, $sort, $bq, $ba, $bp, $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days'], $id]);
+               source = ?, source_league = ?, source_season = ?, sync_window_days = ?, prize_1 = ?, prize_2 = ?, prize_3 = ?, prize_note = ? WHERE id = ?',
+                [$name, $active, $sort, $bq, $ba, $bp, $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days'],
+                 $pz['prize_1'], $pz['prize_2'], $pz['prize_3'], $pz['prize_note'], $id]);
         } else {
-            q('INSERT INTO competitions (name, active, sort, bonus_question, bonus_answer, bonus_points, created, source, source_league, source_season, sync_window_days)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [$name, $active, $sort, $bq, $ba, $bp, now_full(), $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days']]);
+            q('INSERT INTO competitions (name, active, sort, bonus_question, bonus_answer, bonus_points, created, source, source_league, source_season, sync_window_days,
+               prize_1, prize_2, prize_3, prize_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [$name, $active, $sort, $bq, $ba, $bp, now_full(), $src['source'], $src['source_league'], $src['source_season'], $src['sync_window_days'],
+                 $pz['prize_1'], $pz['prize_2'], $pz['prize_3'], $pz['prize_note']]);
             $id = (int)db()->lastInsertId();
         }
         respond(['competition' => comp_admin_out(competition_or_404($id), first_kickoffs())]);
@@ -3515,6 +3701,78 @@ switch ($action) {
         require_admin();
         cron_token_reset();
         respond(cron_info());
+
+    /* ------------------------------------------- Stammtischkasse (nur mit features.kasse) */
+    /*
+     * Die Kasse ist für alle (z. B. Saisonabschluss-Feier) – sie ist mit Tipps, Rangliste und Preisen in KEINER Weise
+     * verknüpft, es gibt keine Auszahlung an Gewinner und Mitspielen kostet nie etwas (kein Glücksspiel).
+     */
+
+    case 'kasse':
+        // Spieler-App / Wirt-Ansicht: Stand, Zweck, Namen der Einzahler nur wenn freigegeben (ohne Beträge)
+        require_method('GET');
+        require_reader();
+        session_close_any();
+        require_feature('kasse', 'Die Stammtischkasse ist ausgeschaltet.');
+        respond(kasse_public_payload());
+
+    case 'admin_kasse':
+        require_method('GET');
+        require_admin();
+        require_feature('kasse', 'Die Stammtischkasse ist ausgeschaltet – einschalten unter „Funktionen“.');
+        respond(kasse_admin_payload());
+
+    case 'admin_kasse_save':
+        require_method('POST');
+        require_admin();
+        require_feature('kasse', 'Die Stammtischkasse ist ausgeschaltet – einschalten unter „Funktionen“.');
+        $id = present('id') ? v_id(inp('id'), 'ID') : null;
+        $kind = inp('kind');
+        if (!in_array($kind, ['in', 'out'], true)) {
+            fail('Art: bitte „Einzahlung“ oder „Ausgabe“ wählen.', 400);
+        }
+        $cents = v_int(inp('amount_cents'), 1, TIPP_KASSE_MAX_CENTS, 'Betrag (in Cent)');
+        $day = v_day(inp('day'));
+        $name = $kind === 'in' ? v_str(inp('name'), 1, 60, 'einen Namen (wer hat eingezahlt?)') : '';
+        $purpose = $kind === 'out' ? v_str(inp('purpose'), 1, 80, 'einen Zweck (wofür?)') : '';
+        $note = v_str(inp('note'), 0, 200, 'Notiz');
+        $now = now_full();
+        if ($id !== null) {
+            if (!q('SELECT id FROM kasse WHERE id = ?', [$id])->fetch()) {
+                fail('Buchung nicht gefunden.', 404);
+            }
+            q('UPDATE kasse SET kind = ?, amount_cents = ?, day = ?, name = ?, purpose = ?, note = ?, updated = ? WHERE id = ?',
+                [$kind, $cents, $day, $name, $purpose, $note, $now, $id]);
+        } else {
+            q('INSERT INTO kasse (kind, amount_cents, day, name, purpose, note, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [$kind, $cents, $day, $name, $purpose, $note, $now, $now]);
+            $id = (int)db()->lastInsertId();
+        }
+        respond(['entry' => kasse_entry_out(q('SELECT * FROM kasse WHERE id = ?', [$id])->fetch())] + kasse_admin_payload());
+
+    case 'admin_kasse_delete':
+        require_method('POST');
+        require_admin();
+        require_feature('kasse', 'Die Stammtischkasse ist ausgeschaltet – einschalten unter „Funktionen“.');
+        $id = v_id(inp('id'));
+        if (!q('SELECT id FROM kasse WHERE id = ?', [$id])->fetch()) {
+            fail('Buchung nicht gefunden.', 404);
+        }
+        q('DELETE FROM kasse WHERE id = ?', [$id]);
+        respond(kasse_admin_payload());
+
+    case 'admin_kasse_settings':
+        require_method('POST');
+        require_admin();
+        require_feature('kasse', 'Die Stammtischkasse ist ausgeschaltet – einschalten unter „Funktionen“.');
+        $purpose = v_str(inp('purpose'), 0, 120, 'Zweck der Kasse');
+        $show = inp('show_names') === null ? 0 : v_bool(inp('show_names'), 'Namen zeigen');
+        tx(function (PDO $pdo) use ($purpose, $show) {
+            $st = $pdo->prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+            $st->execute(['kasse_purpose', $purpose]);
+            $st->execute(['kasse_show_names', (string)$show]);
+        });
+        respond(kasse_admin_payload());
 
     case 'cron_sync':
         // Für den Cronjob des Webhosters (alle 15 Min.): …/cms/tipp-api.php?action=cron_sync&token=…

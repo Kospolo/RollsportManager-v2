@@ -21,8 +21,8 @@
 
   var FEATURE_DEFAULTS = { tippspiel: true, team: true, reservierung: false, speisekarte: true, anmeldung: false, programm: true, preise: false, kasse: false };
   var FEATURES = [
-    { key: 'tippspiel', icon: 'trophy', title: 'Tippspiel', text: 'Stammgäste tippen Bundesliga-Spiele und sammeln Punkte.', note: 'Ausschalten: Tippspiel-Abschnitt und Menüpunkt verschwinden von der Website. Spieler, Tipps und Punkte bleiben gespeichert – wer den direkten Link kennt, kommt weiterhin ins Tippspiel.', go: 'tippspiel' },
-    { key: 'team', icon: 'users', title: 'Team-Bereich', text: 'Eigener Bereich für Ihre Mitarbeiter (z. B. Dienstplan).', note: 'Ausschalten: Der Team-Bereich wird auf der Website nicht mehr verlinkt. Die gespeicherten Team-Daten bleiben erhalten.' },
+    { key: 'tippspiel', icon: 'trophy', title: 'Tippspiel', text: 'Stammgäste tippen Bundesliga-Spiele und sammeln Punkte.', note: 'Ausschalten: Tippspiel-Abschnitt und Menüpunkt verschwinden von der Website, und wer das Tippspiel direkt aufruft, sieht nur einen Pause-Hinweis. Spieler, Tipps und Punkte bleiben gespeichert. Als Wirt können Sie es weiterhin ansehen.', go: 'tippspiel' },
+    { key: 'team', icon: 'users', title: 'Team-Bereich', text: 'Eigener Bereich für Ihre Mitarbeiter (z. B. Dienstplan).', note: 'Ausschalten: Ihre Mitarbeiter können den Team-Bereich nicht mehr nutzen und sehen einen Hinweis. Dienstplan und alle Daten bleiben gespeichert; Sie selbst können ihn weiterhin öffnen.', href: '../team/' },
     { key: 'speisekarte', icon: 'beer', title: 'Getränke- & Speisekarte', text: 'Ihre Karte mit Preisen als eigener Abschnitt auf der Website.', go: 'speisekarte' },
     { key: 'reservierung', icon: 'table', title: 'Tischreservierung', text: 'Gäste schicken eine Anfrage – Sie rufen zurück und bestätigen. Keine automatische Buchung.', go: 'reservierungen' },
     { key: 'anmeldung', icon: 'ticket', title: 'Anmeldung zu Veranstaltungen', text: 'Gäste melden sich für einzelne Termine an (z. B. Weihnachtsfeier) – mit „noch X Plätze frei“.', go: 'anmeldungen' },
@@ -255,6 +255,7 @@
       cardEl.appendChild(h('p', { class: 'x-feature-text', id: 'xf-' + f.key }, f.text));
       if (f.note) cardEl.appendChild(h('p', { class: 'x-feature-note' }, icon('info'), h('span', null, f.note)));
       if (f.go) cardEl.appendChild(h('div', { class: 'x-feature-actions' }, X.btn(f.key === 'tippspiel' ? 'Zum Tippspiel' : 'Einstellungen öffnen', 'chevron', function () { X.go(f.go); }, 'btn-sm')));
+      if (f.href) cardEl.appendChild(h('div', { class: 'x-feature-actions' }, X.btn('Team-Bereich öffnen (Chef-Ansicht)', 'chevron', function () { window.open(f.href, '_blank', 'noopener'); }, 'btn-sm')));
       if (f.key === 'programm') cardEl.appendChild(programmSettings());
       upd();
       wrap.appendChild(cardEl);

@@ -700,9 +700,12 @@
   function renderDirty() {
     var pill = document.getElementById('dirty-pill');
     var dot = document.getElementById('save-dot');
+    var bar = document.getElementById('dirty-bar');
     if (pill) pill.hidden = !S.dirty;
     if (dot) dot.hidden = !S.dirty;
+    if (bar) bar.hidden = !S.dirty;
     document.title = (S.dirty ? '● ' : '') + 'Verwaltung · Hofbräustüble';
+    if (typeof drawTippMode === 'function') drawTippMode();
   }
 
   function validateClient(c) {
@@ -925,16 +928,19 @@
     var saveBtn = h('button', { type: 'button', id: 'save-btn', class: 'btn btn-primary save-btn', onclick: save },
       icon('save'), h('span', { class: 'lbl' }, 'Speichern'), h('span', { class: 'dot', id: 'save-dot', hidden: true, 'aria-hidden': 'true' }));
 
+    // Handy: deutliche Leiste „Noch nicht gespeichert“ (der Punkt am Knopf allein war zu klein)
+    var dirtyBar = h('button', { type: 'button', class: 'dirty-bar', id: 'dirty-bar', hidden: true, onclick: save },
+      icon('alert'), h('span', null, 'Noch nicht gespeichert – hier tippen zum Speichern'));
     var top = h('div', { class: 'topwrap' }, h('header', { class: 'topbar' },
       h('a', { class: 'brand', href: '#termine', 'aria-label': 'Hofbräustüble Verwaltung' }, h('span', { class: 'brand-mark', 'aria-hidden': 'true' }, 'H'),
         h('span', { class: 'brand-text' }, h('strong', null, 'Hofbräustüble'), h('small', null, S.mode === 'demo' ? 'Verwaltung · Demo' : 'Verwaltung'))),
       h('div', { class: 'top-actions' },
         h('span', { class: 'dirty-pill', id: 'dirty-pill', hidden: true }, 'Nicht gespeichert'),
-        preview, saveBtn)));
+        preview, saveBtn)), dirtyBar);
 
     var nav = h('nav', { class: 'nav', 'aria-label': 'Bereiche' },
       SECTIONS.map(function (s) {
-        return h('a', { class: 'nav-item', href: '#' + s.id, 'data-id': s.id, onclick: function (e) { e.preventDefault(); go(s.id); } }, icon(s.icon), s.label);
+        return h('a', { class: 'nav-item', href: '#' + s.id, 'data-id': s.id, onclick: function (e) { e.preventDefault(); go(s.id); toContent(); } }, icon(s.icon), s.label);
       }),
       S.mode === 'api' ? [h('div', { class: 'nav-sep' }), h('button', { type: 'button', class: 'nav-item nav-desktop-only', onclick: logout }, icon('logout'), 'Abmelden')] : null);
 
@@ -945,6 +951,13 @@
     app.replaceChildren(banner || '', top, h('div', { class: 'layout' }, nav, mainEl));
     showSection(S.section, true);
     renderDirty();
+  }
+
+  /** Handy/Tablet: Das Bereichsmenü steht als Raster über dem Inhalt – nach der Auswahl direkt zum Inhalt springen */
+  function toContent() {
+    if (window.innerWidth > 960 || !mainEl) return;
+    var top = mainEl.getBoundingClientRect().top + window.scrollY - (document.querySelector('.topwrap') || { offsetHeight: 0 }).offsetHeight;
+    window.scrollTo(0, Math.max(0, top));
   }
 
   function go(id) {
@@ -967,10 +980,8 @@
     }
     mainEl.appendChild(sec.render());
     document.querySelectorAll('.nav-item[data-id]').forEach(function (a) {
-      if (a.getAttribute('data-id') === sec.id) {
-        a.setAttribute('aria-current', 'page');
-        if (a.scrollIntoView && window.innerWidth <= 960) a.scrollIntoView({ block: 'nearest', inline: 'center' });
-      } else a.removeAttribute('aria-current');
+      if (a.getAttribute('data-id') === sec.id) a.setAttribute('aria-current', 'page');
+      else a.removeAttribute('aria-current');
     });
     if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
   }
@@ -1484,10 +1495,10 @@
     });
     wrap.appendChild(card('Datensicherung', 'Alle Inhalte als Datei auf dem Computer oder Handy sichern – oder eine Sicherung wieder einspielen. Bilder sind darin nur verlinkt, nicht enthalten.',
       h('div', { class: 'btn-row' },
-        btn('JSON exportieren', 'download', function () {
+        btn('Sicherung herunterladen', 'download', function () {
           downloadJson(S.content, 'hofbraeustueble-inhalte-' + todayISO() + '.json');
         }),
-        btn('JSON importieren', 'upload', function () { importIn.click(); }),
+        btn('Sicherung einspielen', 'upload', function () { importIn.click(); }),
         importIn),
       S.dirty ? h('p', { class: 'help mt' }, 'Hinweis: Der Export enthält auch Ihre noch nicht gespeicherten Änderungen.') : null));
 
@@ -1527,7 +1538,7 @@
     }
 
     wrap.appendChild(card('Info', null, h('dl', { class: 'kv' },
-      h('dt', null, 'Modus'), h('dd', null, S.mode === 'demo' ? 'Demo (nur dieser Browser)' : 'Online (Server)'),
+      h('dt', null, 'Gespeichert wird'), h('dd', null, S.mode === 'demo' ? 'Nur in diesem Browser (Demo)' : 'Auf Ihrer Website (online)'),
       h('dt', null, 'Zuletzt gespeichert'), h('dd', null, S.content.meta.lastUpdated ? fmtDate(S.content.meta.lastUpdated).long : '–'),
       h('dt', null, 'Termine'), h('dd', null, S.content.events.length + ' (davon ' + S.content.events.filter(function (e) { return e.date >= todayISO(); }).length + ' kommende)'),
       h('dt', null, 'Galerie-Bilder'), h('dd', null, String(S.content.gallery.length)))));
@@ -1540,8 +1551,9 @@
   /*
    * Arbeitet mit window.TippAPI (../tippspiel/js/tipp-client.js). Alle Tippspiel-Daten werden pro Aktion
    * SOFORT über cms/tipp-api.php gespeichert (bzw. im Demo-Modus im Browser) – nicht über „Speichern“.
-   * Einzige Ausnahme: der Unterbereich „Website-Teaser“ bearbeitet content.json (S.content.tippspiel)
+   * Einzige Ausnahme: der Unterbereich „Hinweis auf der Website“ bearbeitet content.json (S.content.tippspiel)
    * und läuft wie alle anderen Inhalte über den normalen „Speichern“-Knopf.
+   * Schalter (content.json → features, Bereich „Funktionen“): tippspiel (Gäste-Zugang), preise, kasse.
    */
 
   var TIPP_SUBS = [
@@ -1551,8 +1563,21 @@
     { id: 'einladungen', label: 'Einladungen', icon: 'ticket' },
     { id: 'spieler', label: 'Spieler', icon: 'users' },
     { id: 'punkte', label: 'Punkte-Regeln', icon: 'star' },
-    { id: 'teaser', label: 'Website-Teaser', icon: 'home', content: true }
+    { id: 'kasse', label: 'Stammtischkasse', icon: 'beer', feature: 'kasse' },
+    { id: 'teaser', label: 'Hinweis auf der Website', icon: 'home', content: true }
   ];
+  var FEATURE_DEFAULTS = { tippspiel: true, preise: false, kasse: false };
+  /** Schalter aus „Funktionen“ – fehlt einer: Tippspiel an, Preise/Kasse aus. saved = so, wie die Website ihn gerade sieht */
+  function featOf(c, k) {
+    var f = c && c.features;
+    return f && typeof f[k] === 'boolean' ? f[k] : FEATURE_DEFAULTS[k];
+  }
+  function feat(k) { return featOf(S.content, k); }
+  function featSaved(k) { var c = null; try { c = JSON.parse(S.saved || 'null'); } catch (e) { /* */ } return featOf(c, k); }
+  function savedFeatures() { return { tippspiel: featSaved('tippspiel'), preise: featSaved('preise'), kasse: featSaved('kasse') }; }
+  function tippSubs() { return TIPP_SUBS.filter(function (x) { return !x.feature || feat(x.feature) || T.sub === x.id; }); }
+  /** zum Bereich „Funktionen“ (kommt aus admin/extras.js) – ohne ihn: Einstellungen */
+  function goFeatures() { go(SECTIONS.some(function (x) { return x.id === 'funktionen'; }) ? 'funktionen' : 'einstellungen'); }
   var IMPORT_EXAMPLE = '# Beispiel – Datum Uhrzeit; Heim; Gast; Runde (optional)\n' +
     '2027-01-15 20:30; VfB Stuttgart; Eintracht Frankfurt; 17. Spieltag\n' +
     '2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag\n' +
@@ -1581,13 +1606,14 @@
   function tippInit() {
     if (T.ready) return Promise.resolve();
     if (!window.TippAPI) return Promise.reject(new Error('Das Tippspiel-Modul (tippspiel/js/tipp-client.js) wurde nicht gefunden.'));
+    if (S.mode === 'demo' && TippAPI.setFeatures) TippAPI.setFeatures(savedFeatures()); // Demo: Schalter wie die gespeicherten Inhalte
     return Promise.resolve(TippAPI.init({ base: '../cms/tipp-api.php', adminCsrf: S.csrf || '', mode: S.mode === 'demo' ? 'demo' : 'live' }))
       .then(function () { T.ready = true; });
   }
   /** Admin-Aktion ausführen; bei abgelaufener Verwaltungs-Sitzung erneut anmelden und wiederholen. */
   function tcall(action, data) {
     return tippInit().then(function () {
-      if (TippAPI.mode === 'demo') return TippAPI.call(action, data);
+      if (TippAPI.mode === 'demo') { if (TippAPI.setFeatures) TippAPI.setFeatures(savedFeatures()); return TippAPI.call(action, data); }
       return withAuth(function () { TippAPI.setAdminCsrf(S.csrf); return TippAPI.call(action, data); });
     });
   }
@@ -1852,7 +1878,19 @@
 
   /* ---------- Gerüst */
 
+  /** Hinweis, wenn das Tippspiel unter „Funktionen“ ausgeschaltet ist (Gäste kommen dann nicht mehr hinein) */
+  function tippOffBanner() {
+    if (feat('tippspiel') && featSaved('tippspiel')) return null;
+    var unsavedOn = feat('tippspiel') && !featSaved('tippspiel');
+    return h('div', { class: 'notice notice-warn notice-strong tipp-off', role: 'status' }, icon('alert'), h('div', null,
+      h('strong', null, unsavedOn ? 'Das Tippspiel ist eingeschaltet, aber noch nicht gespeichert.' : 'Das Tippspiel ist für Gäste ausgeschaltet.'),
+      h('p', null, unsavedOn ? 'Erst nach „Speichern“ oben rechts können Gäste wieder tippen.'
+        : 'Gäste sehen im Tippspiel nur „Das Tippspiel macht gerade Pause“. Du kannst hier alles weiter pflegen und die Wirt-Ansicht öffnen; Spiele und Ergebnisse werden weiter abgerufen. Einschalten unter „Funktionen“.'),
+      unsavedOn ? btn('Jetzt speichern', 'save', save, 'btn-primary btn-sm') : btn('Zu „Funktionen“', 'chevron', goFeatures, 'btn-primary btn-sm')));
+  }
+
   function renderTipp() {
+    KASSE.data = null; KASSE.error = null; // Kasse beim Öffnen des Reiters frisch laden
     T.nav = h('nav', { class: 'subnav', 'aria-label': 'Tippspiel-Bereiche' });
     T.mode = h('div', { class: 'save-mode', role: 'note' });
     T.body = h('div', { class: 'tipp-body' });
@@ -1864,7 +1902,7 @@
           tippRefresh().then(function () { b.disabled = false; if (!T.error) toast('Tippspiel-Daten aktualisiert.', 'success', 2000); });
         }, 'btn-sm')
       ]),
-      T.nav, T.mode, T.body);
+      tippOffBanner(), T.nav, T.mode, T.body);
     drawTippNav();
     drawTippBody();
     if (!T.data || Date.now() - T.loadedAt > 15000) {
@@ -1883,16 +1921,13 @@
   function drawTippNav() {
     if (!T.nav) return;
     var pending = T.data ? pendingMatches(T.data).length : 0;
-    T.nav.replaceChildren.apply(T.nav, TIPP_SUBS.map(function (x) {
+    T.nav.replaceChildren.apply(T.nav, tippSubs().map(function (x) {
       return h('a', {
         class: 'subnav-item', href: '#tippspiel/' + x.id, 'aria-current': x.id === T.sub ? 'page' : null,
         onclick: function (e) { e.preventDefault(); goTipp(x.id); }
       }, icon(x.icon), x.label,
-      x.id === 'ergebnisse' && pending ? h('span', { class: 'badge badge-warn', 'aria-label': pending + ' offen' }, String(pending)) : null,
-      x.content ? h('span', { class: 'badge badge-muted' }, 'Speichern') : null);
+      x.id === 'ergebnisse' && pending ? h('span', { class: 'badge badge-warn', 'aria-label': pending + ' offen' }, String(pending)) : null);
     }));
-    var cur = T.nav.querySelector('[aria-current="page"]');
-    if (cur && cur.scrollIntoView && window.innerWidth <= 960) setTimeout(function () { cur.scrollIntoView({ block: 'nearest', inline: 'center' }); }, 0);
     // Zähler auch im Hauptmenü
     var navItem = document.querySelector('.nav-item[data-id="tippspiel"]');
     if (navItem) {
@@ -1900,12 +1935,19 @@
       if (pending && !b) navItem.appendChild(b = h('span', { class: 'badge badge-warn' }));
       if (b) { if (pending) { b.textContent = String(pending); b.title = plural(pending, 'Ergebnis fehlt', 'Ergebnisse fehlen'); } else b.remove(); }
     }
-    // Hinweis: sofort gespeichert vs. über „Speichern“
+    drawTippMode();
+  }
+  /** Hinweis: sofort gespeichert vs. über „Speichern“ – und Warnung, wenn auf der Website noch etwas ungespeichert ist */
+  function drawTippMode() {
+    if (!T.mode || !document.contains(T.mode)) return;
     var content = TIPP_SUBS.filter(function (x) { return x.id === T.sub; })[0].content;
-    T.mode.className = 'save-mode ' + (content ? 'is-content' : 'is-live');
-    T.mode.replaceChildren(icon(content ? 'save' : 'check'), content
+    T.mode.className = 'save-mode ' + (content ? 'is-content' : S.dirty ? 'is-dirty' : 'is-live');
+    T.mode.replaceChildren(icon(content ? 'save' : S.dirty ? 'alert' : 'check'), content
       ? h('div', null, h('strong', null, 'Website-Texte: '), 'Diese Felder gehören zur Website und werden erst mit „Speichern“ oben rechts veröffentlicht.')
-      : h('div', null, h('strong', null, 'Wird sofort gespeichert: '), 'Jede Aktion im Tippspiel ist direkt ' + (S.mode === 'demo' ? 'gespeichert (Demo: nur in diesem Browser)' : 'online') + ' – der Knopf „Speichern“ oben ist dafür nicht nötig.'));
+      : S.dirty
+        ? h('div', null, h('strong', null, 'Tippspiel wird sofort gespeichert – aber Achtung: '), 'Auf der Website gibt es noch ungespeicherte Änderungen (z. B. Texte oder Schalter). Dafür bitte oben „Speichern“ drücken.',
+          h('div', null, btn('Jetzt speichern', 'save', save, 'btn-primary btn-sm')))
+        : h('div', null, h('strong', null, 'Wird sofort gespeichert: '), 'Jede Aktion im Tippspiel ist direkt ' + (S.mode === 'demo' ? 'gespeichert (Demo: nur in diesem Browser)' : 'online') + ' – der Knopf „Speichern“ oben ist dafür nicht nötig.'));
   }
 
   function drawTippBody(keepScroll) {
@@ -1913,6 +1955,7 @@
     var y = window.scrollY;
     var el;
     if (T.sub === 'teaser') el = tippTeaser();
+    else if (T.sub === 'kasse') el = tippKasse();
     else if (!T.data) {
       el = T.error
         ? h('div', null, notice('danger', 'alert', h('div', null, h('strong', null, 'Das Tippspiel konnte nicht geladen werden. '), T.error)),
@@ -1996,14 +2039,14 @@
       return h('li', { 'data-rank': String(r.rank), class: r.rank === 1 ? 'is-top' : null },
         h('span', { class: 'lb-rank' }, r.rank + '.'), h('span', { class: 'lb-name' }, r.nickname),
         h('span', { class: 'lb-pts' }, plural(r.points, 'Punkt', 'Punkte'),
-          r.exact !== undefined ? h('small', { class: 'lb-sub' }, r.exact + '× exakt · ' + plural(r.tips, 'Tipp', 'Tipps')) : null));
+          r.exact !== undefined ? h('small', { class: 'lb-sub' }, r.exact + '× genau · ' + plural(r.tips, 'Tipp', 'Tipps')) : null));
     }));
     var lbMore = rows.length > 5 ? btn(T.lbAll ? 'Weniger anzeigen' : 'Alle ' + rows.length + ' anzeigen', T.lbAll ? 'chevron' : 'list', function () {
       T.lbAll = !T.lbAll; drawTippBody(true);
     }, 'btn-sm mt' + (T.lbAll ? ' lb-less' : ''), { 'aria-expanded': T.lbAll ? 'true' : 'false' }) : null;
     var next = upcoming.slice(0, 3);
     wrap.appendChild(h('div', { class: 'grid-2 tipp-cols' },
-      card('Rangliste', 'Gesamtwertung aller Wettbewerbe inkl. Bonuspunkte. Bei Punktgleichheit zählen exakte Treffer, dann die Tordifferenz.',
+      card('Rangliste', 'Gesamtwertung aller Wettbewerbe mit Bonuspunkten. Bei Punktgleichheit zählen genaue Ergebnisse, dann der richtige Abstand.',
         rows.length ? lb : h('p', { class: 'help m0' }, 'Noch keine Spieler. Verteile zuerst Einladungen.'), lbMore,
         T.lbError ? h('p', { class: 'help m0 mt' }, 'Hinweis: Die genaue Rangliste konnte nicht geladen werden (' + T.lbError + ') – sortiert nach Punkten.') : null),
       card('Nächste Spiele', null,
@@ -2014,7 +2057,7 @@
 
     // Schnellzugriff
     wrap.appendChild(card('Schnellzugriff', null, h('div', { class: 'quick' },
-      TIPP_SUBS.filter(function (x) { return x.id !== 'uebersicht'; }).map(function (x) {
+      tippSubs().filter(function (x) { return x.id !== 'uebersicht'; }).map(function (x) {
         return h('button', { type: 'button', class: 'quick-btn', onclick: function () { goTipp(x.id); } }, icon(x.icon), h('span', null, x.label));
       }))));
 
@@ -2127,13 +2170,13 @@
       urlIn.addEventListener('focus', function () { urlIn.select(); });
       var lc = T.cron.last_cron;
       cronBody = h('div', { class: 'fields' },
-        field('Adresse für den Cronjob', h('div', { class: 'input-row' }, urlIn,
-          btn('Kopieren', 'copy', function () { copyText(T.cron.url_with_token, 'Cronjob-Adresse'); }, 'btn-sm', { 'aria-label': 'Cronjob-Adresse kopieren' })),
+        field('Geheime Abruf-Adresse', h('div', { class: 'input-row' }, urlIn,
+          btn('Kopieren', 'copy', function () { copyText(T.cron.url_with_token, 'Abruf-Adresse'); }, 'btn-sm', { 'aria-label': 'Abruf-Adresse kopieren' })),
           { forId: urlIn.id || (urlIn.id = nid()), help: 'Geheim halten – wer die Adresse kennt, kann nur einen Abruf auslösen, sonst nichts.' }),
-        h('p', { class: 'help m0' }, lc ? (lc.ok ? 'Letzter Cronjob-Aufruf: ' : 'Letzter Cronjob-Aufruf (mit Fehler): ') + fmtKick(lc.time) : 'Der Cronjob hat sich noch nicht gemeldet.'),
+        h('p', { class: 'help m0' }, lc ? (lc.ok ? 'Zuletzt automatisch abgerufen: ' : 'Zuletzt automatisch abgerufen (mit Fehler): ') + fmtKick(lc.time) : 'Der regelmäßige Abruf hat sich noch nicht gemeldet.'),
         T.cron.demo ? h('p', { class: 'help m0' }, 'Demo: Im echten Betrieb steht hier die Adresse deiner Website.') : null,
         h('details', { class: 'past-box cron-how' },
-          h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'So richtest du den Cronjob beim Hoster ein'),
+          h('summary', null, h('span', { class: 'chev' }, icon('chevron')), 'So richtest du den regelmäßigen Abruf („Cronjob“) beim Hoster ein'),
           h('div', { class: 'past-inner' },
             h('p', { class: 'm0' }, 'Im Kundenmenü deines Webhosters einen „Cronjob“ anlegen, der die Adresse oben ', h('strong', null, 'alle 15 Minuten'), ' aufruft. Die Menüs heißen je nach Tarif etwas anders:'),
             h('ul', null,
@@ -2143,26 +2186,31 @@
               h('li', null, 'Kann man dort nur einen Befehl eintragen: ', h('code', null, 'curl -s "ADRESSE" > /dev/null')),
               h('li', null, 'Kein Cronjob im Tarif? Ein kostenloser Dienst wie cron-job.org kann die Adresse ebenfalls aufrufen.')),
             h('p', { class: 'help m0' }, 'Ohne Cronjob klappt es auch: Dann holt das Tippspiel fehlende Ergebnisse, sobald jemand reinschaut (frühestens knapp 2 Stunden nach Anpfiff).'))),
-        h('div', { class: 'btn-row' }, btn('Token neu erzeugen', 'key', function (e) {
+        h('div', { class: 'btn-row' }, btn('Neue geheime Adresse erzeugen', 'key', function (e) {
           var b = e.currentTarget;
-          confirmDialog('Eine neue geheime Adresse erzeugen? Die alte funktioniert danach nicht mehr – trag die neue dann im Cronjob beim Hoster ein.', { title: 'Token neu erzeugen', ok: 'Neu erzeugen', danger: true }).then(function (ok) {
+          confirmDialog('Eine neue geheime Adresse erzeugen? Die alte funktioniert danach nicht mehr – trag die neue dann beim Hoster ein.', { title: 'Neue geheime Adresse', ok: 'Neu erzeugen', danger: true }).then(function (ok) {
             if (!ok) return;
             b.disabled = true;
-            tcall('admin_cron_token_reset').then(function (r) { T.cron = r; toast('Neue Cronjob-Adresse erzeugt – bitte beim Hoster eintragen.', 'success'); drawTippBody(true); },
+            tcall('admin_cron_token_reset').then(function (r) { T.cron = r; toast('Neue Abruf-Adresse erzeugt – bitte beim Hoster eintragen.', 'success'); drawTippBody(true); },
               function (er) { b.disabled = false; toast(er.message, 'error'); });
           });
         }, 'btn-sm btn-danger')));
     } else {
       cronBody = T.cronError
-        ? h('div', null, notice('danger', 'alert', 'Cronjob-Adresse konnte nicht geladen werden: ' + T.cronError), btn('Erneut versuchen', 'refresh', function () { T.cronError = null; loadCron(true); drawTippBody(true); }, 'btn-sm'))
-        : h('div', { class: 'tipp-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Cronjob-Adresse wird geladen …');
+        ? h('div', null, notice('danger', 'alert', 'Die Abruf-Adresse konnte nicht geladen werden: ' + T.cronError), btn('Erneut versuchen', 'refresh', function () { T.cronError = null; loadCron(true); drawTippBody(true); }, 'btn-sm'))
+        : h('div', { class: 'tipp-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Abruf-Adresse wird geladen …');
     }
+    // Technisches (Cronjob beim Hoster) zugeklappt – für den Alltag nicht nötig
+    var tech = h('details', { class: 'tech', open: T.techOpen ? true : null },
+      h('summary', null, h('span', { class: 'chev' }, icon('chevron')), icon('settings'), 'Für den Techniker: regelmäßig abrufen lassen'),
+      h('div', { class: 'tech-inner' },
+        h('p', { class: 'help m0' }, 'Optional. Ohne diese Einrichtung holt das Tippspiel Ergebnisse, sobald jemand reinschaut. Wer es ganz pünktlich mag, lässt den Webhoster die Adresse unten alle 15 Minuten aufrufen.'),
+        cronBody));
+    tech.addEventListener('toggle', function () { T.techOpen = tech.open; });
     return h('section', { class: 'card auto-card' },
-      cardHead('Automatischer Abruf', 'Spielplan & Ergebnisse von OpenLigaDB. Ein von Hand eingetragenes Ergebnis hat immer Vorrang.', null),
-      list,
-      h('h4', { class: 'cron-h' }, icon('clock'), 'Regelmäßig abrufen (Cronjob)'),
-      cronBody,
-      h('p', { class: 'src-credit' }, 'Daten: OpenLigaDB (openligadb.de), Community-gepflegt – ohne Gewähr. Gewertet wird das Ergebnis nach 90 Minuten.'));
+      cardHead('Spiele & Ergebnisse automatisch', 'Kommen von openligadb.de (einem kostenlosen Dienst von Fußball-Fans). Ein von Hand eingetragenes Ergebnis hat immer Vorrang.', null),
+      list, tech,
+      h('p', { class: 'src-credit' }, 'Daten von openligadb.de – ohne Gewähr. Gewertet wird das Ergebnis nach 90 Minuten.'));
   }
 
   /* ---------- Ergebnisse eintragen */
@@ -2298,7 +2346,8 @@
             h('span', null, plural(c.match_count || 0, 'Spiel', 'Spiele')),
             c.source ? h('span', { class: 'badge badge-auto' }, 'Automatisch') : null,
             c.source ? h('span', null, 'OpenLigaDB · ' + sourceLabel(c)) : null,
-            c.bonus_question ? h('span', null, 'Bonus: ' + c.bonus_question + (c.bonus_answer ? ' → ' + c.bonus_answer : ' (Antwort offen)')) : null),
+            c.bonus_question ? h('span', null, 'Bonus: ' + c.bonus_question + (c.bonus_answer ? ' → ' + c.bonus_answer : ' (Antwort offen)')) : null,
+            feat('preise') && (c.prize_1 || c.prize_2 || c.prize_3) ? h('span', { class: 'comp-prizes' }, 'Preise: ' + [c.prize_1, c.prize_2, c.prize_3].map(function (x, i) { return x ? (i + 1) + '. ' + x : null; }).filter(Boolean).join(' · ')) : null),
           c.source ? h('span', { class: 'comp-sync' + (syncFailed(c) ? ' is-err' : '') }, syncFailed(c) ? icon('alert') : null, syncText(c)) : null),
         h('div', { class: 'comp-actions' },
           c.source ? (function () { var b = btn('Abrufen', 'refresh', function () { runSync(c, 'window', b); }, 'btn-sm', { 'aria-label': 'Jetzt abrufen: ' + c.name, title: 'Spiele und Ergebnisse jetzt von OpenLigaDB holen' }); b.disabled = !!T.syncing[c.id]; return b; })() : null,
@@ -2410,6 +2459,8 @@
     var savedLeague = c && c.source_league ? c.source_league : '';
     draft.custom = savedLeague && !presetOf(savedLeague) ? savedLeague : '';
     draft.window = String(c && c.sync_window_days ? c.sync_window_days : 14);
+    ['prize_1', 'prize_2', 'prize_3', 'prize_note'].forEach(function (k) { draft[k] = c && c[k] ? c[k] : ''; });
+    var withPrizes = feat('preise');
     var noop = function () {};
     var nameIn = input(draft, 'name', { max: 80, placeholder: 'z. B. EM 2028', onInput: noop });
     var act = switchEl(c ? c.active : true, 'Aktiv', 'Spieler sehen und tippen diesen Wettbewerb', 'Archiv – nur noch zum Nachschauen');
@@ -2418,12 +2469,12 @@
     var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
 
     /* --- Automatischer Abruf */
-    var srcSw = switchEl(!!(c && c.source), 'Spielplan automatisch abrufen', 'An – Spiele und Ergebnisse kommen von OpenLigaDB', 'Aus – Spiele und Ergebnisse trägst du selbst ein');
-    var presetSel = h('select', null, OLDB_PRESETS.map(function (p) { return h('option', { value: p.id }, p.label); }), h('option', { value: 'custom' }, 'Eigenes Kürzel …'));
+    var srcSw = switchEl(!!(c && c.source), 'Automatisch holen', 'An – Spiele und Ergebnisse kommen von openligadb.de', 'Aus – Spiele und Ergebnisse trägst du selbst ein');
+    var presetSel = h('select', null, OLDB_PRESETS.map(function (p) { return h('option', { value: p.id }, p.label); }), h('option', { value: 'custom' }, 'Andere Liga …'));
     presetSel.value = savedLeague ? (presetOf(savedLeague) ? savedLeague.toLowerCase() : 'custom') : 'bl1';
     var customIn = input(draft, 'custom', { max: 40, placeholder: 'z. B. bl3', onInput: function () { resetPreview(); autoName(); } });
     customIn.setAttribute('autocapitalize', 'off'); customIn.setAttribute('spellcheck', 'false');
-    var customField = field('Eigenes Liga-Kürzel', customIn, { help: 'Das Kürzel aus der Adresse bei openligadb.de (z. B. „bl3“ für die 3. Liga). Andere Ligen pflegen Freiwillige – bitte mit „Vorschau“ prüfen.' });
+    var customField = field('Kürzel der Liga bei openligadb.de', customIn, { help: 'Steht in der Adresse bei openligadb.de (z. B. „bl3“ für die 3. Liga). Andere Ligen pflegen Freiwillige – bitte mit „Vorschau“ prüfen.' });
     var cs = currentSeason();
     var seasons = [cs - 1, cs, cs + 1];
     if (c && c.source_season && seasons.indexOf(c.source_season) < 0) seasons.push(c.source_season);
@@ -2456,17 +2507,18 @@
     var pvBtn = btn('Vorschau', 'eye', doPreview, 'btn-sm');
     var syncBtn = btn('Jetzt abrufen', 'refresh', function () { doSync('window'); }, 'btn-primary btn-sm');
     var seasonBtn = btn('Ganze Saison importieren', 'download', function () { doSync('season'); }, 'btn-sm');
+    var winField = field('Spiele wie viele Tage im Voraus anlegen?', winIn, { help: 'Meist 14 lassen. Der Abruf legt neue Spiele an, sobald sie in diesem Zeitraum liegen.' });
     var srcFields = h('div', { class: 'src-fields' },
       h('div', { class: 'grid-2' }, field('Wettbewerb', presetSel), field('Saison', seasonSel)),
       customField,
-      field('Neue Spiele anlegen für die nächsten … Tage', winIn, { help: 'Standard 14. „Jetzt abrufen“ und der automatische Abruf legen Spiele an, sobald sie in diesem Zeitraum liegen.' }),
       h('div', { class: 'btn-row' }, pvBtn), pvOut,
       h('div', { class: 'src-sync' },
         h('p', { class: 'help m0' }, '„Jetzt abrufen“ holt die Spiele der nächsten Tage und fehlende Ergebnisse. „Ganze Saison importieren“ legt alle Spiele der Saison auf einmal an (bereits gespielte mit Ergebnis).'),
         h('div', { class: 'btn-row' }, syncBtn, seasonBtn), statusLine, syncOut),
-      h('p', { class: 'src-credit m0' }, 'Daten: OpenLigaDB (openligadb.de), Community-gepflegt. Gewertet wird das Ergebnis nach 90 Minuten (ohne Verlängerung/Elfmeterschießen). Ein von Hand eingetragenes Ergebnis wird nie überschrieben.'));
+      h('p', { class: 'src-credit m0' }, 'Daten von openligadb.de (ein kostenloser Dienst von Fußball-Fans). Gewertet wird das Ergebnis nach 90 Minuten (ohne Verlängerung/Elfmeterschießen). Ein von Hand eingetragenes Ergebnis wird nie überschrieben.'));
     function showSrc() {
-      srcFields.hidden = !srcSw.input.checked;
+      srcFields.hidden = !srcSw.input.checked; // aus: nur der Schalter – der Rest ist eingeklappt
+      winField.hidden = !srcSw.input.checked;
       customField.hidden = presetSel.value !== 'custom';
     }
     srcSw.input.addEventListener('change', function () { showSrc(); autoName(); });
@@ -2522,18 +2574,32 @@
       });
     }
 
+    // Preise (nur mit „Preise im Tippspiel“ unter „Funktionen“): vom Haus spendiert, Mitspielen bleibt kostenlos
+    var prizeBox = withPrizes ? h('div', { class: 'sub-box prize-box' },
+      h('h4', null, icon('trophy'), 'Preise für die Besten', h('span', { class: 'opt' }, ' (optional)')),
+      h('p', { class: 'help m0' }, 'Die Preise spendiert das Haus – mitspielen bleibt kostenlos, es gibt keinen Einsatz. Erscheinen in der Tippspiel-App über der Rangliste („Um diese Preise wird gespielt“).'),
+      h('div', { class: 'grid-3p' },
+        tf('Platz 1', draft, 'prize_1', { max: 80, placeholder: 'z. B. 50-€-Gutschein', onInput: noop, optional: true }),
+        tf('Platz 2', draft, 'prize_2', { max: 80, placeholder: 'z. B. Eine Runde aufs Haus', onInput: noop, optional: true }),
+        tf('Platz 3', draft, 'prize_3', { max: 80, placeholder: 'z. B. Stüble-Bierkrug', onInput: noop, optional: true })),
+      tf('Hinweis zu den Preisen', draft, 'prize_note', { max: 200, placeholder: 'z. B. Übergabe bei der Saisonabschluss-Feier', onInput: noop, optional: true })) : null;
+    var tech = h('details', { class: 'tech' },
+      h('summary', null, h('span', { class: 'chev' }, icon('chevron')), icon('settings'), 'Für den Techniker'),
+      h('div', { class: 'tech-inner' },
+        field('Reihenfolge in der App', sortIn, { help: 'Kleinere Zahl = weiter vorne. Meist einfach 0 lassen.' }),
+        winField));
     var body = h('div', { class: 'fields' }, err,
       field('Name', nameIn),
       act.el,
-      field('Reihenfolge', sortIn, { help: 'Kleinere Zahl = weiter oben. Meist einfach 0 lassen.' }),
       h('div', { class: 'sub-box src-box' },
-        h('h4', null, icon('refresh'), 'Spielplan automatisch abrufen (OpenLigaDB)', h('span', { class: 'opt' }, ' (optional)')),
+        h('h4', null, icon('refresh'), 'Spiele & Ergebnisse von openligadb.de', h('span', { class: 'opt' }, ' (optional)')),
         srcSw.el, srcFields),
       h('div', { class: 'sub-box' },
         h('h4', null, icon('star'), 'Bonusfrage', h('span', { class: 'opt' }, ' (optional)')),
         tf('Frage', draft, 'bonus_question', { max: 150, placeholder: 'z. B. Wer wird Europameister?', onInput: noop, optional: true, help: 'Tippbar bis zum Anstoß des ersten Spiels.' }),
         tf('Richtige Antwort', draft, 'bonus_answer', { max: 80, placeholder: 'erst nach Turnierende eintragen', onInput: noop, optional: true, help: 'Erst eintragen, wenn sie feststeht – dann bekommt jeder mit der gleichen Antwort die Bonuspunkte (Groß-/Kleinschreibung egal).' }),
-        field('Bonuspunkte', bpIn, { help: '0 bis 100, üblich sind 10.' })));
+        field('Bonuspunkte', bpIn, { help: '0 bis 100, üblich sind 10.' })),
+      prizeBox, tech);
     function snapshot() { return JSON.stringify(draft) + act.input.checked + srcSw.input.checked + presetSel.value + seasonSel.value; }
     /** Speichern; keepOpen = Dialog bleibt offen (für den Abruf). Liefert den gespeicherten Wettbewerb oder null. */
     function save(keepOpen) {
@@ -2545,6 +2611,7 @@
         source: srcSw.input.checked ? 'openligadb' : '', source_league: league(), source_season: seasonSel.value,
         sync_window_days: draft.window === '' ? 14 : draft.window
       };
+      if (withPrizes) { data.prize_1 = draft.prize_1; data.prize_2 = draft.prize_2; data.prize_3 = draft.prize_3; data.prize_note = draft.prize_note; }
       if (cur) data.id = cur.id;
       saveB.disabled = true;
       return tcall('admin_competition_save', data).then(function (r) {
@@ -2744,10 +2811,10 @@
       if (!q) return;
       qrPng(q, i.code).then(function (b) { downloadBlob(b, 'tippspiel-einladung-' + i.code + '.png'); });
     }, 'btn-primary', { disabled: true });
-    var svgB = btn('SVG', 'download', function () {
+    var svgB = btn('Für die Druckerei', 'download', function () {
       if (!q) return;
       downloadBlob(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + qrSvg(q)], { type: 'image/svg+xml' }), 'tippspiel-einladung-' + i.code + '.svg');
-    }, '', { disabled: true, 'aria-label': 'QR-Code als SVG-Datei speichern', title: 'Als SVG speichern (beliebig groß druckbar)' });
+    }, '', { disabled: true, 'aria-label': 'QR-Code für die Druckerei speichern (SVG-Datei, beliebig groß druckbar)', title: 'Datei für die Druckerei (SVG, beliebig groß druckbar)' });
     // Druck: eigener A4-Aushang (admin/aushang.html) im Design der Website, mit QR-Code direkt zur Anmeldung
     var printB = btn('Aushang drucken (A4)', 'printer', function () {
       window.open('aushang.html?code=' + encodeURIComponent(i.code), '_blank', 'noopener');
@@ -2839,15 +2906,15 @@
     var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
     var saveB = btn('Punkte-Regeln speichern', 'check', save2, 'btn-primary');
     var st = {
-      exact: stepper({ label: 'Exaktes Ergebnis', value: s.points_exact, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
-      diff: stepper({ label: 'Richtige Tordifferenz', value: s.points_diff, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
-      tend: stepper({ label: ['Richtige Tendenz', h('small', null, 'Sieg / Remis / Niederlage')], aria: 'Richtige Tendenz', value: s.points_tendency, max: 50, onChange: upd, onEnter: save2, cls: 'pts' })
+      exact: stepper({ label: ['Genaues Ergebnis', h('small', null, 'Tipp 2:1, Ergebnis 2:1')], aria: 'Genaues Ergebnis', value: s.points_exact, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
+      diff: stepper({ label: ['Richtiger Abstand', h('small', null, 'Sieger und Tor-Abstand stimmen (Tordifferenz)')], aria: 'Richtiger Abstand', value: s.points_diff, max: 50, onChange: upd, onEnter: save2, cls: 'pts' }),
+      tend: stepper({ label: ['Richtiger Sieger', h('small', null, 'oder richtig auf Unentschieden getippt')], aria: 'Richtiger Sieger', value: s.points_tendency, max: 50, onChange: upd, onEnter: save2, cls: 'pts' })
     };
     function vals() { return { points_exact: st.exact.get(), points_diff: st.diff.get(), points_tendency: st.tend.get() }; }
     function check() {
       var v = vals();
       if (!st.exact.valid() || !st.diff.valid() || !st.tend.valid()) return 'Bitte überall eine Zahl von 0 bis 50 eingeben.';
-      if (!(v.points_exact >= v.points_diff && v.points_diff >= v.points_tendency)) return 'Bitte so wählen: exaktes Ergebnis ≥ Tordifferenz ≥ Tendenz.';
+      if (!(v.points_exact >= v.points_diff && v.points_diff >= v.points_tendency)) return 'Bitte so wählen: genaues Ergebnis ≥ richtiger Abstand ≥ richtiger Sieger.';
       return '';
     }
     function upd() {
@@ -2863,7 +2930,7 @@
     }
     function example(v) {
       var rows = [['2:1', ['2:1', '3:2', '1:0', '3:0', '1:1', '0:2']], ['1:1', ['1:1', '0:0', '2:1']]];
-      var kinds = { exact: 'exakt', diff: 'Tordifferenz', tendency: 'Tendenz', miss: 'daneben' };
+      var kinds = { exact: 'genau', diff: 'Abstand', tendency: 'Sieger', miss: 'daneben' };
       return h('div', { class: 'pts-ex' }, rows.map(function (r) {
         var res = r[0].split(':');
         return h('div', { class: 'pts-ex-block' },
@@ -2880,13 +2947,161 @@
       h('section', { class: 'card' },
         cardHead('Punkte pro Spiel', 'Gilt für alle Spiele – auch rückwirkend: Nach dem Speichern wird die Rangliste neu berechnet.'),
         h('div', { class: 'fields' }, err, st.exact.el, st.diff.el, st.tend.el,
-          h('p', { class: 'help m0' }, 'Ein Unentschieden, das nicht exakt stimmt (z. B. 0:0 bei 1:1), zählt als Tendenz. Bonusfragen haben eigene Punkte je Wettbewerb.'),
+          h('p', { class: 'help m0' }, 'Ein Unentschieden, das nicht genau stimmt (z. B. 0:0 bei 1:1), zählt als „richtiger Sieger“. Bonusfragen haben eigene Punkte je Wettbewerb.'),
           h('div', { class: 'btn-row' }, saveB,
             btn('Standard 4 / 3 / 2', 'history', function () { st.exact.set(4); st.diff.set(3); st.tend.set(2); }, 'btn-sm')))),
       card('Beispiel', 'So viele Punkte gäbe es mit den eingestellten Werten:', ex));
   }
 
-  /* ---------- Website-Teaser (läuft über den normalen Speichern-Knopf) */
+  /* ---------- Stammtischkasse (nur mit „Stammtischkasse“ unter „Funktionen“) */
+  /*
+   * Rein zum Notieren: Einzahlungen (wer, wie viel) und Ausgaben (wofür) einer gemeinsamen Kasse, z. B. für die
+   * Saisonabschluss-Feier. Bewusst OHNE Bezug zu Tipps, Punkten, Rangliste oder Preisen und ohne Auszahlung an
+   * Gewinner – sonst wäre es ein Glücksspiel. Beträge werden in ganzen Cent gespeichert.
+   */
+  var KASSE = { data: null, loading: false, error: null };
+  function fmtEuro(cents) {
+    return (cents < 0 ? '−' : '') + (Math.abs(cents) / 100).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  /** „12“, „12,5“, „12,50 €“, „1.234,50“ → Cent (oder null) */
+  function parseEuro(v) {
+    var t = String(v || '').replace(/[€\s]/g, '');
+    if (!/^\d{1,3}(\.\d{3})*(,\d{1,2})?$|^\d+([.,]\d{1,2})?$/.test(t)) return null;
+    if (/,/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    var c = Math.round(parseFloat(t) * 100);
+    return isFinite(c) && c > 0 && c <= 10000000 ? c : null;
+  }
+  function kasseLoad(force) {
+    if (KASSE.loading || (KASSE.data && !force)) return;
+    KASSE.loading = true;
+    tcall('admin_kasse').then(function (r) { KASSE.data = r; KASSE.error = null; }, function (e) { KASSE.error = e.message || 'Fehler'; })
+      .then(function () { KASSE.loading = false; if (tippVisible() && T.sub === 'kasse') drawTippBody(true); });
+  }
+  function tippKasse() {
+    var wrap = h('div');
+    wrap.appendChild(h('div', { class: 'notice notice-info notice-strong' }, icon('info'), h('div', null,
+      h('strong', null, 'Die Kasse ist für alle – nicht für den Tippsieger. Mitspielen bleibt kostenlos.'),
+      h('p', null, 'Hier notierst du, was in die Stammtischkasse eingezahlt und davon ausgegeben wurde – zum Beispiel für die Saisonabschluss-Feier. ' +
+        'Die Kasse hat mit Tipps, Punkten, Rangliste und Preisen nichts zu tun, und es gibt keine Auszahlung an Gewinner.'))));
+    if (!feat('kasse') || !featSaved('kasse')) {
+      wrap.appendChild(notice('warn', 'alert', h('div', null,
+        h('strong', null, feat('kasse') ? 'Die Stammtischkasse ist eingeschaltet, aber noch nicht gespeichert. ' : 'Die Stammtischkasse ist ausgeschaltet. '),
+        feat('kasse') ? 'Bitte oben „Speichern“ drücken – danach kannst du hier buchen.' : 'Einschalten unter „Funktionen“.',
+        h('div', null, feat('kasse') ? btn('Jetzt speichern', 'save', save, 'btn-primary btn-sm') : btn('Zu „Funktionen“', 'chevron', goFeatures, 'btn-primary btn-sm')))));
+      return wrap;
+    }
+    if (!KASSE.data) {
+      if (!KASSE.error) kasseLoad();
+      wrap.appendChild(KASSE.error
+        ? h('div', null, notice('danger', 'alert', 'Die Kasse konnte nicht geladen werden: ' + KASSE.error), btn('Erneut versuchen', 'refresh', function () { KASSE.error = null; drawTippBody(true); }, 'btn-primary'))
+        : h('div', { class: 'tipp-loading', role: 'status' }, h('span', { class: 'spinner', 'aria-hidden': 'true' }), 'Kasse wird geladen …'));
+      return wrap;
+    }
+    var k = KASSE.data;
+    wrap.appendChild(h('div', { class: 'kasse-sum' },
+      h('div', { class: k.balance_cents < 0 ? 'is-neg' : null }, h('strong', null, fmtEuro(k.balance_cents)), h('span', null, 'Kassenstand')),
+      h('div', null, h('strong', null, fmtEuro(k.total_in_cents)), h('span', null, 'eingezahlt')),
+      h('div', null, h('strong', null, fmtEuro(k.total_out_cents)), h('span', null, 'ausgegeben'))));
+    if (k.balance_cents < 0) wrap.appendChild(notice('warn', 'alert', 'Es wurde mehr ausgegeben als eingezahlt – bitte die Einträge prüfen.'));
+
+    // Buchungen
+    var list = k.entries.length ? h('ul', { class: 'kasse-list' }, k.entries.map(function (e) {
+      var what = e.kind === 'in' ? e.name : e.purpose;
+      return h('li', { class: 'kasse-row ' + (e.kind === 'in' ? 'is-in' : 'is-out') },
+        h('div', null, h('div', { class: 'k-what' }, (e.kind === 'in' ? 'Einzahlung: ' : 'Ausgabe: ') + what),
+          h('div', { class: 'k-meta' }, fmtD(e.day) + (e.note ? ' · ' + e.note : ''))),
+        h('div', { class: 'k-amt' }, (e.kind === 'in' ? '+ ' : '− ') + fmtEuro(e.amount_cents)),
+        h('div', { class: 'k-actions' },
+          btn('Bearbeiten', 'edit', function () { openKasseEditor(e, e.kind); }, 'btn-sm', { 'aria-label': 'Bearbeiten: ' + what }),
+          btn('Löschen', 'trash', function (ev) { deleteKasse(e, ev.currentTarget); }, 'btn-sm btn-danger', { 'aria-label': 'Löschen: ' + what })));
+    })) : h('div', { class: 'empty' }, icon('beer'), h('p', null, 'Noch nichts eingetragen.'));
+    wrap.appendChild(h('section', { class: 'card' },
+      cardHead('Einzahlungen & Ausgaben', 'Neueste zuerst.', [
+        btn('Einzahlung eintragen', 'plus', function () { openKasseEditor(null, 'in'); }, 'btn-primary btn-sm'),
+        btn('Ausgabe eintragen', 'minus', function () { openKasseEditor(null, 'out'); }, 'btn-sm')]),
+      list));
+
+    // Einstellungen: Zweck + Namen zeigen
+    var st = { purpose: k.settings.purpose || '' };
+    var purposeIn = input(st, 'purpose', { max: 120, placeholder: 'z. B. für die Saisonabschluss-Feier', onInput: function () {} });
+    var namesSw = switchEl(k.settings.show_names, 'Namen der Einzahler in der App zeigen', 'An – in der App steht, wer eingezahlt hat (ohne Beträge)', 'Aus – in der App steht nur der Kassenstand');
+    var saveSet = btn('Speichern', 'check', function () {
+      saveSet.disabled = true;
+      tcall('admin_kasse_settings', { purpose: st.purpose, show_names: namesSw.input.checked }).then(function (r) {
+        KASSE.data = r; toast('Gespeichert.', 'success', 2500); drawTippBody(true);
+      }, function (e) { saveSet.disabled = false; toast(e.message || 'Speichern fehlgeschlagen.', 'error'); });
+    }, 'btn-primary');
+    wrap.appendChild(h('section', { class: 'card' },
+      cardHead('So erscheint die Kasse in der App', 'Eine kleine Karte auf der Tipp-Seite, z. B. „Stammtischkasse: 85 € – für die Saisonabschluss-Feier“.'),
+      h('div', { class: 'fields' },
+        field('Wofür wird gesammelt?', purposeIn, { optional: true }),
+        namesSw.el,
+        h('div', null, saveSet))));
+    return wrap;
+  }
+  function deleteKasse(e, b) {
+    confirmDialog((e.kind === 'in' ? 'Einzahlung von „' + e.name + '“' : 'Ausgabe „' + e.purpose + '“') + ' über ' + fmtEuro(e.amount_cents) + ' löschen?', { title: 'Eintrag löschen', ok: 'Löschen', danger: true }).then(function (ok) {
+      if (!ok) return;
+      if (b) b.disabled = true;
+      tcall('admin_kasse_delete', { id: e.id }).then(function (r) { KASSE.data = r; toast('Eintrag gelöscht.', 'success', 2500); drawTippBody(true); },
+        function (er) { if (b) b.disabled = false; toast(er.message || 'Löschen fehlgeschlagen.', 'error'); });
+    });
+  }
+  function openKasseEditor(e, kind) {
+    var isNew = !e;
+    var draft = { kind: kind, name: e ? e.name : '', purpose: e ? e.purpose : '', amount: e ? (e.amount_cents / 100).toLocaleString('de-DE', { minimumFractionDigits: e.amount_cents % 100 ? 2 : 0 }) : '',
+      day: e ? e.day : todayISO(), note: e ? e.note : '' };
+    var err = h('div', { class: 'notice notice-danger', role: 'alert', hidden: true });
+    var listId = nid();
+    var players = T.data ? T.data.players.map(function (p) { return p.nickname; }) : [];
+    var nameIn = input(draft, 'name', { max: 60, placeholder: 'z. B. Kalle oder „Sparschwein Theke“', list: players.length ? listId : null, onInput: function () {} });
+    var purposeIn = input(draft, 'purpose', { max: 80, placeholder: 'z. B. Fass Bier für die Feier', onInput: function () {} });
+    var amountIn = input(draft, 'amount', { max: 14, placeholder: 'z. B. 20 oder 12,50', inputmode: 'decimal', onInput: function () {} });
+    var dayIn = input(draft, 'day', { type: 'date', onInput: function () {} });
+    var noteIn = input(draft, 'note', { max: 200, onInput: function () {} });
+    var nameField = field('Wer hat eingezahlt?', nameIn, { help: players.length ? 'Frei eintragen oder einen Spieler aus der Liste wählen (nur der Name wird gespeichert).' : 'Frei eintragen.' });
+    var purposeField = field('Wofür?', purposeIn);
+    var chips = h('div', { class: 'chips kind-pick', role: 'group', 'aria-label': 'Art' },
+      h('button', { type: 'button', class: 'chip', 'data-k': 'in', onclick: function () { setKind('in'); } }, 'Einzahlung'),
+      h('button', { type: 'button', class: 'chip', 'data-k': 'out', onclick: function () { setKind('out'); } }, 'Ausgabe'));
+    function setKind(k2) {
+      draft.kind = k2;
+      chips.querySelectorAll('.chip').forEach(function (c) { c.setAttribute('aria-pressed', c.getAttribute('data-k') === k2 ? 'true' : 'false'); });
+      nameField.hidden = k2 !== 'in'; purposeField.hidden = k2 !== 'out';
+    }
+    setKind(kind);
+    var start = JSON.stringify(draft);
+    var saveB = h('button', { type: 'button', class: 'btn btn-primary', onclick: submit }, icon('check'), isNew ? 'Eintragen' : 'Speichern');
+    function submit() {
+      err.hidden = true;
+      var cents = parseEuro(draft.amount);
+      var msg = cents === null ? 'Bitte einen Betrag eingeben, z. B. 20 oder 12,50 (höchstens 100.000 €).'
+        : !validDate(draft.day) ? 'Bitte ein gültiges Datum wählen.'
+          : draft.kind === 'in' && !draft.name.trim() ? 'Bitte eintragen, wer eingezahlt hat.'
+            : draft.kind === 'out' && !draft.purpose.trim() ? 'Bitte eintragen, wofür das Geld ausgegeben wurde.' : '';
+      if (msg) { err.hidden = false; err.textContent = msg; m.body.scrollTop = 0; return; }
+      var data = { kind: draft.kind, amount_cents: cents, day: draft.day, name: draft.kind === 'in' ? draft.name : '', purpose: draft.kind === 'out' ? draft.purpose : '', note: draft.note };
+      if (e) data.id = e.id;
+      saveB.disabled = true;
+      tcall('admin_kasse_save', data).then(function (r) {
+        KASSE.data = r; start = JSON.stringify(draft); m.close();
+        toast((draft.kind === 'in' ? 'Einzahlung' : 'Ausgabe') + ' über ' + fmtEuro(cents) + ' gespeichert – Kassenstand ' + fmtEuro(r.balance_cents) + '.', 'success');
+        drawTippBody(true);
+      }, function (er) { err.hidden = false; err.textContent = er.message; saveB.disabled = false; m.body.scrollTop = 0; });
+    }
+    var m = openModal({
+      title: isNew ? (kind === 'in' ? 'Einzahlung eintragen' : 'Ausgabe eintragen') : 'Eintrag bearbeiten', size: 'sm', backdropClose: false, focus: kind === 'in' ? nameIn : purposeIn,
+      body: h('div', { class: 'fields' }, err, chips, nameField, purposeField,
+        players.length ? h('datalist', { id: listId }, players.map(function (n) { return h('option', { value: n }); })) : null,
+        h('div', { class: 'grid-2' }, field('Betrag in Euro', amountIn), field('Datum', dayIn)),
+        field('Notiz', noteIn, { optional: true })),
+      beforeClose: function () { return JSON.stringify(draft) === start ? true : confirmDialog('Eingaben verwerfen?', { ok: 'Verwerfen', danger: true }); },
+      foot: [h('button', { type: 'button', class: 'btn', onclick: function () { m.requestClose(); } }, 'Abbrechen'), saveB]
+    });
+  }
+
+  /* ---------- Hinweis auf der Website (läuft über den normalen Speichern-Knopf) */
 
   function tippTeaser() {
     var c = S.content.tippspiel;

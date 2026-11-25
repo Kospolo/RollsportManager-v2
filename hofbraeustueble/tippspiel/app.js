@@ -17,7 +17,7 @@
     player: [['tippen', 'ball', 'Tippen'], ['rangliste', 'table', 'Rangliste'], ['statistik', 'chart', 'Statistik'], ['profil', 'user', 'Profil']],
     owner: [['spiele', 'ball', 'Spiele'], ['rangliste', 'table', 'Rangliste'], ['statistik', 'chart', 'Statistik']]
   };
-  var VIEW_PREF = 'hbs_tipp_view'; // sessionStorage: „owner“ = Wirt-Ansicht bevorzugt (wenn beide Anmeldungen bestehen)
+  var VIEW_PREF = 'hbs_tipp_view'; // sessionStorage: „owner“ = Wirt-Ansicht bevorzugt, „player“ = Wirt möchte selbst mittippen
   var LIVE_WINDOW_MIN = 150;
   var SAVE_DELAY = 650;
   var REFRESH_MS = 60000;
@@ -27,6 +27,7 @@
 
   var S = {
     player: null, mode: null, settings: { points_exact: 4, points_diff: 3, points_tendency: 2 },
+    features: { tippspiel: true, preise: false, kasse: false }, kasse: null, kasseAt: 0,
     admin: false, owner: false, navKey: null,
     route: null, authTab: null, inviteCode: '', inviteState: null, inviteTimer: null, inviteSeq: 0,
     comps: [], matches: [], loadedAt: 0, loading: null, skew: 0,
@@ -158,6 +159,9 @@
     return e.message || 'Da ist etwas schiefgelaufen.';
   }
   function isAuthError(e) { return e && e.status === 401; }
+  /** 403 „Das Tippspiel ist im Moment ausgeschaltet.“ (Schalter in der Verwaltung unter „Funktionen“) */
+  function isOff(e) { return !!(e && e.status === 403 && e.data && e.data.disabled); }
+  var KIND_LABEL = { exact: 'Genaues Ergebnis', diff: 'Richtiger Abstand', tendency: 'Richtiger Sieger', miss: 'Daneben' };
 
   /* ================================================================ Toasts */
 
@@ -170,7 +174,7 @@
     setTimeout(function () {
       el.classList.add('is-out');
       setTimeout(function () { el.remove(); }, 300);
-    }, type === 'error' ? 5200 : 3200);
+    }, type === 'error' ? 8000 : 6000);
   }
 
   /* ================================================================ Chrome / Navigation */
@@ -195,9 +199,12 @@
     $('#tabbar').hidden = !logged;
     $('#topnav').hidden = !logged;
     $('#owner-bar').hidden = !S.owner;
+    if (S.owner) ownerBar();
     var tg = $('#view-toggle');
-    tg.hidden = !(S.player && S.admin);
-    tg.innerHTML = icon(S.owner ? 'user' : 'eye') + '<span>' + (S.owner ? 'Als Spieler' : 'Als Wirt ansehen') + '</span>';
+    tg.hidden = !(S.player && S.admin) || !S.features.tippspiel;
+    tg.innerHTML = icon(S.owner ? 'user' : 'eye') + (S.owner
+      ? '<span class="vt-long">Als Spieler</span><span class="vt-short">Spieler</span>'
+      : '<span class="vt-long">Als Wirt ansehen</span><span class="vt-short">Wirt-Ansicht</span>');
     tg.setAttribute('aria-label', S.owner ? 'Zurück zur Spieler-Ansicht' : 'Tippspiel als Wirt ansehen (nur lesen)');
     document.body.classList.toggle('has-toggle', !tg.hidden);
     var demo = S.mode === 'demo';
@@ -211,12 +218,53 @@
     document.title = (logged && S.route ? TITLES[S.route] + ' · ' : '') + (S.owner ? 'Wirt-Ansicht · ' : '') + 'Stüble-Tippspiel · Hofbräustüble';
   }
 
+  /** Wirt-Leiste: Hinweis + „Selbst mittippen“ (als Spieler anmelden) + „Zur Verwaltung“ */
+  function ownerBar() {
+    var off = !S.features.tippspiel;
+    var key = (off ? 'off' : 'on') + (S.player ? 'p' : '');
+    var box = $('#owner-bar .owner-bar__inner');
+    if (!box || box.getAttribute('data-k') === key) return;
+    box.setAttribute('data-k', key);
+    box.innerHTML = icon('eye') +
+      '<p class="owner-bar__text"><strong>Wirt-Ansicht</strong> – nur ansehen, hier wird nicht getippt</p>' +
+      '<div class="owner-bar__links">' +
+      (!off && !S.player ? '<a class="owner-bar__link owner-bar__link--light" href="#/anmelden" data-play>' + 'Selbst mittippen</a>' : '') +
+      '<a class="owner-bar__link" href="' + ADMIN_URL + '">Zur Verwaltung</a></div>' +
+      (off ? '<p class="owner-bar__note" role="status">Das Tippspiel ist für Gäste gerade ausgeschaltet – nur du siehst es. Einschalten: Verwaltung → „Funktionen“.</p>' : '');
+    var play = $('[data-play]', box);
+    if (play) play.addEventListener('click', function (e) { e.preventDefault(); playAsGuest(); });
+  }
+  /** Der Wirt (Verwaltung angemeldet) möchte selbst mittippen → normale Anmeldung als Spieler */
+  function playAsGuest() {
+    closeSheet(true);
+    S.owner = false;
+    setViewPref('player');
+    resetData();
+    S.authTab = 'login';
+    S.firstRender = false;
+    if (parseHash() === 'anmelden') onRoute(); else location.hash = '#/anmelden';
+  }
+  function backToOwner(e) {
+    if (e) e.preventDefault();
+    S.owner = true;
+    setViewPref('owner');
+    resetData();
+    if (parseHash() === 'spiele') onRoute(); else location.hash = '#/spiele';
+  }
+
   function parseHash() { return location.hash.replace(/^#\/?/, '').split(/[?/]/)[0].toLowerCase(); }
 
   function onRoute() {
     closeSheet(true);
     flushDrafts();
     var r = parseHash();
+    if (!S.features.tippspiel && !S.owner) {
+      S.route = null;
+      updateChrome();
+      renderOff();
+      afterNav();
+      return;
+    }
     if (S.owner) {
       var oroute = OWNER_ROUTES.indexOf(r) >= 0 ? r : 'spiele';
       if (oroute !== r) history.replaceState(null, '', '#/' + oroute);
@@ -270,6 +318,22 @@
       '<button type="button" class="btn btn--secondary" id="' + retryId + '">' + icon('retry') + 'Nochmal versuchen</button></div>';
   }
 
+  /** Das Tippspiel wurde (während man drin ist) in der Verwaltung ausgeschaltet */
+  function switchedOff() {
+    S.features.tippspiel = false;
+    flushDrafts();
+    resetData();
+    if (S.admin) { S.owner = true; S.firstRender = false; if (parseHash() === 'spiele') onRoute(); else location.hash = '#/spiele'; return; }
+    S.owner = false;
+    onRoute();
+  }
+  function renderOff() {
+    mount('<div class="view"><section class="card empty off" aria-labelledby="off-title">' + emptyArt('glass') +
+      '<h1 id="off-title" tabindex="-1">Das Tippspiel macht gerade Pause</h1>' +
+      '<p>Im Moment wird nicht getippt. Sobald es weitergeht, sagen wir an der Theke Bescheid – deine Punkte und Tipps bleiben gespeichert.</p>' +
+      '<a class="btn btn--primary" href="../">' + icon('house') + 'Zur Website vom Hofbräustüble</a></section></div>');
+  }
+
   function sessionExpired() {
     resetData();
     if (S.owner) {
@@ -294,11 +358,13 @@
     if (S.owner) d.view = 'owner';
     return d;
   }
-  function setViewPref(owner) {
-    try { if (owner) sessionStorage.setItem(VIEW_PREF, 'owner'); else sessionStorage.removeItem(VIEW_PREF); } catch (e) { /* egal */ }
+  /** pref: true/'owner' = Wirt-Ansicht, 'player' = als Spieler (anmelden), false = Standard */
+  function setViewPref(pref) {
+    var v = pref === true ? 'owner' : pref || '';
+    try { if (v) sessionStorage.setItem(VIEW_PREF, v); else sessionStorage.removeItem(VIEW_PREF); } catch (e) { /* egal */ }
   }
   function getViewPref() {
-    try { return sessionStorage.getItem(VIEW_PREF) === 'owner'; } catch (e) { return false; }
+    try { return sessionStorage.getItem(VIEW_PREF) || ''; } catch (e) { return ''; }
   }
   /** Umschalten zwischen Spieler-App und Wirt-Ansicht (nur wenn beide Anmeldungen bestehen) */
   function setOwner(on) {
@@ -400,11 +466,64 @@
     return '<section class="chalk" aria-labelledby="rules-title">' +
       '<h2 class="chalk__title" id="rules-title">So gibt’s Punkte</h2>' +
       '<div class="chalk__rows">' +
-      '<div class="chalk__row"><div class="chalk__pts chalk__pts--exact">' + s.points_exact + '<small>Pkt.</small></div><p><b>Volltreffer</b> – genau das Ergebnis<br><span>Tipp 2:1, Ergebnis 2:1</span></p></div>' +
-      '<div class="chalk__row"><div class="chalk__pts">' + s.points_diff + '<small>Pkt.</small></div><p><b>Tordifferenz</b> – Sieger und Abstand stimmen<br><span>Tipp 3:2, Ergebnis 2:1</span></p></div>' +
-      '<div class="chalk__row"><div class="chalk__pts">' + s.points_tendency + '<small>Pkt.</small></div><p><b>Tendenz</b> – richtiger Sieger oder Remis<br><span>Tipp 1:0, Ergebnis 3:1 · Tipp 1:1, Ergebnis 2:2</span></p></div>' +
+      '<div class="chalk__row"><div class="chalk__pts chalk__pts--exact">' + s.points_exact + '<small>Pkt.</small></div><p><b>Genaues Ergebnis</b> – alles richtig<br><span>Tipp 2:1, Ergebnis 2:1</span></p></div>' +
+      '<div class="chalk__row"><div class="chalk__pts">' + s.points_diff + '<small>Pkt.</small></div><p><b>Richtiger Abstand</b> – Sieger und Tor-Abstand stimmen<br><span>Tipp 3:2, Ergebnis 2:1</span></p></div>' +
+      '<div class="chalk__row"><div class="chalk__pts">' + s.points_tendency + '<small>Pkt.</small></div><p><b>Richtiger Sieger</b> – oder richtig auf Unentschieden getippt<br><span>Tipp 1:0, Ergebnis 3:1 · Tipp 1:1, Ergebnis 2:2</span></p></div>' +
       '</div><p class="chalk__note">Tippschluss ist der Anstoß. Bis dahin kannst du deinen Tipp so oft ändern, wie du willst. Die Tipps der anderen siehst du erst danach.</p>' +
       '<span class="chalk__sponge" aria-hidden="true"></span></section>';
+  }
+
+  /* ================================================================ Preise & Stammtischkasse */
+
+  /** Wettbewerbe mit Preisen (nur wenn der Wirt „Preise“ eingeschaltet hat – sonst liefert die API keine) */
+  function prizeComps(list) { return (list || []).filter(function (c) { return c && c.prizes; }); }
+  var PLACES = [['first', '1.'], ['second', '2.'], ['third', '3.']];
+  /** kleine Zeile auf der Tipp-Seite */
+  function prizeLine(comps) {
+    var pc = prizeComps(comps);
+    if (!pc.length) return '';
+    var multi = pc.length > 1;
+    return '<p class="prize-line">' + icon('star') + '<span><b>Um diese Preise wird gespielt:</b> ' + pc.map(function (c) {
+      return (multi ? esc(tabLabel(c.name)) + ': ' : '') + PLACES.filter(function (x) { return c.prizes[x[0]]; }).map(function (x) {
+        return x[1] + ' Platz ' + esc(c.prizes[x[0]]);
+      }).join(' · ');
+    }).join(' – ') + '. Spendiert vom Hofbräustüble, mitspielen bleibt kostenlos. <a href="#/rangliste">Zur Rangliste</a></span></p>';
+  }
+  /** Karte oben in der Rangliste (und in der Wirt-Ansicht) */
+  function prizesCard(comps) {
+    var pc = prizeComps(comps);
+    if (!pc.length) return '';
+    return '<section class="card prizes" aria-labelledby="prizes-title"><h2 class="prizes__title" id="prizes-title">' + icon('star') + 'Um diese Preise wird gespielt</h2>' +
+      pc.map(function (c) {
+        return (pc.length > 1 || S.lbComp === 'all' ? '<p class="prizes__comp">' + esc(c.name) + '</p>' : '') +
+          '<ol class="prizes__list">' + PLACES.filter(function (x) { return c.prizes[x[0]]; }).map(function (x) {
+            return '<li><span class="prizes__place" aria-hidden="true">' + x[1].replace('.', '') + '</span><span><span class="sr-only">' + x[1] + ' Platz: </span>' + esc(c.prizes[x[0]]) + '</span></li>';
+          }).join('') + '</ol>' + (c.prizes.note ? '<p class="prizes__note">' + esc(c.prizes.note) + '</p>' : '');
+      }).join('') +
+      '<p class="prizes__free">' + icon('check') + '<span>Die Preise spendiert das Hofbräustüble. Mitspielen ist und bleibt kostenlos – kein Einsatz, kein Geld.</span></p></section>';
+  }
+  function euro(cents) {
+    var n = Math.abs(cents) / 100;
+    return (cents < 0 ? '−' : '') + n.toLocaleString('de-DE', { minimumFractionDigits: cents % 100 ? 2 : 0, maximumFractionDigits: 2 }) + ' €';
+  }
+  /** Stammtischkasse: kleine Karte (nur mit features.kasse). Hat mit Tipps und Rangliste nichts zu tun. */
+  function loadKasse() {
+    var box = $('#t-kasse');
+    if (!box || !S.features.kasse) return;
+    var asOwner = S.owner;
+    var p = S.kasse && Date.now() - S.kasseAt < REFRESH_MS ? Promise.resolve(S.kasse) : API.call('kasse', rq());
+    p.then(function (k) {
+      if (asOwner !== S.owner) return;
+      S.kasse = k; S.kasseAt = Date.now();
+      var b = $('#t-kasse');
+      if (b) b.innerHTML = kasseCard(k);
+    }).catch(function () { var b = $('#t-kasse'); if (b) b.innerHTML = ''; });
+  }
+  function kasseCard(k) {
+    return '<section class="card kasse" aria-label="Stammtischkasse"><span class="kasse__icon" aria-hidden="true">' + icon('beer') + '</span><div>' +
+      '<p class="kasse__line">Stammtischkasse: <b>' + esc(euro(k.balance_cents)) + '</b>' + (k.purpose ? ' – ' + esc(k.purpose) : '') + '</p>' +
+      (k.names && k.names.length ? '<p class="kasse__names">Eingezahlt haben: ' + k.names.map(esc).join(', ') + '</p>' : '') +
+      '<p class="kasse__hint">Die Kasse ist für alle – mit dem Tippspiel, der Rangliste und den Preisen hat sie nichts zu tun.</p></div></section>';
   }
 
   /* ================================================================ Start / Anmeldung */
@@ -412,7 +531,9 @@
   function renderStart() {
     var reg = S.authTab === 'register';
     var demo = S.mode === 'demo';
-    var html = '<div class="view start">' +
+    // Einladungslink (?code=…): Anmeldeformular zuerst, Fokus aufs Nickname-Feld
+    var invite = reg && !!S.inviteCode;
+    var html = '<div class="view start' + (invite ? ' start--invite' : '') + '">' +
       '<section class="hero" aria-labelledby="start-title">' +
       '<p class="eyebrow hero__kicker">Hofbräustüble · Amorbach</p>' +
       '<h1 class="hero__title" id="start-title" tabindex="-1"><em>Das Stüble-</em>Tippspiel</h1>' +
@@ -422,16 +543,26 @@
       '<ol class="steps" aria-label="So funktioniert’s">' +
       '<li class="step-item"><span class="step-item__num" aria-hidden="true">1</span><div><h3>Einladungscode holen</h3><p>Gibt’s an der Theke oder per Link vom Wirt. Damit meldest du dich einmal an – fertig.</p></div></li>' +
       '<li class="step-item"><span class="step-item__num" aria-hidden="true">2</span><div><h3>Ergebnisse tippen</h3><p>Mit + und − deinen Tipp einstellen, er wird sofort gespeichert. Ändern geht bis zum Anstoß.</p></div></li>' +
-      '<li class="step-item"><span class="step-item__num" aria-hidden="true">3</span><div><h3>Punkte sammeln</h3><p>' + S.settings.points_exact + ' Punkte fürs exakte Ergebnis, ' + S.settings.points_diff + ' für die Tordifferenz, ' + S.settings.points_tendency + ' für die richtige Tendenz.</p></div></li>' +
+      '<li class="step-item"><span class="step-item__num" aria-hidden="true">3</span><div><h3>Punkte sammeln</h3><p>' + S.settings.points_exact + ' Punkte fürs genaue Ergebnis, ' + S.settings.points_diff + ' für den richtigen Abstand, ' + S.settings.points_tendency + ' für den richtigen Sieger.</p></div></li>' +
       '</ol></section>' +
       '<section class="card auth" aria-label="Anmelden oder registrieren">' +
       '<div class="auth__tabs segmented" role="tablist" aria-label="Anmelden oder registrieren">' +
       '<button type="button" role="tab" id="tab-login" aria-controls="auth-panel" aria-selected="' + (!reg) + '" data-auth="login" tabindex="' + (reg ? -1 : 0) + '">Anmelden</button>' +
       '<button type="button" role="tab" id="tab-register" aria-controls="auth-panel" aria-selected="' + reg + '" data-auth="register" tabindex="' + (reg ? 0 : -1) + '">Neu dabei</button>' +
       '</div><div class="auth__panel" id="auth-panel" role="tabpanel" aria-labelledby="' + (reg ? 'tab-register' : 'tab-login') + '">' +
-      (reg ? registerForm() : loginForm()) + '</div></section></div>';
+      (invite ? '<p class="invite-hello">' + icon('check') + '<span>Du bist eingeladen! Der Code ist schon eingetragen – such dir nur noch einen Nickname und ein Passwort aus.</span></p>' : '') +
+      (reg ? registerForm() : loginForm()) +
+      (S.admin ? '<p class="auth__back"><a href="#/spiele" data-owner-back>' + icon('eye') + '&nbsp;Zurück zur Wirt-Ansicht</a></p>' : '') +
+      '</div></section></div>';
     mount(html);
     bindStart();
+    var back = $('[data-owner-back]');
+    if (back) back.addEventListener('click', backToOwner);
+    if (invite && !S.inviteFocused) {
+      S.inviteFocused = true;
+      var nick = $('#reg-nick');
+      if (nick) setTimeout(function () { nick.focus({ preventScroll: true }); nick.scrollIntoView({ block: 'center' }); }, 60);
+    }
   }
 
   function pwField(id, label, autocomplete, hint) {
@@ -451,7 +582,7 @@
       '<div id="login-error" role="alert"></div>' +
       '<button class="btn btn--primary btn--block" type="submit" style="margin-top:18px">Anmelden</button>' +
       '<p class="auth__foot">Passwort vergessen? Sag an der Theke Bescheid – der Wirt setzt es dir zurück.</p>' +
-      '<p class="auth__owner"><a href="' + ADMIN_URL + '">' + icon('eye') + 'Als Wirt ansehen</a></p>' +
+      (S.admin ? '' : '<p class="auth__owner"><a href="' + ADMIN_URL + '">' + icon('eye') + 'Als Wirt ansehen</a></p>') +
       (demo ? '<div class="demo-box"><p>Nur mal schauen? Im Demo-Modus kannst du dich als <b>Gast</b> mit Passwort <code>demo1234</code> anmelden.</p>' +
         '<button type="button" class="btn btn--secondary btn--block" data-demo-login>' + icon('beer') + 'Als Gast einloggen</button></div>' : '') +
       '</form>';
@@ -627,14 +758,16 @@
       '<div class="tippen__main">' +
       '<div class="view-head"><h1 class="view-title" tabindex="-1">Tippen</h1></div>' +
       '<div class="toolbar" id="t-toolbar"></div><div id="t-list">' + skeleton(3) + '</div></div>' +
-      '<div class="tippen__rules">' + rulesCard() + '</div></div>');
+      '<div class="tippen__rules">' + rulesCard() + '<div id="t-kasse" class="mt-kasse"></div></div></div>');
     bindTippen();
+    loadKasse();
     loadMatches().then(function () {
       if (S.route !== 'tippen') return;
       renderTippen();
       loadLeaderboard('all').then(function (lb) { S.lbAll = lb; if (S.route === 'tippen') renderSummary(); }).catch(function () { /* optional */ });
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       $('#t-list').innerHTML = loadError(e, 't-retry');
       $('#t-retry').addEventListener('click', viewTippen);
     });
@@ -720,6 +853,7 @@
     var multi = S.comps.length > 1 && S.compFilter === 'all';
     var html = '';
     var comps = S.compFilter === 'all' ? S.comps : S.comps.filter(function (c) { return c.id === S.compFilter; });
+    html += prizeLine(comps);
 
     // Bonusfragen
     comps.forEach(function (c) {
@@ -801,10 +935,10 @@
   function teamRowOpen(m, side) {
     var name = side === 'home' ? m.home : m.away;
     var v = draftVal(m, side);
-    return '<div class="team-row">' + crest(name, side === 'home' ? m.home_logo : m.away_logo) + '<span class="team-name">' + esc(name) + '</span>' +
+    return '<div class="team-row team-row--open">' + crest(name, side === 'home' ? m.home_logo : m.away_logo) + '<span class="team-name" lang="de">' + esc(name) + '</span>' +
       '<div class="stepper">' +
       '<button type="button" class="step step--minus" data-step="-1" data-side="' + side + '" aria-label="Ein Tor weniger für ' + esc(name) + '"' + (v === 0 ? ' disabled' : '') + '>' + MINUS + '</button>' +
-      '<input class="goal" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" enterkeyhint="done" data-side="' + side + '" value="' + (v === '' ? '' : v) + '" placeholder="–" aria-label="Tore ' + esc(name) + '">' +
+      '<input class="goal" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" enterkeyhint="done" data-side="' + side + '" value="' + (v === '' ? '' : v) + '" placeholder="0" aria-label="Tore ' + esc(name) + '">' +
       '<button type="button" class="step step--plus" data-step="1" data-side="' + side + '" aria-label="Ein Tor mehr für ' + esc(name) + '"' + (v === 20 ? ' disabled' : '') + '>' + PLUS + '</button>' +
       '</div></div>';
   }
@@ -821,8 +955,7 @@
   }
 
   function kindChip(kind, points) {
-    var L = { exact: 'Volltreffer', diff: 'Tordifferenz', tendency: 'Tendenz', miss: 'Daneben' };
-    return '<span class="chip chip--' + kind + '"><span class="chip__pts" aria-hidden="true">' + points + '</span><span><span class="sr-only">' + points + ' ' + plural(points, 'Punkt', 'Punkte') + ' – </span>' + L[kind] + '</span></span>';
+    return '<span class="chip chip--' + kind + '"><span class="chip__pts" aria-hidden="true">' + points + '</span><span><span class="sr-only">' + points + ' ' + plural(points, 'Punkt', 'Punkte') + ' – </span>' + KIND_LABEL[kind] + '</span></span>';
   }
 
   function lockedCard(m, ph) {
@@ -850,7 +983,7 @@
   var stamped = {};
   function stampNew(id) { if (stamped[id]) return ''; stamped[id] = 1; return ' is-new'; }
   function teamRowLocked(name, goals, cls, logo) {
-    return '<div class="team-row">' + crest(name, logo) + '<span class="team-name ' + cls + '">' + esc(name) + '</span>' +
+    return '<div class="team-row">' + crest(name, logo) + '<span class="team-name ' + cls + '" lang="de">' + esc(name) + '</span>' +
       '<span class="score' + (goals === null ? ' score--pending' : '') + '">' + (goals === null ? '–' : goals) + '</span></div>';
   }
   function quoteHtml(m) {
@@ -893,15 +1026,17 @@
         '<input class="input" id="bi-' + c.id + '" maxlength="80" autocomplete="off" placeholder="Deine Antwort, z. B. eine Mannschaft" value="' + esc(val) + '" data-bonus-input="' + c.id + '">' +
         '<button type="submit" class="btn btn--primary">Speichern</button></form>' +
         '<div class="bonus__sugs" data-sugs="' + c.id + '" role="group" aria-label="Vorschläge">' + sugsHtml(c.id, val) + '</div>' +
-        '<p class="bonus__status' + (c.my_bonus ? ' is-ok' : '') + '" data-bonus-status="' + c.id + '" role="status" aria-live="polite">' +
-        (c.my_bonus ? '✓ Gespeichert: ' + esc(c.my_bonus) : '') + '</p></section>';
+        (val && val !== (c.my_bonus || '')
+          ? '<p class="bonus__status is-dirty" data-bonus-status="' + c.id + '" role="status" aria-live="polite">Noch nicht gespeichert – bitte auf „Speichern“ drücken.</p>'
+          : '<p class="bonus__status' + (c.my_bonus ? ' is-ok' : '') + '" data-bonus-status="' + c.id + '" role="status" aria-live="polite">' + (c.my_bonus ? '✓ Gespeichert: ' + esc(c.my_bonus) : '') + '</p>') +
+        '</section>';
     }
     head += '<p class="bonus__sub">' + icon('lock', 'ico--sm" style="display:inline;vertical-align:-3px') + ' Tippschluss war beim ersten Anstoß.</p></div></div>';
     var ans = c.bonus_answer, my = c.my_bonus;
     var body = '<div class="bonus__answer"><span class="tipline__label">Deine Antwort</span>' + (my ? '<strong>' + esc(my) + '</strong>' : '<span class="tipline__none">keine Antwort abgegeben</span>');
     if (ans) {
       var right = my && API.util.bonusNorm(my) === API.util.bonusNorm(ans);
-      body += right ? kindChip('exact', c.bonus_points).replace('Volltreffer', 'Richtig!') : (my ? kindChip('miss', 0) : '');
+      body += right ? kindChip('exact', c.bonus_points).replace(KIND_LABEL.exact, 'Richtig!') : (my ? kindChip('miss', 0) : '');
       body += '</div><p class="bonus__sub" style="margin-top:8px">Auflösung: <b style="color:var(--text)">' + esc(ans) + '</b></p>';
     } else {
       body += '<span class="chip chip--open">Auflösung nach Turnierende</span></div>';
@@ -917,6 +1052,22 @@
     return list.slice(0, 8).map(function (t) {
       return '<button type="button" class="sug" data-sug="' + esc(t) + '" aria-pressed="' + (t.toLowerCase() === q) + '">' + esc(t) + '</button>';
     }).join('');
+  }
+  /** Antwort getippt, aber noch nicht gespeichert → deutlicher Hinweis (Spieltipps speichern sich selbst, die Bonusfrage nicht) */
+  function bonusDirty(cid) {
+    var c = findComp(cid), st = $('[data-bonus-status="' + cid + '"]'), inp = $('[data-bonus-input="' + cid + '"]');
+    if (!c || !st || !inp) return;
+    var val = inp.value.trim();
+    if (val && val !== (c.my_bonus || '')) {
+      st.className = 'bonus__status is-dirty';
+      st.textContent = 'Noch nicht gespeichert – bitte auf „Speichern“ drücken.';
+    } else if (c.my_bonus) {
+      st.className = 'bonus__status is-ok';
+      st.textContent = '✓ Gespeichert: ' + c.my_bonus;
+    } else {
+      st.className = 'bonus__status';
+      st.textContent = '';
+    }
   }
   function saveBonus(cid) {
     var inp = $('[data-bonus-input="' + cid + '"]');
@@ -936,6 +1087,7 @@
     }).catch(function (e) {
       busy(btn, false);
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       st.className = 'bonus__status is-bad';
       st.textContent = e.status === 0 ? 'Keine Verbindung – Antwort nicht gespeichert, bitte nochmal versuchen.' : errText(e);
       if (e.data && e.data.locked) setTimeout(function () { refreshTippen(true); }, 1800);
@@ -993,6 +1145,7 @@
         var cid = +t.getAttribute('data-bonus-input');
         S.bonusDraft[cid] = t.value;
         $('[data-sugs="' + cid + '"]').innerHTML = sugsHtml(cid, t.value);
+        bonusDirty(cid);
       }
     });
     v.addEventListener('change', function (e) {
@@ -1129,6 +1282,7 @@
     }).catch(function (e) {
       d.inflight = false;
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       d.state = 'error';
       if (e.data && e.data.locked) {
         d.retry = false;
@@ -1148,7 +1302,7 @@
       if (S.owner) { if (S.route === 'spiele') { renderOwnerSummary(); renderToolbar(); renderList(); } return; }
       if (S.route !== 'tippen') return;
       renderSummary(); renderToolbar(); renderList();
-    }).catch(function (e) { if (isAuthError(e)) sessionExpired(); });
+    }).catch(function (e) { if (isAuthError(e)) sessionExpired(); else if (isOff(e)) switchedOff(); });
   }
   function editingNow() {
     var a = document.activeElement;
@@ -1169,13 +1323,15 @@
       '<div class="tippen__main">' +
       '<div class="view-head"><h1 class="view-title" tabindex="-1">Spiele</h1></div>' +
       '<div class="toolbar" id="t-toolbar"></div><div id="t-list">' + skeleton(3) + '</div></div>' +
-      '<div class="tippen__rules">' + ownerHint() + '</div></div>');
+      '<div class="tippen__rules">' + ownerHint() + '<div id="t-kasse" class="mt-kasse"></div></div></div>');
     bindTippen();
+    loadKasse();
     loadMatches().then(function () {
       if (S.route !== 'spiele' || !S.owner) return;
       renderOwnerSummary(); renderToolbar(); renderList();
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       $('#t-list').innerHTML = loadError(e, 't-retry');
       $('#t-retry').addEventListener('click', viewSpiele);
     });
@@ -1186,8 +1342,8 @@
     return '<section class="card section-card owner-hint" aria-labelledby="oh-title"><div class="section-card__head">' + icon('info') +
       '<h2 class="card-title" id="oh-title">So liest du die Wirt-Ansicht</h2></div>' +
       '<ul class="owner-hint__list"><li>Die <b>Stammtisch-Quote</b> siehst nur du schon vor dem Anstoß – die Gäste erst danach.</li>' +
-      '<li>Tipp auf ein Spiel, um zu sehen, <b>wer was getippt hat</b> und wer noch fehlt.</li>' +
-      '<li>Punkte: ' + s.points_exact + ' exakt · ' + s.points_diff + ' Tordifferenz · ' + s.points_tendency + ' Tendenz.</li>' +
+      '<li>Drück auf ein Spiel, um zu sehen, <b>wer was getippt hat</b> und wer noch fehlt.</li>' +
+      '<li>Punkte: ' + s.points_exact + ' fürs genaue Ergebnis · ' + s.points_diff + ' für den richtigen Abstand · ' + s.points_tendency + ' für den richtigen Sieger.</li>' +
       '<li>Ergebnisse, Spiele und Einladungen pflegst du in der <a href="' + ADMIN_URL + '">Verwaltung</a>.</li></ul></section>';
   }
 
@@ -1220,7 +1376,7 @@
     var past = ms.filter(function (m) { return m.locked && phase(m) !== 'live'; }).slice().reverse();
     var multi = S.comps.length > 1 && S.compFilter === 'all';
     var comps = S.compFilter === 'all' ? S.comps : S.comps.filter(function (c) { return c.id === S.compFilter; });
-    var html = '';
+    var html = prizeLine(comps);
     comps.forEach(function (c) {
       if (!c.bonus_question) return;
       var show = S.filter === 'alle' || (S.filter === 'offen' ? !c.bonus_locked : c.bonus_locked);
@@ -1321,6 +1477,7 @@
       body.innerHTML = html;
     }).catch(function (e) {
       if (isAuthError(e)) { closeSheet(true); return sessionExpired(); }
+      if (isOff(e)) { closeSheet(true); return switchedOff(); }
       var body = $('#sheet-body', sheet);
       if (body) body.innerHTML = '<div class="form-error">' + icon('info') + '<span>' + esc(errText(e)) + '</span></div>';
     });
@@ -1344,6 +1501,7 @@
       showOwnerStats();
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       $('#st-panel').innerHTML = loadError(e, 'st-retry');
       $('#st-retry').addEventListener('click', viewOwnerStats);
     });
@@ -1357,6 +1515,7 @@
       renderOwnerStats(s);
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       panel.innerHTML = loadError(e, 'st-retry');
       $('#st-retry').addEventListener('click', showOwnerStats);
     });
@@ -1384,7 +1543,7 @@
       tile('Ø Punkte pro Spieler', dec(s.avg_points_player, 1), s.points + ' Punkte insgesamt' + (s.bonus ? ' · inkl. ' + s.bonus + ' Bonus' : '')) +
       tile('Häufigster Tipp', s.favorite_tip ? esc(s.favorite_tip.tip) : '–', s.favorite_tip ? s.favorite_tip.count + '× getippt' : '') +
       '</div>';
-    var parts = [['exact', 'Volltreffer', s.exact], ['diff', 'Tordifferenz', s.diff], ['tendency', 'Tendenz', s.tendency], ['miss', 'Daneben', s.miss]];
+    var parts = [['exact', KIND_LABEL.exact, s.exact], ['diff', KIND_LABEL.diff, s.diff], ['tendency', KIND_LABEL.tendency, s.tendency], ['miss', KIND_LABEL.miss, s.miss]];
     html += '<section class="card chart-card"><div class="chart-card__head"><h2 class="card-title">Treffer am Stammtisch</h2><span class="card-sub">' + scored + ' gewertete Tipps</span></div>' +
       '<div class="donut-wrap"><div class="donut-center">' + donut(parts, scored).replace('Aufteilung deiner Tipps', 'Aufteilung aller Tipps') +
       '<div class="donut-center__txt" aria-hidden="true"><b>' + dec(s.hit_rate, 0) + '%</b><span>Treffer</span></div></div>' +
@@ -1405,8 +1564,8 @@
   /* ================================================================ Wettbewerbs-Reiter (Rangliste/Statistik) */
 
   function compTabs(current, name) {
-    var tabs = S.comps.map(function (c) { return { id: c.id, name: c.name }; });
-    tabs.push({ id: 'all', name: 'Gesamt' });
+    // „Gesamt“ steht wie „Alle“ auf der Tipp-Seite immer vorne
+    var tabs = [{ id: 'all', name: 'Gesamt' }].concat(S.comps.map(function (c) { return { id: c.id, name: c.name }; }));
     return '<div class="tabs" role="tablist" aria-label="Wettbewerb wählen" data-tabs="' + name + '">' + tabs.map(function (t) {
       var sel = String(t.id) === String(current);
       return '<button type="button" class="tab" role="tab" aria-selected="' + sel + '" tabindex="' + (sel ? 0 : -1) + '" aria-controls="' + name + '-panel" data-tab="' + t.id + '" title="' + esc(t.name) + '">' + esc(tabLabel(t.name)) + '</button>';
@@ -1442,7 +1601,7 @@
   }
   function defaultComp(cur) {
     if (cur !== null && cur !== undefined && (cur === 'all' || findComp(cur))) return cur;
-    return S.comps.length ? S.comps[0].id : 'all';
+    return S.comps.length === 1 ? S.comps[0].id : 'all';
   }
 
   /* ================================================================ Rangliste */
@@ -1463,6 +1622,7 @@
       showLeaderboard();
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       $('#lb-panel').innerHTML = loadError(e, 'lb-retry');
       $('#lb-retry').addEventListener('click', viewRangliste);
     });
@@ -1478,6 +1638,7 @@
       renderLeaderboard(lb, key);
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       panel.innerHTML = loadError(e, 'lb-retry');
       $('#lb-retry').addEventListener('click', function () { showLeaderboard(); });
     });
@@ -1492,6 +1653,7 @@
     var html = '<div class="lb-tools"><p class="lb-me">' + (me ? 'Du bist auf <b>Platz ' + me.rank + '</b> von ' + rows.length + ' · <b>' + me.points + '</b> ' + plural(me.points, 'Punkt', 'Punkte') : esc(rows.length + ' Mitspieler')) + '</p>' +
       (me && rows.length > 5 ? '<button type="button" class="btn btn--small btn--secondary" data-jump>' + icon('down') + 'Spring zu mir</button>' : '') + '</div>';
     if (key === 'all') html += '<p class="lead" style="margin:-6px 0 12px">Die ewige Tabelle – alle Wettbewerbe zusammen.</p>';
+    html += prizesCard(key === 'all' ? S.comps : [comp]);
     if (anyPoints && rows.length >= 2) {
       var top = rows.slice(0, 3);
       var order = [top[1], top[0], top[2]];
@@ -1512,16 +1674,16 @@
       return;
     }
     html += '<div class="card lb-card"><table class="lb"><caption class="sr-only">Rangliste ' + esc(comp ? comp.name : 'gesamt') + '</caption><thead><tr>' +
-      '<th class="l" scope="col"><span class="sr-only">Platz</span>#</th><th class="l" scope="col">Spieler</th>' +
-      '<th scope="col"><abbr title="Punkte" style="text-decoration:none">Pkt</abbr></th>' +
-      '<th scope="col" class="sm">exakt</th><th scope="col" class="sm">Diff</th><th scope="col" class="sm hide-xs"><abbr title="Tendenz" style="text-decoration:none">Tend.</abbr></th><th scope="col" class="sm">Tipps</th>' +
+      '<th class="l rkh" scope="col">Platz</th><th class="l" scope="col">Name</th>' +
+      '<th scope="col" class="pt">Punkte</th>' +
+      '<th scope="col" class="sm det">Genau</th><th scope="col" class="sm det">Abstand</th><th scope="col" class="sm det">Sieger</th><th scope="col" class="sm det">Tipps</th>' +
       '</tr></thead><tbody>' + rows.map(function (r) {
         return '<tr class="' + (r.is_me ? 'is-me' : '') + '" data-row="' + esc(r.nickname) + '"' + (r.is_me ? ' id="lb-me"' : '') + '>' +
           '<td class="rk">' + r.rank + '</td>' +
           '<td class="nm l"><button type="button" data-player="' + esc(r.nickname) + '" aria-label="' + esc(r.nickname) + ' – Tipps ansehen">' + avatar(r.nickname, 'av') + '<span>' + esc(r.nickname) + '</span>' + (r.is_me ? '<span class="me-tag">Du</span>' : '') + '</button></td>' +
-          '<td class="pt">' + r.points + '</td><td class="sm">' + r.exact + '</td><td class="sm">' + r.diff + '</td><td class="sm hide-xs">' + r.tendency + '</td><td class="sm">' + r.tips + '</td></tr>';
+          '<td class="pt">' + r.points + '</td><td class="sm det">' + r.exact + '</td><td class="sm det">' + r.diff + '</td><td class="sm det">' + r.tendency + '</td><td class="sm det">' + r.tips + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
-      '<p class="lb-legend">Bei Punktgleichheit zählen erst die exakten Treffer, dann die Tordifferenz.' + (rows.some(function (r) { return r.bonus; }) ? ' Punkte inkl. Bonusfrage.' : '') + (S.owner ? ' Tipp auf einen Namen, um alle seine Tipps zu sehen – auch die noch offenen.' : ' Tipp auf einen Namen, um seine Tipps zu sehen.') + '</p>';
+      '<p class="lb-legend">Bei Punktgleichheit zählen erst die genauen Ergebnisse, dann der richtige Abstand.' + (rows.some(function (r) { return r.bonus; }) ? ' Punkte mit Bonusfrage.' : '') + (S.owner ? ' Drück auf einen Namen, um alle seine Tipps zu sehen – auch die noch offenen.' : ' Drück auf einen Namen, um Einzelheiten und Tipps zu sehen.') + '</p>';
     panel.innerHTML = html;
     panel.onclick = function (e) {
       var j = e.target.closest('[data-jump]');
@@ -1584,13 +1746,20 @@
   function openPlayer(nick, row, opener) {
     var head = '<div class="sheet__grip" aria-hidden="true"></div><div class="sheet__head">' + avatar(nick, 'sheet__avatar') +
       '<div><h2 class="sheet__title" id="sheet-title">' + esc(nick) + '</h2><p class="sheet__sub">' +
-      (row ? 'Platz ' + row.rank + ' · ' + row.points + ' ' + plural(row.points, 'Punkt', 'Punkte') + ' · ' + row.exact + '× exakt' : '') + '</p></div>' +
+      (row ? 'Platz ' + row.rank + ' · ' + row.points + ' ' + plural(row.points, 'Punkt', 'Punkte') : '') + '</p></div>' +
       '<button type="button" class="sheet__close" data-close aria-label="Schließen">' + icon('x') + '</button></div>';
-    var sheet = openSheet(head + '<div class="sheet__body" id="sheet-body">' + skeleton(1) + '</div>', opener);
+    // Einzelheiten aus der Rangliste (auf dem Handy stehen dort nur Platz, Name und Punkte)
+    var details = row ? '<div class="sheet-stats">' +
+      '<div><b>' + row.exact + '</b><span>' + KIND_LABEL.exact + '</span></div>' +
+      '<div><b>' + row.diff + '</b><span>' + KIND_LABEL.diff + '</span></div>' +
+      '<div><b>' + row.tendency + '</b><span>' + KIND_LABEL.tendency + '</span></div>' +
+      '<div><b>' + row.tips + '</b><span>' + plural(row.tips, 'Tipp gewertet', 'Tipps gewertet') + '</span></div>' +
+      (row.bonus ? '<div><b>' + row.bonus + '</b><span>Bonuspunkte</span></div>' : '') + '</div>' : '';
+    var sheet = openSheet(head + '<div class="sheet__body" id="sheet-body">' + details + skeleton(1) + '</div>', opener);
     API.call('player_tips', rq({ nickname: nick })).then(function (r) {
       var body = $('#sheet-body', sheet);
       if (!body) return;
-      var html = '';
+      var html = details;
       var owner = !!r.owner;
       (r.bonus || []).forEach(function (b) {
         html += '<div class="sheet-bonus"><p class="eyebrow">Bonusfrage · ' + esc(b.competition) + '</p><p style="margin:4px 0 6px">' + esc(b.question) + '</p>' +
@@ -1613,6 +1782,7 @@
       body.innerHTML = html;
     }).catch(function (e) {
       if (isAuthError(e)) { closeSheet(true); return sessionExpired(); }
+      if (isOff(e)) { closeSheet(true); return switchedOff(); }
       var body = $('#sheet-body', sheet);
       if (body) body.innerHTML = '<div class="form-error">' + icon('info') + '<span>' + esc(errText(e)) + '</span></div>';
     });
@@ -1636,6 +1806,7 @@
       showStats();
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       $('#st-panel').innerHTML = loadError(e, 'st-retry');
       $('#st-retry').addEventListener('click', viewStatistik);
     });
@@ -1650,6 +1821,7 @@
       renderStats(res[0], res[1]);
     }).catch(function (e) {
       if (isAuthError(e)) return sessionExpired();
+      if (isOff(e)) return switchedOff();
       panel.innerHTML = loadError(e, 'st-retry');
       $('#st-retry').addEventListener('click', showStats);
     });
@@ -1693,7 +1865,7 @@
       '</div>';
 
     // Donut
-    var parts = [['exact', 'Volltreffer', s.exact], ['diff', 'Tordifferenz', s.diff], ['tendency', 'Tendenz', s.tendency], ['miss', 'Daneben', s.miss]];
+    var parts = [['exact', KIND_LABEL.exact, s.exact], ['diff', KIND_LABEL.diff, s.diff], ['tendency', KIND_LABEL.tendency, s.tendency], ['miss', KIND_LABEL.miss, s.miss]];
     html += '<section class="card chart-card"><div class="chart-card__head"><h2 class="card-title">Deine Treffer</h2><span class="card-sub">' + scored + ' gewertete Tipps</span></div>' +
       '<div class="donut-wrap"><div class="donut-center">' + donut(parts, scored) + '<div class="donut-center__txt" aria-hidden="true"><b>' + dec(s.hit_rate, 0) + '%</b><span>Treffer</span></div></div>' +
       '<ul class="breakdown">' + parts.map(function (p) {
@@ -1909,6 +2081,7 @@
     }).catch(function (err) {
       busy(btn, false);
       if (isAuthError(err)) return sessionExpired();
+      if (isOff(err)) return switchedOff();
       show(errText(err));
     });
   }
@@ -1939,6 +2112,7 @@
     }).catch(function (err) {
       busy(btn, false);
       if (isAuthError(err)) return sessionExpired();
+      if (isOff(err)) return switchedOff();
       $('#del-msg').innerHTML = '<div class="form-error">' + icon('info') + '<span>' + esc(errText(err)) + '</span></div>';
     });
   }
@@ -2001,7 +2175,9 @@
       S.player = st.player || null;
       S.admin = !!st.admin;
       // Nur die Verwaltung angemeldet → Wirt-Ansicht; beide → Spieler-App (Umschalter im Kopf), außer zuletzt als Wirt angesehen
-      S.owner = S.admin && (!S.player || getViewPref());
+      if (st.features) S.features = st.features;
+      var pref = getViewPref();
+      S.owner = S.admin && (!S.features.tippspiel || (S.player ? pref === 'owner' : pref !== 'player'));
       $('#view-toggle').addEventListener('click', function () { setOwner(!S.owner); });
       if (st.settings) S.settings = st.settings;
       if (st.serverTime) syncClock(st.serverTime);

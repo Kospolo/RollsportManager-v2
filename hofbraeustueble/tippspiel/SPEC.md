@@ -242,3 +242,31 @@ OpenLigaDB liefert je Mannschaft `team1/team2.teamIconUrl` (Wikimedia, imgur, UE
 **JS-Client (Demo):** kein Netzwerk → `home_logo/away_logo` immer `null`; `settings.show_logos` (Standard `true`) wird gespeichert, `admin_logos_save` speichert den Schalter, `admin_logos_refresh` lädt nichts (`loaded:0 …`); beide mit `message` („Demo: ohne Netzwerk keine Vereinslogos …“). `admin_overview.logos` = alle Mannschaften „ohne Logo“.
 
 **Spieler-App:** Logo statt Kürzel-Badge (32 px, `<img loading="lazy" decoding="async" alt="">`, `object-fit: contain`, heller runder Hintergrund) in allen Spielkarten (Tippen, Ergebnisse, Wirt-Ansicht); kleine Logos (18 px) in „Als Nächstes“, im Spiel-Sheet der Wirt-Ansicht und im Spieler-Sheet. Nur Pfade `cms/uploads/logos/…` werden angenommen (`../` davor). Kein Logo, `show_logos` aus oder Ladefehler → Kürzel-Badge (gleiche Größe, kein Springen). **Verwaltung:** Übersicht → Karte „Vereinslogos“ (Schalter, Stand, Fehlergründe, „Logos neu laden“ – läuft automatisch in Runden à 25 weiter – und „Alle neu laden“, Hinweis zu Datenschutz/Markenrecht); kleine Logos in „Ergebnisse eintragen“, offenen Ergebnissen und „Als Nächstes“.
+
+## Ergänzung: Schalter aus „Funktionen“, Preise und Stammtischkasse
+
+**Schalter** (`cms/content.json` → `features`, bearbeitet in der Verwaltung unter „Funktionen“): `tippspiel` (fehlt = an), `preise` (fehlt = aus), `kasse` (fehlt = aus). `cms/tipp-api.php` liest sie bei jeder Anfrage (`features()`); `status`, `login`, `register` und `admin_overview` liefern `features:{tippspiel,preise,kasse}` (Booleans).
+
+**`features.tippspiel` aus:** `invite_check`, `register`, `login`, `tip`, `bonus_tip`, `stats`, `change_password` → **403** `{error:"Das Tippspiel ist im Moment ausgeschaltet.", disabled:true}`. Lese-Aktionen (`matches`, `leaderboard`, `player_tips`, `kasse`) → 403 `disabled:true`, außer mit gültiger CMS-Session: dann immer Wirt-Modus (`owner:true`, auch wenn zusätzlich ein Spieler angemeldet ist). `status`, `logout`, `delete_account`, alle `admin_*`-Aktionen, `cron_sync` und der Nebenbei-Abruf laufen weiter. **Spieler-App:** Gäste sehen „Das Tippspiel macht gerade Pause“ (Daten bleiben gespeichert); der Wirt (Verwaltung angemeldet) kommt in die Wirt-Ansicht mit Hinweis in der Wirt-Leiste. **Verwaltung:** Banner im Reiter „Tippspiel“ mit Knopf „Zu ‚Funktionen‘“.
+
+**Preise (nur mit `features.preise`)** – vom Haus spendiert, Teilnahme kostenlos:
+- `competitions.prize_1/prize_2/prize_3` (≤ 80 Zeichen) und `prize_note` (≤ 200), alle optional (Migration 3 → 4, idempotent per `add_columns`).
+- `admin_competition_save` nimmt `prize_1`, `prize_2`, `prize_3`, `prize_note` (nur wenn im JSON vorhanden, sonst bleiben sie unverändert); `admin_overview`/`admin_competition_save` liefern sie immer.
+- Spieler-/Wirt-Aktionen (`matches`): je Wettbewerb `prizes:{first,second,third,note}` oder `null` (Schalter aus oder kein Preis eingetragen).
+- App: Karte „Um diese Preise wird gespielt“ oben in der Rangliste (Gesamt: alle Wettbewerbe mit Preisen), Zeile auf der Tipp-Seite bzw. in der Wirt-Ansicht, jeweils mit „Spendiert vom Hofbräustüble, mitspielen bleibt kostenlos“.
+
+**Stammtischkasse (nur mit `features.kasse`)** – eine gemeinsame Kasse (z. B. für die Saisonabschluss-Feier). **Rechtlich wichtig (kein Glücksspiel):** keinerlei Verknüpfung mit Tipps, Punkten, Rangliste oder Preisen (eigene Tabelle ohne Fremdschlüssel, Name nur als freier Text), keine Auszahlung an Gewinner, Mitspielen kostet nie etwas.
+- Tabelle `kasse(id, kind 'in'|'out', amount_cents INT > 0, day 'YYYY-MM-DD', name, purpose, note, created, updated)`, Einstellungen `settings.kasse_purpose` (≤ 120) und `settings.kasse_show_names` (0/1, Standard 0).
+- Validierung: `amount_cents` ganze Zahl 1 … 10 000 000 (100 000 €), `day` gültiges Datum (auch `TT.MM.JJJJ`), Einzahlung braucht `name` (1–60), Ausgabe `purpose` (1–80), `note` ≤ 200.
+
+| Aktion | Eingabe | Antwort |
+|---|---|---|
+| `kasse` GET (Spieler oder Wirt) | – | `{ balance_cents, purpose, names:[…]\|null }` – Namen der Einzahler (ohne Beträge, alphabetisch, ohne Doppelte) nur bei `show_names` |
+| `admin_kasse` GET | – | `{ entries:[{id,kind,amount_cents,day,name,purpose,note,created,updated}], total_in_cents, total_out_cents, balance_cents, settings:{purpose,show_names} }` (neueste zuerst) |
+| `admin_kasse_save` POST | `{id?, kind, amount_cents, day, name?, purpose?, note?}` | wie `admin_kasse` + `entry` (404 bei unbekannter `id`) |
+| `admin_kasse_delete` POST | `{id}` | wie `admin_kasse` |
+| `admin_kasse_settings` POST | `{purpose, show_names}` | wie `admin_kasse` |
+
+Schalter aus → alle Kassen-Aktionen 403 `featureOff:"kasse"`. Admin-POSTs mit CMS-CSRF wie gehabt. **App:** kleine Karte „Stammtischkasse: 85 € – für die Saisonabschluss-Feier“ (bei Freigabe mit Namen) im Seitenbereich der Tipp-Seite/Wirt-Ansicht – nicht neben Rangliste oder Preisen – mit dem Satz „Die Kasse ist für alle – mit dem Tippspiel, der Rangliste und den Preisen hat sie nichts zu tun.“ **Verwaltung:** Tippspiel → „Stammtischkasse“ (Erklärkasten „Die Kasse ist für alle – nicht für den Tippsieger. Mitspielen bleibt kostenlos.“, Kassenstand, Einzahlung/Ausgabe eintragen, bearbeiten, löschen, Zweck, Schalter „Namen der Einzahler in der App zeigen“).
+
+**JS-Client:** `TippAPI.features` (aus `status`), `TippAPI.setFeatures(obj)` (Demo: von der Verwaltung vorgegeben). Demo ohne Vorgabe: Schalter aus den Demo-Inhalten der Verwaltung (`localStorage hbs_demo_content`, wenn `hbs_demo_mode = 1`), sonst aus `cms/content.json`, sonst Standard. Demo-Aktionen und Fehler wie live; Demo-Seed: Preise für „Bundesliga 2026/27“, Kasse 85 € „für die Saisonabschluss-Feier“ (3 Einzahlungen). `PRAGMA user_version` = 4.

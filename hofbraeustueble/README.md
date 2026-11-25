@@ -368,6 +368,24 @@ Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-toke
 - Wichtig: Das Tippspiel ist ein reines Spaß-Spiel. Keine Einsätze oder Geldpreise ausloben –
   Sportwetten mit Einsatz sind ohne Lizenz verboten.
 
+**Schalter, Preise und Stammtischkasse (Verwaltung → „Funktionen“)**
+
+- **Tippspiel aus:** Gäste sehen „Das Tippspiel macht gerade Pause“ und können sich nicht anmelden oder tippen
+  (Server antwortet 403). Spieler, Tipps und Punkte bleiben gespeichert; der Wirt pflegt alles weiter und kann die
+  Wirt-Ansicht öffnen, der automatische Abruf läuft weiter. Im Reiter „Tippspiel“ steht dann ein gelber Hinweis.
+- **Preise im Tippspiel:** je Wettbewerb optional Preise für Platz 1–3 (freier Text, z. B. „50-€-Gutschein“) und ein
+  Hinweis – im Wettbewerb-Dialog unter „Preise für die Besten“. Die App zeigt sie über der Rangliste („Um diese Preise
+  wird gespielt“) und als Zeile auf der Tipp-Seite, immer mit „Spendiert vom Hofbräustüble, mitspielen bleibt
+  kostenlos“. Preise spendiert das Haus – nie aus Einsätzen der Spieler.
+- **Stammtischkasse:** Tippspiel → „Stammtischkasse“: Einzahlungen (Name frei oder Spieler auswählen, Betrag, Datum,
+  Notiz) und Ausgaben (wofür, Betrag, Datum, Notiz), Kassenstand, Zweck („für die Saisonabschluss-Feier“) und der
+  Schalter „Namen der Einzahler in der App zeigen“ (Standard aus; Beträge sieht in der App niemand). Die Kasse ist
+  für alle – **nicht für den Tippsieger**: Sie hat mit Tipps, Rangliste und Preisen nichts zu tun, es gibt keine
+  Auszahlung an Gewinner, und Mitspielen bleibt kostenlos (sonst wäre es ein verbotenes Glücksspiel).
+  Gespeichert in `cms/data/tippspiel.sqlite` (Tabelle `kasse`, Beträge in Cent).
+- Der Unterbereich „Website-Teaser“ heißt jetzt „Hinweis auf der Website“; technische Dinge (regelmäßiger Abruf
+  beim Hoster, Reihenfolge, Zeitraum) stehen zugeklappt unter „Für den Techniker“.
+
 ## Team / Dienstplan
 
 Kleiner Dienstplan für die Aushilfen und den Chef unter **`https://ihre-domain.de/team/`** – nicht öffentlich,
@@ -441,6 +459,8 @@ Danach ist die Vorschau unter **https://hofbraeustueble.kospolo.de/** erreichbar
 ```
 
 Vorhandene Ligen werden übersprungen. Läuft die Saison schon, wird keine Bonusfrage angelegt (sie wäre nur bis zum ersten Spiel tippbar). Im CMS geht dasselbe unter Tippspiel → Spiele & Wettbewerbe → „Neuer Wettbewerb“; die Frauen-Ligen stehen dort jetzt auch in der Auswahl.
+
+---
 
 ## Zusatzfunktionen (Speisekarte, Reservierung, Anmeldung, Fußball diese Woche)
 
