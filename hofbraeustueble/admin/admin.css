@@ -706,3 +706,13 @@ input.step-in.invalid { border-color: var(--danger); }
 }
 .comp-actions { flex-wrap: wrap; }
 .auto-card p.help, .src-box p.help { font-size: 14px; color: var(--muted); }
+
+/* Tippspiel: Vereinslogos (vom eigenen Server) */
+.t-logo { display: inline-block; width: 20px; height: 20px; object-fit: contain; vertical-align: -4px; margin-right: 6px; flex: none; }
+.t-logo-after { margin-right: 0; margin-left: 6px; }
+.step-label .t-logo { width: 24px; height: 24px; vertical-align: -5px; }
+.pl-teams .t-logo, .next-list .t-logo { width: 18px; height: 18px; vertical-align: -3px; margin-right: 5px; }
+.logo-card .logo-status { font-weight: 600; }
+.logo-failed { font-size: 14px; color: var(--muted); }
+.logo-failed summary { cursor: pointer; color: var(--ink); }
+.logo-failed ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }

@@ -291,6 +291,36 @@ Danach läuft alles von selbst:
   vorher die Vorschau ansehen. *Daten: OpenLigaDB (openligadb.de), Community-gepflegt, ohne Gewähr.* In der
   Spieler-App steht dann unter den Spielen „Spielplan & Ergebnisse: OpenLigaDB“.
 
+**Vereinslogos (datenschutzfreundlich)**
+
+Bei Spielen von OpenLigaDB zeigt das Tippspiel kleine Vereinswappen neben den Mannschaften (sonst bzw. wenn ein
+Logo fehlt: farbiges Kürzel wie bisher). OpenLigaDB nennt zu jeder Mannschaft eine Bild-Adresse (Wikimedia, imgur,
+UEFA …). **Der Server lädt jedes Logo genau einmal selbst herunter**, rechnet es klein (PNG, höchstens 128 px)
+und liefert es aus `cms/uploads/logos/` aus – **die Browser der Gäste laden nichts von fremden Seiten**, es werden
+also keine IP-Adressen an Dritte übertragen (DSGVO). Eine Ergänzung der Datenschutzerklärung ist dafür nicht nötig;
+wer mag, kann im Abschnitt zur Hosting-/Server-Technik erwähnen, dass der Server Vereinslogos einmalig von
+öffentlichen Quellen abruft (dabei werden keine Daten der Besucher übermittelt).
+
+- In „Tippspiel → Übersicht → Vereinslogos“: Schalter **„Vereinslogos anzeigen“** (Standard: an), Stand
+  („Logos: 120 geladen, 3 fehlgeschlagen“, mit Grund je Logo) und **„Logos neu laden“** (fehlgeschlagene erneut
+  versuchen) bzw. „Alle neu laden“. Vereinslogos sind Marken der Vereine – bei Bedenken einfach ausschalten,
+  dann stehen im Tippspiel nur Kürzel und es werden keine Logos mehr geladen.
+- Geladen wird nach jedem Abruf in der Verwaltung, beim Cronjob und (höchstens 2 Stück, höchstens 3 Sekunden)
+  nebenbei beim Öffnen des Tippspiels – je Durchlauf höchstens 25 Logos mit 5 Sekunden Zeitlimit. Fehlgeschlagene
+  werden frühestens nach 24 Stunden erneut versucht, nach 5 Versuchen nicht mehr (bis „Logos neu laden“).
+  Wikimedia bremst manchmal mit „bitte Pause“ (Fehler 429) – diese Logos holt der nächste Durchlauf nach.
+- Sicherheit (die Adressen sind Community-Daten und werden wie feindliche Eingaben behandelt): nur `https`
+  (`http` nur bei img.uefa.com und upload.wikimedia.org, dann automatisch als `https`), nur Port 443, keine
+  IP-Adressen; der Servername wird aufgelöst und Adressen im eigenen Netz (z. B. 192.168.x.x, 127.0.0.1,
+  169.254.169.254) werden abgelehnt, die Verbindung geht dann fest an die geprüfte Adresse. Weiterleitungen
+  werden einzeln geprüft (höchstens 2), höchstens 2 MB, nur PNG/JPEG/GIF/WebP (Inhalt wird geprüft, nicht der
+  Dateiname). **SVG wird nie gespeichert**: SVG-Logos von Wikimedia werden als fertige PNG-Vorschau von
+  Wikimedia geholt, SVG von anderen Seiten übersprungen. Mit der PHP-Erweiterung GD (bei den üblichen Hostern
+  vorhanden) wird jedes Bild neu als PNG gerechnet – das entfernt auch versteckte Inhalte.
+- Ist auf dem Server ein HTTPS-Proxy eingestellt (Umgebungsvariable `https_proxy`) und der Name lokal nicht
+  auflösbar, löst der Proxy auf. In der Docker-Vorschau liegen die Logos im Volume (`uploads/logos/`) und
+  überstehen Updates; der `.htaccess`-Schutz von `cms/uploads/` gilt auch für den Unterordner.
+
 **Cronjob einrichten (empfohlen, alle 15 Minuten)**
 
 In „Tippspiel → Übersicht → Automatischer Abruf“ steht die geheime Adresse, z. B.
@@ -313,7 +343,8 @@ Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-toke
 - Daten: **`cms/data/tippspiel.sqlite`** (SQLite-Datei, wird beim ersten Aufruf automatisch angelegt;
   daneben können kurzzeitig `tippspiel.sqlite-wal` und `-shm` liegen). Anmeldungen der Spieler liegen in
   `cms/data/tipp-sessions/`, der Cronjob-Token in `cms/data/tipp-cron-token.php`, dazu die Sperrdatei
-  `cms/data/tipp-sync.lock` (verhindert gleichzeitige Abrufe). Der Ordner `cms/data/` ist per `.htaccess`
+  `cms/data/tipp-sync.lock` (verhindert gleichzeitige Abrufe) bzw. `cms/data/tipp-logos.lock`. Vereinslogos liegen
+  in `cms/uploads/logos/` (nicht im Git, jederzeit löschbar – sie werden dann neu geladen). Der Ordner `cms/data/` ist per `.htaccess`
   gesperrt und nicht im Git. Bestehende Datenbanken werden beim ersten Aufruf automatisch ergänzt
   (neue Spalten, vorhandene Ergebnisse gelten als „von Hand“).
 - **Sicherung:** einfach `cms/data/tippspiel.sqlite` per FTP herunterladen (am besten, wenn gerade niemand
@@ -324,7 +355,8 @@ Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-toke
 - Ohne PHP (z. B. lokale Vorschau mit `python3 -m http.server`) läuft das Tippspiel im **Demo-Modus** mit
   erfundenen Stammgästen; Anmeldung mit „Gast“ / „demo1234“ oder Registrierung mit Code `DEMO2026`.
   Die Demo-Daten liegen nur im Browser (`localStorage`: `hbs_tipp_demo_v3`). Der automatische Abruf wird in der
-  Demo nur simuliert (keine Verbindung zu OpenLigaDB; Vorschau mit Beispieldaten für bl1/bl2/dfb/ucl).
+  Demo nur simuliert (keine Verbindung zu OpenLigaDB; Vorschau mit Beispieldaten für bl1/bl2/dfb/ucl);
+  Vereinslogos gibt es in der Demo nicht (Kürzel).
 - Automatischer Abruf: Anfragen gehen nur an `https://api.openligadb.de` (fest eingestellt; Liga-Kürzel und
   Saison werden streng geprüft, nie eine frei eingegebene Adresse). Der Server braucht dafür die PHP-Erweiterung
   **curl** oder `allow_url_fopen` (Standard bei den üblichen Hostern), Zeitlimit 8 Sekunden (Verwaltung/Cronjob)

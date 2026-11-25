@@ -40,9 +40,11 @@ invites(code TEXT PK, note TEXT, max_uses INT, uses INT DEFAULT 0, expires TEXT 
 tips(player_id INT, match_id INT, home_goals INT, away_goals INT, updated TEXT, PRIMARY KEY(player_id, match_id))
 bonus_tips(player_id INT, competition_id INT, answer TEXT, updated TEXT, PRIMARY KEY(player_id, competition_id))
 attempts(k TEXT PK, count INT, first INT, last INT, locked_until INT)   -- intern: Brute-Force-Zähler (nur Hash der IP)
+team_logos(team TEXT PK COLLATE NOCASE, source_url TEXT, file TEXT NULL, status TEXT,  -- Vereinslogos (siehe Ergänzung)
+           fetched TEXT, attempts INT, tried TEXT NULL, last_error TEXT NULL)
 ```
 
-IDs sind `AUTOINCREMENT` (werden nach dem Löschen nie wiederverwendet), Fremdschlüssel mit `ON DELETE CASCADE`, `PRAGMA user_version` = Schema-Version (2), WAL-Modus. Migration 1 → 2 ist idempotent (`PRAGMA table_info` + `ALTER TABLE … ADD COLUMN`, Index `UNIQUE(competition_id, external_id) WHERE external_id IS NOT NULL`); vorhandene Ergebnisse bekommen `result_source='manual'`. `settings` enthält zusätzlich intern `cron_last` (JSON des letzten Cronjob-Aufrufs).
+IDs sind `AUTOINCREMENT` (werden nach dem Löschen nie wiederverwendet), Fremdschlüssel mit `ON DELETE CASCADE`, `PRAGMA user_version` = Schema-Version (3), WAL-Modus. Migration 1 → 2 ist idempotent (`PRAGMA table_info` + `ALTER TABLE … ADD COLUMN`, Index `UNIQUE(competition_id, external_id) WHERE external_id IS NOT NULL`); vorhandene Ergebnisse bekommen `result_source='manual'`. `settings` enthält zusätzlich intern `cron_last` (JSON des letzten Cronjob-Aufrufs) und `logo_lazy_last`, sowie `show_logos` (0/1, Standard 1). Migration 2 → 3 (idempotent): Tabelle `team_logos`.
 
 ## Regeln
 
@@ -61,7 +63,7 @@ JSON rein/raus. Antwort immer `{ ok: true, ... }` oder `{ ok: false, error: "Deu
 ### Spieler
 | Aktion | Methode | Eingabe | Antwort |
 |---|---|---|---|
-| `status` | GET | – | `{ api:"hbs-tipp", player: {id,nickname,email}\|null, csrf, settings:{points_exact,points_diff,points_tendency}, serverTime:"YYYY-MM-DD HH:MM:SS", admin: bool }` (`admin` = Verwaltung angemeldet, siehe „Wirt-Ansicht“) |
+| `status` | GET | – | `{ api:"hbs-tipp", player: {id,nickname,email}\|null, csrf, settings:{points_exact,points_diff,points_tendency,show_logos}, serverTime:"YYYY-MM-DD HH:MM:SS", admin: bool }` (`admin` = Verwaltung angemeldet, siehe „Wirt-Ansicht“) |
 | `invite_check` | GET | `code` | `{ valid: bool }` |
 | `register` | POST | `{code, nickname, password, email?}` | wie `status` (eingeloggt). Nickname 2–24 Zeichen, Passwort ≥ 8. |
 | `login` | POST | `{nickname, password}` | wie `status`. Brute-Force-Schutz. |
@@ -209,3 +211,34 @@ Der Wirt kann das Tippspiel jederzeit ansehen, ohne sich als Spieler zu registri
 **Spieler-App:** `player:null` + `admin:true` → Wirt-Ansicht: Messing-Banner „Wirt-Ansicht – nur ansehen, hier wird nicht getippt“ mit Link „Zur Verwaltung“ (`../admin/#tippspiel`); Reiter Spiele (`#/spiele`, gruppiert wie „Tippen“, nur lesen, Ergebnis, Tipp-Anzahl, Stammtisch-Quote immer sichtbar; Tipp auf ein Spiel → Bottom-Sheet mit allen Tipps, Punkten und wer noch fehlt), Rangliste (Name → alle Tipps inkl. offener), Statistik (`admin_stats`). Kein Profil. Anmeldeseite: dezenter Link „Als Wirt ansehen“ → `../admin/#tippspiel`. Bestehen beide Anmeldungen: Spieler-App mit Umschalter „Als Wirt ansehen“ / „Als Spieler“ im Kopf (Auswahl gilt für den Tab, sessionStorage `hbs_tipp_view`); die Wirt-Ansicht fragt dann mit `view=owner`.
 
 **Verwaltung:** Reiter „Tippspiel“: Knopf „Tippspiel ansehen (Wirt-Ansicht)“ im Kopf (über der Unter-Navigation, in allen Unterbereichen) und als Karte in der Übersicht → `../tippspiel/` (Demo: `../tippspiel/?wirt=1`) in neuem Tab. Übersicht: Rangliste (gesamt, aus `leaderboard` mit `view=owner`) zeigt die Top 5 mit „Alle N anzeigen“ / „Weniger anzeigen“.
+
+## Ergänzung: Vereinslogos (datenschutzfreundlich, vom eigenen Server)
+
+OpenLigaDB liefert je Mannschaft `team1/team2.teamIconUrl` (Wikimedia, imgur, UEFA, footylogos, `data:`-URIs …). Der Server lädt jedes Logo **einmal** selbst, prüft es, speichert es unter `cms/uploads/logos/<sha1(Name in Kleinbuchstaben)>.png` und liefert es aus. **Browser der Besucher laden nie etwas von fremden Hosts.**
+
+**Daten:** Tabelle `team_logos` (Schlüssel = Mannschaftsname wie in `matches.home/away`, ohne Groß-/Kleinschreibung). Beim Abruf (`sync_apply`, alle Umfänge) wird je Mannschaft die `teamIconUrl` gemerkt; ändert sie sich, wird das Logo neu geladen (`status='pending'`, `attempts=0`; die alte Datei bleibt bis zum Ersatz sichtbar). `status`: `pending` | `ok` | `failed`. Logos gelten für alle Spiele mit diesem Mannschaftsnamen (auch von Hand angelegte).
+
+**Laden:** fällig = `pending` (hat die Mannschaft schon ein Logo, frühestens 24 Std. nach dessen Download – verschiedene Adressen in zwei Ligen führen so nicht zu Dauer-Downloads), oder `failed` mit `attempts < 5` und letztem Versuch (`tried`) vor ≥ 24 Std.; „Logos neu laden“ (`failed`/`all`) setzt `fetched` zurück und lädt sofort; nur Mannschaften, die in Spielen vorkommen. Je Durchlauf höchstens 25 Downloads, 5 s Zeitlimit je Download, Gesamtbudget: nach `admin_sync` 20 s, `cron_sync` 30 s, `admin_logos_refresh` 45 s, nebenbei (bei `status`/`matches`/`leaderboard`, höchstens alle 2 Min., nur wenn etwas fällig ist) höchstens 2 Logos / 3 s. Dateisperre `cms/data/tipp-logos.lock`. Nur bei `show_logos` = an (außer `admin_logos_refresh`). Drosselt ein Server (HTTP 429/503), bleibt das Logo `pending` (zählt nicht als Fehlversuch) und der Server wird für den Rest des Durchlaufs ausgelassen (mit genug Budget wird bis zu 3× 10 s gewartet). Dauerhafte Fehler (SVG fremd, kein https, kein Bild, 404 …) setzen `attempts=5`.
+
+**Sicherheit (teamIconUrl = feindliche Eingabe):**
+- nur `https`, Port 443, keine Zugangsdaten, keine IP-Literale, keine internen Namen (`localhost`, `.local`, `.lan`, `.internal` …); `http://` nur für `img.uefa.com` und `upload.wikimedia.org` (wird zu `https://`).
+- Name auflösen (A + AAAA); ist **irgendeine** Adresse nicht öffentlich (RFC 1918, 127/8, 169.254/16, 100.64/10, 0/8, Multicast/reserviert, IPv6 außer 2000::/3, Teredo/6to4/NAT64/IPv4-mapped …) → abgelehnt. Verbindung per `CURLOPT_RESOLVE` fest an die geprüfte IP, Proxy aus. Nur wenn der Name lokal nicht auflösbar ist **und** der Server einen `https_proxy` gesetzt hat, geht die Anfrage über diesen Proxy (er löst dann auf).
+- keine automatischen Weiterleitungen; höchstens 2, jede wird wie die erste geprüft. Max. 2 MB (Abbruch beim Lesen). User-Agent `HBS-Tippspiel/1.0 (Vereinslogos; +https://openligadb.de)`, `Accept` ohne `image/webp` (Wikimedia würde sonst eigens WebP rechnen und drosseln; WebP wird trotzdem angenommen).
+- Inhalt: Magic Bytes + `finfo` + `getimagesize` müssen übereinstimmen, nur PNG/JPEG/GIF/WebP, max. 4096 px je Kante und 6 Mio. Pixel, keine `<script`/`<html`/`<svg`/`<?php`-Spuren (Polyglot) → sonst abgelehnt. Mit GD: neu als PNG gerechnet (max. 128 px, Seitenverhältnis + Transparenz bleiben, nie vergrößert); ohne GD: geprüftes Original mit passender Endung.
+- **SVG nie**: `upload.wikimedia.org`/`thumb.wikimedia.org` – Query weg; SVG-Original `/wikipedia/<proj>/<a>/<ab>/<Datei>.svg` bzw. SVG-Vorschau beliebiger Größe → `/wikipedia/<proj>/thumb/<a>/<ab>/<Datei>.svg/250px-<Datei>.svg.png` (Wikimedia erlaubt nur Standardgrößen; 256px → Fehler 400). Wiki-Dateiseiten `commons.wikimedia.org/wiki/File:…` bzw. `xx.wikipedia.org/wiki/Datei:…` werden über `md5(Dateiname)` in diese Adressen umgerechnet (Datei: erst `/wikipedia/xx/`, dann `/commons/`). Andere SVG → übersprungen. `data:image/(png|jpeg|gif|webp);base64,…` → ohne Netzwerk dekodiert und genauso geprüft.
+- Auslieferung: `cms/uploads/.htaccess` gilt auch für `logos/` (nur jpg/png/webp/gif, kein PHP, `nosniff`, CSP `sandbox`). In Docker liegt `cms/uploads` im Volume – keine Änderung am Deployment nötig.
+
+**API:**
+- Jedes Spiel-Objekt (`matches`, `player_tips`, `admin_overview`, `admin_match_tips`, `admin_result`, `admin_match_save`) hat `home_logo`/`away_logo`: relativer Pfad ab Website-Hauptordner, z. B. `cms/uploads/logos/<sha1>.png?v=<Unix-Zeit des Downloads>`, oder `null` (kein Logo oder `show_logos` aus).
+- `settings.show_logos` (Boolean) in `status`, `login`, `register`, `admin_overview`, `admin_settings_save`.
+- `admin_overview.logos` = `{ ok, failed, pending, none (ohne Logo-Quelle), teams, failed_list:[{team,message}], show, gd }` (nur Mannschaften mit Spielen).
+- `admin_sync` zusätzlich `logos:{loaded,failed,paused,remaining,errors:[{team,message}]}` (wenn `show_logos`); `cron_sync` zusätzlich `logos` (oder `null`).
+
+| Aktion | Eingabe | Antwort |
+|---|---|---|
+| `admin_logos_save` POST | `{show_logos}` | `{ settings }` |
+| `admin_logos_refresh` POST | `{mode:'failed'\|'all'\|'continue'}` (Standard `failed`: fehlgeschlagene zurücksetzen; `all`: alle neu laden; `continue`: nur Fälliges weiter) | `{ loaded, failed, paused, remaining, errors, logos:{…wie admin_overview} }` – 409, wenn gerade schon geladen wird |
+
+**JS-Client (Demo):** kein Netzwerk → `home_logo/away_logo` immer `null`; `settings.show_logos` (Standard `true`) wird gespeichert, `admin_logos_save` speichert den Schalter, `admin_logos_refresh` lädt nichts (`loaded:0 …`); beide mit `message` („Demo: ohne Netzwerk keine Vereinslogos …“). `admin_overview.logos` = alle Mannschaften „ohne Logo“.
+
+**Spieler-App:** Logo statt Kürzel-Badge (32 px, `<img loading="lazy" decoding="async" alt="">`, `object-fit: contain`, heller runder Hintergrund) in allen Spielkarten (Tippen, Ergebnisse, Wirt-Ansicht); kleine Logos (18 px) in „Als Nächstes“, im Spiel-Sheet der Wirt-Ansicht und im Spieler-Sheet. Nur Pfade `cms/uploads/logos/…` werden angenommen (`../` davor). Kein Logo, `show_logos` aus oder Ladefehler → Kürzel-Badge (gleiche Größe, kein Springen). **Verwaltung:** Übersicht → Karte „Vereinslogos“ (Schalter, Stand, Fehlergründe, „Logos neu laden“ – läuft automatisch in Runden à 25 weiter – und „Alle neu laden“, Hinweis zu Datenschutz/Markenrecht); kleine Logos in „Ergebnisse eintragen“, offenen Ergebnissen und „Als Nächstes“.

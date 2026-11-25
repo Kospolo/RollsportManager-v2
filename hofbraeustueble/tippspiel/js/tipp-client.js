@@ -21,7 +21,7 @@
   var DEMO_KEY = 'hbs_tipp_demo_v3'; // v3: Bundesliga-Wettbewerb mit automatischem Abruf (OpenLigaDB)
   var DEMO_VERSION = 1;
   var DEMO_MAX_AGE_MS = 3 * 24 * 3600 * 1000; // ältere Demo-Daten werden neu erzeugt (damit „kommende Spiele“ kommend bleiben)
-  var DEFAULT_SETTINGS = { points_exact: 4, points_diff: 3, points_tendency: 2 };
+  var DEFAULT_SETTINGS = { points_exact: 4, points_diff: 3, points_tendency: 2, show_logos: true };
   var MAX_GOALS = 20;
   var INVITE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   var PW_ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -34,6 +34,7 @@
   var SYNC_WINDOW_MAX = 90;
   var SYNC_LAZY_AFTER = 110, SYNC_LAZY_EVERY = 10, SYNC_LAZY_DAYS = 3; // Minuten / Minuten / Tage – wie im PHP-Backend
   var DEMO_SYNC_MSG = 'Demo: Abruf simuliert – im echten Betrieb kommen die Daten von OpenLigaDB';
+  var DEMO_LOGO_MSG = 'Demo: ohne Netzwerk keine Vereinslogos – im echten Betrieb lädt der Server sie einmal von den OpenLigaDB-Quellen und liefert sie selbst aus';
 
   /* ================================================================ Hilfen */
 
@@ -512,7 +513,7 @@
     }
     if (action === 'status' || action === 'login' || action === 'register') rememberStatus(j);
     if (action === 'logout' || action === 'delete_account') { state.player = null; state.csrf = null; }
-    if (action === 'admin_settings_save' && j.settings) state.settings = j.settings;
+    if ((action === 'admin_settings_save' || action === 'admin_logos_save') && j.settings) state.settings = j.settings;
     return j;
   }
 
@@ -722,7 +723,10 @@
   /* --- Demo-Datenzugriff --- */
 
   function dbSettings(db) {
-    return { points_exact: +db.settings.points_exact, points_diff: +db.settings.points_diff, points_tendency: +db.settings.points_tendency };
+    return {
+      points_exact: +db.settings.points_exact, points_diff: +db.settings.points_diff, points_tendency: +db.settings.points_tendency,
+      show_logos: db.settings.show_logos === undefined ? true : !!db.settings.show_logos
+    };
   }
   function findComp(db, id) { return db.competitions.filter(function (c) { return c.id === id; })[0] || null; }
   function findMatch(db, id) { return db.matches.filter(function (m) { return m.id === id; })[0] || null; }
@@ -758,7 +762,8 @@
   function matchBase(m) {
     return {
       id: m.id, competition_id: m.competition_id, round: m.round, kickoff: m.kickoff, home: m.home, away: m.away,
-      home_goals: m.home_goals, away_goals: m.away_goals, locked: nowMin() >= m.kickoff, result_source: m.result_source || null
+      home_goals: m.home_goals, away_goals: m.away_goals, locked: nowMin() >= m.kickoff, result_source: m.result_source || null,
+      home_logo: null, away_logo: null // Demo: ohne Netzwerk keine Vereinslogos (die App zeigt die Kürzel)
     };
   }
   function inviteValid(inv) {
@@ -901,6 +906,14 @@
       c.last_sync_status = demoStatusText({ inserted: 0, updated: 0, results: r.results, skipped_manual: 0, errors: [] }, 'results');
     });
   }
+  /** Vereinslogos im Demo-Modus: keine Downloads – alle Mannschaften ohne Logo */
+  function demoLogoStats(db) {
+    var seen = {}, n = 0;
+    db.matches.forEach(function (m) { [m.home, m.away].forEach(function (t) { var k = lower(t); if (!seen[k]) { seen[k] = 1; n++; } }); });
+    return { ok: 0, failed: 0, pending: 0, none: n, teams: n, failed_list: [], show: dbSettings(db).show_logos, gd: false, demo: true };
+  }
+  function demoLogoRun() { return { loaded: 0, failed: 0, paused: 0, remaining: 0, errors: [] }; }
+
   function demoCronInfo(db) {
     if (!db.cron_token) db.cron_token = randomString('0123456789abcdef', 48);
     var base = 'https://www.example.de/cms/tipp-api.php';
@@ -1156,7 +1169,7 @@
         };
       });
       var invites = db.invites.slice().sort(function (a, b) { return cmpStr(b.created, a.created) || cmpStr(a.code, b.code); }).map(inviteOut);
-      return ok({ competitions: comps, matches: matches, players: players, invites: invites, settings: dbSettings(db), serverTime: nowFull() });
+      return ok({ competitions: comps, matches: matches, players: players, invites: invites, settings: dbSettings(db), serverTime: nowFull(), logos: demoLogoStats(db) });
     },
 
     admin_competition_save: function (db, d) {
@@ -1356,6 +1369,7 @@
       c.last_sync = nowFull();
       c.last_sync_status = demoStatusText(res, scope);
       res.last_sync = c.last_sync; res.last_sync_status = c.last_sync_status; res.message = DEMO_SYNC_MSG; res.demo = true;
+      if (dbSettings(db).show_logos) res.logos = demoLogoRun();
       return ok(res);
     },
 
@@ -1377,7 +1391,7 @@
       });
       var summary = out.length ? out.map(function (o) { return o.name + ': ' + o.status; }).join(' · ') : 'Kein aktiver Wettbewerb mit automatischem Abruf.';
       db.cron_last = { time: nowFull(), ok: true, status: summary };
-      return ok({ time: db.cron_last.time, competitions: out, summary: summary, demo: true });
+      return ok({ time: db.cron_last.time, competitions: out, summary: summary, logos: dbSettings(db).show_logos ? demoLogoRun() : null, demo: true });
     },
 
     admin_settings_save: function (db, d) {
@@ -1387,9 +1401,24 @@
         points_tendency: vInt(d.points_tendency, 0, 50, 'Punkte Tendenz')
       };
       if (!(n.points_exact >= n.points_diff && n.points_diff >= n.points_tendency)) fail('Bitte so wählen: exaktes Ergebnis ≥ Tordifferenz ≥ Tendenz.', 400);
+      n.show_logos = dbSettings(db).show_logos;
       db.settings = n;
       state.settings = clone(n);
       return ok({ settings: dbSettings(db) });
+    },
+
+    admin_logos_save: function (db, d) {
+      db.settings.show_logos = !!vBool(d.show_logos, 'Vereinslogos anzeigen');
+      state.settings = dbSettings(db);
+      return ok({ settings: dbSettings(db), message: DEMO_LOGO_MSG, demo: true });
+    },
+
+    admin_logos_refresh: function (db, d) {
+      var mode = d.mode === undefined || d.mode === null ? 'failed' : d.mode;
+      if (mode !== 'failed' && mode !== 'all' && mode !== 'continue') fail('Modus: „failed“, „all“ oder „continue“.', 400);
+      var r = demoLogoRun();
+      r.logos = demoLogoStats(db); r.message = DEMO_LOGO_MSG; r.demo = true;
+      return ok(r);
     }
   };
 

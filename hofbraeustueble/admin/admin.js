@@ -1952,7 +1952,7 @@
         h('h3', null, icon('ball'), plural(pending.length, 'Spiel wartet', 'Spiele warten') + ' auf ein Ergebnis'),
         h('ul', { class: 'pending-list' }, pending.slice(0, 4).map(function (m) {
           return h('li', null, h('a', { href: '#tippspiel/ergebnisse', onclick: function (e) { e.preventDefault(); goTipp('ergebnisse'); } },
-            h('span', { class: 'pl-teams' }, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff))));
+            h('span', { class: 'pl-teams' }, teamLogo(m.home_logo), m.home + ' – ', teamLogo(m.away_logo), m.away), h('small', null, fmtKick(m.kickoff))));
         }), pending.length > 4 ? h('li', { class: 'more' }, '… und ' + (pending.length - 4) + ' weitere') : null),
         btn('Ergebnisse jetzt eintragen', 'chevron', function () { goTipp('ergebnisse'); }, 'btn-primary btn-block')));
     } else if (d.matches.length) {
@@ -1960,6 +1960,7 @@
     }
 
     if (d.competitions.length) wrap.appendChild(autoCard(d));
+    if (d.logos && d.matches.length) wrap.appendChild(logoCard(d));
 
     // Kennzahlen
     function tile(n, label, sub, target) {
@@ -2003,7 +2004,7 @@
         T.lbError ? h('p', { class: 'help m0 mt' }, 'Hinweis: Die genaue Rangliste konnte nicht geladen werden (' + T.lbError + ') – sortiert nach Punkten.') : null),
       card('Nächste Spiele', null,
         next.length ? h('ul', { class: 'next-list' }, next.map(function (m) {
-          return h('li', null, h('strong', null, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff) + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
+          return h('li', null, h('strong', null, teamLogo(m.home_logo), m.home + ' – ', teamLogo(m.away_logo), m.away), h('small', null, fmtKick(m.kickoff) + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
         })) : h('p', { class: 'help m0' }, 'Keine kommenden Spiele eingetragen.'),
         btn('Spiele verwalten', 'calendar', function () { goTipp('spiele'); }, 'btn-sm mt'))));
 
@@ -2028,6 +2029,76 @@
   }
 
   /** Übersicht: automatischer Abruf je Wettbewerb + Cronjob-Adresse */
+  /** Vereinslogo (vom eigenen Server, cms/uploads/logos/…) – null ohne Logo; bei Ladefehler verschwindet es */
+  var LOGO_RE = /^cms\/uploads\/logos\/[a-f0-9]{40}\.(png|jpg|gif|webp)\?v=\d+$/;
+  function teamLogo(path, pos) {
+    if (typeof path !== 'string' || !LOGO_RE.test(path)) return null;
+    if (T.data && T.data.settings && T.data.settings.show_logos === false) return null;
+    return h('img', { class: 't-logo' + (pos === 'after' ? ' t-logo-after' : ''), src: '../' + path, alt: '', width: '20', height: '20', loading: 'lazy', decoding: 'async',
+      onerror: function (e) { e.currentTarget.remove(); } });
+  }
+  function logoStatusText(l) {
+    var parts = ['Logos: ' + l.ok + ' geladen'];
+    if (l.failed) parts.push(l.failed + ' fehlgeschlagen');
+    if (l.pending) parts.push(l.pending + ' ausstehend');
+    if (l.none) parts.push(l.none + ' ohne Logo-Quelle');
+    return parts.join(', ');
+  }
+  /** Vereinslogos: an/aus, Stand, „Logos neu laden“ (läuft in Runden à 25, bis nichts mehr offen ist) */
+  function logoCard(d) {
+    var l = d.logos;
+    var sw = switchEl(d.settings.show_logos !== false, 'Vereinslogos anzeigen', 'An – im Tippspiel stehen die Vereinswappen', 'Aus – im Tippspiel stehen nur Kürzel');
+    sw.input.addEventListener('change', function () {
+      var on = sw.input.checked;
+      sw.input.disabled = true;
+      tcall('admin_logos_save', { show_logos: on }).then(function (r) {
+        toast(on ? 'Vereinslogos werden angezeigt.' : 'Vereinslogos ausgeschaltet – im Tippspiel stehen jetzt Kürzel.', 'success');
+        if (r.message) toast(r.message, 'info', 5000);
+        return tippRefresh();
+      }, function (e) { sw.input.checked = !on; sw.input.disabled = false; toast(e.message || 'Speichern fehlgeschlagen.', 'error'); });
+    });
+    var status = h('p', { class: 'logo-status m0', role: 'status' }, logoStatusText(l));
+    function run(button, mode) {
+      button.disabled = true; button.classList.add('is-busy');
+      var total = { loaded: 0, failed: 0 }, rounds = 0;
+      function step(m) {
+        return tcall('admin_logos_refresh', { mode: m }).then(function (r) {
+          rounds++;
+          total.loaded += r.loaded || 0; total.failed += r.failed || 0;
+          if (r.logos) status.textContent = logoStatusText(r.logos);
+          if (r.message) { toast(r.message, 'info', 5000); return r; }
+          if (r.remaining > 0 && (r.loaded || r.failed) && rounds < 10) {
+            status.textContent += ' – lädt weiter …';
+            return step('continue');
+          }
+          var msg = total.loaded || total.failed ? 'Logos: ' + total.loaded + ' geladen' + (total.failed ? ', ' + total.failed + ' fehlgeschlagen' : '') + '.' : 'Keine neuen Logos geladen.';
+          if (r.remaining > 0) msg += ' ' + r.remaining + ' noch offen' + (r.paused ? ' – ein Bild-Server bittet um eine Pause' : '') + '; die holt der regelmäßige Abruf nach (oder später nochmal klicken).';
+          else if (!total.loaded && !total.failed) msg = 'Alle Logos sind aktuell.';
+          toast(msg, total.failed || r.remaining ? 'info' : 'success', 6000);
+          return r;
+        });
+      }
+      step(mode).catch(function (e) { toast(e.message || 'Logos konnten nicht geladen werden.', 'error'); }).then(function () {
+        button.disabled = false; button.classList.remove('is-busy');
+        tippRefresh();
+      });
+    }
+    var reloadB = btn('Logos neu laden', 'refresh', function (e) { run(e.currentTarget, 'failed'); }, 'btn-sm');
+    var allB = btn('Alle neu laden', null, function (e) {
+      var b = e.currentTarget;
+      confirmDialog('Alle Vereinslogos noch einmal von den Quellen laden? Die bisherigen bleiben sichtbar, bis das neue Bild da ist.', { title: 'Alle Logos neu laden', ok: 'Neu laden' })
+        .then(function (ok) { if (ok) run(b, 'all'); });
+    }, 'btn-sm btn-ghost');
+    var failed = (l.failed_list || []).length ? h('details', { class: 'logo-failed' },
+      h('summary', null, plural(l.failed_list.length, 'Logo fehlgeschlagen', 'Logos fehlgeschlagen') + ' – warum?'),
+      h('ul', null, l.failed_list.map(function (x) { return h('li', null, h('strong', null, x.team), ': ', x.message || 'unbekannter Fehler'); }))) : null;
+    return h('section', { class: 'card logo-card' },
+      cardHead('Vereinslogos', 'Kleine Vereinswappen neben den Mannschaften im Tippspiel (bei Spielen von OpenLigaDB).', null),
+      h('div', { class: 'fields' }, sw.el, status, failed,
+        h('div', { class: 'btn-row' }, reloadB, allB),
+        h('p', { class: 'help m0' }, 'Die Logos werden einmal von OpenLigaDB-Quellen geladen und von eurem Server ausgeliefert – Besucher laden nichts von fremden Seiten. Vereinslogos sind Marken der Vereine; bei Bedenken hier ausschalten.')));
+  }
+
   function autoCard(d) {
     var src = d.competitions.filter(function (c) { return c.source; });
     if (!src.length) {
@@ -2131,7 +2202,7 @@
       wrap.appendChild(h('h3', { class: 'res-h' }, 'Als Nächstes'));
       wrap.appendChild(h('p', { class: 'help' }, 'Ergebnisse können erst ab Anstoß eingetragen werden.'));
       wrap.appendChild(h('ul', { class: 'next-list card' }, upcoming.map(function (m) {
-        return h('li', null, h('strong', null, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff) + (m.round ? ' · ' + m.round : '') + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
+        return h('li', null, h('strong', null, teamLogo(m.home_logo), m.home + ' – ', teamLogo(m.away_logo), m.away), h('small', null, fmtKick(m.kickoff) + (m.round ? ' · ' + m.round : '') + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));
       })));
     }
     return wrap;
@@ -2156,7 +2227,7 @@
       if (!editing) {
         row.replaceChildren(meta,
           h('div', { class: 'res-final' },
-            h('span', { class: 't t-home' }, m.home), h('strong', { class: 'sc' }, m.home_goals + ' : ' + m.away_goals), h('span', { class: 't t-away' }, m.away)),
+            h('span', { class: 't t-home' }, m.home, teamLogo(m.home_logo, 'after')), h('strong', { class: 'sc' }, m.home_goals + ' : ' + m.away_goals), h('span', { class: 't t-away' }, teamLogo(m.away_logo), m.away)),
           h('div', { class: 'res-actions' },
             flash ? h('span', { class: 'saved-tag' }, icon('check'), 'Gespeichert') : null,
             btn('Ändern', 'edit', function () { editing = true; draw(); row.querySelector('.step-in').focus(); }, 'btn-sm', { 'aria-label': 'Ergebnis ändern: ' + m.home + ' – ' + m.away }),
@@ -2164,8 +2235,8 @@
         return;
       }
       var saveB = btn(hasRes(m) ? 'Änderung speichern' : 'Ergebnis speichern', 'check', doSave, 'btn-primary res-save');
-      var hs = stepper({ label: m.home, aria: 'Tore ' + m.home, value: hasRes(m) ? m.home_goals : null, onChange: upd, onEnter: function () { as.input.focus(); } });
-      var as = stepper({ label: m.away, aria: 'Tore ' + m.away, value: hasRes(m) ? m.away_goals : null, onChange: upd, onEnter: doSave });
+      var hs = stepper({ label: [teamLogo(m.home_logo), m.home], aria: 'Tore ' + m.home, value: hasRes(m) ? m.home_goals : null, onChange: upd, onEnter: function () { as.input.focus(); } });
+      var as = stepper({ label: [teamLogo(m.away_logo), m.away], aria: 'Tore ' + m.away, value: hasRes(m) ? m.away_goals : null, onChange: upd, onEnter: doSave });
       function upd() { saveB.disabled = !(hs.valid() && as.valid()); }
       upd();
       function doSave() {

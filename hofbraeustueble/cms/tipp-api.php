@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 define('HBS_CMS', true); // erlaubt das Einlesen von cms/config.php (Sitzungsdauer)
 
-const TIPP_DB_VERSION        = 2;      // 2: automatischer Abruf (OpenLigaDB)
+const TIPP_DB_VERSION        = 3;      // 2: automatischer Abruf (OpenLigaDB), 3: Vereinslogos
 const TIPP_SESSION_NAME      = 'HBS_TIPP';
 const TIPP_SESSION_DAYS      = 60;      // so lange bleibt man am Handy angemeldet
 const TIPP_CMS_SESSION_NAME  = 'HBSCMS';
@@ -25,7 +25,7 @@ const TIPP_MAX_GOALS         = 20;
 const TIPP_INVITE_ALPHABET   = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne 0/O/1/I
 const TIPP_PW_ALPHABET       = 'abcdefghjkmnpqrstuvwxyz23456789';
 const TIPP_NICK_RE           = '/^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/u';
-const TIPP_DEFAULT_SETTINGS  = ['points_exact' => 4, 'points_diff' => 3, 'points_tendency' => 2];
+const TIPP_DEFAULT_SETTINGS  = ['points_exact' => 4, 'points_diff' => 3, 'points_tendency' => 2, 'show_logos' => true];
 
 // Automatischer Abruf von Spielplan und Ergebnissen (OpenLigaDB, kostenlos, ohne Schlüssel)
 const TIPP_OLDB_BASE         = 'https://api.openligadb.de'; // fest – Nutzereingaben ergeben NIE eine URL
@@ -40,11 +40,29 @@ const TIPP_SYNC_STALE_MIN    = 240;      // Ergebnis ohne „beendet“-Kennzeic
 const TIPP_SYNC_WINDOW_MAX   = 90;
 const TIPP_LEAGUE_RE         = '/^[A-Za-z0-9_-]{1,40}$/';
 
+// Vereinslogos: einmal von der Quelle aus OpenLigaDB (teamIconUrl) laden, von UNSEREM Server ausliefern (DSGVO)
+const TIPP_LOGO_UA           = 'HBS-Tippspiel/1.0 (Vereinslogos; +https://openligadb.de)';
+const TIPP_LOGO_MAX_BYTES    = 2097152;  // 2 MB je Bild
+const TIPP_LOGO_TIMEOUT      = 5;        // Sekunden je Download
+const TIPP_LOGO_PER_RUN      = 25;       // höchstens so viele Downloads je Durchlauf
+const TIPP_LOGO_LAZY_MAX     = 2;        // nebenbei (Spieler-Aufruf): höchstens 2 …
+const TIPP_LOGO_LAZY_BUDGET  = 3.0;      // … und höchstens 3 Sekunden
+const TIPP_LOGO_LAZY_EVERY   = 120;      // nebenbei höchstens alle 2 Minuten
+const TIPP_LOGO_RETRY_HOURS  = 24;       // fehlgeschlagene Logos frühestens nach 24 Std. erneut versuchen …
+const TIPP_LOGO_MAX_ATTEMPTS = 5;        // … und nach 5 Versuchen aufgeben
+const TIPP_LOGO_MAX_REDIRECTS = 2;
+const TIPP_LOGO_SIZE         = 128;      // größte Kante nach dem Verkleinern (mit GD)
+const TIPP_LOGO_MAX_PIXELS   = 6000000;  // größere Bilder werden gar nicht erst dekodiert
+const TIPP_LOGO_WM_THUMB     = 250;      // Wikimedia erlaubt nur Standard-Vorschaugrößen (…, 120, 250, 330, …)
+
 define('TIPP_CMS_DIR', __DIR__);
 define('TIPP_DATA_DIR', __DIR__ . '/data');
 define('TIPP_DB_FILE', TIPP_DATA_DIR . '/tippspiel.sqlite');
 define('TIPP_CRON_FILE', TIPP_DATA_DIR . '/tipp-cron-token.php'); // geheimer Token für den Cronjob-Aufruf
 define('TIPP_SYNC_LOCK', TIPP_DATA_DIR . '/tipp-sync.lock');
+define('TIPP_LOGO_LOCK', TIPP_DATA_DIR . '/tipp-logos.lock');
+define('TIPP_LOGO_DIR', TIPP_CMS_DIR . '/uploads/logos');   // liegt im Upload-Ordner (Docker: im Volume)
+const TIPP_LOGO_PUBLIC       = 'cms/uploads/logos/';       // relativ zum Website-Hauptordner
 
 date_default_timezone_set('Europe/Berlin');
 error_reporting(E_ALL);
@@ -489,6 +507,25 @@ function migrate(PDO $pdo): void
             $pdo->exec("UPDATE matches SET result_source = 'manual' WHERE home_goals IS NOT NULL AND result_source IS NULL");
             $pdo->exec('PRAGMA user_version = 2');
         }
+        if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < 3) {
+            // Vereinslogos (idempotent)
+            $pdo->exec(<<<SQL
+                CREATE TABLE IF NOT EXISTS team_logos (
+                    team TEXT PRIMARY KEY COLLATE NOCASE,   -- Mannschaftsname wie in matches.home/away
+                    source_url TEXT NULL,                   -- teamIconUrl von OpenLigaDB (fremde Daten!)
+                    file TEXT NULL,                         -- Dateiname in cms/uploads/logos/ (sha1 des Namens)
+                    status TEXT NOT NULL DEFAULT 'pending', -- pending | ok | failed
+                    fetched TEXT NULL,                      -- letzter erfolgreicher Download
+                    attempts INTEGER NOT NULL DEFAULT 0     -- Fehlversuche seit der letzten Änderung der Quelle
+                );
+            SQL);
+            add_columns($pdo, 'team_logos', [
+                'tried' => 'TEXT NULL',                        // letzter Versuch (für „frühestens nach 24 Std.“)
+                'last_error' => 'TEXT NULL',                   // Grund des letzten Fehlschlags (für die Verwaltung)
+            ]);
+            $pdo->exec("INSERT OR IGNORE INTO settings (key, value) VALUES ('show_logos', '1')");
+            $pdo->exec('PRAGMA user_version = 3');
+        }
         $pdo->exec('COMMIT');
     } catch (Throwable $e) {
         $pdo->exec('ROLLBACK');
@@ -545,6 +582,7 @@ function settings(): array
             $s[$r['key']] = (int)$r['value'];
         }
     }
+    $s['show_logos'] = (bool)$s['show_logos']; // Ja/Nein-Feld → Boolean (wie überall in den Antworten)
     return $s;
 }
 
@@ -996,6 +1034,8 @@ function match_base(array $m): array
         'away_goals' => int_or_null($m['away_goals']),
         'locked' => now_min() >= (string)$m['kickoff'],
         'result_source' => ($m['result_source'] ?? null) !== null ? (string)$m['result_source'] : null,
+        'home_logo' => team_logo((string)$m['home']),
+        'away_logo' => team_logo((string)$m['away']),
     ];
 }
 
@@ -1624,6 +1664,8 @@ function oldb_match(mixed $m): ?array
         'group' => is_int($g) && $g >= 0 && $g < 100000 ? $g : null,
         'finished' => ($m['matchIsFinished'] ?? false) === true,
         'result' => $result,
+        'home_icon' => oldb_icon($m['team1']['teamIconUrl'] ?? null), // Vereinslogo-Quelle (wird erst später geprüft)
+        'away_icon' => oldb_icon($m['team2']['teamIconUrl'] ?? null),
     ];
 }
 
@@ -1667,6 +1709,7 @@ function sync_apply(array $comp, array $list, string $mode): array
         $res = $pdo->prepare("UPDATE matches SET home_goals = ?, away_goals = ?, result_source = 'auto' WHERE id = ?");
         $ins = $pdo->prepare('INSERT INTO matches (competition_id, round, kickoff, home, away, home_goals, away_goals, external_id, external_group, result_source) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
         $seen = [];
+        $icons = []; // Mannschaft → teamIconUrl (Vereinslogos)
         $addErr = function (string $msg) use (&$st): void {
             if (count($st['errors']) < 25) {
                 $st['errors'][] = ['message' => $msg];
@@ -1685,6 +1728,12 @@ function sync_apply(array $comp, array $list, string $mode): array
                 continue;
             }
             $seen[$x['id']] = true;
+            if ($x['home_icon'] !== '') {
+                $icons[$x['home']] = $x['home_icon'];
+            }
+            if ($x['away_icon'] !== '') {
+                $icons[$x['away']] = $x['away_icon'];
+            }
             $row = $byExt[$x['id']] ?? null;
             $key = $x['kickoff'] . '|' . lower($x['home']) . '|' . lower($x['away']);
             if ($row === null && $mode !== 'results' && isset($byKey[$key])) {
@@ -1732,6 +1781,9 @@ function sync_apply(array $comp, array $list, string $mode): array
                     $st['results']++;
                 }
             }
+        }
+        foreach ($icons as $team => $url) {
+            logo_record($pdo, (string)$team, $url);
         }
         return $st;
     });
@@ -1877,6 +1929,714 @@ function lazy_sync(): void
     }
 }
 
+/* ==================================================== Vereinslogos (teamIconUrl) */
+/*
+ * OpenLigaDB liefert je Mannschaft eine teamIconUrl (Wikimedia, imgur, UEFA, data:-URIs …). Diese Adressen sind
+ * Community-Daten und werden wie feindliche Eingaben behandelt:
+ *   - nur https (http nur für wenige bekannte Bild-Server, dann automatisch als https), nur Port 443, keine IP-Adressen,
+ *   - Name wird aufgelöst, private/interne Adressen (Heimnetz 192.168.x.x, 127.x, 169.254.x.x …) werden abgelehnt und die
+ *     Verbindung wird auf die geprüfte IP festgenagelt (CURLOPT_RESOLVE) – kein DNS-Rebinding,
+ *   - Weiterleitungen nur einzeln geprüft (max. 2), max. 2 MB, Zeitlimit 5 s,
+ *   - nur PNG/JPEG/GIF/WebP (Magic Bytes + finfo + getimagesize), SVG nie (Wikimedia-SVG → PNG-Vorschau von Wikimedia),
+ *   - mit GD: neu als PNG gerechnet (max. 128 px, Transparenz bleibt) – entschärft auch präparierte „Polyglot“-Dateien.
+ * Gespeichert wird in cms/uploads/logos/<sha1>.png; Besucher laden Logos NUR von diesem Server (DSGVO).
+ * Ist auf dem Server ein HTTPS-Proxy gesetzt (Umgebungsvariable https_proxy) und der Name lokal nicht auflösbar,
+ * löst der Proxy auf – dann gelten dessen Regeln. Im Heimnetz/Docker ist normalerweise kein Proxy gesetzt.
+ */
+
+final class LogoException extends RuntimeException
+{
+    public bool $permanent;
+    public bool $pause;
+
+    public function __construct(string $message, bool $permanent = false, bool $pause = false)
+    {
+        parent::__construct($message);
+        $this->permanent = $permanent; // true: erneuter Versuch sinnlos (z. B. SVG von fremder Seite)
+        $this->pause = $pause;         // true: Server drosselt (429) – zählt nicht als Fehlversuch
+    }
+}
+
+/** http:// wird nur bei diesen Bild-Servern (liefern dasselbe auch per https) als https:// versucht */
+const TIPP_LOGO_HTTPS_UPGRADE = ['img.uefa.com', 'upload.wikimedia.org'];
+
+/** teamIconUrl aus OpenLigaDB übernehmen (nur Form prüfen, Inhalt wird erst beim Download geprüft) */
+function oldb_icon(mixed $v): string
+{
+    if (!is_string($v)) {
+        return '';
+    }
+    $v = trim($v);
+    if ($v === '' || preg_match('/[\x00-\x20\x7F]/', $v)) {
+        return '';
+    }
+    $max = stripos($v, 'data:') === 0 ? (int)ceil(TIPP_LOGO_MAX_BYTES * 4 / 3) + 64 : 2048;
+    return strlen($v) <= $max ? $v : '';
+}
+
+/** Logo-Quelle einer Mannschaft merken; bei geänderter Adresse neu laden (das alte Bild bleibt bis dahin sichtbar) */
+function logo_record(PDO $pdo, string $team, string $url): void
+{
+    if ($team === '' || $url === '') {
+        return;
+    }
+    $pdo->prepare("INSERT INTO team_logos (team, source_url, status, attempts) VALUES (?, ?, 'pending', 0)
+                   ON CONFLICT(team) DO UPDATE SET source_url = excluded.source_url, status = 'pending', attempts = 0, tried = NULL, last_error = NULL
+                   WHERE team_logos.source_url IS NOT excluded.source_url")->execute([$team, $url]);
+}
+
+/** Pfad zum Logo einer Mannschaft (relativ zum Website-Hauptordner, mit ?v=…) oder null */
+function team_logo(string $team): ?string
+{
+    static $show = null, $map = null, $memo = [];
+    if ($show === null) {
+        $show = (bool)settings()['show_logos'];
+    }
+    if (!$show) {
+        return null;
+    }
+    if ($map === null) {
+        $map = [];
+        foreach (q("SELECT team, file, fetched FROM team_logos WHERE file IS NOT NULL")->fetchAll() as $r) {
+            $map[lower((string)$r['team'])] = $r;
+        }
+    }
+    $k = lower($team);
+    if (array_key_exists($k, $memo)) {
+        return $memo[$k];
+    }
+    $r = $map[$k] ?? null;
+    $out = null;
+    if ($r !== null && preg_match('/^[a-f0-9]{40}\.(png|jpg|gif|webp)$/', (string)$r['file'])) {
+        if (is_file(TIPP_LOGO_DIR . '/' . $r['file'])) {
+            $ts = strtotime((string)$r['fetched']) ?: 0;
+            $out = TIPP_LOGO_PUBLIC . $r['file'] . '?v=' . $ts;
+        } else {
+            // Datei fehlt (z. B. Ordner geleert) → beim nächsten Durchlauf neu laden
+            q("UPDATE team_logos SET file = NULL, status = 'pending', attempts = 0 WHERE team = ?", [(string)$r['team']]);
+        }
+    }
+    return $memo[$k] = $out;
+}
+
+/** Öffentliche (global routbare) IP-Adresse? Private, lokale, reservierte und eingebettete Adressen → false */
+function logo_ip_public(string $ip): bool
+{
+    $bin = @inet_pton($ip);
+    if ($bin === false) {
+        return false;
+    }
+    $in = function (string $cidr) use ($bin): bool {
+        [$net, $bits] = explode('/', $cidr);
+        $n = inet_pton($net);
+        if ($n === false || strlen($n) !== strlen($bin)) {
+            return false;
+        }
+        $bits = (int)$bits;
+        $bytes = intdiv($bits, 8);
+        if (strncmp($bin, $n, $bytes) !== 0) {
+            return false;
+        }
+        $rest = $bits % 8;
+        if ($rest === 0) {
+            return true;
+        }
+        $mask = (0xFF << (8 - $rest)) & 0xFF;
+        return (ord($bin[$bytes]) & $mask) === (ord($n[$bytes]) & $mask);
+    };
+    if (strlen($bin) === 4) {
+        foreach (['0.0.0.0/8', '10.0.0.0/8', '100.64.0.0/10', '127.0.0.0/8', '169.254.0.0/16', '172.16.0.0/12', '192.0.0.0/24',
+                     '192.0.2.0/24', '192.88.99.0/24', '192.168.0.0/16', '198.18.0.0/15', '198.51.100.0/24', '203.0.113.0/24',
+                     '224.0.0.0/4', '240.0.0.0/4'] as $c) {
+            if ($in($c)) {
+                return false;
+            }
+        }
+    } else {
+        // nur globale Unicast-Adressen (2000::/3) – das schließt ::1, ::ffff:…, fc00::/7, fe80::/10, ff00::/8, 64:ff9b:: aus
+        if (!$in('2000::/3')) {
+            return false;
+        }
+        foreach (['2001::/32', '2001:db8::/32', '2001:2::/48', '2001:10::/28', '2001:20::/28', '2002::/16', '3fff::/20'] as $c) {
+            if ($in($c)) {
+                return false; // Teredo, 6to4 (eingebettetes IPv4), Doku-/Test-Netze
+            }
+        }
+    }
+    $flags = FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE | (defined('FILTER_FLAG_GLOBAL_RANGE') ? FILTER_FLAG_GLOBAL_RANGE : 0);
+    return filter_var($ip, FILTER_VALIDATE_IP, $flags) !== false;
+}
+
+/** Namensauflösung (IPv4 + IPv6) */
+function logo_dns(string $host): array
+{
+    $ips = [];
+    $v4 = @gethostbynamel($host);
+    if (is_array($v4)) {
+        $ips = $v4;
+    }
+    if (function_exists('dns_get_record')) {
+        $r = @dns_get_record($host, DNS_AAAA);
+        foreach (is_array($r) ? $r : [] as $x) {
+            if (isset($x['ipv6']) && is_string($x['ipv6'])) {
+                $ips[] = $x['ipv6'];
+            }
+        }
+    }
+    return array_values(array_unique($ips));
+}
+
+/** HTTPS-Proxy aus der Server-Umgebung (nie aus einer Anfrage) oder null */
+function logo_proxy(): ?string
+{
+    foreach (['https_proxy', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY'] as $k) {
+        $v = getenv($k);
+        if (is_string($v) && trim($v) !== '') {
+            return trim($v);
+        }
+    }
+    return null;
+}
+
+/**
+ * Eine Bild-Adresse prüfen und normalisieren → ['url' => …, 'host' => …]. Wirft LogoException.
+ * Wikimedia: Query/Fragment weg, SVG-Original oder -Vorschau → PNG-Vorschau 250 px (von Wikimedia gerendert).
+ */
+function logo_target(string $url): array
+{
+    $p = parse_url($url);
+    if (!is_array($p) || !isset($p['scheme'], $p['host'])) {
+        throw new LogoException('Keine gültige Bild-Adresse.', true);
+    }
+    $scheme = strtolower((string)$p['scheme']);
+    $host = strtolower((string)$p['host']);
+    if ($scheme === 'http' && in_array($host, TIPP_LOGO_HTTPS_UPGRADE, true)) {
+        $scheme = 'https'; // bekannter Bild-Server: dieselbe Adresse verschlüsselt
+    }
+    if ($scheme !== 'https') {
+        throw new LogoException('Nur https-Adressen werden geladen (' . $scheme . ':// abgelehnt).', true);
+    }
+    if (isset($p['user']) || isset($p['pass'])) {
+        throw new LogoException('Adressen mit Zugangsdaten werden nicht geladen.', true);
+    }
+    if (isset($p['port']) && (int)$p['port'] !== 443) {
+        throw new LogoException('Nur der Standard-Port 443 ist erlaubt.', true);
+    }
+    if (strlen($host) > 253 || !preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/', $host)
+        || preg_match('/\.(local|localhost|internal|intranet|lan|home|corp|arpa|test|invalid|example)$/', $host)) {
+        throw new LogoException('Ungültiger oder interner Servername (' . $host . ').', true); // auch: IP-Adressen als Name
+    }
+    $path = (string)($p['path'] ?? '/');
+    if ($path === '' || $path[0] !== '/' || preg_match('/[\\\\\s]/', $path)) {
+        throw new LogoException('Ungültiger Pfad in der Bild-Adresse.', true);
+    }
+    $query = isset($p['query']) && $p['query'] !== '' ? '?' . $p['query'] : '';
+    if (preg_match('/(^|\.)(wikipedia\.org|commons\.wikimedia\.org|wikidata\.org)$/', $host)) {
+        throw new LogoException('Eine Wiki-Seite ist kein Bild (nur Dateiseiten „Datei:…“ werden umgerechnet).', true);
+    }
+    if ($host === 'upload.wikimedia.org' || $host === 'thumb.wikimedia.org') {
+        $host = 'upload.wikimedia.org';
+        $query = ''; // ?utm_source=… usw. weg
+        if (preg_match('~^/wikipedia/([a-z0-9-]+)/(thumb/)?([0-9a-f])/([0-9a-f]{2})/([^/]+)(?:/(\d+)px-[^/]+)?$~i', $path, $m)) {
+            [$proj, $isThumb, $a, $ab, $file] = [$m[1], $m[2] !== '', $m[3], $m[4], $m[5]];
+            if (preg_match('/\.svg$/i', $file)) {
+                $path = "/wikipedia/$proj/thumb/$a/$ab/$file/" . TIPP_LOGO_WM_THUMB . "px-$file.png";
+            } elseif ($isThumb && !isset($m[6])) {
+                throw new LogoException('Unbekanntes Wikimedia-Adressformat.', true);
+            }
+        } elseif (preg_match('/\.svg$/i', $path)) {
+            throw new LogoException('Unbekanntes Wikimedia-Adressformat (SVG).', true);
+        }
+    } elseif (preg_match('/\.svgz?$/i', $path)) {
+        throw new LogoException('SVG-Logos werden aus Sicherheitsgründen nur von Wikimedia (als PNG-Vorschau) übernommen.', true);
+    }
+    return ['url' => 'https://' . $host . $path . $query, 'host' => $host];
+}
+
+/**
+ * Kandidaten-Adressen für eine teamIconUrl. Wiki-Dateiseiten (commons.wikimedia.org/wiki/File:…,
+ * de.wikipedia.org/wiki/Datei:…) werden in die Bild-Adresse bei upload.wikimedia.org umgerechnet.
+ */
+function logo_candidates(string $src): array
+{
+    $p = parse_url($src);
+    $host = strtolower((string)($p['host'] ?? ''));
+    $path = (string)($p['path'] ?? '');
+    if (is_array($p) && strtolower((string)($p['scheme'] ?? '')) === 'https'
+        && preg_match('/^(commons\.wikimedia\.org|([a-z]{2,3}(?:-[a-z]+)?)\.wikipedia\.org)$/', $host, $hm)
+        && preg_match('~^/wiki/(?:File|Datei|Image|Bild):(.+)$~', $path, $fm)) {
+        $name = str_replace(' ', '_', rawurldecode($fm[1]));
+        if ($name === '' || strlen($name) > 240 || preg_match('~[/\\\\\x00-\x1F#?]~', $name) || preg_match('//u', $name) !== 1) {
+            throw new LogoException('Ungültiger Wikimedia-Dateiname.', true);
+        }
+        // Wikimedia schreibt den ersten Buchstaben groß; der Speicherpfad ergibt sich aus md5(Dateiname)
+        $name = function_exists('mb_strtoupper')
+            ? mb_strtoupper(mb_substr($name, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($name, 1, null, 'UTF-8')
+            : ucfirst($name);
+        $md5 = md5($name);
+        // de.wikipedia.org/wiki/Datei:… liegt entweder in der deutschen Wikipedia oder auf Commons
+        $projects = ($hm[2] ?? '') !== '' ? [$hm[2], 'commons'] : ['commons'];
+        $out = [];
+        foreach ($projects as $proj) {
+            $out[] = logo_target('https://upload.wikimedia.org/wikipedia/' . $proj . '/' . $md5[0] . '/' . substr($md5, 0, 2) . '/' . rawurlencode($name));
+        }
+        return $out;
+    }
+    return [logo_target($src)];
+}
+
+/** data:image/…;base64,… → Bytes (ohne Netzwerk) */
+function logo_data_uri(string $src): string
+{
+    if (!preg_match('~^data:image/(png|jpeg|jpg|gif|webp);base64,([A-Za-z0-9+/=]+)$~i', $src, $m)) {
+        throw new LogoException('Eingebettetes Bild (data:) nur als PNG/JPEG/GIF/WebP in Base64.', true);
+    }
+    if (strlen($m[2]) > (int)ceil(TIPP_LOGO_MAX_BYTES * 4 / 3) + 4) {
+        throw new LogoException('Eingebettetes Bild ist zu groß (über 2 MB).', true);
+    }
+    $bytes = base64_decode($m[2], true);
+    if ($bytes === false) {
+        throw new LogoException('Eingebettetes Bild ist beschädigt (Base64).', true);
+    }
+    return $bytes;
+}
+
+/** HTTPS-GET (curl), ohne Weiterleitungen, max. 2 MB. $ip = festgenagelte Adresse (null = über den Proxy). */
+function logo_http_get(string $url, string $host, ?string $ip, int $timeout): array
+{
+    if (!function_exists('curl_init')) {
+        throw new LogoException('Die PHP-Erweiterung „curl“ fehlt – Logos können nicht geladen werden.');
+    }
+    $buf = '';
+    $over = false;
+    $loc = null;
+    $ch = curl_init();
+    $opts = [
+        CURLOPT_URL => $url,
+        CURLOPT_WRITEFUNCTION => function ($ch, string $chunk) use (&$buf, &$over): int {
+            if (strlen($buf) + strlen($chunk) > TIPP_LOGO_MAX_BYTES) {
+                $over = true;
+                return 0;
+            }
+            $buf .= $chunk;
+            return strlen($chunk);
+        },
+        CURLOPT_HEADERFUNCTION => function ($ch, string $line) use (&$loc): int {
+            if (preg_match('/^Location:\s*(\S+)/i', $line, $m)) {
+                $loc = trim($m[1]);
+            }
+            return strlen($line);
+        },
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_CONNECTTIMEOUT => min($timeout, 4),
+        CURLOPT_USERAGENT => TIPP_LOGO_UA,
+        // ohne „image/webp“: Wikimedia rechnet sonst eigens WebP-Varianten (stark gedrosselt, Fehler 429); WebP wird trotzdem angenommen
+        CURLOPT_HTTPHEADER => ['Accept: image/png,image/jpeg,image/gif;q=0.9,*/*;q=0.1'],
+        CURLOPT_ENCODING => '',
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_MAXFILESIZE => TIPP_LOGO_MAX_BYTES,
+    ];
+    if ($ip !== null) {
+        // Verbindung genau zur geprüften IP (kein zweites DNS, kein Proxy)
+        $opts[CURLOPT_RESOLVE] = [$host . ':443:' . (str_contains($ip, ':') ? '[' . $ip . ']' : $ip)];
+        $opts[CURLOPT_PROXY] = '';
+    } else {
+        $opts[CURLOPT_PROXY] = (string)logo_proxy();
+        $opts[CURLOPT_NOPROXY] = ''; // alles über den Proxy – nichts löst lokal ungeprüft auf
+    }
+    curl_setopt_array($ch, $opts);
+    $ok = curl_exec($ch);
+    $errno = curl_errno($ch);
+    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    unset($ch);
+    if ($over || $errno === 63) {
+        throw new LogoException('Bild ist zu groß (über 2 MB).', true);
+    }
+    if ($ok === false) {
+        throw new LogoException(match ($errno) {
+            28 => 'Zeitüberschreitung (' . $timeout . ' s).',
+            6, 7 => 'Server nicht erreichbar.',
+            35, 51, 58, 60 => 'Sichere Verbindung (TLS) fehlgeschlagen.',
+            default => 'Download fehlgeschlagen (curl ' . $errno . ').',
+        });
+    }
+    return ['status' => $status, 'location' => $loc, 'body' => $buf];
+}
+
+/** Server prüfen: alle Adressen öffentlich → IP zum Festnageln; ohne Auflösung nur mit Proxy (null) */
+function logo_pin(string $host, callable $dns): ?string
+{
+    $ips = $dns($host);
+    foreach ($ips as $ip) {
+        if (!logo_ip_public((string)$ip)) {
+            throw new LogoException('Die Adresse zeigt auf ein internes Netz (' . $ip . ') – abgelehnt.', true);
+        }
+    }
+    foreach ($ips as $ip) {
+        if (str_contains((string)$ip, '.')) {
+            return (string)$ip; // IPv4 bevorzugt
+        }
+    }
+    if ($ips) {
+        return (string)$ips[0];
+    }
+    if (logo_proxy() !== null) {
+        return null;
+    }
+    throw new LogoException('Server „' . $host . '“ nicht gefunden (Name nicht auflösbar).');
+}
+
+/** Relative Weiterleitung auflösen */
+function logo_abs_url(string $base, string $loc): string
+{
+    if (preg_match('~^[a-z][a-z0-9+.-]*:~i', $loc)) {
+        return $loc;
+    }
+    $b = parse_url($base);
+    $origin = 'https://' . $b['host'];
+    if (str_starts_with($loc, '//')) {
+        return 'https:' . $loc;
+    }
+    if (str_starts_with($loc, '/')) {
+        return $origin . $loc;
+    }
+    $dir = preg_replace('~/[^/]*$~', '/', (string)($b['path'] ?? '/'));
+    return $origin . $dir . $loc;
+}
+
+/** Eine Adresse laden; jede Weiterleitung wird wie die erste geprüft (max. 2) */
+function logo_download(string $url, int $timeout, callable $http, callable $dns): string
+{
+    $t = logo_target($url);
+    for ($hop = 0; ; $hop++) {
+        $ip = logo_pin($t['host'], $dns);
+        $r = $http($t['url'], $t['host'], $ip, $timeout);
+        $st = (int)$r['status'];
+        if (in_array($st, [301, 302, 303, 307, 308], true)) {
+            if ($hop >= TIPP_LOGO_MAX_REDIRECTS) {
+                throw new LogoException('Zu viele Weiterleitungen.', true);
+            }
+            if (!is_string($r['location'] ?? null) || $r['location'] === '') {
+                throw new LogoException('Weiterleitung ohne Ziel.');
+            }
+            $t = logo_target(logo_abs_url($t['url'], $r['location']));
+            continue;
+        }
+        if ($st === 429 || $st === 503) {
+            throw new LogoException('Der Bild-Server bittet um eine Pause (Fehler ' . $st . ') – wird später erneut versucht.', false, true);
+        }
+        if ($st !== 200) {
+            throw new LogoException('Der Bild-Server antwortet mit Fehler ' . $st . '.', $st === 404 || $st === 410);
+        }
+        return (string)$r['body'];
+    }
+}
+
+/** Bytes prüfen: nur PNG/JPEG/GIF/WebP, Dateityp stimmig, sinnvolle Größe, kein eingebettetes HTML/Skript */
+function logo_validate(string $bytes): array
+{
+    $len = strlen($bytes);
+    if ($len < 24) {
+        throw new LogoException('Keine Bilddatei (leer).', true);
+    }
+    if ($len > TIPP_LOGO_MAX_BYTES) {
+        throw new LogoException('Bild ist zu groß (über 2 MB).', true);
+    }
+    $magic = match (true) {
+        str_starts_with($bytes, "\x89PNG\r\n\x1A\n") => 'image/png',
+        str_starts_with($bytes, "\xFF\xD8\xFF") => 'image/jpeg',
+        str_starts_with($bytes, 'GIF87a'), str_starts_with($bytes, 'GIF89a') => 'image/gif',
+        substr($bytes, 0, 4) === 'RIFF' && substr($bytes, 8, 4) === 'WEBP' => 'image/webp',
+        default => null,
+    };
+    if ($magic === null) {
+        throw new LogoException('Kein unterstütztes Bildformat (nur PNG, JPEG, GIF, WebP).', true);
+    }
+    if (class_exists('finfo')) {
+        $fi = (string)(new finfo(FILEINFO_MIME_TYPE))->buffer($bytes);
+        if ($fi !== $magic) {
+            throw new LogoException('Dateityp passt nicht zum Inhalt (' . $fi . ').', true);
+        }
+    }
+    $gi = @getimagesizefromstring($bytes);
+    if (!is_array($gi) || ($gi['mime'] ?? '') !== $magic) {
+        throw new LogoException('Bilddatei ist beschädigt oder ungültig.', true);
+    }
+    $w = (int)$gi[0];
+    $h = (int)$gi[1];
+    if ($w < 1 || $h < 1 || $w > 4096 || $h > 4096 || $w * $h > TIPP_LOGO_MAX_PIXELS) {
+        throw new LogoException('Ungewöhnliche Bildgröße (' . $w . '×' . $h . ').', true);
+    }
+    if (preg_match('/<\s*(\?php|script|html|svg|body|iframe|object|embed|!doctype)\b|<\?=/i', $bytes)) {
+        throw new LogoException('Verdächtiger Inhalt (HTML/Skript) in der Bilddatei – abgelehnt.', true);
+    }
+    return ['mime' => $magic, 'ext' => ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/gif' => 'gif', 'image/webp' => 'webp'][$magic], 'w' => $w, 'h' => $h];
+}
+
+/** Mit GD: neu als PNG (max. 128 px, Seitenverhältnis + Transparenz bleiben). Ohne GD: geprüftes Original. → [bytes, ext] */
+function logo_finalize(string $bytes, array $info): array
+{
+    $types = function_exists('imagetypes') ? imagetypes() : 0;
+    $need = ['image/png' => IMG_PNG, 'image/jpeg' => IMG_JPG, 'image/gif' => IMG_GIF, 'image/webp' => defined('IMG_WEBP') ? IMG_WEBP : 0][$info['mime']];
+    if (!function_exists('imagecreatefromstring') || !function_exists('imagepng') || !($types & IMG_PNG) || !$need || !($types & $need)) {
+        return [$bytes, $info['ext']];
+    }
+    $src = @imagecreatefromstring($bytes);
+    if ($src === false) {
+        throw new LogoException('Bild lässt sich nicht lesen.', true);
+    }
+    if (!imageistruecolor($src)) {
+        imagepalettetotruecolor($src); // Palette (GIF/PNG-8) → Transparenz als Alphakanal
+    }
+    $w = imagesx($src);
+    $h = imagesy($src);
+    $scale = min(1, TIPP_LOGO_SIZE / max($w, $h));
+    $nw = max(1, (int)round($w * $scale));
+    $nh = max(1, (int)round($h * $scale));
+    $dst = imagecreatetruecolor($nw, $nh);
+    imagealphablending($dst, false);
+    imagesavealpha($dst, true);
+    imagefilledrectangle($dst, 0, 0, $nw - 1, $nh - 1, imagecolorallocatealpha($dst, 0, 0, 0, 127));
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+    ob_start();
+    $ok = imagepng($dst, null, 9);
+    $png = (string)ob_get_clean();
+    unset($src, $dst);
+    if (!$ok || $png === '') {
+        throw new LogoException('Bild konnte nicht umgewandelt werden.');
+    }
+    return [$png, 'png'];
+}
+
+/** Datei speichern: cms/uploads/logos/<sha1>.<ext> (atomar, alte Varianten weg) → Dateiname */
+function logo_store(string $team, string $bytes, string $ext): string
+{
+    if (!ensure_dir(TIPP_LOGO_DIR) || !is_writable(TIPP_LOGO_DIR)) {
+        throw new LogoException('Der Ordner cms/uploads/logos ist nicht beschreibbar.');
+    }
+    $base = sha1(lower($team));
+    $name = $base . '.' . $ext;
+    $tmp = TIPP_LOGO_DIR . '/.tmp-' . bin2hex(random_bytes(6));
+    if (@file_put_contents($tmp, $bytes, LOCK_EX) !== strlen($bytes)) {
+        @unlink($tmp);
+        throw new LogoException('Logo konnte nicht gespeichert werden.');
+    }
+    @chmod($tmp, 0644);
+    if (!@rename($tmp, TIPP_LOGO_DIR . '/' . $name)) {
+        @unlink($tmp);
+        throw new LogoException('Logo konnte nicht gespeichert werden.');
+    }
+    foreach (['png', 'jpg', 'gif', 'webp'] as $e) {
+        if ($e !== $ext && is_file(TIPP_LOGO_DIR . '/' . $base . '.' . $e)) {
+            @unlink(TIPP_LOGO_DIR . '/' . $base . '.' . $e);
+        }
+    }
+    return $name;
+}
+
+/** teamIconUrl → geprüfte Bild-Bytes (Netzwerk nur über logo_download) */
+function logo_fetch_source(string $src, int $timeout, ?callable $http = null, ?callable $dns = null): string
+{
+    $http ??= 'logo_http_get';
+    $dns ??= 'logo_dns';
+    if (stripos($src, 'data:') === 0) {
+        return logo_data_uri($src);
+    }
+    $last = null;
+    foreach (logo_candidates($src) as $t) {
+        try {
+            return logo_download($t['url'], $timeout, $http, $dns);
+        } catch (LogoException $e) {
+            $last = $e;
+        }
+    }
+    throw $last ?? new LogoException('Keine Bild-Adresse.', true);
+}
+
+/** Ein Logo holen, prüfen, speichern und den Status in team_logos ablegen. → 'ok' | 'failed' | 'pause' (Server drosselt) */
+function logo_fetch_one(array $row, int $timeout, ?callable $http = null, ?callable $dns = null): string
+{
+    $team = (string)$row['team'];
+    $now = now_full();
+    try {
+        $bytes = logo_fetch_source((string)$row['source_url'], $timeout, $http, $dns);
+        [$out, $ext] = logo_finalize($bytes, logo_validate($bytes));
+        logo_validate($out);
+        $file = logo_store($team, $out, $ext);
+        q("UPDATE team_logos SET file = ?, status = 'ok', fetched = ?, tried = ?, attempts = 0, last_error = NULL WHERE team = ?", [$file, $now, $now, $team]);
+        return 'ok';
+    } catch (LogoException $e) {
+        $att = $e->permanent ? TIPP_LOGO_MAX_ATTEMPTS : (int)$row['attempts'] + ($e->pause ? 0 : 1);
+        // gedrosselt (429): bleibt „ausstehend“ und kommt beim nächsten Durchlauf wieder dran (zählt nicht als Fehlversuch)
+        q("UPDATE team_logos SET status = ?, tried = ?, attempts = ?, last_error = ? WHERE team = ?",
+            [$e->pause ? 'pending' : 'failed', $now, $att, oldb_text($e->getMessage(), 200), $team]);
+        return $e->pause ? 'pause' : 'failed';
+    }
+}
+
+/**
+ * Fällige Logos: neu/geändert (hat die Mannschaft schon ein frisches Logo, frühestens 24 Std. nach dessen Download –
+ * so wird ein Verein, der in zwei Ligen verschiedene Bild-Adressen hat, nicht bei jedem Abruf neu geladen),
+ * oder fehlgeschlagen (< 5 Versuche, letzter vor ≥ 24 Std.) – nur Mannschaften mit Spielen.
+ */
+function logo_due_sql(): array
+{
+    return ["FROM team_logos l WHERE l.source_url IS NOT NULL AND l.source_url <> ''
+             AND ((l.status = 'pending' AND (l.file IS NULL OR l.fetched IS NULL OR l.fetched <= ?))
+                  OR (l.status = 'failed' AND l.attempts < ? AND (l.tried IS NULL OR l.tried <= ?)))
+             AND EXISTS (SELECT 1 FROM matches m WHERE l.team = m.home OR l.team = m.away)",
+        [$cut = date('Y-m-d H:i:s', time() - TIPP_LOGO_RETRY_HOURS * 3600), TIPP_LOGO_MAX_ATTEMPTS, $cut]];
+}
+
+/** Server einer Quelle (Wiki-Dateiseiten zählen zu upload.wikimedia.org) – für Pausen bei Drosselung */
+function logo_host_key(string $src): string
+{
+    if (stripos($src, 'data:') === 0) {
+        return 'data:';
+    }
+    $h = strtolower((string)(parse_url($src, PHP_URL_HOST) ?? ''));
+    return preg_match('/(^|\.)(wikipedia\.org|wikimedia\.org)$/', $h) ? 'upload.wikimedia.org' : $h;
+}
+
+function logo_lock(bool $wait): mixed
+{
+    $fh = @fopen(TIPP_LOGO_LOCK, 'c');
+    if (!$fh) {
+        return $wait ? true : null;
+    }
+    $until = microtime(true) + ($wait ? 15 : 0);
+    while (!flock($fh, LOCK_EX | LOCK_NB)) {
+        if (microtime(true) >= $until) {
+            fclose($fh);
+            return null;
+        }
+        usleep(200000);
+    }
+    return $fh;
+}
+
+/**
+ * Fällige Logos laden: höchstens $max Downloads und $budget Sekunden.
+ * → {loaded, failed, paused (Server drosselt, später erneut), remaining (noch fällig), errors:[{team,message}], busy?}
+ */
+function logo_fetch_due(int $max, float $budget, bool $wait = false): array
+{
+    $out = ['loaded' => 0, 'failed' => 0, 'paused' => 0, 'remaining' => 0, 'errors' => []];
+    $fh = logo_lock($wait);
+    if ($fh === null) {
+        return $out + ['busy' => true];
+    }
+    try {
+        $start = microtime(true);
+        [$from, $params] = logo_due_sql();
+        $rows = q("SELECT l.* $from ORDER BY CASE l.status WHEN 'pending' THEN 0 ELSE 1 END, l.tried, l.team LIMIT " . max(1, $max), $params)->fetchAll();
+        $paused = [];
+        $lastHost = null;
+        foreach ($rows as $r) {
+            $left = $budget - (microtime(true) - $start);
+            if ($left < 1) {
+                break;
+            }
+            $host = logo_host_key((string)$r['source_url']);
+            if (isset($paused[$host])) {
+                continue; // dieser Server drosselt gerade – beim nächsten Durchlauf
+            }
+            if ($host === $lastHost && $host !== 'data:') {
+                usleep(800000); // freundlich zum Bild-Server (Wikimedia drosselt sonst das Erzeugen von Vorschaubildern)
+            }
+            $lastHost = $host;
+            $res = logo_fetch_one($r, (int)max(1, min(TIPP_LOGO_TIMEOUT, floor($left))));
+            if ($res === 'pause') {
+                $out['paused']++;
+                // Server drosselt: bei genug Zeit (Verwaltung, Cronjob) kurz warten und mit dem nächsten weitermachen, sonst Server auslassen
+                if ($out['paused'] <= 3 && $budget - (microtime(true) - $start) > 20) {
+                    sleep(10);
+                } else {
+                    $paused[$host] = true;
+                }
+                continue;
+            }
+            if ($res === 'ok') {
+                $out['loaded']++;
+            } else {
+                $out['failed']++;
+                if (count($out['errors']) < 10) {
+                    $err = q('SELECT last_error FROM team_logos WHERE team = ?', [(string)$r['team']])->fetchColumn();
+                    $out['errors'][] = ['team' => (string)$r['team'], 'message' => (string)$err];
+                }
+            }
+        }
+        [$from, $params] = logo_due_sql();
+        $out['remaining'] = (int)q("SELECT COUNT(*) $from", $params)->fetchColumn();
+    } finally {
+        if (is_resource($fh)) {
+            flock($fh, LOCK_UN);
+            fclose($fh);
+        }
+    }
+    return $out;
+}
+
+/** Nebenbei beim Öffnen des Tippspiels: höchstens 2 Logos, 3 Sekunden, alle 2 Minuten – nur wenn etwas fällig ist */
+function lazy_logos(): void
+{
+    try {
+        if (!settings()['show_logos']) {
+            return;
+        }
+        $last = q("SELECT value FROM settings WHERE key = 'logo_lazy_last'")->fetchColumn();
+        if ($last !== false && time() - (int)$last < TIPP_LOGO_LAZY_EVERY) {
+            return;
+        }
+        q("INSERT INTO settings (key, value) VALUES ('logo_lazy_last', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [(string)time()]);
+        [$from, $params] = logo_due_sql();
+        if ((int)q("SELECT COUNT(*) $from", $params)->fetchColumn() > 0) {
+            logo_fetch_due(TIPP_LOGO_LAZY_MAX, TIPP_LOGO_LAZY_BUDGET, false);
+        }
+    } catch (Throwable $e) {
+        error_log('[hbs-tipp] lazy_logos: ' . $e->getMessage());
+    }
+}
+
+/** Stand für die Verwaltung (nur Mannschaften, die in Spielen vorkommen) */
+function logo_stats(): array
+{
+    $logos = [];
+    foreach (q('SELECT team, status, file, last_error, source_url FROM team_logos')->fetchAll() as $r) {
+        $logos[lower((string)$r['team'])] = $r;
+    }
+    $st = ['ok' => 0, 'failed' => 0, 'pending' => 0, 'none' => 0, 'teams' => 0, 'failed_list' => []];
+    $seen = [];
+    foreach (q('SELECT home AS t FROM matches UNION SELECT away FROM matches')->fetchAll() as $r) {
+        $k = lower((string)$r['t']);
+        if (isset($seen[$k])) {
+            continue;
+        }
+        $seen[$k] = true;
+        $st['teams']++;
+        $l = $logos[$k] ?? null;
+        if ($l === null || ($l['source_url'] ?? null) === null) {
+            $st['none']++;
+        } elseif ($l['status'] === 'ok') {
+            $st['ok']++;
+        } elseif ($l['status'] === 'failed') {
+            $st['failed']++;
+            if (count($st['failed_list']) < 50) {
+                $st['failed_list'][] = ['team' => (string)$l['team'], 'message' => (string)($l['last_error'] ?? '')];
+            }
+        } else {
+            $st['pending']++;
+        }
+    }
+    $st['show'] = (bool)settings()['show_logos'];
+    $st['gd'] = function_exists('imagecreatefromstring') && function_exists('imagepng');
+    return $st;
+}
+
 /* ---------- Cronjob-Token */
 
 function cron_token(): string
@@ -1940,6 +2700,7 @@ switch ($action) {
         require_method('GET');
         $payload = status_with_admin(current_player()); // schließt die Sitzung – nicht während des Abrufs sperren
         lazy_sync();
+        lazy_logos();
         respond($payload);
 
     case 'invite_check':
@@ -2059,6 +2820,7 @@ switch ($action) {
         $cid = opt_comp_id();
         session_close_any();
         lazy_sync();
+        lazy_logos();
         $comps = $cid !== null
             ? q('SELECT * FROM competitions WHERE id = ?', [$cid])->fetchAll()
             : q('SELECT * FROM competitions WHERE active = 1 ORDER BY sort, id')->fetchAll();
@@ -2197,6 +2959,7 @@ switch ($action) {
         $cid = opt_comp_id();
         session_close_any();
         lazy_sync();
+        lazy_logos();
         respond(leaderboard($cid, $rd['owner'] ? null : $rd['player']['id']) + ($rd['owner'] ? ['owner' => true] : []));
 
     case 'stats':
@@ -2322,7 +3085,7 @@ switch ($action) {
             ];
         }
         $invites = array_map('invite_out', q('SELECT * FROM invites ORDER BY created DESC, code')->fetchAll());
-        respond(['competitions' => $comps, 'matches' => $matches, 'players' => $players, 'invites' => $invites, 'settings' => settings(), 'serverTime' => now_full()]);
+        respond(['competitions' => $comps, 'matches' => $matches, 'players' => $players, 'invites' => $invites, 'settings' => settings(), 'serverTime' => now_full(), 'logos' => logo_stats()]);
 
     case 'admin_stats':
         // Wirt-Ansicht: Stammtisch-Statistik (alle aktiven Spieler)
@@ -2707,7 +3470,40 @@ switch ($action) {
             $c = competition_or_404($cid);
             fail($err, 502, ['last_sync' => $c['last_sync'], 'last_sync_status' => $c['last_sync_status']]);
         }
+        if (settings()['show_logos']) {
+            // neue Mannschaften: Logos gleich mitladen (höchstens 25 bzw. 20 Sekunden, der Rest beim nächsten Durchlauf)
+            $r['logos'] = logo_fetch_due(TIPP_LOGO_PER_RUN, 20.0, false);
+        }
         respond($r);
+
+    case 'admin_logos_save':
+        // Vereinslogos anzeigen ja/nein
+        require_method('POST');
+        require_admin();
+        $on = v_bool(inp('show_logos'), 'Vereinslogos anzeigen');
+        q("INSERT INTO settings (key, value) VALUES ('show_logos', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [(string)$on]);
+        respond(['settings' => settings()]);
+
+    case 'admin_logos_refresh':
+        // mode 'failed' (Standard): fehlgeschlagene erneut versuchen; 'all': alle neu laden; 'continue': nur weitermachen
+        require_method('POST');
+        require_admin();
+        $mode = inp('mode') ?? 'failed';
+        if (!in_array($mode, ['failed', 'all', 'continue'], true)) {
+            fail('Modus: „failed“, „all“ oder „continue“.', 400);
+        }
+        session_close_any();
+        set_time_limit(120);
+        if ($mode === 'failed') {
+            q("UPDATE team_logos SET status = 'pending', attempts = 0, fetched = NULL WHERE status = 'failed'");
+        } elseif ($mode === 'all') {
+            q("UPDATE team_logos SET status = 'pending', attempts = 0, fetched = NULL WHERE source_url IS NOT NULL"); // Dateien bleiben bis zum Ersatz
+        }
+        $r = logo_fetch_due(TIPP_LOGO_PER_RUN, 45.0, true);
+        if (!empty($r['busy'])) {
+            fail('Gerade werden schon Logos geladen. Bitte gleich noch einmal versuchen.', 409);
+        }
+        respond($r + ['logos' => logo_stats()]);
 
     case 'admin_cron_info':
         require_method('GET');
@@ -2752,9 +3548,10 @@ switch ($action) {
         }
         $summary = $out ? implode(' · ', array_map(fn($o) => $o['name'] . ': ' . $o['status'], $out)) : 'Kein aktiver Wettbewerb mit automatischem Abruf.';
         $okAll = !array_filter($out, fn($o) => !$o['ok']);
+        $logos = settings()['show_logos'] ? logo_fetch_due(TIPP_LOGO_PER_RUN, 30.0, false) : null; // Docker-Cron wartet 60 s
         q("INSERT INTO settings (key, value) VALUES ('cron_last', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             [json_encode(['time' => now_full(), 'ok' => $okAll, 'status' => $summary], JSON_UNESCAPED_UNICODE)]);
-        respond(['time' => now_full(), 'competitions' => $out, 'summary' => $summary]);
+        respond(['time' => now_full(), 'competitions' => $out, 'summary' => $summary, 'logos' => $logos]);
 
     default:
         fail('Unbekannte Aktion.', 400);

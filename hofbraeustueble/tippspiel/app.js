@@ -65,7 +65,36 @@
     var w = (words[0] || String(name)).replace(/[^A-Za-zÄÖÜäöüß0-9]/g, '');
     return (w.slice(0, 3) || '?').toUpperCase();
   }
-  function crest(name) { return '<span class="crest" style="--h:' + hue(name) + '" aria-hidden="true">' + esc(teamAbbr(name)) + '</span>'; }
+  /* Vereinslogos: nur vom eigenen Server (cms/uploads/logos/…), nie von fremden Seiten; ohne Logo/bei Ladefehler → Kürzel */
+  var LOGO_RE = /^cms\/uploads\/logos\/[a-f0-9]{40}\.(png|jpg|gif|webp)\?v=\d+$/;
+  function logoSrc(path) {
+    return S.settings && S.settings.show_logos !== false && typeof path === 'string' && LOGO_RE.test(path) ? '../' + path : null;
+  }
+  function crest(name, logo) {
+    var src = logoSrc(logo);
+    if (src) {
+      return '<span class="crest crest--logo" style="--h:' + hue(name) + '" data-abbr="' + esc(teamAbbr(name)) + '" aria-hidden="true">' +
+        '<img src="' + esc(src) + '" alt="" width="32" height="32" loading="lazy" decoding="async"></span>';
+    }
+    return '<span class="crest" style="--h:' + hue(name) + '" aria-hidden="true">' + esc(teamAbbr(name)) + '</span>';
+  }
+  /** kleines Logo für Textzeilen („Als Nächstes“, Tipp-Listen) – ohne Logo nichts */
+  function miniLogo(logo) {
+    var src = logoSrc(logo);
+    return src ? '<img class="mini-logo" src="' + esc(src) + '" alt="" width="18" height="18" loading="lazy" decoding="async">' : '';
+  }
+  // Ladefehler (Datei weg, Server-Problem): Logo durch das Kürzel ersetzen – gleiche Größe, kein Springen
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'IMG') return;
+    var box = t.parentNode;
+    if (box && box.classList && box.classList.contains('crest--logo')) {
+      box.classList.remove('crest--logo');
+      box.textContent = box.getAttribute('data-abbr') || '';
+    } else if (t.classList.contains('mini-logo')) {
+      t.remove();
+    }
+  }, true);
   function avatar(name, cls, extraStyle) {
     return '<span class="' + cls + '" style="background:hsl(' + hue(name) + ' 30% 30%)' + (extraStyle || '') + '" aria-hidden="true">' + esc(initials(name)) + '</span>';
   }
@@ -639,7 +668,7 @@
     box.innerHTML = '<section class="card hello" aria-label="Dein Überblick">' +
       '<div><p class="hello__greet">' + greet + ', ' + esc(S.player.nickname) + '!</p>' +
       '<p class="hello__line">' + esc(line) + '</p>' +
-      (next ? '<p class="hello__next">Als Nächstes: <b>' + esc(next.home) + ' – ' + esc(next.away) + '</b>, ' + esc(kickShort(next.kickoff)) + '</p>' : '') +
+      (next ? '<p class="hello__next">Als Nächstes: <b>' + miniLogo(next.home_logo) + esc(next.home) + ' – ' + miniLogo(next.away_logo) + esc(next.away) + '</b>, ' + esc(kickShort(next.kickoff)) + '</p>' : '') +
       '</div>' + pint(tipped.length, open.length) +
       '<div class="hello__stats">' +
       '<a class="mini-stat" href="#/rangliste"><div class="mini-stat__v">' + (me ? me.rank + '<small>.</small>' : '–') + '</div><div class="mini-stat__l">Platz</div></a>' +
@@ -772,7 +801,7 @@
   function teamRowOpen(m, side) {
     var name = side === 'home' ? m.home : m.away;
     var v = draftVal(m, side);
-    return '<div class="team-row">' + crest(name) + '<span class="team-name">' + esc(name) + '</span>' +
+    return '<div class="team-row">' + crest(name, side === 'home' ? m.home_logo : m.away_logo) + '<span class="team-name">' + esc(name) + '</span>' +
       '<div class="stepper">' +
       '<button type="button" class="step step--minus" data-step="-1" data-side="' + side + '" aria-label="Ein Tor weniger für ' + esc(name) + '"' + (v === 0 ? ' disabled' : '') + '>' + MINUS + '</button>' +
       '<input class="goal" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" enterkeyhint="done" data-side="' + side + '" value="' + (v === '' ? '' : v) + '" placeholder="–" aria-label="Tore ' + esc(name) + '">' +
@@ -805,8 +834,8 @@
     var label = m.home + ' gegen ' + m.away + (res ? ', Endstand ' + m.home_goals + ':' + m.away_goals : ph === 'live' ? ', läuft gerade' : ', Ergebnis folgt');
     var html = '<article class="card match match--' + ph + '" data-mid="' + m.id + '" aria-label="' + esc(label) + '">' +
       '<div class="match__meta"><span class="match__when">' + (ph === 'live' ? 'Anstoß ' : '') + esc(dayWord(m.kickoff)) + ' <b>' + esc(kParts(m.kickoff).time) + '</b></span>' + badge + '</div>';
-    html += teamRowLocked(m.home, res ? m.home_goals : null, res ? (hw ? 'is-winner' : aw ? 'is-loser' : '') : '');
-    html += teamRowLocked(m.away, res ? m.away_goals : null, res ? (aw ? 'is-winner' : hw ? 'is-loser' : '') : '');
+    html += teamRowLocked(m.home, res ? m.home_goals : null, res ? (hw ? 'is-winner' : aw ? 'is-loser' : '') : '', m.home_logo);
+    html += teamRowLocked(m.away, res ? m.away_goals : null, res ? (aw ? 'is-winner' : hw ? 'is-loser' : '') : '', m.away_logo);
     html += '<div class="tipline"><span class="tipline__label">Dein Tipp</span>';
     if (m.my_tip) {
       html += '<span class="tipline__tip">' + m.my_tip.home + ':' + m.my_tip.away + '</span>';
@@ -820,8 +849,8 @@
   }
   var stamped = {};
   function stampNew(id) { if (stamped[id]) return ''; stamped[id] = 1; return ' is-new'; }
-  function teamRowLocked(name, goals, cls) {
-    return '<div class="team-row">' + crest(name) + '<span class="team-name ' + cls + '">' + esc(name) + '</span>' +
+  function teamRowLocked(name, goals, cls, logo) {
+    return '<div class="team-row">' + crest(name, logo) + '<span class="team-name ' + cls + '">' + esc(name) + '</span>' +
       '<span class="score' + (goals === null ? ' score--pending' : '') + '">' + (goals === null ? '–' : goals) + '</span></div>';
   }
   function quoteHtml(m) {
@@ -1173,7 +1202,7 @@
     box.innerHTML = '<section class="card hello hello--owner" aria-label="Überblick für den Wirt">' +
       '<div><p class="hello__greet">Servus, Wirt!</p>' +
       '<p class="hello__line">' + (S.matches.length ? 'Hier siehst du alles, was am Stammtisch getippt wird – auch vor dem Anstoß.' : 'Noch keine Spiele eingetragen – das geht in der Verwaltung.') + '</p>' +
-      (next ? '<p class="hello__next">Als Nächstes: <b>' + esc(next.home) + ' – ' + esc(next.away) + '</b>, ' + esc(kickShort(next.kickoff)) + ' · ' + (next.tip_count || 0) + ' ' + plural(next.tip_count || 0, 'Tipp', 'Tipps') + '</p>' : '') +
+      (next ? '<p class="hello__next">Als Nächstes: <b>' + miniLogo(next.home_logo) + esc(next.home) + ' – ' + miniLogo(next.away_logo) + esc(next.away) + '</b>, ' + esc(kickShort(next.kickoff)) + ' · ' + (next.tip_count || 0) + ' ' + plural(next.tip_count || 0, 'Tipp', 'Tipps') + '</p>' : '') +
       '</div><div class="hello__stats">' +
       '<a class="mini-stat" href="#/rangliste"><div class="mini-stat__v">' + (players === null ? '–' : players) + '</div><div class="mini-stat__l">Spieler</div></a>' +
       '<div class="mini-stat"><div class="mini-stat__v">' + openTips + '</div><div class="mini-stat__l">' + plural(openTips, 'Tipp offen', 'Tipps offen') + '</div></div>' +
@@ -1240,8 +1269,8 @@
     var n = m.tip_count || 0;
     return '<article class="card match match--owner match--' + ph + '" data-tips-mid="' + m.id + '" aria-label="' + esc(label) + '">' +
       '<div class="match__meta"><span class="match__when">' + (ph === 'open' ? icon('clock', 'ico--sm') : ph === 'live' ? 'Anstoß ' : '') + esc(dayWord(m.kickoff)) + ' <b>' + esc(kParts(m.kickoff).time) + '</b></span>' + badge + '</div>' +
-      teamRowLocked(m.home, res ? m.home_goals : null, res ? (hw ? 'is-winner' : aw ? 'is-loser' : '') : '') +
-      teamRowLocked(m.away, res ? m.away_goals : null, res ? (aw ? 'is-winner' : hw ? 'is-loser' : '') : '') +
+      teamRowLocked(m.home, res ? m.home_goals : null, res ? (hw ? 'is-winner' : aw ? 'is-loser' : '') : '', m.home_logo) +
+      teamRowLocked(m.away, res ? m.away_goals : null, res ? (aw ? 'is-winner' : hw ? 'is-loser' : '') : '', m.away_logo) +
       quoteHtml(m) +
       '<div class="match__foot match__foot--owner"><button type="button" class="btn btn--small btn--ghost btn--block" data-tips="' + m.id + '">' + icon('user') +
       (n ? 'Alle ' + n + ' ' + plural(n, 'Tipp', 'Tipps') + ' ansehen' : 'Wer hat getippt?') + '</button></div></article>';
@@ -1263,7 +1292,7 @@
     var m = findMatch(mid);
     if (!m) return;
     var head = '<div class="sheet__grip" aria-hidden="true"></div><div class="sheet__head"><span class="sheet__avatar sheet__avatar--ball" aria-hidden="true">' + icon('ball') + '</span>' +
-      '<div><h2 class="sheet__title" id="sheet-title">' + esc(m.home) + ' – ' + esc(m.away) + '</h2><p class="sheet__sub">' + esc(kickLong(m.kickoff)) + (m.round ? ' · ' + esc(m.round) : '') + '</p></div>' +
+      '<div><h2 class="sheet__title" id="sheet-title">' + miniLogo(m.home_logo) + esc(m.home) + ' – ' + miniLogo(m.away_logo) + esc(m.away) + '</h2><p class="sheet__sub">' + esc(kickLong(m.kickoff)) + (m.round ? ' · ' + esc(m.round) : '') + '</p></div>' +
       '<button type="button" class="sheet__close" data-close aria-label="Schließen">' + icon('x') + '</button></div>';
     var sheet = openSheet(head + '<div class="sheet__body" id="sheet-body">' + skeleton(1) + '</div>', opener);
     API.call('admin_match_tips', { match_id: mid }).then(function (r) {
@@ -1576,7 +1605,7 @@
         html += '<p class="sheet-section-title">' + (owner ? 'Alle Tipps – auch vor dem Anstoß' : 'Tipps auf angepfiffene Spiele') + '</p>' + tips.map(function (t) {
           var res = hasRes(t);
           return '<div class="ptip"><span class="ptip__when">' + esc(kickShort(t.kickoff)) + (t.round ? ' · ' + esc(t.round) : '') + '</span>' +
-            '<span class="ptip__teams">' + esc(t.home) + ' <span class="ptip__res">' + (res ? t.home_goals + ':' + t.away_goals : '–:–') + '</span> ' + esc(t.away) + '</span>' +
+            '<span class="ptip__teams"><span class="ptip__team">' + miniLogo(t.home_logo) + esc(t.home) + '</span> <span class="ptip__res">' + (res ? t.home_goals + ':' + t.away_goals : '–:–') + '</span> <span class="ptip__team">' + miniLogo(t.away_logo) + esc(t.away) + '</span></span>' +
             '<span class="ptip__right"><span class="ptip__tip">Tipp <b>' + t.tip.home + ':' + t.tip.away + '</b></span>' +
             (res && t.kind ? kindChip(t.kind, t.points) : '<span class="chip chip--open">' + (t.locked === false ? 'noch offen' : 'läuft') + '</span>') + '</span></div>';
         }).join('');
