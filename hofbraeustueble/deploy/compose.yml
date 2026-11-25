@@ -10,6 +10,13 @@
 # Website + CMS + Tippspiel in einem PHP/Apache-Container. Alle Daten
 # (Inhalte, Passwort, Bilder, Backups, Tippspiel-Datenbank) liegen im Volume
 # „hofbraeustueble-state“ und überleben jedes Update.
+#
+# EIGENER PROJEKTNAME — NICHT ENTFERNEN: Ohne ihn benennt Compose das Projekt
+# nach dem Ordner („deploy“) und hält es für denselben Stack wie den
+# RollsportManager-Prod in deploy/docker-compose.yml (rsm2-prod-*). Am
+# 25.11.2026 wollte es deshalb dessen Netzwerk ersetzen; ein „--remove-orphans“
+# hätte die Prod-Container gelöscht.
+name: hofbraeustueble
 services:
   hofbraeustueble:
     image: hofbraeustueble-preview:latest
