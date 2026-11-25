@@ -824,6 +824,124 @@ function tendency(array $tips): ?array
     return ['home' => ratio($h * 100, $n, 0), 'draw' => ratio($d * 100, $n, 0), 'away' => ratio($a * 100, $n, 0), 'top' => $top];
 }
 
+/** Gewertete Spiele nach Runde (Wettbewerb + round) gruppieren – chronologisch, Beschriftung wie in stats() */
+function round_groups(array $scored, array $comps): array
+{
+    $compNames = [];
+    foreach ($comps as $c) {
+        $compNames[(int)$c['id']] = (string)$c['name'];
+    }
+    $groups = [];
+    foreach ($scored as $m) {
+        $key = (int)$m['competition_id'] . '|' . (string)$m['round'];
+        $groups[$key] ??= ['cid' => (int)$m['competition_id'], 'round' => (string)$m['round'], 'matches' => []];
+        $groups[$key]['matches'][] = $m;
+    }
+    $groups = array_values($groups);
+    $multiComp = count(array_unique(array_map(fn($g) => $g['cid'], $groups))) > 1;
+    foreach ($groups as &$g) {
+        $g['label'] = ($g['round'] !== '' ? $g['round'] : 'Ohne Runde');
+        if ($multiComp) {
+            $g['label'] = ($compNames[$g['cid']] ?? '') . ' · ' . $g['label'];
+        }
+    }
+    unset($g);
+    return $groups;
+}
+
+/** Häufigstes Ergebnis einer Tipp-Liste (Gleichstand: alphabetisch kleinstes) → ['tip' => '2:1', 'count' => n] | null */
+function top_tip(array $tips): ?array
+{
+    $res = [];
+    foreach ($tips as $t) {
+        $k = (int)$t['home_goals'] . ':' . (int)$t['away_goals'];
+        $res[$k] = ($res[$k] ?? 0) + 1;
+    }
+    $top = null;
+    foreach ($res as $k => $c) {
+        $k = (string)$k;
+        if ($top === null || $c > $res[$top] || ($c === $res[$top] && strcmp($k, $top) < 0)) {
+            $top = $k;
+        }
+    }
+    return $top === null ? null : ['tip' => $top, 'count' => $res[$top]];
+}
+
+/** Stammtisch-Statistik für die Wirt-Ansicht (alle aktiven Spieler zusammen) */
+function owner_stats(?int $compId): array
+{
+    $s = settings();
+    $sc = load_scope($compId);
+    $players = $sc['players'];
+    $scored = scored_matches($sc['matches']);
+    $tally = tally($players, $scored, $sc['tips'], $sc['comps'], $sc['bonus'], $s);
+    $sum = ['points' => 0, 'match_points' => 0, 'bonus' => 0, 'exact' => 0, 'diff' => 0, 'tendency' => 0, 'miss' => 0, 'tips' => 0];
+    foreach ($tally as $x) {
+        foreach ($sum as $k => $_) {
+            $sum[$k] += $x[$k];
+        }
+    }
+    $tippers = [];
+    foreach ($sc['tips'] as $t) {
+        $tippers[(int)$t['player_id']] = true;
+    }
+    $byRound = [];
+    foreach (round_groups($scored, $sc['comps']) as $g) {
+        $ids = [];
+        foreach ($g['matches'] as $m) {
+            $ids[(int)$m['id']] = true;
+        }
+        $gTips = array_values(array_filter($sc['tips'], fn($t) => isset($ids[(int)$t['match_id']])));
+        $gt = tally($players, $g['matches'], $gTips, [], [], $s, false);
+        $pts = 0;
+        $n = 0;
+        $max = 0;
+        foreach ($gt as $x) {
+            if ($x['tips'] > 0) {
+                $pts += $x['match_points'];
+                $n++;
+                $max = max($max, $x['match_points']);
+            }
+        }
+        $best = [];
+        if ($max > 0) {
+            foreach ($gt as $pid => $x) {
+                if ($x['tips'] > 0 && $x['match_points'] === $max) {
+                    $best[] = (string)$players[$pid];
+                }
+            }
+            usort($best, fn($a, $b) => strcmp(lower($a), lower($b)));
+        }
+        $byRound[] = [
+            'round' => $g['label'],
+            'matches' => count($g['matches']),
+            'tips' => count($gTips),
+            'avg_points' => ratio($pts, $n),
+            'best' => $max > 0 ? ['nicknames' => $best, 'points' => $max] : null,
+        ];
+    }
+    $hits = $sum['exact'] + $sum['diff'] + $sum['tendency'];
+    return [
+        'players' => count($players),
+        'tippers' => count($tippers),
+        'matches' => count($sc['matches']),
+        'scored_matches' => count($scored),
+        'tips' => count($sc['tips']),
+        'scored_tips' => $sum['tips'],
+        'exact' => $sum['exact'],
+        'diff' => $sum['diff'],
+        'tendency' => $sum['tendency'],
+        'miss' => $sum['miss'],
+        'hit_rate' => ratio($hits * 100, $sum['tips'], 1),
+        'points' => $sum['points'],
+        'bonus' => $sum['bonus'],
+        'avg_points_tip' => ratio($sum['match_points'], $sum['tips']),
+        'avg_points_player' => ratio($sum['points'], count($players)),
+        'favorite_tip' => top_tip($sc['tips']),
+        'by_round' => $byRound,
+    ];
+}
+
 function first_kickoffs(): array
 {
     $out = [];
@@ -1098,13 +1216,25 @@ function status_payload(?array $p): array
     ];
 }
 
+/**
+ * status/login/register: wie status_payload(), zusätzlich admin = Verwaltung (CMS) angemeldet → Wirt-Ansicht möglich.
+ * Die CMS-Sitzung wird dabei nur angesehen, nicht verlängert. Schließt die Spieler-Session.
+ */
+function status_with_admin(?array $p): array
+{
+    $payload = status_payload($p);
+    session_close_any();
+    $payload['admin'] = cms_admin_state(false)['auth'];
+    return $payload;
+}
+
 /* ========================================================= Admin (CMS-Session) */
 
 /**
  * Liest die CMS-Session genau wie cms/api.php (Name HBSCMS, Ordner cms/data/sessions, Cookie-Pfad /cms/)
  * und schließt sie sofort wieder. Gibt ['auth' => bool, 'csrf' => string] zurück.
  */
-function cms_admin_state(): array
+function cms_admin_state(bool $touch = true): array
 {
     static $state = null;
     if ($state !== null) {
@@ -1145,11 +1275,11 @@ function cms_admin_state(): array
     session_start();
     $auth = !empty($_SESSION['auth']) && $_SESSION['auth'] === true && (time() - (int)($_SESSION['last'] ?? 0)) <= $idle;
     $csrf = (string)($_SESSION['csrf'] ?? '');
-    if ($auth) {
-        $_SESSION['last'] = time(); // Aktivität im Tippspiel-Reiter hält die Verwaltung angemeldet
+    if ($auth && $touch) {
+        $_SESSION['last'] = time(); // Aktivität im Tippspiel-Reiter / in der Wirt-Ansicht hält die Verwaltung angemeldet
         session_write_close();
     } else {
-        session_abort(); // nichts verändern – cms/api.php räumt abgelaufene Sitzungen selbst auf
+        session_abort(); // nichts verändern – cms/api.php räumt abgelaufene Sitzungen selbst auf (status: nur nachsehen)
     }
     $_SESSION = [];
     return $state = ['auth' => $auth, 'csrf' => $auth ? $csrf : ''];
@@ -1164,6 +1294,30 @@ function require_admin(): void
     if (method() === 'POST') {
         check_csrf($st['csrf']);
     }
+}
+
+/**
+ * Lese-Aktionen (matches, leaderboard, player_tips): Eine Spieler-Session hat Vorrang (normale App).
+ * Ohne Spieler – oder ausdrücklich mit view=owner – reicht eine gültige CMS-Session: „Wirt-Ansicht“, NUR lesen.
+ * Schreibende Aktionen (tip, bonus_tip, …) verlangen weiterhin require_player().
+ * → ['player' => array|null, 'owner' => bool], sonst 401.
+ */
+function require_reader(): array
+{
+    $forceOwner = (string)($_GET['view'] ?? '') === 'owner';
+    if (!$forceOwner) {
+        $p = current_player();
+        if ($p !== null) {
+            return ['player' => $p, 'owner' => false];
+        }
+    }
+    if (cms_admin_state()['auth']) {
+        return ['player' => null, 'owner' => true];
+    }
+    if ($forceOwner) {
+        fail('Die Wirt-Ansicht braucht eine Anmeldung in der Verwaltung.', 401, ['loggedIn' => false, 'owner' => true]);
+    }
+    fail('Bitte melde dich an.', 401, ['loggedIn' => false]);
 }
 
 /* ============================================================== Sonstiges */
@@ -1784,10 +1938,9 @@ switch ($action) {
 
     case 'status':
         require_method('GET');
-        $p = current_player();
-        session_close_any(); // Sitzung nicht während des Abrufs sperren
+        $payload = status_with_admin(current_player()); // schließt die Sitzung – nicht während des Abrufs sperren
         lazy_sync();
-        respond(status_payload($p));
+        respond($payload);
 
     case 'invite_check':
         require_method('GET');
@@ -1844,7 +1997,7 @@ switch ($action) {
             fail('Der Einladungscode ist ungültig, abgelaufen oder schon aufgebraucht.', 400);
         }
         login_session($player);
-        respond(status_payload(['id' => $player['id'], 'nickname' => $nick, 'email' => $email]));
+        respond(status_with_admin(['id' => $player['id'], 'nickname' => $nick, 'email' => $email]));
 
     case 'login':
         require_method('POST');
@@ -1888,7 +2041,7 @@ switch ($action) {
         }
         q('UPDATE players SET last_login = ? WHERE id = ?', [now_full(), (int)$p['id']]);
         login_session(['id' => (int)$p['id'], 'password_hash' => $hash]);
-        respond(status_payload(['id' => (int)$p['id'], 'nickname' => (string)$p['nickname'], 'email' => $p['email'] !== null ? (string)$p['email'] : null]));
+        respond(status_with_admin(['id' => (int)$p['id'], 'nickname' => (string)$p['nickname'], 'email' => $p['email'] !== null ? (string)$p['email'] : null]));
 
     case 'logout':
         require_method('POST');
@@ -1900,7 +2053,9 @@ switch ($action) {
 
     case 'matches':
         require_method('GET');
-        $me = require_player();
+        $rd = require_reader();
+        $me = $rd['player'];
+        $owner = $rd['owner'];
         $cid = opt_comp_id();
         session_close_any();
         lazy_sync();
@@ -1913,12 +2068,24 @@ switch ($action) {
         $outComps = $outMatches = [];
         if ($compIds) {
             $ph = placeholders($compIds);
-            $myBonus = [];
-            foreach (q("SELECT competition_id, answer FROM bonus_tips WHERE player_id = ? AND competition_id IN ($ph)", array_merge([$me['id']], $compIds))->fetchAll() as $b) {
-                $myBonus[(int)$b['competition_id']] = (string)$b['answer'];
-            }
-            foreach ($comps as $c) {
-                $outComps[] = comp_out($c, $firstKick) + ['my_bonus' => $myBonus[(int)$c['id']] ?? null];
+            if ($owner) {
+                // Wirt-Ansicht: keine eigenen Tipps, dafür Anzahl der Bonus-Antworten (aktive Spieler)
+                $bonusCount = [];
+                foreach (q("SELECT b.competition_id, COUNT(*) AS n FROM bonus_tips b JOIN players p ON p.id = b.player_id AND p.active = 1
+                            WHERE b.competition_id IN ($ph) GROUP BY b.competition_id", $compIds)->fetchAll() as $b) {
+                    $bonusCount[(int)$b['competition_id']] = (int)$b['n'];
+                }
+                foreach ($comps as $c) {
+                    $outComps[] = comp_out($c, $firstKick) + ['bonus_count' => $bonusCount[(int)$c['id']] ?? 0];
+                }
+            } else {
+                $myBonus = [];
+                foreach (q("SELECT competition_id, answer FROM bonus_tips WHERE player_id = ? AND competition_id IN ($ph)", array_merge([$me['id']], $compIds))->fetchAll() as $b) {
+                    $myBonus[(int)$b['competition_id']] = (string)$b['answer'];
+                }
+                foreach ($comps as $c) {
+                    $outComps[] = comp_out($c, $firstKick) + ['my_bonus' => $myBonus[(int)$c['id']] ?? null];
+                }
             }
             $tipsBy = [];
             foreach (q("SELECT t.player_id, t.match_id, t.home_goals, t.away_goals FROM tips t
@@ -1929,6 +2096,13 @@ switch ($action) {
             foreach (q("SELECT * FROM matches WHERE competition_id IN ($ph) ORDER BY kickoff, id", $compIds)->fetchAll() as $m) {
                 $o = match_base($m);
                 $list = $tipsBy[$o['id']] ?? [];
+                if ($owner) {
+                    // Der Wirt darf alles sehen – Quote auch schon vor dem Anstoß
+                    $o['tip_count'] = count($list);
+                    $o['tendency'] = tendency($list);
+                    $outMatches[] = $o;
+                    continue;
+                }
                 $mine = null;
                 foreach ($list as $t) {
                     if ((int)$t['player_id'] === $me['id']) {
@@ -1944,7 +2118,7 @@ switch ($action) {
                 $outMatches[] = $o;
             }
         }
-        respond(['competitions' => $outComps, 'matches' => $outMatches, 'serverTime' => now_full()]);
+        respond(['competitions' => $outComps, 'matches' => $outMatches, 'serverTime' => now_full()] + ($owner ? ['owner' => true] : []));
 
     case 'tip':
         require_method('POST');
@@ -2019,11 +2193,11 @@ switch ($action) {
 
     case 'leaderboard':
         require_method('GET');
-        $me = require_player();
+        $rd = require_reader();
         $cid = opt_comp_id();
         session_close_any();
         lazy_sync();
-        respond(leaderboard($cid, $me['id']));
+        respond(leaderboard($cid, $rd['owner'] ? null : $rd['player']['id']) + ($rd['owner'] ? ['owner' => true] : []));
 
     case 'stats':
         require_method('GET');
@@ -2032,7 +2206,9 @@ switch ($action) {
 
     case 'player_tips':
         require_method('GET');
-        $me = require_player();
+        $rd = require_reader();
+        $owner = $rd['owner'];
+        $me = $rd['player'];
         $nick = inp('nickname');
         $p = is_string($nick) && trim($nick) !== '' && str_len($nick) <= 40 ? find_player_by_nick(trim((string)preg_replace('/\s+/u', ' ', $nick))) : null;
         if (!$p || !(int)$p['active']) {
@@ -2041,10 +2217,11 @@ switch ($action) {
         $s = settings();
         $now = now_min();
         $tips = [];
+        // Wirt-Ansicht: alle Tipps, auch für noch offene Spiele (locked:false); Spieler: nur gesperrte Spiele
         foreach (q('SELECT m.*, t.home_goals AS t_home, t.away_goals AS t_away FROM tips t JOIN matches m ON m.id = t.match_id
-                    WHERE t.player_id = ? AND m.kickoff <= ? ORDER BY m.kickoff DESC, m.id DESC', [(int)$p['id'], $now])->fetchAll() as $r) {
+                    WHERE t.player_id = ?' . ($owner ? '' : ' AND m.kickoff <= ?') . ' ORDER BY m.kickoff DESC, m.id DESC', $owner ? [(int)$p['id']] : [(int)$p['id'], $now])->fetchAll() as $r) {
             $o = match_base($r);
-            if (!$o['locked']) {
+            if (!$o['locked'] && !$owner) {
                 continue;
             }
             $sc = score_tip((int)$r['t_home'], (int)$r['t_away'], $o['home_goals'], $o['away_goals'], $s);
@@ -2057,7 +2234,8 @@ switch ($action) {
         $firstKick = first_kickoffs();
         $bonus = [];
         foreach (q('SELECT b.answer, c.* FROM bonus_tips b JOIN competitions c ON c.id = b.competition_id WHERE b.player_id = ? ORDER BY c.sort, c.id', [(int)$p['id']])->fetchAll() as $r) {
-            if (!bonus_locked((int)$r['id'], $firstKick)) {
+            $bLocked = bonus_locked((int)$r['id'], $firstKick);
+            if (!$bLocked && !$owner) {
                 continue;
             }
             $hasAnswer = bonus_norm($r['bonus_answer']) !== '';
@@ -2067,9 +2245,9 @@ switch ($action) {
                 'question' => $r['bonus_question'] !== null ? (string)$r['bonus_question'] : null,
                 'answer' => (string)$r['answer'],
                 'correct' => $hasAnswer ? bonus_norm($r['answer']) === bonus_norm($r['bonus_answer']) : null,
-            ];
+            ] + ($owner ? ['locked' => $bLocked] : []);
         }
-        respond(['player' => ['nickname' => (string)$p['nickname'], 'is_me' => (int)$p['id'] === $me['id']], 'tips' => $tips, 'bonus' => $bonus]);
+        respond(['player' => ['nickname' => (string)$p['nickname'], 'is_me' => !$owner && (int)$p['id'] === $me['id']], 'tips' => $tips, 'bonus' => $bonus] + ($owner ? ['owner' => true] : []));
 
     case 'change_password':
         require_method('POST');
@@ -2145,6 +2323,50 @@ switch ($action) {
         }
         $invites = array_map('invite_out', q('SELECT * FROM invites ORDER BY created DESC, code')->fetchAll());
         respond(['competitions' => $comps, 'matches' => $matches, 'players' => $players, 'invites' => $invites, 'settings' => settings(), 'serverTime' => now_full()]);
+
+    case 'admin_stats':
+        // Wirt-Ansicht: Stammtisch-Statistik (alle aktiven Spieler)
+        require_method('GET');
+        require_admin();
+        respond(owner_stats(opt_comp_id()));
+
+    case 'admin_match_tips':
+        // Wirt-Ansicht: alle Tipps zu einem Spiel – auch vor dem Anstoß
+        require_method('GET');
+        require_admin();
+        $m = match_or_404(v_id(inp('match_id'), 'Spiel'));
+        $s = settings();
+        $o = match_base($m);
+        $c = q('SELECT name FROM competitions WHERE id = ?', [(int)$m['competition_id']])->fetchColumn();
+        $rows = q('SELECT t.player_id, t.home_goals, t.away_goals, t.updated, p.nickname FROM tips t
+                   JOIN players p ON p.id = t.player_id AND p.active = 1 WHERE t.match_id = ?', [$o['id']])->fetchAll();
+        $tips = [];
+        foreach ($rows as $r) {
+            $sc = score_tip((int)$r['home_goals'], (int)$r['away_goals'], $o['home_goals'], $o['away_goals'], $s);
+            $tips[] = [
+                'nickname' => (string)$r['nickname'],
+                'tip' => ['home' => (int)$r['home_goals'], 'away' => (int)$r['away_goals']],
+                'points' => $sc['points'] ?? null,
+                'kind' => $sc['kind'] ?? null,
+                'updated' => (string)$r['updated'],
+            ];
+        }
+        usort($tips, fn($a, $b) => ($b['points'] ?? -1) <=> ($a['points'] ?? -1) ?: strcmp(lower($a['nickname']), lower($b['nickname'])));
+        $tipped = [];
+        foreach ($rows as $r) {
+            $tipped[(int)$r['player_id']] = true;
+        }
+        $missing = [];
+        foreach (q('SELECT id, nickname FROM players WHERE active = 1')->fetchAll() as $p) {
+            if (!isset($tipped[(int)$p['id']])) {
+                $missing[] = (string)$p['nickname'];
+            }
+        }
+        usort($missing, fn($a, $b) => strcmp(lower($a), lower($b)));
+        $o['competition'] = $c !== false ? (string)$c : '';
+        $o['tip_count'] = count($tips);
+        $o['tendency'] = tendency($rows);
+        respond(['match' => $o, 'tips' => $tips, 'missing' => $missing]);
 
     case 'admin_competition_save':
         require_method('POST');

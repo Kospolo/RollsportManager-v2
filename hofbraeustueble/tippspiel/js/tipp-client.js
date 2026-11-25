@@ -7,6 +7,8 @@
  *   await TippAPI.call(action, data)   // wirft Error(message) mit .status und .data bei ok:false
  *   TippAPI.demoReset()                // Demo-Daten neu erzeugen
  *   TippAPI.scoreTip(tip, result, settings)  // → {points, kind} | null
+ *   TippAPI.admin                      // true = Verwaltung angemeldet → Wirt-Ansicht (nur lesen) möglich
+ *   TippAPI.demoSetOwner(true|false)   // Demo: Wirt „anmelden“ (sessionStorage; auch per URL ?wirt=1)
  *
  * Live-Modus: fetch auf cms/tipp-api.php (Cookies, X-CSRF-Token).
  * Demo-Modus: vollständige Nachbildung im Browser (localStorage "hbs_tipp_demo_v3") mit denselben Regeln.
@@ -26,7 +28,8 @@
   var NICK_RE = /^[A-Za-z0-9ÄÖÜäöüß _.\-]+$/;
   var NICK_HAS_ALNUM = /[A-Za-z0-9ÄÖÜäöüß]/;
   var GET_ACTIONS = { status: 1, invite_check: 1, matches: 1, leaderboard: 1, stats: 1, player_tips: 1, admin_overview: 1,
-    admin_source_preview: 1, admin_cron_info: 1, cron_sync: 1 };
+    admin_source_preview: 1, admin_cron_info: 1, cron_sync: 1, admin_stats: 1, admin_match_tips: 1 };
+  var DEMO_OWNER_KEY = 'hbs_tipp_demo_owner'; // sessionStorage: Demo-Wirt „angemeldet“ (Wirt-Ansicht)
   var LEAGUE_RE = /^[A-Za-z0-9_-]{1,40}$/;
   var SYNC_WINDOW_MAX = 90;
   var SYNC_LAZY_AFTER = 110, SYNC_LAZY_EVERY = 10, SYNC_LAZY_DAYS = 3; // Minuten / Minuten / Tage – wie im PHP-Backend
@@ -241,6 +244,70 @@
     };
   }
 
+  /** Gewertete Spiele nach Runde gruppieren (chronologisch), Beschriftung wie statsOf() – identisch zu round_groups() in PHP */
+  function roundGroups(scored, comps) {
+    var compNames = {};
+    comps.forEach(function (c) { compNames[c.id] = c.name; });
+    var groups = [], gIndex = {}, cids = {};
+    scored.forEach(function (m) {
+      var key = m.competition_id + '|' + (m.round || '');
+      if (!gIndex[key]) { gIndex[key] = { cid: m.competition_id, round: m.round || '', matches: [] }; groups.push(gIndex[key]); }
+      gIndex[key].matches.push(m);
+      cids[m.competition_id] = 1;
+    });
+    var multi = Object.keys(cids).length > 1;
+    groups.forEach(function (g) {
+      g.label = g.round !== '' ? g.round : 'Ohne Runde';
+      if (multi) g.label = (compNames[g.cid] || '') + ' · ' + g.label;
+    });
+    return groups;
+  }
+
+  /** Häufigstes Ergebnis (Gleichstand: alphabetisch kleinstes) → {tip, count} | null */
+  function topTip(tips) {
+    var res = {}, top = null;
+    tips.forEach(function (t) { var k = t.home_goals + ':' + t.away_goals; res[k] = (res[k] || 0) + 1; });
+    Object.keys(res).forEach(function (k) {
+      if (top === null || res[k] > res[top] || (res[k] === res[top] && k < top)) top = k;
+    });
+    return top === null ? null : { tip: top, count: res[top] };
+  }
+
+  /** Stammtisch-Statistik für die Wirt-Ansicht (admin_stats) */
+  function ownerStatsOf(scope, s) {
+    var players = scope.players;
+    var scored = sortMatches(scope.matches.filter(hasResult));
+    var t = tally(players, scored, scope.tips, scope.comps, scope.bonus, s);
+    var sum = { points: 0, match_points: 0, bonus: 0, exact: 0, diff: 0, tendency: 0, miss: 0, tips: 0 };
+    Object.keys(t).forEach(function (k) { Object.keys(sum).forEach(function (f) { sum[f] += t[k][f]; }); });
+    var tippers = {};
+    scope.tips.forEach(function (x) { tippers[x.player_id] = 1; });
+    var nick = {};
+    players.forEach(function (p) { nick[p.id] = p.nickname; });
+    var byRound = roundGroups(scored, scope.comps).map(function (g) {
+      var ids = {};
+      g.matches.forEach(function (m) { ids[m.id] = 1; });
+      var gTips = scope.tips.filter(function (x) { return ids[x.match_id]; });
+      var gt = tally(players, g.matches, gTips, [], [], s, false);
+      var pts = 0, n = 0, max = 0;
+      Object.keys(gt).forEach(function (k) { if (gt[k].tips > 0) { pts += gt[k].match_points; n++; if (gt[k].match_points > max) max = gt[k].match_points; } });
+      var best = [];
+      if (max > 0) {
+        Object.keys(gt).forEach(function (k) { if (gt[k].tips > 0 && gt[k].match_points === max) best.push(nick[k]); });
+        best.sort(function (a, b) { return cmpStr(lower(a), lower(b)); });
+      }
+      return { round: g.label, matches: g.matches.length, tips: gTips.length, avg_points: ratio(pts, n), best: max > 0 ? { nicknames: best, points: max } : null };
+    });
+    var hits = sum.exact + sum.diff + sum.tendency;
+    return {
+      players: players.length, tippers: Object.keys(tippers).length, matches: scope.matches.length, scored_matches: scored.length,
+      tips: scope.tips.length, scored_tips: sum.tips, exact: sum.exact, diff: sum.diff, tendency: sum.tendency, miss: sum.miss,
+      hit_rate: ratio(hits * 100, sum.tips, 1), points: sum.points, bonus: sum.bonus,
+      avg_points_tip: ratio(sum.match_points, sum.tips), avg_points_player: ratio(sum.points, players.length),
+      favorite_tip: topTip(scope.tips), by_round: byRound
+    };
+  }
+
   /* ================================================================== Zeit */
 
   /** Aktuelle Ortszeit Europe/Berlin als "YYYY-MM-DD HH:MM:SS" */
@@ -376,6 +443,7 @@
     csrf: null,
     adminCsrf: null,
     player: null,
+    admin: false,
     settings: clone(DEFAULT_SETTINGS),
     status: null
   };
@@ -394,6 +462,7 @@
     if (res && res.api === 'hbs-tipp' && 'player' in res) {
       state.player = res.player || null;
       state.csrf = res.csrf || null;
+      if ('admin' in res) state.admin = !!res.admin;
       if (res.settings) state.settings = res.settings;
       state.status = res;
     }
@@ -437,7 +506,8 @@
     var j = r.json;
     if (!j || typeof j !== 'object') throw ApiError('Der Server hat eine ungültige Antwort geschickt.', r.http || 500);
     if (!j.ok) {
-      if (r.http === 401 && action.indexOf('admin_') !== 0) { state.player = null; state.csrf = null; }
+      if (r.http === 401 && j.owner) state.admin = false; // Wirt-Ansicht: Verwaltung abgemeldet
+      else if (r.http === 401 && action.indexOf('admin_') !== 0) { state.player = null; state.csrf = null; }
       throw ApiError(j.error || 'Unbekannter Fehler.', r.http, j);
     }
     if (action === 'status' || action === 'login' || action === 'register') rememberStatus(j);
@@ -604,6 +674,26 @@
 
   var demoDb = null;
 
+  /* --- Demo-Wirt (Wirt-Ansicht): „angemeldet“ per URL ?wirt=1 oder TippAPI.demoSetOwner(true), gilt für diesen Tab */
+  var demoOwnerMem = false;
+  function demoOwner() {
+    try {
+      if (global.location && /[?&]wirt=1(&|$)/.test(global.location.search || '')) demoSetOwner(true);
+    } catch (e) { /* kein location */ }
+    try { if (global.sessionStorage) return global.sessionStorage.getItem(DEMO_OWNER_KEY) === '1'; } catch (e) { /* gesperrt */ }
+    return demoOwnerMem;
+  }
+  function demoSetOwner(on) {
+    demoOwnerMem = !!on;
+    try {
+      if (global.sessionStorage) {
+        if (on) global.sessionStorage.setItem(DEMO_OWNER_KEY, '1'); else global.sessionStorage.removeItem(DEMO_OWNER_KEY);
+      }
+    } catch (e) { /* gesperrt – Speicher im Tab */ }
+    if (state.mode === 'demo') state.admin = !!on;
+    return !!on;
+  }
+
   function demoLoad() {
     var raw = storageGet();
     var parsed = null;
@@ -709,7 +799,7 @@
     return {
       ok: true, api: 'hbs-tipp',
       player: p ? { id: p.id, nickname: p.nickname, email: p.email } : null,
-      csrf: p ? db.session.csrf : null, settings: dbSettings(db), serverTime: nowFull(), demo: true
+      csrf: p ? db.session.csrf : null, settings: dbSettings(db), serverTime: nowFull(), admin: demoOwner(), demo: true
     };
   }
   function demoLogin(db, p) {
@@ -719,6 +809,17 @@
     var p = demoCurrentPlayer(db);
     if (!p) fail('Bitte melde dich an.', 401, { loggedIn: false });
     return p;
+  }
+  /** wie require_reader() in PHP: Spieler hat Vorrang; ohne Spieler oder mit view=owner → Wirt-Ansicht (nur lesen) */
+  function requireReader(db, d) {
+    var force = d && d.view === 'owner';
+    if (!force) {
+      var p = demoCurrentPlayer(db);
+      if (p) return { player: p, owner: false };
+    }
+    if (demoOwner()) return { player: null, owner: true };
+    if (force) fail('Die Wirt-Ansicht braucht eine Anmeldung in der Verwaltung.', 401, { loggedIn: false, owner: true });
+    fail('Bitte melde dich an.', 401, { loggedIn: false });
   }
   function optCompId(db, data) {
     if (!present(data, 'competition_id')) return null;
@@ -859,7 +960,7 @@
     logout: function (db) { db.session = null; return ok({}); },
 
     matches: function (db, d) {
-      var me = requirePlayer(db);
+      var rd = requireReader(db, d), me = rd.player, owner = rd.owner;
       var cid = optCompId(db, d);
       demoLazySync(db);
       var s = dbSettings(db);
@@ -873,6 +974,10 @@
       db.tips.forEach(function (t) { if (active[t.player_id]) (tipsBy[t.match_id] = tipsBy[t.match_id] || []).push(t); });
       var outComps = comps.map(function (c) {
         var o = compOut(c, fk);
+        if (owner) {
+          o.bonus_count = db.bonus_tips.filter(function (x) { return active[x.player_id] && x.competition_id === c.id; }).length;
+          return o;
+        }
         var b = db.bonus_tips.filter(function (x) { return x.player_id === me.id && x.competition_id === c.id; })[0];
         o.my_bonus = b ? b.answer : null;
         return o;
@@ -880,6 +985,7 @@
       var outMatches = sortMatches(db.matches.filter(function (m) { return cids[m.competition_id]; })).map(function (m) {
         var o = matchBase(m);
         var list = tipsBy[m.id] || [];
+        if (owner) { o.tip_count = list.length; o.tendency = tendency(list); return o; }
         var mine = null;
         list.forEach(function (t) { if (t.player_id === me.id) mine = { home: t.home_goals, away: t.away_goals }; });
         var sc = mine ? scoreTip(mine, m, s) : null;
@@ -890,7 +996,9 @@
         o.tendency = o.locked ? tendency(list) : null;
         return o;
       });
-      return ok({ competitions: outComps, matches: outMatches, serverTime: nowFull() });
+      var out = { competitions: outComps, matches: outMatches, serverTime: nowFull() };
+      if (owner) out.owner = true;
+      return ok(out);
     },
 
     tip: function (db, d) {
@@ -926,10 +1034,12 @@
     },
 
     leaderboard: function (db, d) {
-      var me = requirePlayer(db);
+      var rd = requireReader(db, d);
       var cid = optCompId(db, d);
       demoLazySync(db);
-      return ok(leaderboardOf(scopeOf(db, cid, true), dbSettings(db), me.id));
+      var lb = leaderboardOf(scopeOf(db, cid, true), dbSettings(db), rd.owner ? null : rd.player.id);
+      if (rd.owner) lb.owner = true;
+      return ok(lb);
     },
 
     stats: function (db, d) {
@@ -938,7 +1048,7 @@
     },
 
     player_tips: function (db, d) {
-      var me = requirePlayer(db);
+      var rd = requireReader(db, d), me = rd.player, owner = rd.owner;
       var nick = typeof d.nickname === 'string' ? d.nickname.replace(/\s+/g, ' ').trim() : '';
       var p = nick && strLen(nick) <= 40 ? findPlayerByNick(db, nick) : null;
       if (!p || !p.active) fail('Spieler nicht gefunden.', 404);
@@ -947,9 +1057,9 @@
       var tips = [];
       db.tips.filter(function (t) { return t.player_id === p.id; }).forEach(function (t) {
         var m = findMatch(db, t.match_id);
-        if (!m || m.kickoff > now) return;
+        if (!m || (!owner && m.kickoff > now)) return;
         var o = matchBase(m);
-        if (!o.locked) return;
+        if (!o.locked && !owner) return;
         var sc = scoreTip({ home: t.home_goals, away: t.away_goals }, m, s);
         var row = { match_id: m.id };
         Object.keys(o).forEach(function (k) { if (k !== 'id') row[k] = o[k]; });
@@ -963,11 +1073,16 @@
       var bonus = [];
       compsSorted(db).forEach(function (c) {
         var b = db.bonus_tips.filter(function (x) { return x.player_id === p.id && x.competition_id === c.id; })[0];
-        if (!b || !bonusLocked(c.id, fk)) return;
+        var bl = bonusLocked(c.id, fk);
+        if (!b || (!bl && !owner)) return;
         var has = bonusNorm(c.bonus_answer) !== '';
-        bonus.push({ competition_id: c.id, competition: c.name, question: c.bonus_question, answer: b.answer, correct: has ? bonusNorm(b.answer) === bonusNorm(c.bonus_answer) : null });
+        var row = { competition_id: c.id, competition: c.name, question: c.bonus_question, answer: b.answer, correct: has ? bonusNorm(b.answer) === bonusNorm(c.bonus_answer) : null };
+        if (owner) row.locked = bl;
+        bonus.push(row);
       });
-      return ok({ player: { nickname: p.nickname, is_me: p.id === me.id }, tips: tips, bonus: bonus });
+      var out = { player: { nickname: p.nickname, is_me: !owner && p.id === me.id }, tips: tips, bonus: bonus };
+      if (owner) out.owner = true;
+      return ok(out);
     },
 
     change_password: function (db, d) {
@@ -989,6 +1104,34 @@
     },
 
     /* ------------------------------------------------------------- Admin */
+
+    admin_stats: function (db, d) {
+      return ok(ownerStatsOf(scopeOf(db, optCompId(db, d), true), dbSettings(db)));
+    },
+
+    admin_match_tips: function (db, d) {
+      var m = matchOr404(db, vId(d.match_id, 'Spiel'));
+      var s = dbSettings(db);
+      var o = matchBase(m);
+      var c = findComp(db, m.competition_id);
+      var active = {};
+      db.players.forEach(function (p) { if (p.active) active[p.id] = p; });
+      var rows = db.tips.filter(function (t) { return t.match_id === m.id && active[t.player_id]; });
+      var tips = rows.map(function (t) {
+        var sc = scoreTip({ home: t.home_goals, away: t.away_goals }, m, s);
+        return { nickname: active[t.player_id].nickname, tip: { home: t.home_goals, away: t.away_goals }, points: sc ? sc.points : null, kind: sc ? sc.kind : null, updated: t.updated };
+      });
+      var pv = function (x) { return x.points === null ? -1 : x.points; };
+      tips.sort(function (a, b) { return (pv(b) - pv(a)) || cmpStr(lower(a.nickname), lower(b.nickname)); });
+      var tipped = {};
+      rows.forEach(function (t) { tipped[t.player_id] = 1; });
+      var missing = Object.keys(active).filter(function (id) { return !tipped[id]; }).map(function (id) { return active[id].nickname; })
+        .sort(function (a, b) { return cmpStr(lower(a), lower(b)); });
+      o.competition = c ? c.name : '';
+      o.tip_count = tips.length;
+      o.tendency = tendency(rows);
+      return ok({ match: o, tips: tips, missing: missing });
+    },
 
     admin_overview: function (db) {
       var fk = firstKickoffs(db);
@@ -1256,7 +1399,8 @@
     try {
       res = fn(work, input);
     } catch (e) {
-      if (e && e.status === 401) { demoDb.session = work.session; demoSave(); state.player = null; state.csrf = null; }
+      if (e && e.status === 401 && e.data && e.data.owner) state.admin = false;
+      else if (e && e.status === 401) { demoDb.session = work.session; demoSave(); state.player = null; state.csrf = null; }
       throw e;
     }
     demoDb = work;
@@ -1323,16 +1467,18 @@
     demoReset: demoReset,
     scoreTip: scoreTip,
     setAdminCsrf: function (token) { state.adminCsrf = token || null; },
+    demoSetOwner: demoSetOwner,
     error: null,
     /** reine Hilfsfunktionen (auch für Tests) */
     util: {
       tally: tally, rankRows: rankRows, tendency: tendency, leaderboard: leaderboardOf, stats: statsOf,
-      ratio: ratio, bonusNorm: bonusNorm, berlinNow: berlinNow, parseKickoff: parseKickoff
+      ratio: ratio, bonusNorm: bonusNorm, berlinNow: berlinNow, parseKickoff: parseKickoff, ownerStats: ownerStatsOf
     }
   };
   Object.defineProperty(TippAPI, 'mode', { enumerable: true, get: function () { return state.mode; } });
   Object.defineProperty(TippAPI, 'player', { enumerable: true, get: function () { return state.player ? clone(state.player) : null; } });
   Object.defineProperty(TippAPI, 'csrf', { enumerable: true, get: function () { return state.csrf; } });
+  Object.defineProperty(TippAPI, 'admin', { enumerable: true, get: function () { return !!state.admin; } });
   Object.defineProperty(TippAPI, 'settings', { enumerable: true, get: function () { return clone(state.settings); } });
   Object.defineProperty(TippAPI, 'base', { enumerable: true, get: function () { return state.base; } });
 

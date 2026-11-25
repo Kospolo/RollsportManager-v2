@@ -232,13 +232,22 @@ Das sind Texte der Website, die wie alle anderen Inhalte erst mit „Speichern�
 
 | Unterbereich | Was man dort macht |
 |---|---|
-| **Übersicht** | Anzahl Spieler, Tipps, kommende Spiele, gültige Einladungen; „3 Spiele warten auf ein Ergebnis“ mit Direktlink; Top 5 der Gesamtwertung. Karte **„Automatischer Abruf“**: Stand je Wettbewerb mit „Jetzt abrufen“, die Cronjob-Adresse (Kopieren-Knopf, Kurzanleitung, „Token neu erzeugen“). |
+| **Übersicht** | Anzahl Spieler, Tipps, kommende Spiele, gültige Einladungen; „3 Spiele warten auf ein Ergebnis“ mit Direktlink; Rangliste der Gesamtwertung (Top 5, „Alle anzeigen“ klappt die ganze Tabelle auf); Karte **„Tippspiel als Wirt ansehen“**. Karte **„Automatischer Abruf“**: Stand je Wettbewerb mit „Jetzt abrufen“, die Cronjob-Adresse (Kopieren-Knopf, Kurzanleitung, „Token neu erzeugen“). |
 | **Ergebnisse eintragen** | Der wichtigste Bildschirm für den Spieltag: Angepfiffene Spiele ohne Ergebnis stehen oben. Tore mit den großen **−/+**-Knöpfen oder per Zahl eingeben, „Ergebnis speichern“ – fertig, die Punkte rechnet das Tippspiel selbst. Bereits eingetragene Ergebnisse lassen sich ändern oder löschen. Ein Ergebnis geht erst ab Anstoß. Bei Wettbewerben mit automatischem Abruf steht an jedem Ergebnis **„automatisch“** oder **„von Hand“**; offene Spiele sind mit „kommt automatisch“ markiert. |
 | **Spiele & Wettbewerbe** | Wettbewerbe anlegen/bearbeiten/löschen (Name, aktiv/Archiv, Reihenfolge, **Spielplan automatisch abrufen** – siehe unten, Bonusfrage z. B. „Wer wird Deutscher Meister?“, die richtige Antwort erst nach Turnierende eintragen, Bonuspunkte). Spiele einzeln anlegen (Datum, Uhrzeit, Runde, Heim, Gast) oder unter „Viele Spiele auf einmal einfügen“ als Liste, eine Zeile pro Spiel: `2027-01-16 15:30; TSG Hoffenheim; Borussia Dortmund; 17. Spieltag` (Runde optional, auch Tabulator/Excel oder `16.01.2027 15:30`). Funktioniert genauso für Bundesliga, Champions League, EM oder WM. Fehlerhafte Zeilen werden mit Zeilennummer gemeldet und bleiben zum Korrigieren im Feld stehen. |
 | **Einladungen** | Neue Einladung: Notiz, Anzahl Personen („1 Person“ = persönlich, „Thekenaushang 50“ = für viele), optional „Gültig bis“. Je Einladung: **Link kopieren**, **Per WhatsApp teilen** (öffnet WhatsApp mit fertigem Text), **QR-Code** (als PNG/SVG speichern oder als Aushang drucken: großer QR-Code + „Stüble-Tippspiel – scannen & mitmachen“ + Code) und **Zurückziehen**. Einladungslink: `https://ihre-domain.de/tippspiel/?code=XXXXXXXX`. |
 | **Spieler** | Liste mit E-Mail, Registrierung, letztem Login, Tipps und Punkten. Deaktivieren/Aktivieren (deaktivierte Spieler können sich nicht anmelden und fehlen in der Rangliste), **Neues Passwort** (Passwort vergessen: das angezeigte vorläufige Passwort wird nur einmal gezeigt – dem Gast persönlich geben), Löschen (mit allen Tipps). |
 | **Punkte-Regeln** | Punkte für exakt / Tordifferenz / Tendenz (exakt ≥ Differenz ≥ Tendenz) mit Live-Beispiel. Gilt sofort auch rückwirkend für die Rangliste. |
 | **Website-Teaser** | Abschnitt „Tippspiel“ auf der Website ein-/ausblenden, Überschrift, Text, Knopftext, Hinweis – danach „Speichern“. |
+
+**Wirt-Ansicht (ansehen ohne mitzuspielen):** Der Knopf **„Tippspiel ansehen (Wirt-Ansicht)“** (oben im Reiter
+„Tippspiel“ und in der Übersicht) öffnet das Tippspiel in einem neuen Tab – ganz ohne Spielerkonto, solange man in
+der Verwaltung angemeldet ist. Dort sieht der Wirt alle Spiele mit der Stammtisch-Quote (auch schon vor dem
+Anstoß), per Tipp auf ein Spiel, wer was getippt hat und wer noch fehlt, die Rangliste (Name antippen = alle Tipps
+dieses Spielers, auch die offenen) und eine Stammtisch-Statistik (Trefferquote, Punkte-Schnitt, häufigster Tipp,
+Rundensieger). Getippt wird in der Wirt-Ansicht nicht – das lässt der Server gar nicht zu. Wer zusätzlich als
+Spieler mitspielt, kann oben im Tippspiel zwischen „Als Wirt ansehen“ und „Als Spieler“ wechseln. Auf der
+Anmeldeseite des Tippspiels führt „Als Wirt ansehen“ zur Verwaltung. Demo: `tippspiel/?wirt=1`.
 
 Alle Löschungen fragen vorher nach. Im Demo-Modus der Verwaltung (ohne PHP) läuft der Tippspiel-Reiter mit
 erfundenen Beispieldaten; „Demo-Tippspiel zurücksetzen“ in der Übersicht stellt sie wieder her.

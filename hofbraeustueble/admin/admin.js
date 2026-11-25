@@ -1558,7 +1558,8 @@
     sub: 'uebersicht', data: null, loadedAt: 0, loading: null, error: null, ready: false,
     root: null, nav: null, mode: null, body: null, compId: null, qrLoad: null, newInvite: null,
     imp: {}, playerQuery: '', showAllDone: false,
-    cron: null, cronLoading: false, cronError: null, syncing: {}
+    cron: null, cronLoading: false, cronError: null, syncing: {},
+    lb: null, lbLoading: false, lbError: null, lbAll: false
   };
 
   function setTippSub(id) { if (TIPP_SUBS.some(function (x) { return x.id === id; })) T.sub = id; }
@@ -1590,6 +1591,7 @@
     if (T.loading) return T.loading;
     T.loading = tcall('admin_overview').then(function (d) {
       T.data = d; T.loadedAt = Date.now(); T.error = null; T.loading = null;
+      T.lb = null; T.lbError = null; // Rangliste beim nächsten Zeichnen neu holen
       return d;
     }, function (e) {
       T.error = (e && e.message) || 'Das Tippspiel konnte nicht geladen werden.'; T.loading = null;
@@ -1719,6 +1721,23 @@
       .then(function () { T.cronLoading = false; if (tippVisible() && T.sub === 'uebersicht') drawTippBody(true); });
   }
 
+  /** Wirt-Ansicht des Tippspiels (nur ansehen) – im Demo-Modus mit ?wirt=1, damit die Demo-App den Wirt erkennt */
+  function ownerViewUrl() { return S.mode === 'demo' ? '../tippspiel/?wirt=1' : '../tippspiel/'; }
+  function ownerViewLink(cls, label) {
+    return h('a', { class: 'btn ' + (cls || ''), href: ownerViewUrl(), target: '_blank', rel: 'noopener', title: 'Öffnet das Tippspiel in einem neuen Tab – alle Spiele, Tipps und Statistiken, ohne selbst mitzuspielen' },
+      icon('eye'), h('span', { class: 'lbl' }, label || 'Tippspiel ansehen (Wirt-Ansicht)'));
+  }
+  /** Vollständige Rangliste (gesamt) für die Übersicht – dieselbe Berechnung wie in der App (Wirt-Ansicht der API) */
+  function loadLb() {
+    if (T.lbLoading || T.lb) return;
+    T.lbLoading = true;
+    tippInit().then(function () {
+      if (TippAPI.mode === 'demo' && TippAPI.demoSetOwner) TippAPI.demoSetOwner(true); // Demo: die Verwaltung ist der Wirt
+      return tcall('leaderboard', { view: 'owner' });
+    }).then(function (r) { T.lb = r; T.lbError = null; }, function (e) { T.lbError = (e && e.message) || 'Fehler'; })
+      .then(function () { T.lbLoading = false; if (tippVisible() && T.sub === 'uebersicht') drawTippBody(true); });
+  }
+
   /* ---------- Hilfen: Kopieren, Herunterladen, Drucken, QR */
 
   function copyText(text, what) {
@@ -1845,7 +1864,7 @@
     T.body = h('div', { class: 'tipp-body' });
     T.root = h('div', { class: 'tipp' },
       sectionHead('Tippspiel', 'Kostenloses Tippspiel für Stammgäste – nur Punkte und Rangliste, kein Geld.', [
-        h('a', { class: 'btn btn-sm', href: '../tippspiel/', target: '_blank', rel: 'noopener' }, icon('external'), h('span', { class: 'lbl' }, 'Tippspiel öffnen')),
+        ownerViewLink('btn-sm btn-primary'),
         btn('Aktualisieren', 'refresh', function (e) {
           var b = e.currentTarget; b.disabled = true;
           tippRefresh().then(function () { b.disabled = false; if (!T.error) toast('Tippspiel-Daten aktualisiert.', 'success', 2000); });
@@ -1922,6 +1941,11 @@
     var validInv = d.invites.filter(function (i) { return i.valid; });
     var wrap = h('div');
 
+    wrap.appendChild(h('section', { class: 'card owner-card' },
+      h('div', { class: 'owner-card-txt' }, h('h3', null, icon('eye'), 'Tippspiel als Wirt ansehen'),
+        h('p', { class: 'help m0' }, 'Ohne eigenes Spielerkonto: alle Spiele mit Stammtisch-Quote (auch vor dem Anstoß), wer was getippt hat, Rangliste und Statistik – nur ansehen, getippt wird dort nicht.')),
+      ownerViewLink('btn-primary')));
+
     if (!d.competitions.length) {
       wrap.appendChild(h('section', { class: 'card start-card' }, h('h3', null, icon('wand'), 'So geht’s los'),
         h('ol', { class: 'steps' },
@@ -1959,19 +1983,34 @@
       tile(upcoming.length, 'kommende Spiele', d.competitions.length ? plural(d.competitions.length, 'Wettbewerb', 'Wettbewerbe') : 'noch kein Wettbewerb', 'spiele'),
       tile(validInv.length, 'gültige Einladungen', d.invites.length ? d.invites.length + ' insgesamt' : 'noch keine', 'einladungen')));
 
-    // Top 5
-    var ranked = active.slice().sort(function (a, b) { return b.points - a.points || a.nickname.localeCompare(b.nickname, 'de'); });
-    var lb = h('ol', { class: 'lb' });
-    ranked.slice(0, 5).forEach(function (p, i) {
-      var rank = i > 0 && ranked[i - 1].points === p.points ? lb.lastChild.getAttribute('data-rank') : String(i + 1);
-      lb.appendChild(h('li', { 'data-rank': rank, class: rank === '1' ? 'is-top' : null },
-        h('span', { class: 'lb-rank' }, rank + '.'), h('span', { class: 'lb-name' }, p.nickname),
-        h('span', { class: 'lb-pts' }, plural(p.points, 'Punkt', 'Punkte'))));
-    });
+    // Rangliste (gesamt): erst die Top 5, „Alle anzeigen“ klappt die ganze Tabelle auf
+    var rows;
+    if (T.lb) {
+      rows = T.lb.rows.map(function (r) { return { rank: r.rank, nickname: r.nickname, points: r.points, exact: r.exact, tips: r.tips }; });
+    } else {
+      if (!T.lbError) loadLb();
+      // bis die Rangliste da ist (oder falls sie nicht geladen werden kann): nach Punkten aus der Übersicht
+      var ranked = active.slice().sort(function (a, b) { return b.points - a.points || a.nickname.localeCompare(b.nickname, 'de'); });
+      rows = [];
+      ranked.forEach(function (p, i) {
+        rows.push({ rank: i > 0 && ranked[i - 1].points === p.points ? rows[i - 1].rank : i + 1, nickname: p.nickname, points: p.points });
+      });
+    }
+    var shown = T.lbAll ? rows : rows.slice(0, 5);
+    var lb = h('ol', { class: 'lb' + (T.lbAll ? ' lb-full' : '') }, shown.map(function (r) {
+      return h('li', { 'data-rank': String(r.rank), class: r.rank === 1 ? 'is-top' : null },
+        h('span', { class: 'lb-rank' }, r.rank + '.'), h('span', { class: 'lb-name' }, r.nickname),
+        h('span', { class: 'lb-pts' }, plural(r.points, 'Punkt', 'Punkte'),
+          r.exact !== undefined ? h('small', { class: 'lb-sub' }, r.exact + '× exakt · ' + plural(r.tips, 'Tipp', 'Tipps')) : null));
+    }));
+    var lbMore = rows.length > 5 ? btn(T.lbAll ? 'Weniger anzeigen' : 'Alle ' + rows.length + ' anzeigen', T.lbAll ? 'chevron' : 'list', function () {
+      T.lbAll = !T.lbAll; drawTippBody(true);
+    }, 'btn-sm mt' + (T.lbAll ? ' lb-less' : ''), { 'aria-expanded': T.lbAll ? 'true' : 'false' }) : null;
     var next = upcoming.slice(0, 3);
     wrap.appendChild(h('div', { class: 'grid-2 tipp-cols' },
-      card('Rangliste – Top 5', 'Gesamtwertung aller Wettbewerbe inkl. Bonuspunkte. Gleiche Punktzahl = gleicher Platz.',
-        ranked.length ? lb : h('p', { class: 'help m0' }, 'Noch keine Spieler. Verteile zuerst Einladungen.')),
+      card('Rangliste', 'Gesamtwertung aller Wettbewerbe inkl. Bonuspunkte. Bei Punktgleichheit zählen exakte Treffer, dann die Tordifferenz.',
+        rows.length ? lb : h('p', { class: 'help m0' }, 'Noch keine Spieler. Verteile zuerst Einladungen.'), lbMore,
+        T.lbError ? h('p', { class: 'help m0 mt' }, 'Hinweis: Die genaue Rangliste konnte nicht geladen werden (' + T.lbError + ') – sortiert nach Punkten.') : null),
       card('Nächste Spiele', null,
         next.length ? h('ul', { class: 'next-list' }, next.map(function (m) {
           return h('li', null, h('strong', null, m.home + ' – ' + m.away), h('small', null, fmtKick(m.kickoff) + ' · ' + plural(m.tip_count || 0, 'Tipp', 'Tipps')));

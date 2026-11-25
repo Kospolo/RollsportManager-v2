@@ -9,8 +9,15 @@
   var API = window.TippAPI;
   var BASE = '../cms/tipp-api.php';
   var PRIVACY_URL = '../variante-1/index.html#datenschutz';
+  var ADMIN_URL = '../admin/#tippspiel';
   var ROUTES = ['tippen', 'rangliste', 'statistik', 'profil'];
-  var TITLES = { tippen: 'Tippen', rangliste: 'Rangliste', statistik: 'Statistik', profil: 'Profil' };
+  var OWNER_ROUTES = ['spiele', 'rangliste', 'statistik']; // Wirt-Ansicht: nur ansehen
+  var TITLES = { tippen: 'Tippen', rangliste: 'Rangliste', statistik: 'Statistik', profil: 'Profil', spiele: 'Spiele' };
+  var NAV = {
+    player: [['tippen', 'ball', 'Tippen'], ['rangliste', 'table', 'Rangliste'], ['statistik', 'chart', 'Statistik'], ['profil', 'user', 'Profil']],
+    owner: [['spiele', 'ball', 'Spiele'], ['rangliste', 'table', 'Rangliste'], ['statistik', 'chart', 'Statistik']]
+  };
+  var VIEW_PREF = 'hbs_tipp_view'; // sessionStorage: „owner“ = Wirt-Ansicht bevorzugt (wenn beide Anmeldungen bestehen)
   var LIVE_WINDOW_MIN = 150;
   var SAVE_DELAY = 650;
   var REFRESH_MS = 60000;
@@ -20,6 +27,7 @@
 
   var S = {
     player: null, mode: null, settings: { points_exact: 4, points_diff: 3, points_tendency: 2 },
+    admin: false, owner: false, navKey: null,
     route: null, authTab: null, inviteCode: '', inviteState: null, inviteTimer: null, inviteSeq: 0,
     comps: [], matches: [], loadedAt: 0, loading: null, skew: 0,
     filter: 'offen', compFilter: 'all',
@@ -138,20 +146,40 @@
 
   /* ================================================================ Chrome / Navigation */
 
+  function navHtml(tab) {
+    return NAV[S.owner ? 'owner' : 'player'].map(function (n) {
+      return '<a href="#/' + n[0] + '" data-route="' + n[0] + '">' + icon(n[1]) + (tab ? '<span>' + n[2] + '</span>' : n[2]) + '</a>';
+    }).join('');
+  }
   function updateChrome() {
-    var logged = !!S.player;
+    var logged = !!S.player || S.owner;
     document.body.classList.toggle('logged-out', !logged);
+    document.body.classList.toggle('is-owner', S.owner);
+    var navKey = S.owner ? 'owner' : 'player';
+    if (S.navKey !== navKey) {
+      S.navKey = navKey;
+      $('#tabbar').innerHTML = navHtml(true);
+      $('#topnav').innerHTML = navHtml(false);
+      $('#tabbar').classList.toggle('tabbar--3', S.owner);
+      $('#brand-link').setAttribute('href', S.owner ? '#/spiele' : '#/tippen');
+    }
     $('#tabbar').hidden = !logged;
     $('#topnav').hidden = !logged;
+    $('#owner-bar').hidden = !S.owner;
+    var tg = $('#view-toggle');
+    tg.hidden = !(S.player && S.admin);
+    tg.innerHTML = icon(S.owner ? 'user' : 'eye') + '<span>' + (S.owner ? 'Als Spieler' : 'Als Wirt ansehen') + '</span>';
+    tg.setAttribute('aria-label', S.owner ? 'Zurück zur Spieler-Ansicht' : 'Tippspiel als Wirt ansehen (nur lesen)');
+    document.body.classList.toggle('has-toggle', !tg.hidden);
     var demo = S.mode === 'demo';
     $('#demo-ribbon').hidden = !demo;
     document.body.classList.toggle('has-ribbon', demo);
-    $('#demo-guest').hidden = !demo || logged;
+    $('#demo-guest').hidden = !demo || !!S.player;
     $$('#tabbar a, #topnav a').forEach(function (a) {
       if (logged && a.getAttribute('data-route') === S.route) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
-    document.title = (logged && S.route ? TITLES[S.route] + ' · ' : '') + 'Stüble-Tippspiel · Hofbräustüble';
+    document.title = (logged && S.route ? TITLES[S.route] + ' · ' : '') + (S.owner ? 'Wirt-Ansicht · ' : '') + 'Stüble-Tippspiel · Hofbräustüble';
   }
 
   function parseHash() { return location.hash.replace(/^#\/?/, '').split(/[?/]/)[0].toLowerCase(); }
@@ -160,6 +188,15 @@
     closeSheet(true);
     flushDrafts();
     var r = parseHash();
+    if (S.owner) {
+      var oroute = OWNER_ROUTES.indexOf(r) >= 0 ? r : 'spiele';
+      if (oroute !== r) history.replaceState(null, '', '#/' + oroute);
+      S.route = oroute;
+      updateChrome();
+      VIEWS[oroute]();
+      afterNav();
+      return;
+    }
     if (!S.player) {
       S.route = null;
       if (r === 'registrieren') S.authTab = 'register';
@@ -205,12 +242,45 @@
   }
 
   function sessionExpired() {
-    S.player = null;
     resetData();
+    if (S.owner) {
+      // Wirt-Ansicht: die Verwaltung ist abgemeldet (Sitzung abgelaufen) → zurück zur normalen App
+      S.owner = false; S.admin = false;
+      setViewPref(false);
+      toast('Die Verwaltung ist abgemeldet – Wirt-Ansicht beendet.', 'error');
+      location.hash = S.player ? '#/tippen' : '#/anmelden';
+      onRoute();
+      return;
+    }
+    S.player = null;
     toast('Bitte melde dich (wieder) an.', 'error');
+    if (S.admin) { S.owner = true; location.hash = '#/spiele'; onRoute(); return; }
     S.authTab = 'login';
     location.hash = '#/anmelden';
     onRoute();
+  }
+  /** Lese-Anfragen: in der Wirt-Ansicht ausdrücklich als Wirt (auch wenn zusätzlich ein Spieler angemeldet ist) */
+  function rq(data) {
+    var d = data || {};
+    if (S.owner) d.view = 'owner';
+    return d;
+  }
+  function setViewPref(owner) {
+    try { if (owner) sessionStorage.setItem(VIEW_PREF, 'owner'); else sessionStorage.removeItem(VIEW_PREF); } catch (e) { /* egal */ }
+  }
+  function getViewPref() {
+    try { return sessionStorage.getItem(VIEW_PREF) === 'owner'; } catch (e) { return false; }
+  }
+  /** Umschalten zwischen Spieler-App und Wirt-Ansicht (nur wenn beide Anmeldungen bestehen) */
+  function setOwner(on) {
+    flushDrafts();
+    closeSheet(true);
+    S.owner = !!on && S.admin;
+    setViewPref(S.owner);
+    resetData();
+    S.firstRender = false;
+    var target = S.owner ? 'spiele' : 'tippen';
+    if (parseHash() === target) onRoute(); else location.hash = '#/' + target;
   }
   function resetData() {
     S.comps = []; S.matches = []; S.loadedAt = 0; S.lb = {}; S.lbAll = null; S.drafts = {}; S.bonusDraft = {};
@@ -222,8 +292,10 @@
   function loadMatches(force) {
     if (!force && S.loadedAt && Date.now() - S.loadedAt < REFRESH_MS) return Promise.resolve();
     if (S.loading) return S.loading;
-    S.loading = API.call('matches').then(function (r) {
+    var asOwner = S.owner;
+    S.loading = API.call('matches', rq()).then(function (r) {
       if (r.serverTime) syncClock(r.serverTime);
+      if (asOwner !== S.owner) return; // inzwischen umgeschaltet
       S.comps = r.competitions || [];
       S.matches = r.matches || [];
       S.loadedAt = Date.now();
@@ -237,8 +309,9 @@
   }
   function loadLeaderboard(key, force) {
     if (!force && S.lb[key] && Date.now() - S.lb[key].at < REFRESH_MS) return Promise.resolve(S.lb[key].data);
-    return API.call('leaderboard', key === 'all' ? {} : { competition_id: key }).then(function (r) {
-      S.lb[key] = { at: Date.now(), data: r };
+    var asOwner = S.owner;
+    return API.call('leaderboard', rq(key === 'all' ? {} : { competition_id: key })).then(function (r) {
+      if (asOwner === S.owner) S.lb[key] = { at: Date.now(), data: r };
       return r;
     });
   }
@@ -349,6 +422,7 @@
       '<div id="login-error" role="alert"></div>' +
       '<button class="btn btn--primary btn--block" type="submit" style="margin-top:18px">Anmelden</button>' +
       '<p class="auth__foot">Passwort vergessen? Sag an der Theke Bescheid – der Wirt setzt es dir zurück.</p>' +
+      '<p class="auth__owner"><a href="' + ADMIN_URL + '">' + icon('eye') + 'Als Wirt ansehen</a></p>' +
       (demo ? '<div class="demo-box"><p>Nur mal schauen? Im Demo-Modus kannst du dich als <b>Gast</b> mit Passwort <code>demo1234</code> anmelden.</p>' +
         '<button type="button" class="btn btn--secondary btn--block" data-demo-login>' + icon('beer') + 'Als Gast einloggen</button></div>' : '') +
       '</form>';
@@ -503,6 +577,9 @@
   }
   function loggedIn(st, msg) {
     S.player = st.player;
+    S.owner = false;
+    setViewPref(false);
+    if ('admin' in st) S.admin = !!st.admin;
     if (st.settings) S.settings = st.settings;
     if (st.serverTime) syncClock(st.serverTime);
     resetData();
@@ -604,6 +681,7 @@
   }
 
   function renderList() {
+    if (S.owner) { renderOwnerList(); return; }
     var box = $('#t-list');
     if (!box) return;
     var ms = compMatches();
@@ -843,7 +921,13 @@
     var v = $('#view');
     v.addEventListener('click', function (e) {
       var t = e.target.closest('button');
-      if (!t) return;
+      if (!t) {
+        // Wirt-Ansicht: Tipp auf die Spielkarte öffnet alle Tipps zu diesem Spiel
+        var oc = S.owner && !e.target.closest('a') && e.target.closest('[data-tips-mid]');
+        if (oc) openMatchTips(+oc.getAttribute('data-tips-mid'), $('[data-tips]', oc));
+        return;
+      }
+      if (t.hasAttribute('data-tips')) { openMatchTips(+t.getAttribute('data-tips'), t); return; }
       if (t.hasAttribute('data-filter')) { S.filter = t.getAttribute('data-filter'); flushDrafts(); renderToolbar(); renderList(); var f = $('[data-filter="' + S.filter + '"]', $('#t-toolbar')); if (f && t.closest('#t-toolbar')) f.focus(); return; }
       if (t.hasAttribute('data-comp')) { var c = t.getAttribute('data-comp'); S.compFilter = c === 'all' ? 'all' : +c; flushDrafts(); renderToolbar(); renderList(); var cb = $('[data-comp="' + c + '"]'); if (cb) cb.focus(); return; }
       if (t.hasAttribute('data-step')) {
@@ -1032,6 +1116,7 @@
 
   function refreshTippen(force) {
     return loadMatches(force).then(function () {
+      if (S.owner) { if (S.route === 'spiele') { renderOwnerSummary(); renderToolbar(); renderList(); } return; }
       if (S.route !== 'tippen') return;
       renderSummary(); renderToolbar(); renderList();
     }).catch(function (e) { if (isAuthError(e)) sessionExpired(); });
@@ -1040,6 +1125,252 @@
     var a = document.activeElement;
     if (a && (a.classList.contains('goal') || a.hasAttribute('data-bonus-input'))) return true;
     return Object.keys(S.drafts).some(function (id) { var d = S.drafts[id]; return d.inflight || d.state === 'dirty' || d.state === 'saving'; });
+  }
+
+  /* ================================================================ Wirt-Ansicht (nur lesen) */
+  /*
+   * Für den Wirt ohne Spielerkonto: Grundlage ist die Anmeldung in der Verwaltung (CMS-Session).
+   * Zeigt alle Spiele mit Stammtisch-Quote (auch vor dem Anstoß), alle Tipps je Spiel/Spieler und die
+   * Stammtisch-Statistik. Hier wird nichts gespeichert – die API lässt in diesem Modus keine Tipps zu.
+   */
+
+  function viewSpiele() {
+    mount('<div class="view tippen owner-view">' +
+      '<div class="tippen__summary" id="o-summary"></div>' +
+      '<div class="tippen__main">' +
+      '<div class="view-head"><h1 class="view-title" tabindex="-1">Spiele</h1></div>' +
+      '<div class="toolbar" id="t-toolbar"></div><div id="t-list">' + skeleton(3) + '</div></div>' +
+      '<div class="tippen__rules">' + ownerHint() + '</div></div>');
+    bindTippen();
+    loadMatches().then(function () {
+      if (S.route !== 'spiele' || !S.owner) return;
+      renderOwnerSummary(); renderToolbar(); renderList();
+    }).catch(function (e) {
+      if (isAuthError(e)) return sessionExpired();
+      $('#t-list').innerHTML = loadError(e, 't-retry');
+      $('#t-retry').addEventListener('click', viewSpiele);
+    });
+  }
+
+  function ownerHint() {
+    var s = S.settings;
+    return '<section class="card section-card owner-hint" aria-labelledby="oh-title"><div class="section-card__head">' + icon('info') +
+      '<h2 class="card-title" id="oh-title">So liest du die Wirt-Ansicht</h2></div>' +
+      '<ul class="owner-hint__list"><li>Die <b>Stammtisch-Quote</b> siehst nur du schon vor dem Anstoß – die Gäste erst danach.</li>' +
+      '<li>Tipp auf ein Spiel, um zu sehen, <b>wer was getippt hat</b> und wer noch fehlt.</li>' +
+      '<li>Punkte: ' + s.points_exact + ' exakt · ' + s.points_diff + ' Tordifferenz · ' + s.points_tendency + ' Tendenz.</li>' +
+      '<li>Ergebnisse, Spiele und Einladungen pflegst du in der <a href="' + ADMIN_URL + '">Verwaltung</a>.</li></ul></section>';
+  }
+
+  function renderOwnerSummary() {
+    var box = $('#o-summary');
+    if (!box) return;
+    var open = S.matches.filter(function (m) { return !m.locked; });
+    var pending = S.matches.filter(function (m) { return phase(m) === 'pending'; });
+    var openTips = open.reduce(function (n, m) { return n + (m.tip_count || 0); }, 0);
+    var lb = S.lbAll, players = lb ? (lb.rows || []).length : null;
+    var next = open[0];
+    box.innerHTML = '<section class="card hello hello--owner" aria-label="Überblick für den Wirt">' +
+      '<div><p class="hello__greet">Servus, Wirt!</p>' +
+      '<p class="hello__line">' + (S.matches.length ? 'Hier siehst du alles, was am Stammtisch getippt wird – auch vor dem Anstoß.' : 'Noch keine Spiele eingetragen – das geht in der Verwaltung.') + '</p>' +
+      (next ? '<p class="hello__next">Als Nächstes: <b>' + esc(next.home) + ' – ' + esc(next.away) + '</b>, ' + esc(kickShort(next.kickoff)) + ' · ' + (next.tip_count || 0) + ' ' + plural(next.tip_count || 0, 'Tipp', 'Tipps') + '</p>' : '') +
+      '</div><div class="hello__stats">' +
+      '<a class="mini-stat" href="#/rangliste"><div class="mini-stat__v">' + (players === null ? '–' : players) + '</div><div class="mini-stat__l">Spieler</div></a>' +
+      '<div class="mini-stat"><div class="mini-stat__v">' + openTips + '</div><div class="mini-stat__l">' + plural(openTips, 'Tipp offen', 'Tipps offen') + '</div></div>' +
+      '<div class="mini-stat' + (pending.length ? ' mini-stat--warn' : '') + '"><div class="mini-stat__v">' + pending.length + '</div><div class="mini-stat__l">Ergebnis fehlt</div></div>' +
+      '</div></section>';
+    if (!S.lbAll) loadLeaderboard('all').then(function (r) { S.lbAll = r; if (S.route === 'spiele' && S.owner) renderOwnerSummary(); }).catch(function () { /* optional */ });
+  }
+
+  function renderOwnerList() {
+    var box = $('#t-list');
+    if (!box) return;
+    var ms = compMatches();
+    var live = ms.filter(function (m) { return phase(m) === 'live'; });
+    var open = ms.filter(function (m) { return !m.locked; });
+    var past = ms.filter(function (m) { return m.locked && phase(m) !== 'live'; }).slice().reverse();
+    var multi = S.comps.length > 1 && S.compFilter === 'all';
+    var comps = S.compFilter === 'all' ? S.comps : S.comps.filter(function (c) { return c.id === S.compFilter; });
+    var html = '';
+    comps.forEach(function (c) {
+      if (!c.bonus_question) return;
+      var show = S.filter === 'alle' || (S.filter === 'offen' ? !c.bonus_locked : c.bonus_locked);
+      if (show) html += ownerBonusCard(c, multi);
+    });
+    if (live.length && S.filter !== 'ergebnisse') {
+      html += '<section class="group" aria-label="Läuft gerade"><div class="group__head"><h2 class="group__title"><span class="live-dot" aria-hidden="true"></span>Läuft gerade</h2>' +
+        '<span class="group__meta">' + live.length + ' ' + plural(live.length, 'Spiel', 'Spiele') + '</span></div><div class="group__list">' + live.map(ownerCard).join('') + '</div></section>';
+    }
+    if (S.filter !== 'ergebnisse') groupBy(open).forEach(function (g) { html += ownerGroup(g, multi); });
+    if (S.filter !== 'offen') {
+      if (S.filter === 'alle' && past.length) html += '<h2 class="eyebrow" style="margin:26px 2px 0">Gespielt</h2>';
+      groupBy(past).forEach(function (g) { html += ownerGroup(g, multi); });
+    }
+    var count = (S.filter !== 'ergebnisse' ? live.length + open.length : 0) + (S.filter !== 'offen' ? past.length : 0);
+    if (!count) {
+      html += !S.matches.length
+        ? '<div class="card empty">' + emptyArt('whistle') + '<h2>Noch keine Spiele</h2><p>Spiele trägst du in der Verwaltung ein – oder lässt sie automatisch abrufen.</p><a class="btn btn--secondary" href="' + ADMIN_URL + '">Zur Verwaltung</a></div>'
+        : S.filter === 'offen'
+          ? '<div class="card empty">' + emptyArt('glass') + '<h2>Gerade nichts offen</h2><p>Es gibt keine Spiele, auf die noch getippt werden kann.</p><button type="button" class="btn btn--secondary" data-filter="ergebnisse">Zu den Ergebnissen</button></div>'
+          : '<div class="card empty">' + emptyArt('whistle') + '<h2>Noch keine Ergebnisse</h2><p>Sobald die ersten Spiele angepfiffen sind, stehen sie hier.</p></div>';
+    }
+    if (S.comps.some(function (c) { return c.source; })) {
+      html += '<p class="foot-note">Spielplan &amp; Ergebnisse: <a href="https://www.openligadb.de/" target="_blank" rel="noopener">OpenLigaDB</a></p>';
+    }
+    box.innerHTML = html;
+  }
+
+  function ownerGroup(g, multi) {
+    var tips = g.items.reduce(function (n, m) { return n + (m.tip_count || 0); }, 0);
+    var title = g.round || 'Spiele';
+    return '<section class="group" aria-label="' + esc(title) + '"><div class="group__head"><h2 class="group__title"><span>' +
+      (multi && g.comp ? '<span class="eyebrow">' + esc(g.comp.name) + '</span>' : '') + esc(title) + '</span></h2>' +
+      '<span class="group__meta">' + g.items.length + ' ' + plural(g.items.length, 'Spiel', 'Spiele') + ' · ' + tips + ' ' + plural(tips, 'Tipp', 'Tipps') + '</span></div>' +
+      '<div class="group__list">' + g.items.map(ownerCard).join('') + '</div></section>';
+  }
+
+  function ownerCard(m) {
+    var ph = phase(m);
+    var res = hasRes(m);
+    var hw = res && m.home_goals > m.away_goals, aw = res && m.away_goals > m.home_goals;
+    var badge = ph === 'open' ? '<span data-countdown="' + esc(m.kickoff) + '">' + (deadlineBadge(m.kickoff) || '<span class="badge">' + icon('clock') + 'offen</span>') + '</span>' :
+      ph === 'live' ? '<span class="badge badge--live">Läuft</span>' :
+      ph === 'pending' ? '<span class="badge badge--soon">' + icon('clock') + 'Ergebnis fehlt</span>' : '<span class="badge badge--final">Endstand</span>';
+    var label = m.home + ' gegen ' + m.away + ', ' + kickLong(m.kickoff) + (res ? ', Endstand ' + m.home_goals + ':' + m.away_goals : '');
+    var n = m.tip_count || 0;
+    return '<article class="card match match--owner match--' + ph + '" data-tips-mid="' + m.id + '" aria-label="' + esc(label) + '">' +
+      '<div class="match__meta"><span class="match__when">' + (ph === 'open' ? icon('clock', 'ico--sm') : ph === 'live' ? 'Anstoß ' : '') + esc(dayWord(m.kickoff)) + ' <b>' + esc(kParts(m.kickoff).time) + '</b></span>' + badge + '</div>' +
+      teamRowLocked(m.home, res ? m.home_goals : null, res ? (hw ? 'is-winner' : aw ? 'is-loser' : '') : '') +
+      teamRowLocked(m.away, res ? m.away_goals : null, res ? (aw ? 'is-winner' : hw ? 'is-loser' : '') : '') +
+      quoteHtml(m) +
+      '<div class="match__foot match__foot--owner"><button type="button" class="btn btn--small btn--ghost btn--block" data-tips="' + m.id + '">' + icon('user') +
+      (n ? 'Alle ' + n + ' ' + plural(n, 'Tipp', 'Tipps') + ' ansehen' : 'Wer hat getippt?') + '</button></div></article>';
+  }
+
+  function ownerBonusCard(c, multi) {
+    var fk = firstKick(c.id);
+    var n = c.bonus_count || 0;
+    return '<section class="card bonus" aria-labelledby="bq-' + c.id + '"><div class="bonus__top"><span class="bonus__icon" aria-hidden="true">' + icon('star') + '</span><div>' +
+      '<p class="eyebrow">Bonusfrage' + (multi ? ' · ' + esc(c.name) : '') + ' · ' + c.bonus_points + ' Punkte</p>' +
+      '<h2 class="bonus__q" id="bq-' + c.id + '">' + esc(c.bonus_question) + '</h2>' +
+      '<p class="bonus__sub">' + (c.bonus_locked ? 'Tippschluss war beim ersten Anstoß.' : fk ? 'Tippbar bis ' + esc(kickShort(fk)) + ' Uhr.' : 'Tippbar bis zum ersten Anstoß.') + '</p></div></div>' +
+      '<div class="bonus__answer"><span class="tipline__label">Antworten</span><strong>' + n + '</strong>' +
+      (c.bonus_answer ? '<span class="bonus__sub" style="margin:0">Auflösung: <b style="color:var(--text)">' + esc(c.bonus_answer) + '</b></span>' : '<span class="chip chip--open">Auflösung nach Turnierende</span>') +
+      '</div><p class="bonus__sub" style="margin-top:8px">Wer was geantwortet hat, siehst du in der Rangliste beim jeweiligen Spieler.</p></section>';
+  }
+
+  function openMatchTips(mid, opener) {
+    var m = findMatch(mid);
+    if (!m) return;
+    var head = '<div class="sheet__grip" aria-hidden="true"></div><div class="sheet__head"><span class="sheet__avatar sheet__avatar--ball" aria-hidden="true">' + icon('ball') + '</span>' +
+      '<div><h2 class="sheet__title" id="sheet-title">' + esc(m.home) + ' – ' + esc(m.away) + '</h2><p class="sheet__sub">' + esc(kickLong(m.kickoff)) + (m.round ? ' · ' + esc(m.round) : '') + '</p></div>' +
+      '<button type="button" class="sheet__close" data-close aria-label="Schließen">' + icon('x') + '</button></div>';
+    var sheet = openSheet(head + '<div class="sheet__body" id="sheet-body">' + skeleton(1) + '</div>', opener);
+    API.call('admin_match_tips', { match_id: mid }).then(function (r) {
+      var body = $('#sheet-body', sheet);
+      if (!body) return;
+      var x = r.match, res = hasRes(x);
+      var html = '<div class="mt-result"><span class="mt-result__label">' + (res ? 'Endstand' : x.locked ? 'Ergebnis folgt' : 'Noch nicht angepfiffen') + '</span>' +
+        '<span class="ptip__res mt-result__score">' + (res ? x.home_goals + ':' + x.away_goals : '–:–') + '</span>' +
+        (x.competition ? '<span class="mt-result__comp">' + esc(x.competition) + '</span>' : '') + '</div>';
+      html += quoteHtml(x);
+      var tips = r.tips || [];
+      if (!tips.length) {
+        html += '<div class="empty" style="padding:20px 8px">' + emptyArt('glass') + '<h3>Noch keine Tipps</h3><p>Auf dieses Spiel hat noch niemand getippt.</p></div>';
+      } else {
+        html += '<p class="sheet-section-title">' + tips.length + ' ' + plural(tips.length, 'Tipp', 'Tipps') + (res ? ' · nach Punkten' : '') + '</p>' +
+          '<ul class="mtips">' + tips.map(function (t) {
+            return '<li class="mtip">' + avatar(t.nickname, 'av') + '<span class="mtip__name">' + esc(t.nickname) + '</span>' +
+              '<span class="mtip__tip">' + t.tip.home + ':' + t.tip.away + '</span>' +
+              (res && t.kind ? kindChip(t.kind, t.points) : '<span class="chip chip--open">' + (x.locked ? 'läuft' : 'noch änderbar') + '</span>') + '</li>';
+          }).join('') + '</ul>';
+      }
+      var miss = r.missing || [];
+      if (miss.length) {
+        html += '<p class="sheet-section-title">' + (x.locked ? 'Nicht getippt' : 'Fehlen noch') + ' (' + miss.length + ')</p><p class="mtips__missing">' + miss.map(esc).join(', ') + '</p>';
+      }
+      body.innerHTML = html;
+    }).catch(function (e) {
+      if (isAuthError(e)) { closeSheet(true); return sessionExpired(); }
+      var body = $('#sheet-body', sheet);
+      if (body) body.innerHTML = '<div class="form-error">' + icon('info') + '<span>' + esc(errText(e)) + '</span></div>';
+    });
+  }
+
+  /* --- Wirt-Ansicht: Stammtisch-Statistik --- */
+
+  function viewOwnerStats() {
+    mount('<div class="view"><div class="view-head"><h1 class="view-title" tabindex="-1">Statistik</h1></div>' +
+      '<p class="lead" style="margin:-6px 0 12px">Der ganze Stammtisch zusammen – alle aktiven Spieler.</p>' +
+      '<div id="st-tabs"></div><div id="st-panel" role="tabpanel">' + skeleton(3) + '</div></div>');
+    loadMatches().then(function () {
+      if (S.route !== 'statistik' || !S.owner) return;
+      S.statComp = defaultComp(S.statComp);
+      $('#st-tabs').innerHTML = compTabs(S.statComp, 'st');
+      bindTabs($('#st-tabs'), function (key) {
+        S.statComp = key === 'all' ? 'all' : +key;
+        selectTab($('#st-tabs'), key);
+        showOwnerStats();
+      });
+      showOwnerStats();
+    }).catch(function (e) {
+      if (isAuthError(e)) return sessionExpired();
+      $('#st-panel').innerHTML = loadError(e, 'st-retry');
+      $('#st-retry').addEventListener('click', viewOwnerStats);
+    });
+  }
+
+  function showOwnerStats() {
+    var key = S.statComp, panel = $('#st-panel');
+    panel.innerHTML = skeleton(3);
+    API.call('admin_stats', key === 'all' ? {} : { competition_id: key }).then(function (s) {
+      if (S.route !== 'statistik' || S.statComp !== key || !S.owner) return;
+      renderOwnerStats(s);
+    }).catch(function (e) {
+      if (isAuthError(e)) return sessionExpired();
+      panel.innerHTML = loadError(e, 'st-retry');
+      $('#st-retry').addEventListener('click', showOwnerStats);
+    });
+  }
+
+  function renderOwnerStats(s) {
+    var panel = $('#st-panel');
+    var scored = s.scored_tips || 0;
+    var html = '<div class="stats">';
+    html += '<section class="card stat-hero span-2" aria-label="Stammtisch gesamt"><div><p class="eyebrow">' + (S.statComp === 'all' ? 'Alle Wettbewerbe' : esc((findComp(S.statComp) || {}).name || '')) + '</p>' +
+      '<p class="stat-hero__pts">' + s.tips + '<small>' + plural(s.tips, 'Tipp', 'Tipps') + '</small></p>' +
+      '<p class="stat-hero__sub">' + s.tippers + ' von ' + s.players + ' ' + plural(s.players, 'Spieler hat', 'Spielern haben') + ' getippt · ' +
+      s.matches + ' ' + plural(s.matches, 'Spiel', 'Spiele') + ', ' + s.scored_matches + ' mit Ergebnis · ' + scored + ' Tipps gewertet</p></div>' +
+      '<div class="stat-hero__rank"><b>' + s.players + '</b><span>' + plural(s.players, 'Spieler', 'Spieler') + '</span></div></section>';
+    if (!scored) {
+      html += '<section class="card empty span-2">' + emptyArt('chart') + '<h2>Noch nichts gewertet</h2><p>Sobald die ersten Ergebnisse eingetragen sind, stehen hier Trefferquote, Punkte-Schnitt und die Besten jeder Runde.</p></section>';
+      if (s.favorite_tip) html += '<div class="tiles span-2">' + tile('Häufigster Tipp', esc(s.favorite_tip.tip), s.favorite_tip.count + '× getippt') + '</div>';
+      panel.innerHTML = html + '</div>';
+      return;
+    }
+    var hits = s.exact + s.diff + s.tendency;
+    html += '<div class="tiles span-2">' +
+      tile('Trefferquote', dec(s.hit_rate, 0) + '<small>&nbsp;%</small>', '<b>' + hits + '</b> von ' + scored + ' Tipps mit Punkten') +
+      tile('Ø Punkte pro Tipp', dec(s.avg_points_tip, 2), 'über alle gewerteten Tipps') +
+      tile('Ø Punkte pro Spieler', dec(s.avg_points_player, 1), s.points + ' Punkte insgesamt' + (s.bonus ? ' · inkl. ' + s.bonus + ' Bonus' : '')) +
+      tile('Häufigster Tipp', s.favorite_tip ? esc(s.favorite_tip.tip) : '–', s.favorite_tip ? s.favorite_tip.count + '× getippt' : '') +
+      '</div>';
+    var parts = [['exact', 'Volltreffer', s.exact], ['diff', 'Tordifferenz', s.diff], ['tendency', 'Tendenz', s.tendency], ['miss', 'Daneben', s.miss]];
+    html += '<section class="card chart-card"><div class="chart-card__head"><h2 class="card-title">Treffer am Stammtisch</h2><span class="card-sub">' + scored + ' gewertete Tipps</span></div>' +
+      '<div class="donut-wrap"><div class="donut-center">' + donut(parts, scored).replace('Aufteilung deiner Tipps', 'Aufteilung aller Tipps') +
+      '<div class="donut-center__txt" aria-hidden="true"><b>' + dec(s.hit_rate, 0) + '%</b><span>Treffer</span></div></div>' +
+      '<ul class="breakdown">' + parts.map(function (p) {
+        return '<li><i style="background:' + KCOL[p[0]] + '"></i><span>' + p[1] + '</span><span><b>' + p[2] + '</b><small>' + Math.round(p[2] / scored * 100) + '%</small></span></li>';
+      }).join('') + '</ul></div></section>';
+    var rounds = (s.by_round || []).slice().reverse();
+    html += '<section class="card chart-card"><div class="chart-card__head"><h2 class="card-title">Runden</h2><span class="card-sub">Ø Punkte je Spieler · Rundensieger</span></div>' +
+      '<ol class="rounds">' + rounds.map(function (r) {
+        return '<li class="rounds__row"><div class="rounds__main"><span class="rounds__name">' + esc(r.round) + '</span>' +
+          '<span class="rounds__meta">' + r.matches + ' ' + plural(r.matches, 'Spiel', 'Spiele') + ' · ' + r.tips + ' ' + plural(r.tips, 'Tipp', 'Tipps') + '</span></div>' +
+          '<span class="rounds__avg"><b>' + dec(r.avg_points, 1) + '</b><small>Ø Pkt.</small></span>' +
+          '<span class="rounds__best">' + (r.best ? icon('star') + '<span><b>' + esc(r.best.nicknames.join(', ')) + '</b> · ' + r.best.points + ' Pkt.</span>' : '<span class="rounds__none">keine Punkte</span>') + '</span></li>';
+      }).join('') + '</ol></section>';
+    panel.innerHTML = html + '</div>';
   }
 
   /* ================================================================ Wettbewerbs-Reiter (Rangliste/Statistik) */
@@ -1159,7 +1490,7 @@
           '<td class="nm l"><button type="button" data-player="' + esc(r.nickname) + '" aria-label="' + esc(r.nickname) + ' – Tipps ansehen">' + avatar(r.nickname, 'av') + '<span>' + esc(r.nickname) + '</span>' + (r.is_me ? '<span class="me-tag">Du</span>' : '') + '</button></td>' +
           '<td class="pt">' + r.points + '</td><td class="sm">' + r.exact + '</td><td class="sm">' + r.diff + '</td><td class="sm hide-xs">' + r.tendency + '</td><td class="sm">' + r.tips + '</td></tr>';
       }).join('') + '</tbody></table></div>' +
-      '<p class="lb-legend">Bei Punktgleichheit zählen erst die exakten Treffer, dann die Tordifferenz.' + (rows.some(function (r) { return r.bonus; }) ? ' Punkte inkl. Bonusfrage.' : '') + ' Tipp auf einen Namen, um seine Tipps zu sehen.</p>';
+      '<p class="lb-legend">Bei Punktgleichheit zählen erst die exakten Treffer, dann die Tordifferenz.' + (rows.some(function (r) { return r.bonus; }) ? ' Punkte inkl. Bonusfrage.' : '') + (S.owner ? ' Tipp auf einen Namen, um alle seine Tipps zu sehen – auch die noch offenen.' : ' Tipp auf einen Namen, um seine Tipps zu sehen.') + '</p>';
     panel.innerHTML = html;
     panel.onclick = function (e) {
       var j = e.target.closest('[data-jump]');
@@ -1225,25 +1556,27 @@
       (row ? 'Platz ' + row.rank + ' · ' + row.points + ' ' + plural(row.points, 'Punkt', 'Punkte') + ' · ' + row.exact + '× exakt' : '') + '</p></div>' +
       '<button type="button" class="sheet__close" data-close aria-label="Schließen">' + icon('x') + '</button></div>';
     var sheet = openSheet(head + '<div class="sheet__body" id="sheet-body">' + skeleton(1) + '</div>', opener);
-    API.call('player_tips', { nickname: nick }).then(function (r) {
+    API.call('player_tips', rq({ nickname: nick })).then(function (r) {
       var body = $('#sheet-body', sheet);
       if (!body) return;
       var html = '';
+      var owner = !!r.owner;
       (r.bonus || []).forEach(function (b) {
         html += '<div class="sheet-bonus"><p class="eyebrow">Bonusfrage · ' + esc(b.competition) + '</p><p style="margin:4px 0 6px">' + esc(b.question) + '</p>' +
-          '<p><b>' + esc(b.answer) + '</b> ' + (b.correct === true ? '<span class="chip chip--exact" style="margin-left:6px">Richtig</span>' : b.correct === false ? '<span class="chip chip--miss" style="margin-left:6px">Leider nicht</span>' : '<span class="chip chip--open" style="margin-left:6px">offen</span>') + '</p></div>';
+          '<p><b>' + esc(b.answer) + '</b> ' + (b.correct === true ? '<span class="chip chip--exact" style="margin-left:6px">Richtig</span>' : b.correct === false ? '<span class="chip chip--miss" style="margin-left:6px">Leider nicht</span>' :
+            '<span class="chip chip--open" style="margin-left:6px">' + (owner && b.locked === false ? 'noch änderbar' : 'offen') + '</span>') + '</p></div>';
       });
       var tips = r.tips || [];
       if (!tips.length) {
         html += '<div class="empty" style="padding:20px 8px">' + emptyArt('glass') + '<h3>Noch nichts zu sehen</h3><p>' +
-          (r.player && r.player.is_me ? 'Deine Tipps erscheinen hier, sobald die Spiele angepfiffen sind.' : 'Tipps der anderen siehst du erst nach dem Anstoß – und bisher gibt es keine.') + '</p></div>';
+          (owner ? 'Hat bisher noch nichts getippt.' : r.player && r.player.is_me ? 'Deine Tipps erscheinen hier, sobald die Spiele angepfiffen sind.' : 'Tipps der anderen siehst du erst nach dem Anstoß – und bisher gibt es keine.') + '</p></div>';
       } else {
-        html += '<p class="sheet-section-title">Tipps auf angepfiffene Spiele</p>' + tips.map(function (t) {
+        html += '<p class="sheet-section-title">' + (owner ? 'Alle Tipps – auch vor dem Anstoß' : 'Tipps auf angepfiffene Spiele') + '</p>' + tips.map(function (t) {
           var res = hasRes(t);
           return '<div class="ptip"><span class="ptip__when">' + esc(kickShort(t.kickoff)) + (t.round ? ' · ' + esc(t.round) : '') + '</span>' +
             '<span class="ptip__teams">' + esc(t.home) + ' <span class="ptip__res">' + (res ? t.home_goals + ':' + t.away_goals : '–:–') + '</span> ' + esc(t.away) + '</span>' +
             '<span class="ptip__right"><span class="ptip__tip">Tipp <b>' + t.tip.home + ':' + t.tip.away + '</b></span>' +
-            (res && t.kind ? kindChip(t.kind, t.points) : '<span class="chip chip--open">läuft</span>') + '</span></div>';
+            (res && t.kind ? kindChip(t.kind, t.points) : '<span class="chip chip--open">' + (t.locked === false ? 'noch offen' : 'läuft') + '</span>') + '</span></div>';
         }).join('');
       }
       body.innerHTML = html;
@@ -1257,6 +1590,7 @@
   /* ================================================================ Statistik */
 
   function viewStatistik() {
+    if (S.owner) { viewOwnerStats(); return; }
     mount('<div class="view"><div class="view-head"><h1 class="view-title" tabindex="-1">Statistik</h1></div>' +
       '<div id="st-tabs"></div><div id="st-panel" role="tabpanel">' + skeleton(3) + '</div></div>');
     loadMatches().then(function () {
@@ -1554,6 +1888,7 @@
     API.call('logout').catch(function () { return null; }).then(function () {
       S.player = null; resetData();
       toast('Du bist abgemeldet. Bis zum nächsten Spiel!', 'ok');
+      if (S.admin) { S.owner = true; location.hash = '#/spiele'; if (parseHash() === 'spiele') onRoute(); return; }
       S.authTab = 'login';
       location.hash = '#/anmelden';
       if (parseHash() === 'anmelden') onRoute();
@@ -1580,16 +1915,28 @@
     API.demoReset();
     S.player = null; resetData();
     toast('Demo zurückgesetzt – frische Daten sind gezapft.', 'ok');
+    if (S.admin) { S.owner = true; if (parseHash() === 'spiele') onRoute(); else location.hash = '#/spiele'; return; }
     S.authTab = 'login';
     if (parseHash() === 'anmelden') onRoute(); else location.hash = '#/anmelden';
   }
 
-  var VIEWS = { tippen: viewTippen, rangliste: viewRangliste, statistik: viewStatistik, profil: viewProfil };
+  var VIEWS = { tippen: viewTippen, rangliste: viewRangliste, statistik: viewStatistik, profil: viewProfil, spiele: viewSpiele };
 
   /* ================================================================ Takt: Countdown & Aktualisierung */
 
   function tick() {
-    if (!S.player || document.hidden) return;
+    if ((!S.player && !S.owner) || document.hidden) return;
+    if (S.owner) {
+      if (S.route !== 'spiele') return;
+      var due = false;
+      $$('[data-countdown]').forEach(function (el) {
+        var k = el.getAttribute('data-countdown');
+        if (naiveMs(k) <= nowMs()) due = true;
+        else el.innerHTML = deadlineBadge(k);
+      });
+      if (due || Date.now() - S.loadedAt > REFRESH_MS) refreshTippen(true);
+      return;
+    }
     if (S.route === 'tippen') {
       var needReload = false;
       $$('[data-countdown]').forEach(function (el) {
@@ -1621,6 +1968,10 @@
     API.init({ base: BASE }).then(function (st) {
       S.mode = API.mode;
       S.player = st.player || null;
+      S.admin = !!st.admin;
+      // Nur die Verwaltung angemeldet → Wirt-Ansicht; beide → Spieler-App (Umschalter im Kopf), außer zuletzt als Wirt angesehen
+      S.owner = S.admin && (!S.player || getViewPref());
+      $('#view-toggle').addEventListener('click', function () { setOwner(!S.owner); });
       if (st.settings) S.settings = st.settings;
       if (st.serverTime) syncClock(st.serverTime);
       updateChrome();

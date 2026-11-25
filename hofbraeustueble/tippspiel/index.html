@@ -69,11 +69,20 @@
         <a href="#/statistik" data-route="statistik"><svg class="ico"><use href="#i-chart"/></svg>Statistik</a>
         <a href="#/profil" data-route="profil"><svg class="ico"><use href="#i-user"/></svg>Profil</a>
       </nav>
+      <button type="button" class="site-link view-toggle" id="view-toggle" hidden></button>
       <a class="site-link" href="../" aria-label="Zur Website vom Hofbräustüble">
         <svg class="ico" aria-hidden="true"><use href="#i-house"/></svg><span>Zur Website</span>
       </a>
     </div>
   </header>
+
+  <div class="owner-bar" id="owner-bar" role="note" hidden>
+    <div class="owner-bar__inner">
+      <svg class="ico" aria-hidden="true"><use href="#i-eye"/></svg>
+      <p class="owner-bar__text"><strong>Wirt-Ansicht</strong> – nur ansehen, hier wird nicht getippt</p>
+      <a class="owner-bar__link" href="../admin/#tippspiel">Zur Verwaltung</a>
+    </div>
+  </div>
 
   <main id="main" class="main" tabindex="-1">
     <div id="view" class="view-root">

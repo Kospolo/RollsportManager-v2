@@ -61,7 +61,7 @@ JSON rein/raus. Antwort immer `{ ok: true, ... }` oder `{ ok: false, error: "Deu
 ### Spieler
 | Aktion | Methode | Eingabe | Antwort |
 |---|---|---|---|
-| `status` | GET | – | `{ api:"hbs-tipp", player: {id,nickname,email}\|null, csrf, settings:{points_exact,points_diff,points_tendency}, serverTime:"YYYY-MM-DD HH:MM:SS" }` |
+| `status` | GET | – | `{ api:"hbs-tipp", player: {id,nickname,email}\|null, csrf, settings:{points_exact,points_diff,points_tendency}, serverTime:"YYYY-MM-DD HH:MM:SS", admin: bool }` (`admin` = Verwaltung angemeldet, siehe „Wirt-Ansicht“) |
 | `invite_check` | GET | `code` | `{ valid: bool }` |
 | `register` | POST | `{code, nickname, password, email?}` | wie `status` (eingeloggt). Nickname 2–24 Zeichen, Passwort ≥ 8. |
 | `login` | POST | `{nickname, password}` | wie `status`. Brute-Force-Schutz. |
@@ -184,3 +184,28 @@ Quelle: OpenLigaDB (`https://api.openligadb.de`, kostenlos, ohne Schlüssel, Com
 **Demo-Modus (`tipp-client.js`):** gleiche Aktionen und Felder, aber ohne Netzwerk. `admin_sync`/`cron_sync` simulieren den Abruf: angepfiffene Spiele ohne Hand-Ergebnis bekommen ein plausibles, je Spiel gleichbleibendes Ergebnis (`result_source='auto'`), `inserted/updated` = 0, zusätzlich `message: "Demo: Abruf simuliert – im echten Betrieb kommen die Daten von OpenLigaDB"`. `admin_source_preview` liefert feste Beispieldaten für `bl1`, `bl2`, `dfb`, `ucl` (sonst 404). Der Nebenbei-Abruf wird mit denselben Schwellen (110 Min., 10 Min., 3 Tage) nachgebildet. `admin_cron_info` liefert eine Demo-Adresse.
 
 **Admin-Oberfläche:** Wettbewerb-Dialog mit Bereich „Spielplan automatisch abrufen (OpenLigaDB)“ (Schalter, Auswahl 1. Bundesliga / 2. Bundesliga / DFB-Pokal / Champions League / eigenes Kürzel, Saison = laufende Saison (ab Juli das aktuelle Jahr, sonst Vorjahr) als „2026/27“, Zeitraum in Tagen, „Vorschau“, „Jetzt abrufen“, „Ganze Saison importieren“), Stand je Wettbewerb in der Wettbewerbsliste und in der Übersicht, Badges „automatisch“/„von Hand“ an Ergebnissen, Übersicht-Karte mit Cronjob-Adresse (Kopieren, Kurzanleitung IONOS/Strato/all-inkl, „Token neu erzeugen“). **Spieler-App:** unter der Spieleliste „Spielplan & Ergebnisse: OpenLigaDB“, sobald ein Wettbewerb eine Quelle hat.
+
+## Ergänzung: Wirt-Ansicht (nur ansehen, ohne Spielerkonto)
+
+Der Wirt kann das Tippspiel jederzeit ansehen, ohne sich als Spieler zu registrieren. Grundlage ist die **CMS-Session** (Anmeldung in der Verwaltung, gelesen wie bei den Admin-Aktionen).
+
+**Backend (`cms/tipp-api.php`)**
+- `status`, `login`, `register` liefern zusätzlich `admin: true|false` (CMS-Session gültig). Dabei wird die CMS-Sitzung nur angesehen, nicht verlängert.
+- Lese-Aktionen `matches`, `leaderboard`, `player_tips`: Mit Spieler-Session → normale Spieler-Antwort (Spieler hat Vorrang). Ohne Spieler, aber mit gültiger CMS-Session → **Wirt-Modus**. Mit `view=owner` wird der Wirt-Modus ausdrücklich verlangt (auch wenn zusätzlich ein Spieler angemeldet ist); ohne CMS-Session dann 401 mit `owner:true`. Ohne jede Anmeldung bleibt alles 401. Antworten im Wirt-Modus enthalten `owner:true`; Aktivität verlängert die CMS-Sitzung.
+  - `matches` (Wirt): ohne `my_tip/my_points/my_kind/my_bonus`; Wettbewerbe mit `bonus_count` (Anzahl Bonus-Antworten aktiver Spieler); Spiele mit `tip_count` und `tendency` für **alle** Spiele (auch vor dem Anstoß, sobald ≥ 1 Tipp).
+  - `leaderboard` (Wirt): wie gehabt, `is_me` immer false, `me_rank: null`.
+  - `player_tips` (Wirt): **alle** Tipps des Spielers inkl. noch offener Spiele (`locked:false`), Bonus-Antworten auch vor Tippschluss mit zusätzlichem `locked`; `player.is_me:false`.
+  - `stats` bleibt persönlich (ohne Spieler 401) – der Wirt nutzt `admin_stats`.
+- **Schreiben ist im Wirt-Modus nie möglich**: `tip`, `bonus_tip`, `change_password`, `delete_account` usw. verlangen weiterhin die Spieler-Session (+ deren CSRF-Token) → 401 bzw. 403. CSRF-/Origin-Prüfung der POSTs unverändert.
+- Neue Admin-Aktionen (GET, CMS-Session nötig, sonst 401):
+
+| Aktion | Eingabe | Antwort |
+|---|---|---|
+| `admin_stats` | `competition_id?` (leer = alle) | `{ players, tippers, matches, scored_matches, tips, scored_tips, exact, diff, tendency, miss, hit_rate, points, bonus, avg_points_tip, avg_points_player, favorite_tip:{tip,count}\|null, by_round:[{round, matches, tips, avg_points, best:{nicknames:[…], points}\|null}] }` – nur aktive Spieler; `hit_rate` in % (1 Stelle), `avg_points_tip` = Spielpunkte/gewertete Tipps, `avg_points_player` = Punkte inkl. Bonus / aktive Spieler, `by_round[].avg_points` = Ø der Spieler, die in der Runde getippt haben, `best` = Spieler mit den meisten Spielpunkten der Runde (Gleichstand: alle, alphabetisch; null bei 0 Punkten). Runden wie bei `stats`. |
+| `admin_match_tips` | `match_id` | `{ match:{…Spiel, competition, tip_count, tendency}, tips:[{nickname, tip:{home,away}, points, kind, updated}], missing:[nickname…] }` – alle Tipps aktiver Spieler (auch vor dem Anstoß), sortiert nach Punkten ↓ dann Nickname; `missing` = aktive Spieler ohne Tipp. 404 bei unbekanntem Spiel. |
+
+**JS-Client:** `TippAPI.admin` (aus `status/login/register`), GET-Aktionen `admin_stats`/`admin_match_tips`. Demo-Modus: der Wirt gilt als angemeldet, wenn die URL `?wirt=1` enthält oder nach `TippAPI.demoSetOwner(true)` (sessionStorage `hbs_tipp_demo_owner`, gilt für den Tab); sonst unverändert. Admin-Aktionen brauchen im Demo-Modus weiterhin keine Anmeldung. Demo-Seed unverändert (Key `hbs_tipp_demo_v3`). `TippAPI.util.ownerStats` = reine Berechnung von `admin_stats`.
+
+**Spieler-App:** `player:null` + `admin:true` → Wirt-Ansicht: Messing-Banner „Wirt-Ansicht – nur ansehen, hier wird nicht getippt“ mit Link „Zur Verwaltung“ (`../admin/#tippspiel`); Reiter Spiele (`#/spiele`, gruppiert wie „Tippen“, nur lesen, Ergebnis, Tipp-Anzahl, Stammtisch-Quote immer sichtbar; Tipp auf ein Spiel → Bottom-Sheet mit allen Tipps, Punkten und wer noch fehlt), Rangliste (Name → alle Tipps inkl. offener), Statistik (`admin_stats`). Kein Profil. Anmeldeseite: dezenter Link „Als Wirt ansehen“ → `../admin/#tippspiel`. Bestehen beide Anmeldungen: Spieler-App mit Umschalter „Als Wirt ansehen“ / „Als Spieler“ im Kopf (Auswahl gilt für den Tab, sessionStorage `hbs_tipp_view`); die Wirt-Ansicht fragt dann mit `view=owner`.
+
+**Verwaltung:** Reiter „Tippspiel“: Knopf „Tippspiel ansehen (Wirt-Ansicht)“ im Kopf (über der Unter-Navigation, in allen Unterbereichen) und als Karte in der Übersicht → `../tippspiel/` (Demo: `../tippspiel/?wirt=1`) in neuem Tab. Übersicht: Rangliste (gesamt, aus `leaderboard` mit `view=owner`) zeigt die Top 5 mit „Alle N anzeigen“ / „Weniger anzeigen“.
