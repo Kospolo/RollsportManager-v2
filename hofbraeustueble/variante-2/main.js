@@ -41,7 +41,7 @@
 
   function render() {
     var steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer,
-      renderGallery, renderContact, renderFooter, renderLegal, buildNav];
+      renderGallery, renderContact, renderFooter, renderLegal, renderExtras, buildNav];
     steps.forEach(function (fn) {
       try { fn(); } catch (e) { if (window.console) console.warn('Render-Fehler in ' + fn.name, e); }
     });
@@ -307,7 +307,7 @@
       var id = 'fx-' + i;
       var cat = String(e.category || '');
       var img = e.image ? '<div class="fx-bg" aria-hidden="true"><img src="' + esc(H.asset(e.image)) + '" alt="" loading="lazy" decoding="async"></div>' : '';
-      return '<li class="fx" data-i="' + i + '">' +
+      return '<li class="fx" data-i="' + i + '" data-event-id="' + esc(e.id || '') + '">' +
         (i === 0 ? '<span class="fx-next">Nächster Termin</span>' : '') +
         '<div class="fx-card">' +
           '<div class="fx-face fx-front' + (e.image ? ' has-img' : '') + '">' + img +
@@ -327,7 +327,9 @@
               '<button type="button" class="fx-btn fx-close">' + icon('flip') + 'Zurück</button>' +
             '</div>' +
           '</div>' +
-        '</div></li>';
+        '</div>' +
+        (H.signupEnabled(C, e) ? '<div class="x-signup" data-signup="' + esc(e.id) + '"></div>' : '') +
+        '</li>';
     }).join('');
     renderCountdownShell();
     if (mqNarrow.matches && events.length > 1) $('#eventsHint').textContent = 'Wischen · Karte antippen für Details';
@@ -463,13 +465,22 @@
   function renderTippspiel() {
     var t = C.tippspiel || {};
     var sec = $('#tippspiel');
-    if (!t.enabled) { sec.remove(); return; }
+    if (!t.enabled || !H.features(C).tippspiel) { sec.remove(); return; }
     sec.hidden = false;
     $('#tippTitle').textContent = t.title || 'Tippspiel';
     if (t.text) $('#tippText').innerHTML = H.paragraphs(t.text); else $('#tippText').hidden = true;
     $('#tippBtn span').textContent = t.buttonText || 'Zum Tippspiel';
     var note = $('#tippNote');
     if (t.note) note.innerHTML = icon('shield') + '<span>' + esc(t.note) + '</span>'; else note.hidden = true;
+  }
+
+  /* Zusatzfunktionen (Speisekarte, Tisch-Anfrage, Anmeldung, Fußball diese Woche) – siehe extras.js */
+  function renderExtras() {
+    if (!window.HBSExtras) return;
+    window.HBSExtras.render(C, {
+      privacyDialog: 'dlgDatenschutz',
+      onChange: function () { buildNav(); }
+    });
   }
 
   // Punkte-Ziffern der Tipp-Tabelle klappen beim ersten Sichtkontakt um (Fallblatt)
@@ -829,7 +840,7 @@
   /* ------------------------------------------------------------------ */
   function buildNav() {
     // [Abschnitt, Beschriftung, externes Ziel?] – das Tippspiel verlinkt auf die eigene App
-    var items = [['ueber-uns', 'Über uns'], ['termine', 'Termine'], ['tippspiel', 'Tippspiel', '../tippspiel/'], ['zeiten', 'Zeiten'], ['sommer', 'Sommer'], ['galerie', 'Galerie'], ['kontakt', 'Kontakt']]
+    var items = [['ueber-uns', 'Über uns'], ['termine', 'Termine'], ['tippspiel', 'Tippspiel', '../tippspiel/'], ['karte', 'Karte'], ['zeiten', 'Zeiten'], ['reservieren', 'Reservieren'], ['sommer', 'Sommer'], ['galerie', 'Galerie'], ['kontakt', 'Kontakt']]
       .filter(function (it) { return document.getElementById(it[0]); });
     var link = function (it) { return '<a href="' + (it[2] || '#' + it[0]) + '"' + (it[2] ? ' class="nav-app"' : '') + '>' + it[1] + '</a>'; };
     $('#navList').innerHTML = items.map(function (it) { return '<li>' + link(it) + '</li>'; }).join('');

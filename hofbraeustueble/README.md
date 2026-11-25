@@ -441,3 +441,80 @@ Danach ist die Vorschau unter **https://hofbraeustueble.kospolo.de/** erreichbar
 ```
 
 Vorhandene Ligen werden übersprungen. Läuft die Saison schon, wird keine Bonusfrage angelegt (sie wäre nur bis zum ersten Spiel tippbar). Im CMS geht dasselbe unter Tippspiel → Spiele & Wettbewerbe → „Neuer Wettbewerb“; die Frauen-Ligen stehen dort jetzt auch in der Auswahl.
+
+## Zusatzfunktionen (Speisekarte, Reservierung, Anmeldung, Fußball diese Woche)
+
+Alle Zusatzfunktionen lassen sich in der Verwaltung unter **„Funktionen“** mit einem großen Schalter ein- und
+ausschalten (danach „Speichern“). Ausgeschaltete Bereiche verschwinden von der Website (Abschnitt, Menüpunkt,
+Knöpfe); gespeicherte Daten bleiben erhalten. Die Schalter stehen in `cms/content.json` unter `features`:
+
+| Schlüssel | Standard | Bedeutung |
+|---|---|---|
+| `tippspiel` | an | Tippspiel-Abschnitt und -Menüpunkt auf der Website (Hauptschalter; der Teaser lässt sich zusätzlich unter Tippspiel → Website-Teaser ausblenden). Spieler und Tipps bleiben erhalten, der direkte Link funktioniert weiter. |
+| `team` | an | Team-Bereich (Verlinkung auf der Website) |
+| `speisekarte` | an | Getränke- & Speisekarte |
+| `reservierung` | aus | Tisch-Anfrage über die Website |
+| `anmeldung` | aus | Anmeldung zu Veranstaltungen |
+| `programm` | an | „Diese Woche live bei uns“ (Spiele aus dem Tippspiel) |
+| `preise` | aus | nur Schalter – „Preise für die Tippspiel-Sieger anzeigen“ (wird im Tippspiel umgesetzt) |
+| `kasse` | aus | nur Schalter – „Stammtischkasse für gemeinsame Feiern (nicht für den Tippsieger)“ |
+
+Für eigene Erweiterungen: Jedes Element der Website mit `data-feature="<schlüssel>"` wird automatisch entfernt,
+wenn die Funktion aus ist (`HBS.applyFeatures()` in `assets/js/cms-loader.js`).
+
+**Speisekarte** (Reiter „Speisekarte“): Kategorien und Einträge mit Name, Größe (z. B. „0,5 l“), Preis (nur die
+Zahl, z. B. `3,90`), Kennzeichen (z. B. „vom Fass“), Hinweis und „verfügbar ja/nein“; Reihenfolge per Pfeilen.
+Gleichnamige Einträge direkt untereinander (Pils 0,3 l / 0,5 l) erscheinen auf der Website in einer Zeile.
+**Die mitgelieferten Preise sind Beispiele** – bitte ersetzen und den Hinweis „BEISPIEL-PREISE“ ändern.
+
+**Tisch-Anfrage** (Reiter „Reservierungen“): Gäste schicken Name, Telefon, freiwillig E-Mail, Tag, Uhrzeit,
+Personen, optional „Zum Fußballspiel“ (Auswahl aus dem Programm) und eine Nachricht. Das ist **keine automatische
+Buchung**: Der Gast sieht „Wir melden uns telefonisch“, der Wirt ruft an und setzt den Status
+(neu / bestätigt / abgelehnt), „Gast angerufen“ und eine interne Notiz – das wird sofort gespeichert.
+Neue Anfragen zeigt ein Zähler im Menü (wird jede Minute aktualisiert). Einstellbar: Überschrift, Text,
+höchstens Personen (Standard 12), Vorlauf in Stunden (3), höchstens Tage im Voraus (60), „nur zu den
+Öffnungszeiten“ (Ruhetage gesperrt, letzte Uhrzeit 30 Min. vor Schluss), automatische Löschung N Tage nach dem
+Termin (30), Datenschutz- und Einwilligungstext. Optional eine kurze **Hinweis-E-Mail** an den Wirt über PHP
+`mail()` (Standard: aus) – sie nennt nur Tag/Uhrzeit/Personen, keine Namen. **Achtung:** `mail()` funktioniert
+nicht bei jedem Hoster; deshalb trotzdem regelmäßig in der Verwaltung nachsehen.
+
+**Anmeldung zu Veranstaltungen**: Im Termin-Editor „Anmeldung möglich“ einschalten, optional „Höchstens
+Teilnehmer“ (0 = unbegrenzt), Anmeldeschluss und Hinweis. Die Termin-Karten zeigen „Anmelden“, „Noch X Plätze
+frei“ bzw. „Ausgebucht“. Der Reiter „Anmeldungen“ zeigt je Termin die Teilnehmerliste (Name, Telefon, Personen)
+mit „Liste drucken“, „Als Datei speichern“ (CSV für Excel) und Entfernen einzelner Einträge. Anmeldungen werden
+7 Tage nach der Veranstaltung automatisch gelöscht. Überbuchung ist ausgeschlossen (Platzprüfung in einer
+Datenbank-Transaktion).
+
+**Datenschutz:** Unter „Reservierungen → Einstellungen“ gibt es einen Textvorschlag für die Datenschutzerklärung
+(Knopf „In die Datenschutzerklärung übernehmen“) – bitte vor dem Einschalten übernehmen und rechtlich prüfen lassen.
+
+**Fußball diese Woche**: Zeigt die Spiele der nächsten 7 Tage (einstellbar 1–14) aus der Tippspiel-Datenbank,
+gruppiert nach Tag, mit Vereinslogos (falls im Tippspiel geladen) und „Läuft“ für angepfiffene Spiele; bei
+eingeschalteter Reservierung mit Knopf „Tisch anfragen“ (füllt Tag, Uhrzeit und Spiel im Formular vor). Unter
+„Funktionen → Fußball diese Woche → Einstellungen“: Überschrift, Text, Zeitraum und welche Wettbewerbe
+(nichts angehakt = alle aktiven). Ohne Tippspiel-Datenbank bleibt der Abschnitt einfach weg.
+
+**Technik**
+
+- `cms/gast-api.php` – Anfragen und Anmeldungen, eigene SQLite-Datei `cms/data/gast.sqlite` (wird automatisch
+  angelegt, `cms/data/` ist gesperrt). Öffentlich: `status`, `token`, `plaetze` (nur Zahlen, keine Namen),
+  `reservieren`, `anmelden` (POST, JSON). Verwaltung (Sitzung aus `cms/api.php`, POST mit `X-CSRF-Token` und
+  Origin-Prüfung): `admin_overview`, `admin_counts`, `admin_res_update`, `admin_res_delete`, `admin_anm_delete`,
+  `admin_anm_seen`. Spam-Schutz ohne Fremddienste: verstecktes Feld `homepage` (Roboter bekommen „ok“, es wird
+  nichts gespeichert), signierter Zeitstempel (mind. 3 Sekunden, höchstens 6 Stunden), je IP höchstens
+  5 erfolgreiche Einsendungen bzw. 30 Versuche pro Stunde, insgesamt 60 pro Stunde (gespeichert wird nur ein Hash
+  der IP, nach 24 Std. gelöscht), Längenbegrenzungen, keine Links im Namen. Doppelt abgeschickte Anfragen werden
+  nur einmal gespeichert.
+- `cms/programm-api.php` – öffentlich, **nur lesend**: öffnet `cms/data/tippspiel.sqlite` schreibgeschützt und
+  liefert nur Wettbewerb, Anstoß, Heim, Gast, `home_logo`/`away_logo` (fehlende Tabellen/Spalten werden
+  toleriert). `?action=wettbewerbe` liefert Id/Name/aktiv für die Auswahl. Zwischenspeicher 5 Minuten
+  (`cms/data/programm-cache.json`, HTTP `max-age=300`).
+- Website: `variante-1/extras.js` und `variante-2/extras.js` (identische Kopien – bei Änderungen beide
+  anpassen), Aussehen in `extras.css` der jeweiligen Variante; Hilfsfunktionen in `assets/js/cms-loader.js`
+  (`HBS.features`, `HBS.gast`, `HBS.programm`, `HBS.reservationDays` …). Variante 3 nutzt die Zusatzfunktionen
+  (noch) nicht.
+- Verwaltung: `admin/extras.js` + `admin/extras.css`, angemeldet über `window.HBS_ADMIN_EXT` (in `admin/admin.js`
+  nur `EXT.init(...)` und das Feld im Termin-Editor).
+- Vorschau ohne PHP: Die Formulare der Website melden „In der Vorschau werden keine Anfragen verschickt“; die
+  Verwaltung zeigt im Demo-Modus Beispiel-Anfragen (localStorage `hbs_gast_demo_v1`) und die Website dann
+  Beispielspiele.

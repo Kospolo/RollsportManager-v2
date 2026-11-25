@@ -20,6 +20,7 @@
   <link rel="preload" href="../assets/fonts/playfair-display-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="extras.css">
   <script>document.documentElement.className = document.documentElement.className.replace('no-js', 'js');</script>
 </head>
 <body>
@@ -47,8 +48,10 @@
           <ul class="nav__list" id="nav-list">
             <li><a href="#stube" data-nav>Die Stube</a></li>
             <li><a href="#termine" data-nav>Termine</a></li>
-            <li data-requires="tippspiel"><a href="../tippspiel/" class="nav__app">Tippspiel</a></li>
+            <li data-requires="tippspiel" data-feature="tippspiel"><a href="../tippspiel/" class="nav__app">Tippspiel</a></li>
+            <li data-feature="speisekarte"><a href="#karte" data-nav>Karte</a></li>
             <li><a href="#zeiten" data-nav>Öffnungszeiten</a></li>
+            <li data-feature="reservierung"><a href="#reservieren" data-nav>Reservieren</a></li>
             <li data-requires="summer"><a href="#sommer" data-nav>Sommer</a></li>
             <li><a href="#galerie" data-nav>Galerie</a></li>
             <li><a href="#kontakt" data-nav>Kontakt</a></li>
@@ -122,6 +125,20 @@
       </div>
       <div class="container">
         <ul class="highlights" id="highlights"></ul>
+      </div>
+    </section>
+
+    <!-- FUSSBALL DIESE WOCHE (Funktion „programm“, Daten aus dem Tippspiel) ─ -->
+    <section class="section live" id="live" aria-labelledby="live-title" hidden>
+      <div class="container">
+        <header class="section-head">
+          <div>
+            <p class="eyebrow" data-reveal><span class="eyebrow__num">02</span>Fußball</p>
+            <h2 class="section-title" id="live-title" data-reveal>Diese Woche <em>live</em></h2>
+          </div>
+          <p class="section-head__aside" id="live-text" data-reveal></p>
+        </header>
+        <div class="x-live" id="live-list" aria-live="polite"></div>
       </div>
     </section>
 
@@ -210,6 +227,21 @@
       </div>
     </section>
 
+    <!-- SPEISEKARTE (Funktion „speisekarte“) ─────────────── -->
+    <section class="section x-menu" id="karte" aria-labelledby="menu-title" hidden>
+      <div class="container">
+        <header class="section-head">
+          <div>
+            <p class="eyebrow" data-reveal><span class="eyebrow__num">04</span>Karte</p>
+            <h2 class="section-title" id="menu-title" data-reveal>Getränke &amp; <em>Speisen</em></h2>
+          </div>
+          <p class="section-head__aside" id="menu-intro" data-reveal></p>
+        </header>
+        <div class="x-menu-grid" id="menu-list"></div>
+        <p class="x-menu-foot" id="menu-note"></p>
+      </div>
+    </section>
+
     <!-- ÖFFNUNGSZEITEN ───────────────────────────────────── -->
     <section class="section hours" id="zeiten" aria-labelledby="hours-title">
       <div class="container hours__grid">
@@ -227,6 +259,24 @@
             <ul class="hours__list" id="hours-list"></ul>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- TISCH-ANFRAGE (Funktion „reservierung“) ──────────── -->
+    <section class="section x-reserve" id="reservieren" aria-labelledby="reserve-title" hidden>
+      <div class="container x-reserve-grid">
+        <div class="x-reserve-intro">
+          <p class="eyebrow" data-reveal><span class="eyebrow__num">06</span>Reservieren</p>
+          <h2 class="section-title" id="reserve-title" data-reveal>Tisch <em>anfragen</em></h2>
+          <div class="prose x-reserve-text" id="reserve-text" data-reveal></div>
+          <ol class="x-steps" data-reveal>
+            <li><span class="x-steps-no">1</span><span>Anfrage senden</span></li>
+            <li><span class="x-steps-no">2</span><span>Wir rufen Sie zurück</span></li>
+            <li><span class="x-steps-no">3</span><span>Ihr Tisch ist reserviert</span></li>
+          </ol>
+          <div class="x-call-box" id="reserve-call" data-reveal></div>
+        </div>
+        <div class="x-reserve-card" id="reserve-card"></div>
       </div>
     </section>
 
@@ -376,6 +426,7 @@
   <noscript><div class="noscript">Bitte JavaScript aktivieren, um alle Inhalte (Termine, Öffnungszeiten, Kontakt) zu sehen.</div></noscript>
 
   <script src="../assets/js/cms-loader.js"></script>
+  <script src="extras.js"></script>
   <script type="module" src="main.js"></script>
 </body>
 </html>

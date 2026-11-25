@@ -22,6 +22,26 @@ cp "$SHARE/deny.htaccess" "$STATE/backups/.htaccess"
 
 [ -f "$STATE/content.json" ] || cp "$SHARE/content.json" "$STATE/content.json"
 
+# Update: neue Bereiche (z. B. „features“, Speisekarte) aus der mitgelieferten content.json ergänzen,
+# wenn sie in den gespeicherten Inhalten noch fehlen. Vorhandene Inhalte werden NIE überschrieben;
+# vorher wird eine Sicherung angelegt.
+php -r '
+  $state = "/srv/hbs-state/content.json"; $def = "/usr/local/share/hbs/content.json";
+  $s = json_decode((string)file_get_contents($state), true); $d = json_decode((string)file_get_contents($def), true);
+  if (!is_array($s) || !is_array($d)) { exit(0); }
+  $added = [];
+  foreach ($d as $k => $v) { if (!array_key_exists($k, $s)) { $s[$k] = $v; $added[] = $k; } }
+  if (isset($d["features"], $s["features"]) && is_array($d["features"]) && is_array($s["features"])) {
+    foreach ($d["features"] as $k => $v) { if (!array_key_exists($k, $s["features"])) { $s["features"][$k] = $v; $added[] = "features.$k"; } }
+  }
+  if (!$added) { exit(0); }
+  @mkdir("/srv/hbs-state/backups", 0775, true);
+  copy($state, "/srv/hbs-state/backups/content-vor-update-" . date("Ymd-His") . ".json");
+  $tmp = $state . ".tmp";
+  file_put_contents($tmp, json_encode($s, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
+  rename($tmp, $state);
+  echo "[hbs] Inhalte ergänzt (Update): " . implode(", ", $added) . "\n";'
+
 if [ ! -f "$STATE/config.php" ]; then
   PASS="$(php -r '$a="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";$s="";for($i=0;$i<14;$i++){$s.=$a[random_int(0,strlen($a)-1)];}echo $s;')"
   HBS_PASS="$PASS" php -r '

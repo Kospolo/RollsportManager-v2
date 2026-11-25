@@ -125,6 +125,9 @@
   var app = document.getElementById('app');
   var mainEl = null;
   var uid = 0;
+  // Zusatzfunktionen aus admin/extras.js (eigene Reiter, Inhaltsbereiche, Felder im Termin-Editor)
+  var EXT = window.HBS_ADMIN_EXT && window.HBS_ADMIN_EXT.init ? window.HBS_ADMIN_EXT : null;
+  if (EXT) EXT.init({ S: S, SKELETON: SKELETON, SECTIONS: SECTIONS, ICONS: ICONS, h: h, icon: icon, changed: function () { changed(); }, toast: toast, confirm: confirmDialog, modal: openModal, field: field, input: input, tf: tf, toggle: toggle, sectionHead: sectionHead, card: card, notice: notice, btn: btn, go: go, show: showSection, withAuth: withAuth });
 
   /* ================================================================ Hilfen */
 
@@ -1071,7 +1074,8 @@
       field('Kategorie', input(draft, 'category', { max: 60, list: listId, placeholder: 'z. B. Sport, Feier, Stammtisch', onInput: noop }), { optional: true, help: 'Vorschläge erscheinen beim Tippen – oder eigene Kategorie eingeben.' }),
       dl,
       tf('Beschreibung', draft, 'description', { multiline: true, rows: 4, max: 5000, optional: true, onInput: noop, placeholder: 'Was erwartet die Gäste?' }),
-      field('Bild', imageField(draft, 'image', { removable: true, onChange: noop }), { optional: true, help: 'Wird bei diesem Termin auf der Website angezeigt.' }));
+      field('Bild', imageField(draft, 'image', { removable: true, onChange: noop }), { optional: true, help: 'Wird bei diesem Termin auf der Website angezeigt.' }),
+      EXT && EXT.eventFields ? EXT.eventFields(draft) : null);
 
     function apply() {
       draft.title = draft.title.trim();

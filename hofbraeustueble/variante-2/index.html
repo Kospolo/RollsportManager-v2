@@ -22,6 +22,7 @@
   <link rel="preload" href="../assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="../assets/fonts/oswald-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="extras.css">
 </head>
 <body class="is-loading">
   <a class="skip" href="#main">Zum Inhalt springen</a>
@@ -148,6 +149,21 @@
       </div>
     </section>
 
+    <!-- FUSSBALL DIESE WOCHE (Funktion „programm“, Daten aus dem Tippspiel) -->
+    <section class="sec sec-live" id="live" aria-labelledby="live-title" hidden>
+      <div class="wrap p3d">
+        <header class="sec-head sec-head-row">
+          <div>
+            <p class="sec-label"><span class="sec-no">02</span>Live auf Sky</p>
+            <h2 class="sec-title" id="live-title">Diese Woche live</h2>
+            <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 24 C 90 14, 200 30, 280 18 S 380 14, 414 22" /><path class="drip" d="M140 22 v12 M320 18 v7"/></svg>
+          </div>
+          <p class="sec-hint" id="live-text"></p>
+        </header>
+        <div class="x-live" id="live-list" aria-live="polite"></div>
+      </div>
+    </section>
+
     <!-- TERMINE -->
     <section class="sec sec-events" id="termine" aria-labelledby="eventsTitle">
       <div class="tag-bg tag-bg-r" aria-hidden="true">Spielplan</div>
@@ -220,6 +236,23 @@
       </div>
     </section>
 
+    <!-- SPEISEKARTE (Funktion „speisekarte“) -->
+    <section class="sec x-menu" id="karte" aria-labelledby="menu-title" hidden>
+      <div class="tag-bg tag-bg-r" aria-hidden="true">Prost</div>
+      <div class="wrap p3d">
+        <header class="sec-head sec-head-row">
+          <div>
+            <p class="sec-label"><span class="sec-no">04</span>Karte</p>
+            <h2 class="sec-title" id="menu-title">Getränke &amp; Speisen</h2>
+            <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 20 C 110 30, 190 12, 280 22 S 380 16, 414 20" /><path class="drip" d="M96 24 v10 M300 20 v8"/></svg>
+          </div>
+          <p class="sec-hint" id="menu-intro"></p>
+        </header>
+        <div class="x-menu-grid" id="menu-list"></div>
+        <p class="x-menu-foot" id="menu-note"></p>
+      </div>
+    </section>
+
     <!-- ÖFFNUNGSZEITEN -->
     <section class="sec sec-hours" id="zeiten" aria-labelledby="hoursTitle">
       <div class="wrap p3d">
@@ -240,6 +273,29 @@
               <ol class="board-days" id="boardDays"></ol>
             </div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TISCH-ANFRAGE (Funktion „reservierung“) -->
+    <section class="sec x-reserve" id="reservieren" aria-labelledby="reserve-title" hidden>
+      <div class="wrap p3d">
+        <div class="x-reserve-grid">
+          <div class="x-reserve-intro">
+            <header class="sec-head">
+              <p class="sec-label"><span class="sec-no">06</span>Reservieren</p>
+              <h2 class="sec-title" id="reserve-title">Tisch anfragen</h2>
+              <svg class="spray-line" viewBox="0 0 420 40" preserveAspectRatio="none" aria-hidden="true"><path d="M6 22 C 100 12, 190 30, 270 20 S 380 14, 414 22" /><path class="drip" d="M180 22 v12"/></svg>
+            </header>
+            <div class="x-reserve-text" id="reserve-text"></div>
+            <ol class="x-steps">
+              <li><span class="x-steps-no">1</span><span>Anfrage senden</span></li>
+              <li><span class="x-steps-no">2</span><span>Wir rufen Sie zurück</span></li>
+              <li><span class="x-steps-no">3</span><span>Ihr Tisch ist reserviert</span></li>
+            </ol>
+            <div class="x-call-box" id="reserve-call"></div>
+          </div>
+          <div class="x-reserve-card" id="reserve-card"></div>
         </div>
       </div>
     </section>
@@ -400,6 +456,7 @@
   <noscript><p class="noscript">Bitte JavaScript aktivieren, um die Inhalte dieser Seite zu sehen.</p></noscript>
 
   <script src="../assets/js/cms-loader.js"></script>
+  <script src="extras.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 </html>

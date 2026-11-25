@@ -302,7 +302,7 @@ function renderEvents(c) {
       ? `<div class="ev__media"><img src="${esc(HBS.asset(ev.image))}" alt="" loading="lazy" decoding="async"></div>`
       : `<div class="ev__media ev__media--art" aria-hidden="true">${icon(eventIcon(ev))}</div>`;
     return `
-      <article class="ev${i >= LIMIT ? ' is-extra' : ''}" data-tilt data-reveal style="--d:${(i % 3) * 0.08}s"${i >= LIMIT ? ' hidden' : ''}>
+      <article class="ev${i >= LIMIT ? ' is-extra' : ''}" data-event-id="${esc(ev.id || '')}" data-tilt data-reveal style="--d:${(i % 3) * 0.08}s"${i >= LIMIT ? ' hidden' : ''}>
         <div style="position:relative">
           ${media}
           ${rel ? `<span class="ev__badge">${rel}</span>` : ''}
@@ -315,6 +315,7 @@ function renderEvents(c) {
           </p>
           <h3 class="ev__title">${esc(ev.title)}</h3>
           ${ev.description ? `<p class="ev__desc">${esc(ev.description)}</p>` : ''}
+          ${HBS.signupEnabled(c, ev) ? `<div class="x-signup" data-signup="${esc(ev.id)}"></div>` : ''}
           <div class="ev__foot">
             <span class="ev__long"><span class="sr-only">Datum: </span>${esc(f.long)}</span>
             <button class="ev__ics" type="button" data-ics="${i}" aria-label="${esc(ev.title)} zum Kalender hinzufügen">${icon('calendarPlus')}Kalender</button>
@@ -353,7 +354,7 @@ function renderEvents(c) {
 function renderTippspiel(c) {
   const t = c.tippspiel || {};
   const sec = $('#tippspiel');
-  if (!t.enabled) {
+  if (!t.enabled || !HBS.features(c).tippspiel) {
     sec.remove();
     $$('[data-requires="tippspiel"]').forEach((el) => el.remove());
     return;
@@ -365,6 +366,16 @@ function renderTippspiel(c) {
   $('span', $('#tipp-btn')).textContent = t.buttonText || 'Zum Tippspiel';
   const note = $('#tipp-note');
   if (t.note) note.innerHTML = `${icon('shield')}<span>${esc(t.note)}</span>`; else note.remove();
+}
+
+/* --- Zusatzfunktionen (Speisekarte, Tisch-Anfrage, Anmeldung, Fußball diese Woche) – siehe extras.js --- */
+function renderExtras(c) {
+  if (!window.HBSExtras) return;
+  window.HBSExtras.render(c, {
+    privacyDialog: 'dlg-datenschutz',
+    title: (el, text) => { el.innerHTML = accentTitle(text); },
+    onChange: renumberSections
+  });
 }
 
 /* Abschnittsnummern fortlaufend setzen (Sommer, Tippspiel und Galerie sind optional) */
@@ -748,7 +759,7 @@ function start() {
   initLightbox();
   HBS.load().then((content) => {
     C = content || {};
-    const steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer, renderGallery, renderContact, renderFooter, renumberSections];
+    const steps = [setMeta, renderBanner, renderHero, renderAbout, renderEvents, renderTippspiel, renderHours, renderSummer, renderGallery, renderContact, renderFooter, renderExtras, renumberSections];
     steps.forEach((fn) => { try { fn(C); } catch (e) { console.error('[Render]', fn.name, e); } });
     requestAnimationFrame(() => $('#top').classList.add('is-in'));
     initReveal();

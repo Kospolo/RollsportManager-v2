@@ -306,8 +306,9 @@ final class Validator
 
     /**
      * Schema: Typen
-     *  ['str', max, format?]  format: line|text|date|time|email|url|image|id|req
+     *  ['str', max, format?]  format: line|text|date|date-opt|time|email|url|image|id|req|price
      *  ['bool']
+     *  ['int', min, max]
      *  ['obj', [feld => schema]]
      *  ['list', itemSchema, maxItems]
      */
@@ -361,6 +362,11 @@ final class Validator
                 'description' => $text(5000),
                 'category' => $line(60),
                 'image' => $line(200, 'image'),
+                // Anmeldung zum Termin (optional, siehe gast-api.php)
+                'signup' => ['bool'],
+                'signupMax' => ['int', 0, 10000],
+                'signupDeadline' => $line(10, 'date-opt'),
+                'signupNote' => $text(500),
             ]], 500],
             'tippspiel' => ['obj', [
                 'enabled' => ['bool'],
@@ -401,8 +407,67 @@ final class Validator
             'datenschutz' => ['obj', [
                 'text' => $text(50000),
             ]],
+            /* ---- Zusatzfunktionen (optional, siehe self::OPTIONAL) ---- */
+            'features' => ['obj', [
+                'tippspiel' => ['bool'],
+                'team' => ['bool'],
+                'reservierung' => ['bool'],
+                'speisekarte' => ['bool'],
+                'anmeldung' => ['bool'],
+                'programm' => ['bool'],
+                'preise' => ['bool'],
+                'kasse' => ['bool'],
+            ]],
+            'speisekarte' => ['obj', [
+                'title' => $line(150),
+                'intro' => $text(1000),
+                'note' => $text(1000),
+                'categories' => ['list', ['obj', [
+                    'name' => $line(80, 'req'),
+                    'note' => $text(300),
+                    'items' => ['list', ['obj', [
+                        'name' => $line(120, 'req'),
+                        'size' => $line(30),
+                        'price' => $line(12, 'price'),
+                        'note' => $line(200),
+                        'badge' => $line(30),
+                        'available' => ['bool'],
+                    ]], 150],
+                ]], 40],
+            ]],
+            'reservierung' => ['obj', [
+                'title' => $line(150),
+                'text' => $text(2000),
+                'maxPersons' => ['int', 1, 200],
+                'leadHours' => ['int', 0, 336],
+                'maxDaysAhead' => ['int', 1, 365],
+                'useOpeningHours' => ['bool'],
+                'deleteAfterDays' => ['int', 1, 365],
+                'successText' => $text(1000),
+                'privacyText' => $text(2000),
+                'consentText' => $text(500),
+                'notifyEmail' => ['bool'],
+                'notifyAddress' => $line(150, 'email'),
+            ]],
+            'anmeldung' => ['obj', [
+                'maxPersons' => ['int', 1, 50],
+                'successText' => $text(1000),
+                'privacyText' => $text(2000),
+                'consentText' => $text(500),
+                'notifyEmail' => ['bool'],
+                'notifyAddress' => $line(150, 'email'),
+            ]],
+            'programm' => ['obj', [
+                'title' => $line(150),
+                'text' => $text(1000),
+                'competitions' => ['list', ['int', 1, 1000000000], 50],
+                'days' => ['int', 1, 14],
+            ]],
         ];
     }
+
+    /** Bereiche, die fehlen dürfen (ältere Inhalte, Sicherungen, JSON-Import) – die Website nimmt dann Standardwerte. */
+    private const OPTIONAL = ['features', 'speisekarte', 'reservierung', 'anmeldung', 'programm'];
 
     public function validate(mixed $content): array
     {
@@ -419,6 +484,9 @@ final class Validator
         }
         foreach ($schema as $key => $node) {
             if (!array_key_exists($key, $content)) {
+                if (in_array($key, self::OPTIONAL, true)) {
+                    continue;
+                }
                 $this->errors[] = 'Bereich „' . $key . '“ fehlt.';
                 continue;
             }
@@ -440,6 +508,21 @@ final class Validator
             case 'str':
                 return $this->str($v, $node[1], $node[2] ?? 'line', $path);
 
+            case 'int': // ['int', min, max] – ganze Zahl (auch "12" als Text wird akzeptiert)
+                if (is_string($v) && preg_match('/^-?\d{1,10}$/', trim($v))) {
+                    $v = (int)trim($v);
+                } elseif (is_float($v) && floor($v) === $v) {
+                    $v = (int)$v;
+                }
+                if (!is_int($v)) {
+                    $this->errors[] = "$path: muss eine ganze Zahl sein.";
+                    return $node[1];
+                }
+                if ($v < $node[1] || $v > $node[2]) {
+                    $this->errors[] = "$path: muss zwischen {$node[1]} und {$node[2]} liegen.";
+                }
+                return $v;
+
             case 'obj':
                 if (!is_array($v) || ($v !== [] && array_is_list($v))) {
                     $this->errors[] = "$path: muss ein Objekt sein.";
@@ -449,7 +532,7 @@ final class Validator
                 foreach ($node[1] as $k => $child) {
                     if (!array_key_exists($k, $v)) {
                         // fehlende Felder freundlich ergänzen
-                        $out[$k] = $child[0] === 'bool' ? false : ($child[0] === 'list' ? [] : ($child[0] === 'obj' ? $this->node([], $child, "$path.$k") : ''));
+                        $out[$k] = $child[0] === 'bool' ? false : ($child[0] === 'int' ? $child[1] : ($child[0] === 'list' ? [] : ($child[0] === 'obj' ? $this->node([], $child, "$path.$k") : '')));
                         if ($child[0] === 'str' && in_array($child[2] ?? '', ['req', 'date', 'id', 'image-req'], true)) {
                             $this->errors[] = "$path.$k: fehlt.";
                         }
@@ -536,6 +619,17 @@ final class Validator
             case 'date':
                 if (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m) || !checkdate((int)$m[2], (int)$m[3], (int)$m[1])) {
                     $this->errors[] = "$path: ungültiges Datum „" . self::short($v) . '“ (Format JJJJ-MM-TT).';
+                }
+                break;
+            case 'date-opt':
+                if ($v !== '' && (!preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $v, $m) || !checkdate((int)$m[2], (int)$m[3], (int)$m[1]))) {
+                    $this->errors[] = "$path: ungültiges Datum „" . self::short($v) . '“ (Format JJJJ-MM-TT oder leer).';
+                }
+                break;
+            case 'price':
+                $v = str_replace('.', ',', $t);
+                if ($v !== '' && !preg_match('/^\d{1,4}(,\d{1,2})?$/', $v)) {
+                    $this->errors[] = "$path: ungültiger Preis „" . self::short($t) . '“ (z. B. 3,90 – ohne €-Zeichen).';
                 }
                 break;
             case 'time':

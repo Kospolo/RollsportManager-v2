@@ -1,0 +1,139 @@
+/* Hofbräustüble – Verwaltung: Zusatzfunktionen (admin/extras.js)
+   Reservierungen · Anmeldungen · Speisekarte · Funktionen. Nur Klassen (CSP: keine Inline-Styles). */
+
+.x-nav-badge { margin-left: auto; background: #ffe08a; color: #4a3500; min-width: 24px; justify-content: center; font-size: 13px; }
+.nav-item .x-nav-badge + .x-nav-badge { margin-left: 4px; }
+.x-hint { font-size: 16px; }
+.x-off .btn { margin-top: 10px; }
+.x-row-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.x-num { max-width: 160px; font-size: 18px; }
+.x-checkrow { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 2px; cursor: pointer; font-size: 16px; }
+.x-checkrow input { width: 26px; height: 26px; flex: none; accent-color: var(--brand); }
+.x-checkrow .badge { margin-left: 8px; }
+.x-warn { color: var(--warn); font-weight: 600; }
+
+/* ---------- Funktionen ---------- */
+.x-features { display: block; }
+.x-feature { border-left: 6px solid #cbbfae; }
+.x-feature.is-on { border-left-color: var(--success); }
+.x-feature-head { display: flex; align-items: center; gap: 16px; }
+.x-feature-icon { display: grid; place-items: center; width: 52px; height: 52px; flex: none; border-radius: 14px; background: var(--brand-soft); color: var(--brand); }
+.x-feature-icon svg.i { width: 28px; height: 28px; }
+.x-feature.is-on .x-feature-icon { background: var(--success-soft); color: var(--success); }
+.x-bigswitch { flex: 1; min-width: 0; padding: 6px 0; min-height: 56px; }
+.x-bigswitch .track { width: 68px; height: 40px; }
+.x-bigswitch .track::after { width: 32px; height: 32px; top: 4px; left: 4px; }
+.x-bigswitch input:checked + .track::after { transform: translateX(28px); }
+.x-bigswitch .switch-label { font-size: 19px; }
+.x-bigswitch .switch-state { font-size: 15px; }
+.x-feature-text { margin: 12px 0 0; font-size: 16px; color: var(--ink-2); }
+.x-feature-note { display: flex; gap: 8px; align-items: flex-start; margin: 10px 0 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); font-size: 15px; color: var(--ink-2); }
+.x-feature-note svg.i { width: 18px; height: 18px; margin-top: 2px; flex: none; color: var(--muted); }
+.x-feature-actions { margin-top: 12px; }
+.x-feature-actions .btn { min-height: 44px; }
+.x-sub { margin-top: 14px; border-top: 1px dashed var(--line-strong); padding-top: 10px; }
+.x-sub > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--brand); font-size: 16px; }
+.x-sub[open] > summary { margin-bottom: 12px; }
+.x-comp-list { display: grid; gap: 2px; }
+
+/* ---------- Speisekarte ---------- */
+.x-cat-head { display: flex; gap: 12px; align-items: flex-start; }
+.x-cat-fields { flex: 1; min-width: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.x-cat-name { font-size: 18px; font-weight: 700; }
+.x-cat-tools { display: flex; gap: 6px; flex: none; padding-top: 26px; }
+.x-items { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
+.x-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.x-item.is-off { opacity: .62; }
+.x-item-main { flex: 1 1 260px; min-width: 0; min-height: 52px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name price" "meta price"; align-items: center; gap: 0 12px; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; font: inherit; color: inherit; }
+.x-item-main:hover { background: #fff; }
+.x-item-main:focus-visible { outline: none; box-shadow: var(--focus); }
+.x-item-name { grid-area: name; font-weight: 700; font-size: 17px; overflow-wrap: anywhere; }
+.x-item-name .badge { margin-left: 8px; vertical-align: 2px; }
+.x-item-meta { grid-area: meta; font-size: 15px; color: var(--muted); }
+.x-item-price { grid-area: price; font-weight: 700; font-size: 18px; white-space: nowrap; }
+.x-item-price.is-bad { color: var(--danger); }
+.x-item-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.x-avail { margin-right: 6px; }
+.x-avail .switch-label { font-size: 14px; }
+.x-cat-foot { margin-top: 12px; }
+@media (max-width: 640px) {
+  .x-cat-head { flex-direction: column-reverse; }
+  .x-cat-tools { padding-top: 0; align-self: flex-end; }
+  .x-item-tools { width: 100%; justify-content: flex-end; }
+  .x-avail { margin-right: auto; }
+}
+
+/* ---------- Reservierungen & Anmeldungen ---------- */
+.x-filter { margin: 4px 0 14px; }
+.x-filter .subnav-item { min-height: 44px; font-size: 15px; }
+.x-res { border-left: 6px solid #e0b64e; }
+.x-res-bestaetigt { border-left-color: var(--success); }
+.x-res-abgelehnt { border-left-color: #a2948a; }
+.x-res.is-past { opacity: .72; }
+.x-res-top { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+.x-res-main { flex: 1 1 240px; min-width: 0; }
+.x-res-main p { margin: 0 0 4px; }
+.x-res-when { font-weight: 700; font-size: 18px; color: var(--ink); }
+.x-res-who { font-size: 17px; }
+.x-persons { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+.x-persons svg.i { width: 18px; height: 18px; }
+.x-res-line { display: flex; gap: 6px; align-items: flex-start; font-size: 16px; color: var(--ink-2); overflow-wrap: anywhere; }
+.x-res-line svg.i { width: 18px; height: 18px; margin-top: 3px; flex: none; }
+.x-res-note { font-style: italic; }
+.x-res-meta { font-size: 14px; color: var(--muted); }
+.x-call { min-height: 52px; font-size: 17px; flex: none; }
+.x-res-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line-strong); }
+.x-seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.x-seg-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 8px 16px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: #fff; font: 600 16px/1.2 var(--font); color: var(--ink-2); cursor: pointer; }
+.x-seg-btn svg.i { width: 18px; height: 18px; }
+.x-seg-btn:hover { border-color: var(--muted); }
+.x-seg-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+.x-seg-btn[aria-checked="true"].x-st-neu { background: #ffe08a; border-color: #d9b445; color: #4a3500; }
+.x-seg-btn[aria-checked="true"].x-st-bestaetigt { background: var(--success); border-color: var(--success); color: #fff; }
+.x-seg-btn[aria-checked="true"].x-st-abgelehnt { background: #6f625a; border-color: #6f625a; color: #fff; }
+.x-called { font-weight: 600; }
+.x-res-note-edit { margin-top: 12px; display: grid; gap: 8px; justify-items: start; }
+.x-res-note-edit .field { width: 100%; }
+.x-res-foot { margin-top: 12px; display: flex; justify-content: flex-end; }
+.x-settings { padding: 0; }
+.x-settings > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 14px 20px; font-weight: 700; font-size: 17px; }
+.x-settings > summary::-webkit-details-marker { display: none; }
+.x-settings[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.x-settings > .notice, .x-settings > .fields { margin-left: 20px; margin-right: 20px; }
+.x-settings > .fields { padding-bottom: 20px; }
+.x-mailhelp { font-size: 14px; }
+.x-snippet { margin: 8px 0; padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; color: var(--ink-2); }
+.x-anm-title { font-size: 19px; margin: 0 0 4px; overflow-wrap: anywhere; }
+.x-anm-state { font-weight: 700; font-size: 16px; color: var(--success); }
+.x-anm-state.is-full { color: var(--danger); }
+.x-anm.is-past { opacity: .72; }
+.x-anm-rows { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 6px; }
+.x-anm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.x-anm-row.is-new { border-color: #d9b445; background: #fffbea; }
+.x-anm-who { flex: 1 1 220px; min-width: 0; font-size: 17px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.x-anm-meta { flex-basis: 100%; font-size: 14px; color: var(--muted); }
+.x-anm-tel { min-height: 44px; font-size: 16px; }
+
+/* ---------- Termin-Editor ---------- */
+.x-ev-signup { display: grid; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-2); }
+.x-ev-more { padding-top: 4px; }
+
+/* ---------- Druck: Teilnehmerliste ---------- */
+.x-print-area { display: none; }
+@media print {
+  body.x-printing > *:not(.x-print-area) { display: none !important; }
+  body.x-printing { background: #fff; color: #000; }
+  body.x-printing .x-print-area { display: block; font: 12pt/1.4 var(--font); }
+  .x-print-area h1 { font: 700 22pt/1.2 var(--font-display); margin: 0 0 4pt; }
+  .x-print-area table { width: 100%; border-collapse: collapse; margin-top: 12pt; }
+  .x-print-area th, .x-print-area td { border: 1px solid #000; padding: 6pt 8pt; text-align: left; }
+  .x-print-area th { background: #eee; }
+  .x-print-foot { margin-top: 14pt; font-size: 9pt; }
+}
+
+/* Schmale Handys: Schalter-Zeile ohne Symbol, damit lange Namen Platz haben */
+@media (max-width: 520px) {
+  .x-feature-icon { display: none; }
+  .x-bigswitch .switch-label { font-size: 18px; overflow-wrap: anywhere; }
+}
+.x-bigswitch > span:last-child { min-width: 0; }

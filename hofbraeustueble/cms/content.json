@@ -77,7 +77,11 @@
       "title": "Weihnachts-Stammtisch",
       "description": "Glühwein, Lebkuchen und gute Laune – wir feiern zusammen das Jahresende.",
       "category": "Feier",
-      "image": "assets/img/nische.jpg"
+      "image": "assets/img/nische.jpg",
+      "signup": true,
+      "signupMax": 30,
+      "signupDeadline": "2026-12-17",
+      "signupNote": "Damit wir genug Glühwein und Lebkuchen da haben – bitte kurz anmelden."
     },
     {
       "id": "ev-2026-12-31-silvester",
@@ -86,7 +90,11 @@
       "title": "Silvesterparty",
       "description": "Rutscht mit uns ins neue Jahr! Musik, Sekt um Mitternacht und Stimmung bis spät.",
       "category": "Feier",
-      "image": "assets/img/theke.jpg"
+      "image": "assets/img/theke.jpg",
+      "signup": true,
+      "signupMax": 40,
+      "signupDeadline": "",
+      "signupNote": "Begrenzte Plätze – wer sich anmeldet, hat seinen Platz sicher."
     },
     {
       "id": "ev-2027-05-01-sommerstart",
@@ -137,5 +145,98 @@
   },
   "datenschutz": {
     "text": "Verantwortlich für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Betreiber.\n\nDiese Website setzt keine Cookies zu Werbe- oder Analysezwecken und bindet keine externen Dienste (z. B. Schriftarten, Karten, Tracking) ein. Beim Aufruf der Seite verarbeitet unser Hosting-Anbieter technisch notwendige Daten (IP-Adresse, Datum/Uhrzeit, aufgerufene Seite, Browser) in Server-Logfiles zur Sicherstellung des Betriebs (Art. 6 Abs. 1 lit. f DSGVO).\n\nWenn Sie uns per E-Mail oder Telefon kontaktieren, verarbeiten wir Ihre Angaben ausschließlich zur Bearbeitung Ihrer Anfrage.\n\nTippspiel: Für unser kostenloses Tippspiel (Teilnahme nur auf Einladung) speichern wir Ihren selbst gewählten Spitznamen (Nickname), Ihr Passwort ausschließlich als nicht umkehrbaren Hash-Wert, freiwillig Ihre E-Mail-Adresse sowie Ihre abgegebenen Tipps. Die Daten verarbeiten wir allein zur Durchführung des Spiels (Art. 6 Abs. 1 lit. b DSGVO); sie werden bei unserem Hosting-Anbieter auf unserem Webspace gespeichert. In der Rangliste erscheint nur Ihr Nickname. Für die Anmeldung wird ein technisch notwendiges Sitzungs-Cookie gesetzt. Sie können Ihr Konto jederzeit selbst in der Tippspiel-App löschen; dabei werden auch Ihre Tipps gelöscht. Eine Weitergabe an Dritte findet nicht statt.\n\nSie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch und Datenübertragbarkeit sowie ein Beschwerderecht bei der Aufsichtsbehörde (Landesbeauftragter für den Datenschutz Baden-Württemberg).\n\n[Bitte vor Veröffentlichung um die Angaben Ihres Hosting-Anbieters ergänzen und rechtlich prüfen lassen.]"
+  },
+  "features": {
+    "tippspiel": true,
+    "team": true,
+    "reservierung": false,
+    "speisekarte": true,
+    "anmeldung": false,
+    "programm": true,
+    "preise": false,
+    "kasse": false
+  },
+  "speisekarte": {
+    "title": "Getränke & Speisen",
+    "intro": "Frisch gezapft, ehrlich eingeschenkt – und eine Brezel gibt’s auch.",
+    "note": "BEISPIEL-PREISE: Bitte in der Verwaltung unter „Speisekarte“ durch Ihre echten Preise ersetzen. Alle Preise in Euro inkl. MwSt.",
+    "categories": [
+      {
+        "name": "Bier vom Fass",
+        "note": "Stuttgarter Hofbräu – frisch gezapft",
+        "items": [
+          { "name": "Stuttgarter Hofbräu Pils", "size": "0,3 l", "price": "3,20", "note": "", "badge": "vom Fass", "available": true },
+          { "name": "Stuttgarter Hofbräu Pils", "size": "0,5 l", "price": "4,50", "note": "", "badge": "vom Fass", "available": true },
+          { "name": "Stuttgarter Hofbräu Export", "size": "0,5 l", "price": "4,50", "note": "", "badge": "vom Fass", "available": true },
+          { "name": "Radler", "size": "0,5 l", "price": "4,20", "note": "Pils mit Zitronenlimonade", "badge": "", "available": true }
+        ]
+      },
+      {
+        "name": "Weizen & Flaschenbier",
+        "note": "",
+        "items": [
+          { "name": "Hefeweizen", "size": "0,5 l", "price": "4,50", "note": "hell oder dunkel", "badge": "", "available": true },
+          { "name": "Pils alkoholfrei", "size": "0,33 l", "price": "3,50", "note": "", "badge": "alkoholfrei", "available": true },
+          { "name": "Weizen alkoholfrei", "size": "0,5 l", "price": "4,30", "note": "", "badge": "alkoholfrei", "available": true }
+        ]
+      },
+      {
+        "name": "Ohne Alkohol",
+        "note": "",
+        "items": [
+          { "name": "Cola", "size": "0,4 l", "price": "3,20", "note": "", "badge": "", "available": true },
+          { "name": "Spezi", "size": "0,4 l", "price": "3,20", "note": "Cola-Orange-Mix", "badge": "", "available": true },
+          { "name": "Apfelschorle", "size": "0,4 l", "price": "3,20", "note": "", "badge": "", "available": true },
+          { "name": "Mineralwasser", "size": "0,25 l", "price": "2,50", "note": "", "badge": "", "available": true },
+          { "name": "Tasse Kaffee", "size": "", "price": "2,20", "note": "", "badge": "", "available": true }
+        ]
+      },
+      {
+        "name": "Schnaps & Kurze",
+        "note": "",
+        "items": [
+          { "name": "Obstler", "size": "2 cl", "price": "2,50", "note": "", "badge": "", "available": true },
+          { "name": "Williams-Birne", "size": "2 cl", "price": "3,00", "note": "", "badge": "", "available": true },
+          { "name": "Kräuterlikör", "size": "2 cl", "price": "2,50", "note": "", "badge": "", "available": true }
+        ]
+      },
+      {
+        "name": "Zum Knabbern",
+        "note": "",
+        "items": [
+          { "name": "Laugenbrezel", "size": "", "price": "1,50", "note": "", "badge": "frisch", "available": true },
+          { "name": "Erdnüsse", "size": "Schale", "price": "2,00", "note": "", "badge": "", "available": true },
+          { "name": "Chips", "size": "Tüte", "price": "2,00", "note": "", "badge": "", "available": true }
+        ]
+      }
+    ]
+  },
+  "reservierung": {
+    "title": "Tisch anfragen",
+    "text": "Sie möchten mit Freunden zum Spiel kommen oder brauchen einen Tisch für den Stammtisch? Schicken Sie uns einfach eine Anfrage. Wir rufen Sie zurück – erst dann ist der Tisch fest für Sie reserviert.",
+    "maxPersons": 12,
+    "leadHours": 3,
+    "maxDaysAhead": 60,
+    "useOpeningHours": true,
+    "deleteAfterDays": 30,
+    "successText": "Vielen Dank! Ihre Anfrage ist bei uns angekommen. Wir melden uns telefonisch bei Ihnen – erst dann ist der Tisch fest reserviert.",
+    "privacyText": "Ihre Angaben (Name, Telefonnummer, freiwillig E-Mail, Wunschtermin und Nachricht) verwenden wir nur, um Ihre Anfrage zu bearbeiten und Sie zurückzurufen. Eine Weitergabe an Dritte findet nicht statt.",
+    "consentText": "Ich bin einverstanden, dass meine Angaben zur Bearbeitung der Anfrage gespeichert werden. Mehr dazu in der Datenschutzerklärung.",
+    "notifyEmail": false,
+    "notifyAddress": ""
+  },
+  "anmeldung": {
+    "maxPersons": 6,
+    "successText": "Danke, Sie sind angemeldet! Wir freuen uns auf Sie. Falls Sie doch nicht kommen können, rufen Sie uns bitte kurz an.",
+    "privacyText": "Ihre Angaben (Name, Telefonnummer, Anzahl Personen) verwenden wir nur für diese Veranstaltung, z. B. um Sie bei Änderungen anzurufen. Eine Weitergabe an Dritte findet nicht statt.",
+    "consentText": "Ich bin einverstanden, dass meine Angaben für die Anmeldung gespeichert werden. Mehr dazu in der Datenschutzerklärung.",
+    "notifyEmail": false,
+    "notifyAddress": ""
+  },
+  "programm": {
+    "title": "Diese Woche live bei uns",
+    "text": "Alle Spiele auf dem großen Bildschirm – mit frisch gezapftem Hofbräu.",
+    "competitions": [],
+    "days": 7
   }
 }
