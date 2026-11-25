@@ -1,11 +1,12 @@
 # Hofbräustüble CMS – Zugriffsschutz für den Ordner cms/
-# Öffentlich erreichbar sind NUR api.php, tipp-api.php (Tippspiel) und content.json (sowie Bilder in uploads/,
+# Öffentlich erreichbar sind NUR api.php, tipp-api.php (Tippspiel), team-api.php (Dienstplan),
+# gast-api.php (Tisch-Anfragen/Anmeldungen), programm-api.php (Fußball-Programm, nur lesend) und content.json (sowie Bilder in uploads/,
 # siehe uploads/.htaccess). config.php, backups/ und data/ sind gesperrt.
 
 <IfModule mod_authz_core.c>
   # Apache 2.4
   Require all denied
-  <FilesMatch "^(api\.php|tipp-api\.php|content\.json)$">
+  <FilesMatch "^(api\.php|tipp-api\.php|team-api\.php|gast-api\.php|programm-api\.php|content\.json)$">
     Require all granted
   </FilesMatch>
   <Files "config.php">
@@ -16,7 +17,7 @@
   # Apache 2.2
   Order allow,deny
   Deny from all
-  <FilesMatch "^(api\.php|tipp-api\.php|content\.json)$">
+  <FilesMatch "^(api\.php|tipp-api\.php|team-api\.php|gast-api\.php|programm-api\.php|content\.json)$">
     Order allow,deny
     Allow from all
   </FilesMatch>

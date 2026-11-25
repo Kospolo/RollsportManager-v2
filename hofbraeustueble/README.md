@@ -368,6 +368,46 @@ Der Token wird beim ersten Öffnen erzeugt und liegt in `cms/data/tipp-cron-toke
 - Wichtig: Das Tippspiel ist ein reines Spaß-Spiel. Keine Einsätze oder Geldpreise ausloben –
   Sportwetten mit Einsatz sind ohne Lizenz verboten.
 
+## Team / Dienstplan
+
+Kleiner Dienstplan für die Aushilfen und den Chef unter **`https://ihre-domain.de/team/`** – nicht öffentlich,
+nur mit Einladung. Große Schrift, große Knöpfe, „du“-Ansprache, funktioniert am Handy und am iPad.
+Technik: `team/` (App), `cms/team-api.php` (Schnittstelle), Datenbank `cms/data/team.sqlite` (wird automatisch
+angelegt, braucht wie das Tippspiel `pdo_sqlite`). Vertrag und alle Regeln: `team/SPEC.md`.
+
+**Für die Mitarbeiter** (Reiter unten): **Start** (nächste Schicht groß, „Bitte antworten“, offene Schichten,
+neue Nachrichten, Aufgaben der laufenden Schicht zum Abhaken), **Plan** (meine Schichten mit Zusagen/Absagen/Tauschen,
+Team-Woche, offene Schichten „Übernehmen“), **Frei** (Urlaub/krank/sonstiges beantragen, „Wann kann ich?“ für die
+nächsten 8 Wochen antippen), **Chat** (Nachrichten mit dem Chef, Schwarzes Brett mit „Gelesen“), **Ich**
+(geplante Stunden, Schichten in den Handy-Kalender übernehmen, Telefonnummer, Passwort, Abmelden, Konto löschen).
+Über „Start → Bestellliste“ meldet man mit einem Tipp, was fast leer ist.
+
+**Für den Chef:** In der Verwaltung anmelden, dann `…/team/` öffnen – es erscheint die **Chef-Ansicht**
+(gelbes Band). Reiter: **Plan** (Woche/Monat, „Schicht anlegen“ mit Wiederholung „jede Woche bis …“, Schichten
+über Mitternacht, Farben + Text für zugesagt/unbeantwortet/abgesagt/offen/angefragt, Warnungen bei Überschneidung,
+Urlaub oder „kann nicht“), **Team** (Einladung mit Link und QR-Code, Stundenlohn, Monatsgrenze, Deaktivieren,
+neues Passwort, Löschen; Übersicht „Stunden & Minijob“ – geplant, keine Lohnabrechnung), **Anfragen**
+(Urlaub genehmigen/ablehnen, Tausch bestätigen, Übernahme-Anfragen, abgesagte Schichten neu besetzen, Bestellliste
+„bestellt“/„geliefert“), **Nachrichten** (einzeln + Schwarzes Brett mit „wer hat gelesen“), **Einstellungen**
+(Funktionen einzeln an/aus: Verfügbarkeit, Tauschen, Checklisten, Stunden, Schwarzes Brett, Kalender-Abo,
+Bestellliste; Tausch nur mit Bestätigung; Minijob-Grenze – Standard 603 €, Stand bitte selbst prüfen;
+Schicht-Bezeichnungen; Checklisten; Bestell-Artikel). Hat der Chef zusätzlich ein Mitarbeiterkonto, wechselt
+oben ein Knopf zwischen beiden Ansichten.
+
+**Ganz ausschalten:** `cms/content.json` → `"features": { "team": false }` (in der Verwaltung unter „Funktionen“).
+Dann sehen Mitarbeiter nur einen Hinweis, die Chef-Ansicht funktioniert weiter. Fehlt der Eintrag, ist der Bereich an.
+
+**Datenschutz:** Kollegen sehen nur Namen und Schichten (Telefon nur mit Freigabe, bei Abwesenheit nur „nicht da“).
+Lohn und Stunden sehen nur der Chef und die Person selbst. Beim Löschen eines Kontos werden die persönlichen Daten
+entfernt; vergangene Schichten bleiben ohne Namen als „ehem. Mitarbeiter“. Den Text der Datenschutzerklärung
+der Website bitte um einen Abschnitt „Team-Bereich / Dienstplan“ ergänzen.
+
+**Testen ohne Server:** Mit `python3 -m http.server` läuft `team/` im **Demo-Modus** (erfundenes Team, nur im
+Browser gespeichert; „Als Anja“ / „Als Chef“ oben, Chef auch per `team/?chef=1`, Passwort `demo1234`).
+
+**Updates:** `cms/.htaccess` lässt `team-api.php` durch; `team/.htaccess` setzt Sicherheits-Header und sperrt `SPEC.md`.
+Im Docker-Container liegt die Datenbank in `cms/data` und damit im Volume – sie überlebt Updates.
+
 ## Vorschau auf kospolo.de (Mac Studio, Docker)
 
 Für die Präsentation beim Eigentümer läuft die komplette Seite (Website, CMS, Tippspiel mit echtem Bundesliga-Spielplan) als ein Docker-Container auf dem Mac Studio. Davor sitzt wie bei `beta.rollsportmanager.de` der Nginx Proxy Manager. Alle Dateien liegen in `deploy/`.
