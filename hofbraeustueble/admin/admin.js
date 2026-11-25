@@ -1798,19 +1798,6 @@
     ctx.fillText('Stüble-Tippspiel – scannen & mitmachen', size / 2, size + 76);
     return canvasBlob(cv, 'image/png');
   }
-  function printNode(node) {
-    var area = h('div', { class: 'print-area' }, node.cloneNode(true));
-    document.body.appendChild(area);
-    document.body.classList.add('printing');
-    var done = false;
-    function cleanup() {
-      if (done) return; done = true;
-      area.remove(); document.body.classList.remove('printing');
-      window.removeEventListener('afterprint', cleanup);
-    }
-    window.addEventListener('afterprint', cleanup);
-    setTimeout(function () { window.print(); setTimeout(cleanup, 1000); }, 50);
-  }
 
   /* ---------- Bausteine */
 
@@ -2686,7 +2673,10 @@
       if (!q) return;
       downloadBlob(new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + qrSvg(q)], { type: 'image/svg+xml' }), 'tippspiel-einladung-' + i.code + '.svg');
     }, '', { disabled: true, 'aria-label': 'QR-Code als SVG-Datei speichern', title: 'Als SVG speichern (beliebig groß druckbar)' });
-    var printB = btn('Drucken', 'printer', function () { printNode(sheet); }, '', { disabled: true });
+    // Druck: eigener A4-Aushang (admin/aushang.html) im Design der Website, mit QR-Code direkt zur Anmeldung
+    var printB = btn('Aushang drucken (A4)', 'printer', function () {
+      window.open('aushang.html?code=' + encodeURIComponent(i.code), '_blank', 'noopener');
+    }, '', { disabled: true });
     openModal({
       title: 'QR-Code für die Theke', size: 'sm',
       body: [sheet, field('Einladungslink', h('div', { class: 'input-row' }, linkIn, btn('', 'copy', function () { copyText(url, 'Einladungslink'); }, 'btn-icon', { 'aria-label': 'Link kopieren', title: 'Link kopieren' })), { forId: linkIn.id || (linkIn.id = nid()), cls: 'mt' })],

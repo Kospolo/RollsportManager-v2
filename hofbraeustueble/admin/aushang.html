@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Tippspiel-Aushang drucken</title>
+<link rel="stylesheet" href="aushang.css">
+</head>
+<body>
+<div class="bar no-print">
+  <button type="button" id="print" class="btn">Drucken</button>
+  <span class="hint">Tipp: A4, Größe „100 %“ bzw. „Tatsächliche Größe“. Im Druckfenster geht auch „Als PDF speichern“.</span>
+</div>
+<p id="error" class="error no-print" hidden></p>
+<div class="stage" id="stage">
+  <article class="sheet" id="sheet" aria-label="Aushang zum Ausdrucken">
+    <div class="top" id="venue">Hofbräustüble · Amorbach</div>
+    <h1>Das Stüble-</h1>
+    <h2>Tippspiel</h2>
+    <p class="lead">Tippen Sie die Bundesliga-Spiele, sammeln Sie Punkte und klettern Sie in der Stammtisch-Tabelle nach oben.<br><b>Kostenlos – kein Geldeinsatz.</b></p>
+    <div class="qr" id="qr" role="img" aria-label="QR-Code zur Anmeldung beim Tippspiel"></div>
+    <div class="scan">Mit der Handy-Kamera scannen</div>
+    <ol class="steps">
+      <li>Kamera öffnen und auf den Code halten</li>
+      <li>Auf den Link tippen, der erscheint</li>
+      <li>Namen und Passwort ausdenken – fertig!</li>
+    </ol>
+    <div class="code">Einladungscode <b id="code">–</b></div>
+    <div class="foot">Fragen? Einfach an der Theke melden.<br><span id="url"></span></div>
+  </article>
+</div>
+<script src="../assets/vendor/qrcode-generator.js"></script>
+<script src="aushang.js"></script>
+</body>
+</html>

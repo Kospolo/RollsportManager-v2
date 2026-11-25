@@ -1,0 +1,44 @@
+/* Tippspiel-Aushang (A4) – gleiches Design wie das gedruckte Beispiel */
+@font-face { font-family: "Bebas Neue"; src: url("../assets/fonts/bebas-neue-latin-400-normal.woff2") format("woff2"); font-display: block; }
+@font-face { font-family: "Playfair Display"; src: url("../assets/fonts/playfair-display-latin-400-italic.woff2") format("woff2"); font-style: italic; font-display: block; }
+@font-face { font-family: "Inter"; src: url("../assets/fonts/inter-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Inter"; src: url("../assets/fonts/inter-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: block; }
+:root { --ink: #1b1408; --paper: #fbf6ec; --brass: #a8781f; --muted: #5d4f3a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: #3b342c; font-family: Inter, system-ui, sans-serif; color: var(--ink); }
+
+.bar { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 12px 16px; background: #1b1408; color: #f3ece0; }
+.btn { font: 700 18px Inter, sans-serif; min-height: 48px; padding: 0 26px; border-radius: 999px; border: 0; background: #d9a441; color: var(--ink); cursor: pointer; }
+.btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.hint { font-size: 15px; line-height: 1.4; color: #d8cdb9; flex: 1 1 260px; }
+.error { margin: 16px; padding: 14px 16px; border-radius: 10px; background: #fde8e8; color: #7a1010; font-size: 17px; }
+
+/* Bildschirm: Blatt wird per JS (--s) auf die Fensterbreite verkleinert */
+.stage { padding: 16px; display: flex; justify-content: center; overflow: hidden; }
+.sheet {
+  width: 210mm; height: 297mm; flex: none; transform-origin: top center;
+  background: var(--paper); box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+  display: flex; flex-direction: column; align-items: center; text-align: center; padding: 18mm 16mm;
+}
+.top { font: 700 15pt Inter, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: var(--brass); }
+h1 { margin: 4mm 0 0; font: italic 400 40pt/1 "Playfair Display", Georgia, serif; color: var(--brass); }
+h2 { margin: 0; font: 400 78pt/.95 "Bebas Neue", Impact, sans-serif; letter-spacing: .02em; text-transform: uppercase; }
+.lead { font-size: 17pt; line-height: 1.4; margin: 5mm 0 6mm; max-width: 160mm; }
+.qr { width: 98mm; height: 98mm; background: #fff; padding: 5mm; border-radius: 6mm; box-shadow: 0 0 0 1.2mm var(--ink); }
+.qr svg { width: 100%; height: 100%; display: block; }
+.scan { font: 400 34pt "Bebas Neue", Impact, sans-serif; margin: 6mm 0 1mm; letter-spacing: .04em; }
+.steps { font-size: 15pt; line-height: 1.55; text-align: left; margin: 2mm 0 0; }
+.code { margin-top: 6mm; font-size: 14pt; }
+.code b { font: 400 30pt "Bebas Neue", Impact, sans-serif; letter-spacing: .12em; background: var(--ink); color: var(--paper); padding: 1mm 4mm; border-radius: 2mm; margin-left: 2mm; }
+.foot { margin-top: auto; padding-top: 5mm; font-size: 12pt; color: var(--muted); word-break: break-all; }
+
+@page { size: A4; margin: 0; }
+@media print {
+  /* genau eine Seite: Bildschirm-Skalierung (Inline-Höhe der Bühne) aufheben, nichts überstehen lassen */
+  html, body { background: #fff; width: 210mm; height: 297mm; overflow: hidden; }
+  .no-print { display: none !important; }
+  .stage { padding: 0; display: block; height: auto !important; overflow: hidden; }
+  .sheet { transform: none !important; box-shadow: none; margin: 0 !important; height: 296mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
